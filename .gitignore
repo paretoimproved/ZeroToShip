@@ -27,3 +27,6 @@ coverage/
 
 # Claude local settings
 .claude/settings.local.json
+
+# Docs symlink (tracked separately in DevVault)
+docs/
