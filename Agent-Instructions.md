@@ -10,9 +10,9 @@
 |-------|--------|--------------|---------------|--------|
 | 1-4 | Scrapers | None | Each other | ✅ COMPLETE |
 | 5 | Deduplicator | Phase 1 done | T, R | ✅ COMPLETE |
-| 6 | Scorer | Deduplicator done | **7, T, R** | 🔜 READY |
-| 7 | Gap Analyzer | Deduplicator done | **6, T, R** | 🔜 READY |
-| 8 | Brief Generator | 6 + 7 done | T, R | 2-3 days |
+| 6 | Scorer | Deduplicator done | **7, T, R** | ✅ COMPLETE |
+| 7 | Gap Analyzer | Deduplicator done | **6, T, R** | ✅ COMPLETE |
+| 8 | Brief Generator | 6 + 7 done | T, R | 🔜 READY |
 | 9 | Email Delivery | 8 done | 10, T, R | 1-2 days |
 | 10 | Web Dashboard | 8 done | 9, T, R | 3-5 days |
 | T | Testing Agent | Any module done | All | Ongoing |
@@ -24,9 +24,9 @@
 Phase 1: [1, 2, 3, 4] ─────────────────────────────────── ✅ COMPLETE
               │
 Phase 2:     [5] ──┬──→ [6] ──┬──→ [8]
-              ✅   │          │
+              ✅   │    ✅    │    🔜 READY
                    └──→ [7] ──┘
-                   🔜 READY (run 6+7 in parallel)
+                        ✅
 
 Phase 3:                      └──→ [9, 10] (parallel)
 
