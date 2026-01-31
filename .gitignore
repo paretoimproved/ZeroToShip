@@ -30,3 +30,8 @@ coverage/
 
 # Docs symlink (tracked separately in DevVault)
 docs/
+
+# DevVault context junctions
+_Knowledge/
+_Resources/
+_Projects/

@@ -228,7 +228,7 @@ async function scrapeShowHNComments(hoursBack: number): Promise<HNPost[]> {
         // Check comments recursively for pain points
         const commentsWithPainPoints = extractPainPointComments(
           item.children || [],
-          item.title
+          item.title || ''
         );
 
         posts.push(...commentsWithPainPoints);

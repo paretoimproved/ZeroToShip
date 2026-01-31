@@ -151,7 +151,7 @@ export async function search(params: HNSearchParams): Promise<HNAlgoliaResponse>
   const url = `${HN_API_BASE}/search?${queryString}`;
 
   const response = await fetchWithRetry(url);
-  return response.json();
+  return (await response.json()) as HNAlgoliaResponse;
 }
 
 /**
@@ -162,7 +162,7 @@ export async function searchByDate(params: HNSearchParams): Promise<HNAlgoliaRes
   const url = `${HN_API_BASE}/search_by_date?${queryString}`;
 
   const response = await fetchWithRetry(url);
-  return response.json();
+  return (await response.json()) as HNAlgoliaResponse;
 }
 
 /**
@@ -172,7 +172,7 @@ export async function getItem(id: number | string): Promise<HNItem> {
   const url = `${HN_API_BASE}/items/${id}`;
 
   const response = await fetchWithRetry(url);
-  return response.json();
+  return (await response.json()) as HNItem;
 }
 
 /**

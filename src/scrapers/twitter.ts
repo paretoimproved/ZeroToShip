@@ -331,7 +331,10 @@ export class TwitterScraper {
         available: apiAvailable,
         hasToken: this.apiClient !== null,
       },
-      nitter: nitterStatus,
+      nitter: {
+        available: nitterStatus.healthy,
+        instance: nitterStatus.instance,
+      },
     };
   }
 
@@ -422,8 +425,7 @@ async function main() {
   console.log('='.repeat(60));
 }
 
-// Run if executed directly
-const isMainModule = import.meta.url === `file://${process.argv[1]}`;
-if (isMainModule) {
+// Run if executed directly (CommonJS check)
+if (require.main === module) {
   main().catch(console.error);
 }

@@ -132,7 +132,7 @@ export class TwitterApiClient {
       throw new Error(`Twitter API error (${response.status}): ${error}`);
     }
 
-    const data: TwitterSearchResponse = await response.json();
+    const data = (await response.json()) as TwitterSearchResponse;
 
     if (!data.data || data.data.length === 0) {
       return [];
@@ -199,7 +199,7 @@ export class TwitterApiClient {
         throw new Error(`Twitter API error: ${response.status}`);
       }
 
-      const data: TwitterSearchResponse = await response.json();
+      const data = (await response.json()) as TwitterSearchResponse;
 
       if (!data.data || data.data.length === 0) {
         break;

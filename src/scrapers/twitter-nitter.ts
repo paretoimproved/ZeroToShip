@@ -9,6 +9,7 @@
  */
 
 import * as cheerio from 'cheerio';
+import type { Element } from 'domhandler';
 import { Tweet, TwitterConfig, PAIN_POINT_SIGNALS } from './types.js';
 
 /**
@@ -164,7 +165,7 @@ export class NitterScraper {
    */
   private parseTweetElement(
     $: cheerio.CheerioAPI,
-    $item: cheerio.Cheerio<cheerio.Element>
+    $item: cheerio.Cheerio<Element>
   ): Tweet | null {
     // Extract tweet link to get ID
     const tweetLink = $item.find('.tweet-link').attr('href');
