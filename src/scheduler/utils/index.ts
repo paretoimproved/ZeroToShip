@@ -23,3 +23,17 @@ export {
   type PhaseMetrics,
   type MetricsSummary,
 } from './metrics';
+
+export {
+  ApiMetricsCollector,
+  getGlobalMetrics,
+  resetGlobalMetrics,
+  type ApiCallRecord,
+  type ApiMetricsSummary,
+} from './api-metrics';
+
+export {
+  estimateTokens,
+  estimatePromptTokens,
+  estimateJsonTokens,
+} from './token-estimator';

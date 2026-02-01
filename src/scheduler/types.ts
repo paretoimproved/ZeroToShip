@@ -5,6 +5,7 @@
 import type { RawPost } from '../scrapers/types';
 import type { ProblemCluster, ScoredProblem, GapAnalysis } from '../analysis';
 import type { IdeaBrief } from '../generation';
+import type { ApiMetricsSummary } from './utils/api-metrics';
 
 /**
  * Phase names in the pipeline
@@ -49,6 +50,8 @@ export interface PipelineConfig {
   dryRun: boolean;
   /** Enable verbose logging */
   verbose: boolean;
+  /** Collect and report API metrics (default: false) */
+  reportMetrics?: boolean;
 }
 
 /**
@@ -116,6 +119,8 @@ export interface PipelineResult {
   success: boolean;
   totalDuration: number;
   errors: PipelineError[];
+  /** API call metrics for cost validation (when reportMetrics=true) */
+  apiMetrics?: ApiMetricsSummary;
 }
 
 /**

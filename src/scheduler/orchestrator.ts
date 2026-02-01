@@ -6,6 +6,7 @@
 
 import { createRunLogger } from './utils/logger';
 import { MetricsCollector } from './utils/metrics';
+import { getGlobalMetrics, resetGlobalMetrics } from './utils/api-metrics';
 import { runScrapePhase } from './phases/scrape';
 import { runAnalyzePhase } from './phases/analyze';
 import { runGeneratePhase } from './phases/generate';
@@ -38,6 +39,7 @@ export const DEFAULT_PIPELINE_CONFIG: PipelineConfig = {
   minPriorityScore: 0.5,
   dryRun: false,
   verbose: false,
+  reportMetrics: false,
 };
 
 /**
@@ -110,6 +112,11 @@ export async function runPipeline(
   const logger = createRunLogger(runId);
   const metrics = new MetricsCollector(runId);
   const errors: PipelineError[] = [];
+
+  // Reset API metrics at start if collecting
+  if (fullConfig.reportMetrics) {
+    resetGlobalMetrics();
+  }
 
   const startedAt = new Date();
 
@@ -218,6 +225,11 @@ export async function runPipeline(
     },
     errors
   );
+
+  // Add API metrics to result if collecting
+  if (fullConfig.reportMetrics) {
+    result.apiMetrics = getGlobalMetrics().getSummary();
+  }
 
   const summary = metrics.getSummary();
   logger.info(
