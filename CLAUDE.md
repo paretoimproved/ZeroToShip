@@ -30,15 +30,38 @@ Requires `GIT_TO_DAILY_VAULT` environment variable for automatic daily logs.
 
 ## Agent Rules
 
-When completing any agent task:
+When completing any agent task, follow the **Agent Completion Protocol** (see `Agent-Instructions.md` for full details):
 
-1. **Always update Context.md** (`~/DevVault/01-Projects/ideaforge/Context.md`) with:
-   - Status update in the Agent Communication Log
-   - Any test count changes
-   - Blockers resolved
+### 1. Verify Before Commit
+```bash
+npm run build && npm test  # Both must pass
+```
 
-2. **Always update Agent-Instructions.md** (`~/DevVault/01-Projects/ideaforge/Agent-Instructions.md`) with:
-   - Mark your agent status as ✅ COMPLETE in the Quick Reference table
-   - Note any changes to the execution flow if applicable
+### 2. Commit with Agent Tag
+```bash
+git add <specific files>
+git commit -m "<type>(agent-<N>): <short description>
 
-3. **Commit message format**: Include agent number when applicable (e.g., "feat(agent-19): fix test mocks for Anthropic migration")
+<details>
+
+Phase <X>: <Phase Name>
+
+Co-Authored-By: Claude <model> <noreply@anthropic.com>"
+```
+
+**Types**: `feat`, `fix`, `test`, `docs`, `refactor`, `chore`
+
+### 3. Push to Remote
+```bash
+git push origin main
+```
+
+### 4. Update Documentation
+- **Context.md** (`~/DevVault/01-Projects/ideaforge/Context.md`):
+  - Status update in Agent Communication Log
+  - Test count changes
+  - Blockers resolved
+
+- **Agent-Instructions.md** (`~/DevVault/01-Projects/ideaforge/Agent-Instructions.md`):
+  - Mark agent status as ✅ COMPLETE in Quick Reference table
+  - Note any execution flow changes
