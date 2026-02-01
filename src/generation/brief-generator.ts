@@ -10,10 +10,14 @@ import type { GapAnalysis } from '../analysis/gap-analyzer';
 import {
   BRIEF_SYSTEM_PROMPT,
   buildBriefPrompt,
+  buildBatchBriefPrompt,
   parseJsonResponse,
   scoreToEffortLevel,
 } from './templates';
 import { getRecommendedStack, type EffortLevel } from './tech-stacks';
+import { getBriefModel, type UserTier } from '../config/models';
+import { getGlobalMetrics } from '../scheduler/utils/api-metrics';
+import { estimateTokens } from '../scheduler/utils/token-estimator';
 
 /**
  * Complete business brief for a startup idea
@@ -89,6 +93,7 @@ interface GPTBriefResponse {
 export interface BriefGeneratorConfig {
   anthropicApiKey?: string;
   model?: string;
+  userTier?: UserTier;
   maxConcurrent?: number;
   delayBetweenCalls?: number;
   temperature?: number;
@@ -96,7 +101,8 @@ export interface BriefGeneratorConfig {
 
 const DEFAULT_CONFIG: Required<BriefGeneratorConfig> = {
   anthropicApiKey: '',
-  model: 'claude-sonnet-4-20250514',
+  model: '',
+  userTier: 'pro',
   maxConcurrent: 2,
   delayBetweenCalls: 500,
   temperature: 0.7,
@@ -125,6 +131,9 @@ async function callClaude(
   model: string,
   temperature: number
 ): Promise<GPTBriefResponse | null> {
+  const startTime = Date.now();
+  const inputTokens = estimateTokens(BRIEF_SYSTEM_PROMPT) + estimateTokens(prompt);
+
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -147,6 +156,20 @@ async function callClaude(
     if (!response.ok) {
       const error = await response.text();
       console.warn(`Anthropic API error (${response.status}):`, error);
+
+      // Record failed call
+      getGlobalMetrics().recordCall({
+        timestamp: new Date(),
+        module: 'brief-generator',
+        model,
+        batchSize: 1,
+        itemsProcessed: 0,
+        inputTokens,
+        outputTokens: 0,
+        success: false,
+        durationMs: Date.now() - startTime,
+      });
+
       return null;
     }
 
@@ -160,9 +183,160 @@ async function callClaude(
       return null;
     }
 
+    // Record successful call
+    getGlobalMetrics().recordCall({
+      timestamp: new Date(),
+      module: 'brief-generator',
+      model,
+      batchSize: 1,
+      itemsProcessed: 1,
+      inputTokens,
+      outputTokens: estimateTokens(content),
+      success: true,
+      durationMs: Date.now() - startTime,
+    });
+
     return parseJsonResponse<GPTBriefResponse>(content);
   } catch (error) {
     console.warn('Anthropic API call failed:', error);
+
+    // Record failed call
+    getGlobalMetrics().recordCall({
+      timestamp: new Date(),
+      module: 'brief-generator',
+      model,
+      batchSize: 1,
+      itemsProcessed: 0,
+      inputTokens,
+      outputTokens: 0,
+      success: false,
+      durationMs: Date.now() - startTime,
+    });
+
+    return null;
+  }
+}
+
+/**
+ * Raw response from batch brief generation
+ */
+interface GPTBatchBriefResponse {
+  id: string;
+  name: string;
+  tagline: string;
+  problemStatement: string;
+  targetAudience: string;
+  marketSize: string;
+  existingSolutions: string;
+  gaps: string;
+  proposedSolution: string;
+  keyFeatures: string[];
+  mvpScope: string;
+  architecture: string;
+  pricing: string;
+  revenueProjection: string;
+  monetizationPath: string;
+  launchStrategy: string;
+  channels: string[];
+  firstCustomers: string;
+  risks: string[];
+}
+
+/**
+ * Call Anthropic API for batch brief generation
+ */
+async function callClaudeBatch(
+  prompt: string,
+  apiKey: string,
+  model: string,
+  temperature: number,
+  batchSize: number
+): Promise<GPTBatchBriefResponse[] | null> {
+  const startTime = Date.now();
+  const inputTokens = estimateTokens(BRIEF_SYSTEM_PROMPT) + estimateTokens(prompt);
+
+  // Haiku has 8192 max output tokens, so cap appropriately
+  // ~1500 tokens per brief * batch size, capped at 8000
+  const maxTokens = Math.min(1500 * batchSize, 8000);
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: maxTokens,
+        temperature,
+        system: BRIEF_SYSTEM_PROMPT,
+        messages: [
+          { role: 'user', content: prompt },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.warn(`Anthropic API error (${response.status}):`, error);
+
+      getGlobalMetrics().recordCall({
+        timestamp: new Date(),
+        module: 'brief-generator',
+        model,
+        batchSize,
+        itemsProcessed: 0,
+        inputTokens,
+        outputTokens: 0,
+        success: false,
+        durationMs: Date.now() - startTime,
+      });
+
+      return null;
+    }
+
+    const data = await response.json() as {
+      content: Array<{ type: string; text: string }>;
+    };
+
+    const content = data.content[0]?.text;
+    if (!content) {
+      console.warn('No content in Anthropic response');
+      return null;
+    }
+
+    const parsed = parseJsonResponse<GPTBatchBriefResponse[]>(content);
+
+    getGlobalMetrics().recordCall({
+      timestamp: new Date(),
+      module: 'brief-generator',
+      model,
+      batchSize,
+      itemsProcessed: parsed?.length || 0,
+      inputTokens,
+      outputTokens: estimateTokens(content),
+      success: true,
+      durationMs: Date.now() - startTime,
+    });
+
+    return parsed;
+  } catch (error) {
+    console.warn('Anthropic API batch call failed:', error);
+
+    getGlobalMetrics().recordCall({
+      timestamp: new Date(),
+      module: 'brief-generator',
+      model,
+      batchSize,
+      itemsProcessed: 0,
+      inputTokens,
+      outputTokens: 0,
+      success: false,
+      durationMs: Date.now() - startTime,
+    });
+
     return null;
   }
 }
@@ -287,6 +461,9 @@ export async function generateBrief(
   const opts = { ...DEFAULT_CONFIG, ...config };
   const apiKey = opts.anthropicApiKey || process.env.ANTHROPIC_API_KEY || '';
 
+  // Select model: explicit config > tier-based selection
+  const model = opts.model || getBriefModel(opts.userTier);
+
   // Determine effort level from scores
   const effortLevel = scoreToEffortLevel(problem.scores);
 
@@ -302,8 +479,9 @@ export async function generateBrief(
   // Build prompt
   const prompt = buildBriefPrompt(problem, gaps, stackRec, effortLevel);
 
-  // Call Claude
-  const response = await callClaude(prompt, apiKey, opts.model, opts.temperature);
+  // Call Claude with tier-appropriate model
+  console.log(`Generating brief with model: ${model} (tier: ${opts.userTier})`);
+  const response = await callClaude(prompt, apiKey, model, opts.temperature);
 
   if (!response) {
     console.warn(`Brief generation failed for problem ${problem.id} - using fallback`);
@@ -314,7 +492,7 @@ export async function generateBrief(
 }
 
 /**
- * Generate briefs for multiple problems
+ * Generate briefs for multiple problems using batch API calls
  */
 export async function generateAllBriefs(
   scoredProblems: ScoredProblem[],
@@ -328,44 +506,107 @@ export async function generateAllBriefs(
     return results;
   }
 
-  console.log(`Generating briefs for ${scoredProblems.length} problems...`);
+  const apiKey = opts.anthropicApiKey || process.env.ANTHROPIC_API_KEY || '';
+  const model = opts.model || getBriefModel(opts.userTier);
+  console.log(`Generating ${scoredProblems.length} briefs with model: ${model} (tier: ${opts.userTier})`);
+
+  // Batch size for brief generation (5 briefs per API call for quality balance)
+  const BRIEF_BATCH_SIZE = 5;
+
+  // Prepare all problems with their gap analyses
+  const problemsWithGaps: Array<{
+    problem: ScoredProblem;
+    gaps: GapAnalysis;
+    effortLevel: EffortLevel;
+    stackRec: { stack: string[]; architecture: string; estimatedCost: string };
+  }> = [];
+
+  for (const problem of scoredProblems) {
+    const gaps = gapAnalyses.get(problem.id);
+    if (!gaps) {
+      console.warn(`No gap analysis found for problem ${problem.id}`);
+      const effortLevel = scoreToEffortLevel(problem.scores);
+      results.push(createFallbackBrief(problem, {
+        problemId: problem.id,
+        problemStatement: problem.problemStatement,
+        searchQueries: [],
+        existingSolutions: [],
+        gaps: [],
+        marketOpportunity: 'medium',
+        differentiationAngles: [],
+        recommendation: 'Manual analysis required',
+        competitionScore: 50,
+        analysisNotes: 'Gap analysis not available',
+        analyzedAt: new Date(),
+      }, effortLevel));
+      continue;
+    }
+
+    const effortLevel = scoreToEffortLevel(problem.scores);
+    const stackRec = getRecommendedStack(problem.problemStatement, effortLevel);
+    problemsWithGaps.push({ problem, gaps, effortLevel, stackRec });
+  }
+
+  // If no API key, return fallbacks for remaining
+  if (!apiKey) {
+    console.warn('No Anthropic API key - returning fallback briefs');
+    for (const { problem, gaps, effortLevel } of problemsWithGaps) {
+      results.push(createFallbackBrief(problem, gaps, effortLevel));
+    }
+    results.sort((a, b) => b.priorityScore - a.priorityScore);
+    return results;
+  }
 
   // Process in batches
-  for (let i = 0; i < scoredProblems.length; i += opts.maxConcurrent) {
-    const batch = scoredProblems.slice(i, i + opts.maxConcurrent);
+  for (let i = 0; i < problemsWithGaps.length; i += BRIEF_BATCH_SIZE) {
+    const batch = problemsWithGaps.slice(i, i + BRIEF_BATCH_SIZE);
 
-    const batchPromises = batch.map(async problem => {
-      const gaps = gapAnalyses.get(problem.id);
+    // Build batch prompt
+    const batchData = batch.map(({ problem, gaps, effortLevel, stackRec }) => ({
+      id: problem.id,
+      problem,
+      gaps,
+      stackRecommendation: stackRec,
+      effortLevel,
+    }));
 
-      if (!gaps) {
-        console.warn(`No gap analysis found for problem ${problem.id}`);
-        const effortLevel = scoreToEffortLevel(problem.scores);
-        return createFallbackBrief(problem, {
-          problemId: problem.id,
-          problemStatement: problem.problemStatement,
-          searchQueries: [],
-          existingSolutions: [],
-          gaps: [],
-          marketOpportunity: 'medium',
-          differentiationAngles: [],
-          recommendation: 'Manual analysis required',
-          competitionScore: 50,
-          analysisNotes: 'Gap analysis not available',
-          analyzedAt: new Date(),
-        }, effortLevel);
+    const prompt = buildBatchBriefPrompt(batchData);
+
+    // Call API with batch
+    const batchResponses = await callClaudeBatch(
+      prompt,
+      apiKey,
+      model,
+      opts.temperature,
+      batch.length
+    );
+
+    if (batchResponses && batchResponses.length > 0) {
+      // Map responses back to briefs
+      for (const response of batchResponses) {
+        const matchingData = batch.find(b => b.problem.id === response.id);
+        if (matchingData) {
+          results.push(transformToBrief(
+            response,
+            matchingData.problem,
+            matchingData.effortLevel,
+            matchingData.stackRec.stack
+          ));
+        }
       }
+    } else {
+      // Fallback for failed batch
+      console.warn(`Batch brief generation failed for ${batch.length} problems - using fallbacks`);
+      for (const { problem, gaps, effortLevel } of batch) {
+        results.push(createFallbackBrief(problem, gaps, effortLevel));
+      }
+    }
 
-      return generateBrief(problem, gaps, opts);
-    });
+    const completed = Math.min(i + BRIEF_BATCH_SIZE, problemsWithGaps.length);
+    console.log(`Generated ${completed}/${problemsWithGaps.length} briefs`);
 
-    const batchResults = await Promise.all(batchPromises);
-    results.push(...batchResults);
-
-    const completed = Math.min(i + opts.maxConcurrent, scoredProblems.length);
-    console.log(`Generated ${completed}/${scoredProblems.length} briefs`);
-
-    // Rate limiting
-    if (i + opts.maxConcurrent < scoredProblems.length) {
+    // Rate limiting between batches
+    if (i + BRIEF_BATCH_SIZE < problemsWithGaps.length) {
       await sleep(opts.delayBetweenCalls);
     }
   }

@@ -628,4 +628,56 @@ describe('Brief Generator', () => {
       expect(quickWins.length).toBe(0);
     });
   });
+
+  describe('Tiered Model Selection', () => {
+    it('accepts userTier parameter in config', async () => {
+      const problem = createMockScoredProblem();
+      const gaps = createMockGapAnalysis({ problemId: problem.id });
+
+      // Should not throw when passing userTier
+      const brief = await generateBrief(problem, gaps, {
+        userTier: 'enterprise',
+      });
+
+      expect(brief).toBeDefined();
+      expect(brief.id).toMatch(/^brief_/);
+    });
+
+    it('defaults to pro tier when userTier not specified', async () => {
+      const problem = createMockScoredProblem();
+      const gaps = createMockGapAnalysis({ problemId: problem.id });
+
+      // Should work with default tier
+      const brief = await generateBrief(problem, gaps, {});
+
+      expect(brief).toBeDefined();
+    });
+
+    it('accepts all valid tier values', async () => {
+      const problem = createMockScoredProblem();
+      const gaps = createMockGapAnalysis({ problemId: problem.id });
+
+      const tiers: Array<'free' | 'pro' | 'enterprise'> = ['free', 'pro', 'enterprise'];
+
+      for (const tier of tiers) {
+        const brief = await generateBrief(problem, gaps, { userTier: tier });
+        expect(brief).toBeDefined();
+      }
+    });
+
+    it('generateAllBriefs accepts userTier parameter', async () => {
+      const problems = [
+        createMockScoredProblem({ id: 'p1', problemStatement: 'Problem 1' }),
+      ];
+
+      const gapMap = new Map<string, GapAnalysis>();
+      gapMap.set('p1', createMockGapAnalysis({ problemId: 'p1' }));
+
+      const briefs = await generateAllBriefs(problems, gapMap, {
+        userTier: 'enterprise',
+      });
+
+      expect(briefs.length).toBe(1);
+    });
+  });
 });

@@ -296,3 +296,70 @@ export function scoreToEffortLevel(scores: { timeToMvp: number; technicalComplex
   if (effort <= 36) return 'month';
   return 'quarter';
 }
+
+/**
+ * Build a batch brief generation prompt for multiple problems
+ */
+export function buildBatchBriefPrompt(
+  problems: Array<{
+    id: string;
+    problem: ScoredProblem;
+    gaps: GapAnalysis;
+    stackRecommendation: { stack: string[]; architecture: string; estimatedCost: string };
+    effortLevel: EffortLevel;
+  }>
+): string {
+  const problemsData = problems.map((p, index) => {
+    const competitorList = p.gaps.existingSolutions
+      .slice(0, 3)
+      .map(c => `${c.name}: ${c.description}`)
+      .join('; ');
+
+    const gapsList = p.gaps.gaps.slice(0, 3).join('; ');
+
+    return `
+### Problem ${index + 1} (ID: ${p.id})
+**Statement:** ${p.problem.problemStatement}
+**Priority Score:** ${p.problem.scores.priority.toFixed(2)}
+**Frequency:** ${p.problem.frequency} mentions across ${p.problem.sources.join(', ')}
+**Market Opportunity:** ${p.gaps.marketOpportunity}
+**Competition:** ${competitorList || 'None identified'}
+**Gaps:** ${gapsList || 'None identified'}
+**Effort Level:** ${p.effortLevel}
+**Suggested Stack:** ${p.stackRecommendation.stack.join(', ')}`;
+  }).join('\n');
+
+  return `Generate business briefs for the following ${problems.length} startup opportunities.
+
+${problemsData}
+
+## Output Requirements
+
+Return a JSON array with ${problems.length} briefs, one for each problem above. Each brief should have these fields:
+
+[
+  {
+    "id": "problem_id from above",
+    "name": "Product name (1-2 words)",
+    "tagline": "One-line value proposition (under 10 words)",
+    "problemStatement": "Refined problem statement",
+    "targetAudience": "Target persona",
+    "marketSize": "TAM/SAM/SOM estimates",
+    "existingSolutions": "Current alternatives summary",
+    "gaps": "Key unmet needs",
+    "proposedSolution": "Your solution approach",
+    "keyFeatures": ["Feature 1", "Feature 2", "Feature 3"],
+    "mvpScope": "Minimum features for launch",
+    "architecture": "Technical architecture",
+    "pricing": "Pricing strategy",
+    "revenueProjection": "Year 1-3 revenue potential",
+    "monetizationPath": "Revenue model",
+    "launchStrategy": "Launch plan",
+    "channels": ["Channel 1", "Channel 2"],
+    "firstCustomers": "How to get first 10 customers",
+    "risks": ["Risk 1", "Risk 2", "Risk 3"]
+  }
+]
+
+Important: Return ONLY the JSON array with ${problems.length} objects, no markdown or code blocks.`;
+}
