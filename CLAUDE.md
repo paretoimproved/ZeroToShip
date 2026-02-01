@@ -27,3 +27,18 @@ npm run build
 ## Environment
 
 Requires `GIT_TO_DAILY_VAULT` environment variable for automatic daily logs.
+
+## Agent Rules
+
+When completing any agent task:
+
+1. **Always update Context.md** (`~/DevVault/01-Projects/ideaforge/Context.md`) with:
+   - Status update in the Agent Communication Log
+   - Any test count changes
+   - Blockers resolved
+
+2. **Always update Agent-Instructions.md** (`~/DevVault/01-Projects/ideaforge/Agent-Instructions.md`) with:
+   - Mark your agent status as ✅ COMPLETE in the Quick Reference table
+   - Note any changes to the execution flow if applicable
+
+3. **Commit message format**: Include agent number when applicable (e.g., "feat(agent-19): fix test mocks for Anthropic migration")

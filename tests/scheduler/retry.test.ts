@@ -43,15 +43,21 @@ describe('withRetry', () => {
   });
 
   it('should throw after max attempts exhausted', async () => {
-    const fn = vi.fn().mockRejectedValue(new Error('always fails'));
+    // Use real timers for this test to avoid promise/fake timer interaction issues
+    vi.useRealTimers();
 
-    const promise = withRetry(fn, { maxAttempts: 2 });
+    const fn = vi.fn().mockImplementation(async () => {
+      throw new Error('always fails');
+    });
 
-    // Advance timers for retry
-    await vi.advanceTimersByTimeAsync(2000);
+    await expect(
+      withRetry(fn, { maxAttempts: 2, baseDelayMs: 10, maxDelayMs: 20 })
+    ).rejects.toThrow('always fails');
 
-    await expect(promise).rejects.toThrow('always fails');
     expect(fn).toHaveBeenCalledTimes(2);
+
+    // Restore fake timers for other tests
+    vi.useFakeTimers();
   });
 
   it('should call onRetry callback on each retry', async () => {

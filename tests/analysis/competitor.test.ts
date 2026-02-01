@@ -223,7 +223,7 @@ describe('createFallbackAnalysis', () => {
 describe('analyzeCompetitors', () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    delete process.env.OPENAI_API_KEY;
+    delete process.env.ANTHROPIC_API_KEY;
   });
 
   it('returns fallback analysis when no API key', async () => {
@@ -240,20 +240,19 @@ describe('analyzeCompetitors', () => {
     warnSpy.mockRestore();
   });
 
-  it('calls OpenAI API with correct parameters', async () => {
+  it('calls Anthropic API with correct parameters', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              competitors: [],
-              gaps: ['Gap 1'],
-              marketOpportunity: 'high',
-              differentiationAngles: ['Angle 1'],
-              analysisNotes: 'Test notes',
-            }),
-          },
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            competitors: [],
+            gaps: ['Gap 1'],
+            marketOpportunity: 'high',
+            differentiationAngles: ['Angle 1'],
+            analysisNotes: 'Test notes',
+          }),
         }],
       }),
     });
@@ -263,47 +262,46 @@ describe('analyzeCompetitors', () => {
     ];
 
     await analyzeCompetitors('test problem', results, {
-      openaiApiKey: 'test-key',
-      model: 'gpt-4o-mini',
+      anthropicApiKey: 'test-key',
+      model: 'claude-3-5-haiku-20241022',
     });
 
     expect(mockFetch).toHaveBeenCalledTimes(1);
     const [url, options] = mockFetch.mock.calls[0];
-    expect(url).toBe('https://api.openai.com/v1/chat/completions');
-    expect(options.headers['Authorization']).toBe('Bearer test-key');
+    expect(url).toBe('https://api.anthropic.com/v1/messages');
+    expect(options.headers['x-api-key']).toBe('test-key');
 
     const body = JSON.parse(options.body);
-    expect(body.model).toBe('gpt-4o-mini');
-    expect(body.messages[0].role).toBe('system');
-    expect(body.messages[1].content).toContain('test problem');
+    expect(body.model).toBe('claude-3-5-haiku-20241022');
+    expect(body.system).toContain('market research');
+    expect(body.messages[0].content).toContain('test problem');
   });
 
-  it('parses valid JSON response from OpenAI', async () => {
+  it('parses valid JSON response from Anthropic', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              competitors: [{
-                name: 'Competitor X',
-                url: 'https://x.com',
-                description: 'Does things',
-                pricing: 'freemium',
-                strengths: ['Fast', 'Easy'],
-                weaknesses: ['Limited'],
-              }],
-              gaps: ['Need for speed'],
-              marketOpportunity: 'medium',
-              differentiationAngles: ['Better UX'],
-              analysisNotes: 'Good opportunity',
-            }),
-          },
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            competitors: [{
+              name: 'Competitor X',
+              url: 'https://x.com',
+              description: 'Does things',
+              pricing: 'freemium',
+              strengths: ['Fast', 'Easy'],
+              weaknesses: ['Limited'],
+            }],
+            gaps: ['Need for speed'],
+            marketOpportunity: 'medium',
+            differentiationAngles: ['Better UX'],
+            analysisNotes: 'Good opportunity',
+          }),
         }],
       }),
     });
 
-    const analysis = await analyzeCompetitors('problem', [], { openaiApiKey: 'key' });
+    const analysis = await analyzeCompetitors('problem', [], { anthropicApiKey: 'key' });
 
     expect(analysis.competitors).toHaveLength(1);
     expect(analysis.competitors[0].name).toBe('Competitor X');
@@ -316,15 +314,14 @@ describe('analyzeCompetitors', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        choices: [{
-          message: {
-            content: '```json\n{"competitors":[],"gaps":[],"marketOpportunity":"low","differentiationAngles":[],"analysisNotes":"test"}\n```',
-          },
+        content: [{
+          type: 'text',
+          text: '```json\n{"competitors":[],"gaps":[],"marketOpportunity":"low","differentiationAngles":[],"analysisNotes":"test"}\n```',
         }],
       }),
     });
 
-    const analysis = await analyzeCompetitors('problem', [], { openaiApiKey: 'key' });
+    const analysis = await analyzeCompetitors('problem', [], { anthropicApiKey: 'key' });
     expect(analysis.marketOpportunity).toBe('low');
   });
 
@@ -336,7 +333,7 @@ describe('analyzeCompetitors', () => {
 
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const analysis = await analyzeCompetitors('problem', [], { openaiApiKey: 'key' });
+    const analysis = await analyzeCompetitors('problem', [], { anthropicApiKey: 'key' });
 
     expect(analysis.differentiationAngles).toContain('Requires manual competitive analysis');
 
@@ -347,13 +344,13 @@ describe('analyzeCompetitors', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        choices: [{ message: { content: '' } }],
+        content: [{ type: 'text', text: '' }],
       }),
     });
 
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const analysis = await analyzeCompetitors('problem', [], { openaiApiKey: 'key' });
+    const analysis = await analyzeCompetitors('problem', [], { anthropicApiKey: 'key' });
 
     expect(analysis.differentiationAngles).toContain('Requires manual competitive analysis');
 
@@ -364,40 +361,38 @@ describe('analyzeCompetitors', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              competitors: [],
-              gaps: [],
-              marketOpportunity: 'invalid-value',
-              differentiationAngles: [],
-              analysisNotes: '',
-            }),
-          },
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            competitors: [],
+            gaps: [],
+            marketOpportunity: 'invalid-value',
+            differentiationAngles: [],
+            analysisNotes: '',
+          }),
         }],
       }),
     });
 
-    const analysis = await analyzeCompetitors('problem', [], { openaiApiKey: 'key' });
+    const analysis = await analyzeCompetitors('problem', [], { anthropicApiKey: 'key' });
     expect(analysis.marketOpportunity).toBe('medium'); // Default fallback
   });
 
   it('uses environment variable for API key', async () => {
-    process.env.OPENAI_API_KEY = 'env-key';
+    process.env.ANTHROPIC_API_KEY = 'env-key';
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              competitors: [],
-              gaps: [],
-              marketOpportunity: 'high',
-              differentiationAngles: [],
-              analysisNotes: '',
-            }),
-          },
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            competitors: [],
+            gaps: [],
+            marketOpportunity: 'high',
+            differentiationAngles: [],
+            analysisNotes: '',
+          }),
         }],
       }),
     });
@@ -405,7 +400,7 @@ describe('analyzeCompetitors', () => {
     await analyzeCompetitors('problem', []);
 
     const [, options] = mockFetch.mock.calls[0];
-    expect(options.headers['Authorization']).toBe('Bearer env-key');
+    expect(options.headers['x-api-key']).toBe('env-key');
   });
 });
 
