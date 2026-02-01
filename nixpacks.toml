@@ -6,10 +6,7 @@ cmds = ["npm ci --ignore-scripts"]
 
 [phases.build]
 cmds = ["npm run build"]
+cacheDirectories = []
 
 [start]
 cmd = "node dist/api/server.js"
-
-# Disable problematic cache mounts
-[phases.build]
-cacheDirectories = []
