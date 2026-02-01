@@ -15,6 +15,8 @@ import {
   jsonb,
   boolean,
   index,
+  uniqueIndex,
+  date,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -244,6 +246,35 @@ export const validationRequests = pgTable('validation_requests', {
   completedAt: timestamp('completed_at'),
 });
 
+/**
+ * Usage tracking for daily limits (Enterprise rate limiting)
+ *
+ * Tracks daily usage of AI generation features to prevent abuse:
+ * - Fresh brief generation counts
+ * - Validation request counts
+ * - Overage billing for Enterprise users
+ */
+export const usageTracking = pgTable(
+  'usage_tracking',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    date: date('date').notNull(),
+    freshBriefsUsed: integer('fresh_briefs_used').notNull().default(0),
+    validationRequestsUsed: integer('validation_requests_used').notNull().default(0),
+    overageBriefs: integer('overage_briefs').notNull().default(0),
+    overageAmountCents: integer('overage_amount_cents').notNull().default(0),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    userDateUnique: uniqueIndex('usage_user_date_idx').on(table.userId, table.date),
+    userIdx: index('usage_tracking_user_idx').on(table.userId),
+  })
+);
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   preferences: one(userPreferences, {
@@ -258,6 +289,14 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   savedIdeas: many(savedIdeas),
   viewedIdeas: many(viewedIdeas),
   validationRequests: many(validationRequests),
+  usageRecords: many(usageTracking),
+}));
+
+export const usageTrackingRelations = relations(usageTracking, ({ one }) => ({
+  user: one(users, {
+    fields: [usageTracking.userId],
+    references: [users.id],
+  }),
 }));
 
 export const apiKeysRelations = relations(apiKeys, ({ one }) => ({

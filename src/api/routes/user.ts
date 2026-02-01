@@ -26,6 +26,8 @@ import {
   deleteApiKey,
   deactivateApiKey,
 } from '../services/users';
+import { getUsageStatus } from '../services/usage';
+import type { UserTier } from '../config/tiers';
 import {
   UserPreferencesSchema,
   UpdatePreferencesRequestSchema,
@@ -151,6 +153,44 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
     async (request, reply) => {
       const history = await getUserHistory(request.userId!);
       return reply.send(history);
+    }
+  );
+
+  /**
+   * GET /api/v1/user/usage
+   * Get current usage status for AI generation features
+   */
+  app.get(
+    '/usage',
+    {
+      preHandler: [requireAuth, rateLimitMiddleware],
+      schema: {
+        response: {
+          200: z.object({
+            freshBriefsUsed: z.number(),
+            freshBriefsLimit: z.number(),
+            freshBriefsRemaining: z.number(),
+            validationRequestsUsed: z.number(),
+            validationRequestsLimit: z.number(),
+            validationRequestsRemaining: z.number(),
+            overageBriefs: z.number(),
+            overageAmountCents: z.number(),
+            canRequestFreshBrief: z.boolean(),
+            canRequestValidation: z.boolean(),
+            wouldIncurOverage: z.boolean(),
+            resetAt: z.string(),
+            tier: z.string(),
+          }),
+        },
+      },
+    },
+    async (request, reply) => {
+      const tier = request.userTier as UserTier;
+      const status = await getUsageStatus(request.userId!, tier);
+      return reply.send({
+        ...status,
+        tier,
+      });
     }
   );
 
