@@ -20,6 +20,9 @@ import {
   parseScoreResponse,
   createDefaultScores,
   SCORING_SYSTEM_PROMPT,
+  BATCH_SCORING_SYSTEM_PROMPT,
+  buildBatchScoringPrompt,
+  parseBatchScoreResponse,
 } from '../../src/analysis/score-prompts';
 
 // Helper to create mock posts
@@ -249,6 +252,173 @@ describe('Score Prompts', () => {
       expect(SCORING_SYSTEM_PROMPT).toBeDefined();
       expect(SCORING_SYSTEM_PROMPT).toContain('startup');
       expect(SCORING_SYSTEM_PROMPT).toContain('JSON');
+    });
+  });
+
+  describe('BATCH_SCORING_SYSTEM_PROMPT', () => {
+    it('exists and contains batch-specific instructions', () => {
+      expect(BATCH_SCORING_SYSTEM_PROMPT).toBeDefined();
+      expect(BATCH_SCORING_SYSTEM_PROMPT).toContain('MULTIPLE');
+      expect(BATCH_SCORING_SYSTEM_PROMPT).toContain('JSON array');
+    });
+  });
+
+  describe('buildBatchScoringPrompt', () => {
+    it('includes all problem statements', () => {
+      const clusters = [
+        createMockCluster({ id: 'c1', problemStatement: 'Problem Alpha' }),
+        createMockCluster({ id: 'c2', problemStatement: 'Problem Beta' }),
+        createMockCluster({ id: 'c3', problemStatement: 'Problem Gamma' }),
+      ];
+      const prompt = buildBatchScoringPrompt(clusters);
+
+      expect(prompt).toContain('Problem Alpha');
+      expect(prompt).toContain('Problem Beta');
+      expect(prompt).toContain('Problem Gamma');
+    });
+
+    it('includes cluster IDs for mapping', () => {
+      const clusters = [
+        createMockCluster({ id: 'cluster_abc123' }),
+        createMockCluster({ id: 'cluster_def456' }),
+      ];
+      const prompt = buildBatchScoringPrompt(clusters);
+
+      expect(prompt).toContain('cluster_abc123');
+      expect(prompt).toContain('cluster_def456');
+    });
+
+    it('includes correct problem count', () => {
+      const clusters = Array(5).fill(null).map((_, i) =>
+        createMockCluster({ id: `c${i}` })
+      );
+      const prompt = buildBatchScoringPrompt(clusters);
+
+      expect(prompt).toContain('5 startup problems');
+    });
+
+    it('includes frequency and sources for each problem', () => {
+      const cluster = createMockCluster({
+        id: 'test',
+        frequency: 15,
+        sources: ['reddit', 'hn', 'twitter'],
+      });
+      const prompt = buildBatchScoringPrompt([cluster]);
+
+      expect(prompt).toContain('15 mentions');
+      expect(prompt).toContain('reddit, hn, twitter');
+    });
+  });
+
+  describe('parseBatchScoreResponse', () => {
+    it('parses valid batch JSON response', () => {
+      const response = `[
+        {
+          "id": "c1",
+          "severity": { "score": 7, "reasoning": "High pain" },
+          "marketSize": { "score": 5, "reasoning": "Medium market" },
+          "technicalComplexity": { "score": 3, "reasoning": "Simple build" },
+          "timeToMvp": { "score": 2, "reasoning": "Weekend project" }
+        },
+        {
+          "id": "c2",
+          "severity": { "score": 8, "reasoning": "Critical" },
+          "marketSize": { "score": 9, "reasoning": "Large market" },
+          "technicalComplexity": { "score": 6, "reasoning": "Moderate" },
+          "timeToMvp": { "score": 4, "reasoning": "Week project" }
+        }
+      ]`;
+
+      const results = parseBatchScoreResponse(response, ['c1', 'c2']);
+
+      expect(results.size).toBe(2);
+      expect(results.get('c1')?.severity.score).toBe(7);
+      expect(results.get('c1')?.marketSize.score).toBe(5);
+      expect(results.get('c2')?.severity.score).toBe(8);
+      expect(results.get('c2')?.marketSize.score).toBe(9);
+    });
+
+    it('extracts JSON array from markdown code blocks', () => {
+      const response = `Here's my analysis:
+\`\`\`json
+[
+  {
+    "id": "c1",
+    "severity": { "score": 8, "reasoning": "Critical" },
+    "marketSize": { "score": 6, "reasoning": "Large" },
+    "technicalComplexity": { "score": 4, "reasoning": "Moderate" },
+    "timeToMvp": { "score": 3, "reasoning": "Week" }
+  }
+]
+\`\`\``;
+
+      const results = parseBatchScoreResponse(response, ['c1']);
+
+      expect(results.size).toBe(1);
+      expect(results.get('c1')?.severity.score).toBe(8);
+    });
+
+    it('clamps scores to 1-10 range', () => {
+      const response = `[
+        {
+          "id": "c1",
+          "severity": { "score": 15, "reasoning": "" },
+          "marketSize": { "score": -2, "reasoning": "" },
+          "technicalComplexity": { "score": 5, "reasoning": "" },
+          "timeToMvp": { "score": 5, "reasoning": "" }
+        }
+      ]`;
+
+      const results = parseBatchScoreResponse(response, ['c1']);
+
+      expect(results.get('c1')?.severity.score).toBe(10); // Clamped from 15
+      expect(results.get('c1')?.marketSize.score).toBe(1); // Clamped from -2
+    });
+
+    it('returns empty map for invalid JSON', () => {
+      const response = 'This is not JSON at all';
+      const results = parseBatchScoreResponse(response, ['c1']);
+      expect(results.size).toBe(0);
+    });
+
+    it('skips items with missing required fields', () => {
+      const response = `[
+        {
+          "id": "c1",
+          "severity": { "score": 7, "reasoning": "Valid" },
+          "marketSize": { "score": 5, "reasoning": "Valid" },
+          "technicalComplexity": { "score": 3, "reasoning": "Valid" },
+          "timeToMvp": { "score": 2, "reasoning": "Valid" }
+        },
+        {
+          "id": "c2",
+          "severity": { "score": 8 }
+        }
+      ]`;
+
+      const results = parseBatchScoreResponse(response, ['c1', 'c2']);
+
+      expect(results.size).toBe(1);
+      expect(results.has('c1')).toBe(true);
+      expect(results.has('c2')).toBe(false);
+    });
+
+    it('handles partial batch responses gracefully', () => {
+      const response = `[
+        {
+          "id": "c1",
+          "severity": { "score": 7, "reasoning": "" },
+          "marketSize": { "score": 5, "reasoning": "" },
+          "technicalComplexity": { "score": 3, "reasoning": "" },
+          "timeToMvp": { "score": 2, "reasoning": "" }
+        }
+      ]`;
+
+      // Expecting 3 IDs but only got 1
+      const results = parseBatchScoreResponse(response, ['c1', 'c2', 'c3']);
+
+      expect(results.size).toBe(1);
+      expect(results.has('c1')).toBe(true);
     });
   });
 });
@@ -540,6 +710,156 @@ describe('Scorer', () => {
       expect(weekendProjects[0].scores.priority).toBe(30);
       expect(weekendProjects[1].scores.priority).toBe(10);
     });
+  });
+});
+
+describe('Batch Scoring Integration', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('should batch 20 problems into single API call', async () => {
+    // Create 25 mock clusters
+    const clusters = Array(25).fill(null).map((_, i) =>
+      createMockCluster({ id: `cluster_${i}`, problemStatement: `Problem ${i}` })
+    );
+
+    // Mock fetch to return valid batch responses
+    const fetchSpy = vi.spyOn(global, 'fetch').mockImplementation(async () => {
+      return new Response(JSON.stringify({
+        content: [{
+          type: 'text',
+          text: JSON.stringify(
+            clusters.slice(0, 20).map(c => ({
+              id: c.id,
+              severity: { score: 7, reasoning: 'Test' },
+              marketSize: { score: 6, reasoning: 'Test' },
+              technicalComplexity: { score: 4, reasoning: 'Test' },
+              timeToMvp: { score: 3, reasoning: 'Test' },
+            }))
+          ),
+        }],
+      }), { status: 200 });
+    });
+
+    await scoreAll(clusters, {
+      useAI: true,
+      anthropicApiKey: 'test-key',
+      delayBetweenCalls: 0,
+    });
+
+    // Verify only 2 API calls made (ceil(25/20) = 2)
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('should make correct number of batches for various sizes', async () => {
+    const testCases = [
+      { count: 1, expectedBatches: 1 },
+      { count: 20, expectedBatches: 1 },
+      { count: 21, expectedBatches: 2 },
+      { count: 40, expectedBatches: 2 },
+      { count: 41, expectedBatches: 3 },
+    ];
+
+    for (const { count, expectedBatches } of testCases) {
+      vi.restoreAllMocks();
+
+      const clusters = Array(count).fill(null).map((_, i) =>
+        createMockCluster({ id: `cluster_${i}` })
+      );
+
+      const fetchSpy = vi.spyOn(global, 'fetch').mockImplementation(async () => {
+        return new Response(JSON.stringify({
+          content: [{ type: 'text', text: '[]' }],
+        }), { status: 200 });
+      });
+
+      await scoreAll(clusters, {
+        useAI: true,
+        anthropicApiKey: 'test-key',
+        delayBetweenCalls: 0,
+      });
+
+      expect(fetchSpy).toHaveBeenCalledTimes(expectedBatches);
+    }
+  });
+
+  it('should fallback to defaults on batch API failure', async () => {
+    const clusters = [
+      createMockCluster({ id: 'c1', frequency: 10 }),
+    ];
+
+    // Mock API failure
+    vi.spyOn(global, 'fetch').mockRejectedValue(new Error('API Error'));
+
+    const results = await scoreAll(clusters, {
+      useAI: true,
+      anthropicApiKey: 'test-key',
+    });
+
+    // Should still return results with default scores
+    expect(results).toHaveLength(1);
+    expect(results[0].scores.severity).toBeDefined();
+    expect(results[0].scores.marketSize).toBeDefined();
+    expect(results[0].reasoning.severity).toContain('frequency'); // Default reasoning
+  });
+
+  it('should use default scores when AI is disabled', async () => {
+    const clusters = [createMockCluster({ id: 'c1' })];
+
+    const fetchSpy = vi.spyOn(global, 'fetch');
+
+    const results = await scoreAll(clusters, { useAI: false });
+
+    // No API calls should be made
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(results).toHaveLength(1);
+    expect(results[0].scores).toBeDefined();
+  });
+
+  it('should correctly map batch response scores to clusters', async () => {
+    const clusters = [
+      createMockCluster({ id: 'cluster_a', problemStatement: 'Problem A' }),
+      createMockCluster({ id: 'cluster_b', problemStatement: 'Problem B' }),
+    ];
+
+    vi.spyOn(global, 'fetch').mockImplementation(async () => {
+      return new Response(JSON.stringify({
+        content: [{
+          type: 'text',
+          text: JSON.stringify([
+            {
+              id: 'cluster_a',
+              severity: { score: 9, reasoning: 'Very severe' },
+              marketSize: { score: 8, reasoning: 'Large market' },
+              technicalComplexity: { score: 3, reasoning: 'Simple' },
+              timeToMvp: { score: 2, reasoning: 'Quick' },
+            },
+            {
+              id: 'cluster_b',
+              severity: { score: 4, reasoning: 'Minor' },
+              marketSize: { score: 5, reasoning: 'Medium market' },
+              technicalComplexity: { score: 7, reasoning: 'Complex' },
+              timeToMvp: { score: 6, reasoning: 'Takes time' },
+            },
+          ]),
+        }],
+      }), { status: 200 });
+    });
+
+    const results = await scoreAll(clusters, {
+      useAI: true,
+      anthropicApiKey: 'test-key',
+    });
+
+    // Find results by problem statement (order may change due to sorting)
+    const resultA = results.find(r => r.id === 'cluster_a');
+    const resultB = results.find(r => r.id === 'cluster_b');
+
+    expect(resultA?.scores.severity).toBe(9);
+    expect(resultA?.reasoning.severity).toBe('Very severe');
+    expect(resultB?.scores.severity).toBe(4);
+    expect(resultB?.reasoning.technicalComplexity).toBe('Complex');
   });
 });
 

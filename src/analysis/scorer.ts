@@ -11,8 +11,20 @@ import {
   parseScoreResponse,
   createDefaultScores,
   SCORING_SYSTEM_PROMPT,
+  BATCH_SCORING_SYSTEM_PROMPT,
+  buildBatchScoringPrompt,
+  parseBatchScoreResponse,
   type ScoreResponse,
 } from './score-prompts';
+import { getBatchModel } from '../config/models';
+import { getGlobalMetrics } from '../scheduler/utils/api-metrics';
+import { estimateTokens } from '../scheduler/utils/token-estimator';
+
+/**
+ * Batch size for batch scoring API calls
+ * 20 problems per call balances quality and cost efficiency
+ */
+const BATCH_SIZE = 20;
 
 /**
  * Score breakdown for a problem
@@ -58,7 +70,7 @@ export interface ScoringOptions {
 
 const DEFAULT_OPTIONS: Required<ScoringOptions> = {
   anthropicApiKey: '',
-  model: 'claude-3-5-haiku-20241022',
+  model: getBatchModel(),
   maxConcurrent: 3,
   delayBetweenCalls: 200,
   useAI: true,
@@ -147,6 +159,103 @@ async function callAnthropic(
 }
 
 /**
+ * Call Anthropic API to score multiple problems in a single batch
+ * @param clusters - Array of problem clusters to score (max BATCH_SIZE)
+ * @param apiKey - Anthropic API key
+ * @param model - Model to use for scoring
+ * @returns Map of cluster ID to ScoreResponse
+ */
+async function scoreBatch(
+  clusters: ProblemCluster[],
+  apiKey: string,
+  model: string
+): Promise<Map<string, ScoreResponse>> {
+  const startTime = Date.now();
+  const prompt = buildBatchScoringPrompt(clusters);
+  const clusterIds = clusters.map(c => c.id);
+  const inputTokens = estimateTokens(BATCH_SCORING_SYSTEM_PROMPT) + estimateTokens(prompt);
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 4000, // Increased for batch response
+        system: BATCH_SCORING_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.warn(`Batch scoring API error (${response.status}):`, error);
+
+      // Record failed call
+      getGlobalMetrics().recordCall({
+        timestamp: new Date(),
+        module: 'scorer',
+        model,
+        batchSize: clusters.length,
+        itemsProcessed: 0,
+        inputTokens,
+        outputTokens: 0,
+        success: false,
+        durationMs: Date.now() - startTime,
+      });
+
+      return new Map();
+    }
+
+    const data = await response.json() as {
+      content: Array<{ type: string; text: string }>;
+    };
+
+    const content = data.content[0]?.text;
+    if (!content) {
+      console.warn('No content in batch scoring response');
+      return new Map();
+    }
+
+    // Record successful call
+    getGlobalMetrics().recordCall({
+      timestamp: new Date(),
+      module: 'scorer',
+      model,
+      batchSize: clusters.length,
+      itemsProcessed: clusters.length,
+      inputTokens,
+      outputTokens: estimateTokens(content),
+      success: true,
+      durationMs: Date.now() - startTime,
+    });
+
+    return parseBatchScoreResponse(content, clusterIds);
+  } catch (error) {
+    console.warn('Batch scoring API call failed:', error);
+
+    // Record failed call
+    getGlobalMetrics().recordCall({
+      timestamp: new Date(),
+      module: 'scorer',
+      model,
+      batchSize: clusters.length,
+      itemsProcessed: 0,
+      inputTokens,
+      outputTokens: 0,
+      success: false,
+      durationMs: Date.now() - startTime,
+    });
+
+    return new Map();
+  }
+}
+
+/**
  * Calculate frequency score (normalized 1-10)
  */
 function calculateFrequencyScore(frequency: number): number {
@@ -215,42 +324,80 @@ export async function scoreProblem(
 }
 
 /**
- * Score all problem clusters with rate limiting
+ * Score all problem clusters using batch API calls
+ * Batches BATCH_SIZE problems per API call to reduce costs by ~95%
  */
 export async function scoreAll(
   clusters: ProblemCluster[],
   options: ScoringOptions = {}
 ): Promise<ScoredProblem[]> {
   const opts = { ...DEFAULT_OPTIONS, ...options };
+  const apiKey = opts.anthropicApiKey || process.env.ANTHROPIC_API_KEY || '';
 
   if (clusters.length === 0) return [];
 
-  console.log(`Scoring ${clusters.length} problem clusters...`);
+  const numBatches = Math.ceil(clusters.length / BATCH_SIZE);
+  console.log(`Batch scoring ${clusters.length} problems (${numBatches} batch${numBatches === 1 ? '' : 'es'})...`);
 
   const results: ScoredProblem[] = [];
-  const batches: ProblemCluster[][] = [];
 
-  // Split into batches for concurrent processing
-  for (let i = 0; i < clusters.length; i += opts.maxConcurrent) {
-    batches.push(clusters.slice(i, i + opts.maxConcurrent));
-  }
+  // Process in batches of BATCH_SIZE
+  for (let i = 0; i < clusters.length; i += BATCH_SIZE) {
+    const batch = clusters.slice(i, i + BATCH_SIZE);
+    let batchScores: Map<string, ScoreResponse>;
 
-  for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-    const batch = batches[batchIndex];
+    // Try batch scoring with AI if enabled
+    if (opts.useAI && apiKey) {
+      batchScores = await scoreBatch(batch, apiKey, opts.model);
+    } else {
+      batchScores = new Map();
+    }
 
-    // Process batch concurrently
-    const batchResults = await Promise.all(
-      batch.map(cluster => scoreProblem(cluster, opts))
-    );
+    // Convert batch results to ScoredProblems
+    for (const cluster of batch) {
+      // Use AI score if available, otherwise fall back to defaults
+      const aiScores = batchScores.get(cluster.id) || createDefaultScores(cluster);
+      const frequencyScore = calculateFrequencyScore(cluster.frequency);
 
-    results.push(...batchResults);
+      const impact = calculateImpact(
+        frequencyScore,
+        aiScores.severity.score,
+        aiScores.marketSize.score
+      );
+
+      const effort = calculateEffort(
+        aiScores.technicalComplexity.score,
+        aiScores.timeToMvp.score
+      );
+
+      const priority = calculatePriority(impact, effort);
+
+      results.push({
+        ...cluster,
+        scores: {
+          frequency: frequencyScore,
+          severity: aiScores.severity.score,
+          marketSize: aiScores.marketSize.score,
+          technicalComplexity: aiScores.technicalComplexity.score,
+          timeToMvp: aiScores.timeToMvp.score,
+          impact,
+          effort,
+          priority,
+        },
+        reasoning: {
+          severity: aiScores.severity.reasoning,
+          marketSize: aiScores.marketSize.reasoning,
+          technicalComplexity: aiScores.technicalComplexity.reasoning,
+        },
+      });
+    }
 
     // Progress update
-    const completed = Math.min((batchIndex + 1) * opts.maxConcurrent, clusters.length);
+    const completed = Math.min(i + BATCH_SIZE, clusters.length);
     console.log(`Scored ${completed}/${clusters.length} problems`);
 
     // Rate limiting delay between batches
-    if (batchIndex < batches.length - 1 && opts.delayBetweenCalls > 0) {
+    if (i + BATCH_SIZE < clusters.length && opts.delayBetweenCalls > 0) {
       await sleep(opts.delayBetweenCalls);
     }
   }

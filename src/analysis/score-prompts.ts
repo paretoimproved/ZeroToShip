@@ -140,6 +140,146 @@ export function parseScoreResponse(response: string): ScoreResponse | null {
 }
 
 /**
+ * System prompt for batch scoring multiple problems at once
+ */
+export const BATCH_SCORING_SYSTEM_PROMPT = `You are an expert startup advisor analyzing pain points for potential business opportunities.
+
+Your job is to objectively score MULTIPLE problems based on:
+- Real-world impact on users
+- Market opportunity size
+- Technical feasibility
+- Time to build an MVP
+
+Be realistic and consistent in your scoring. Provide brief but insightful reasoning.
+You will receive multiple problems to score in one request. Score each one independently.
+Always respond with valid JSON array matching the requested format.`;
+
+/**
+ * Build a prompt that scores multiple problems at once
+ * @param clusters - Array of up to 20 problem clusters
+ * @returns Prompt string for batch scoring
+ */
+export function buildBatchScoringPrompt(clusters: ProblemCluster[]): string {
+  const problemsList = clusters.map((c, i) => {
+    const allPosts = [c.representativePost, ...c.relatedPosts];
+    const samplePost = allPosts[0];
+    const postPreview = samplePost.body
+      ? `"${samplePost.body.slice(0, 100)}..."`
+      : `"${samplePost.title}"`;
+
+    return `## Problem ${i + 1} (ID: ${c.id})
+Statement: ${c.problemStatement}
+Frequency: ${c.frequency} mentions
+Sources: ${c.sources.join(', ')}
+Engagement: ${c.totalScore}
+Representative post: ${postPreview}`;
+  }).join('\n\n---\n\n');
+
+  return `Score the following ${clusters.length} startup problems on these dimensions (1-10 scale):
+
+**Scoring Guide:**
+- severity (1-10): How painful is this problem? (1-3: minor, 4-6: moderate, 7-10: critical)
+- marketSize (1-10): How large is the potential market? (1-3: niche, 4-6: medium, 7-10: large)
+- technicalComplexity (1-10): How hard to build a solution? (1-3: simple, 4-6: moderate, 7-10: complex)
+- timeToMvp (1-10): How long to build an MVP? (1-2: weekend, 3-4: week, 5-7: month, 8-10: quarter+)
+
+${problemsList}
+
+Respond with a JSON array in this exact format (one object per problem, in order):
+[
+  {
+    "id": "problem_id_here",
+    "severity": { "score": 7, "reasoning": "brief explanation" },
+    "marketSize": { "score": 8, "reasoning": "brief explanation" },
+    "technicalComplexity": { "score": 4, "reasoning": "brief explanation" },
+    "timeToMvp": { "score": 3, "reasoning": "brief explanation" }
+  }
+]`;
+}
+
+/**
+ * Response format for a single problem in a batch
+ */
+export interface BatchScoreItem {
+  id: string;
+  severity: { score: number; reasoning: string };
+  marketSize: { score: number; reasoning: string };
+  technicalComplexity: { score: number; reasoning: string };
+  timeToMvp: { score: number; reasoning: string };
+}
+
+/**
+ * Parse batch scoring response into a Map of cluster ID to scores
+ * @param content - Raw response content from AI
+ * @param clusterIds - Expected cluster IDs (for validation)
+ * @returns Map of cluster ID to ScoreResponse
+ */
+export function parseBatchScoreResponse(
+  content: string,
+  clusterIds: string[]
+): Map<string, ScoreResponse> {
+  const results = new Map<string, ScoreResponse>();
+
+  try {
+    // Extract JSON array from response (handle markdown code blocks)
+    const jsonMatch = content.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      console.warn('No JSON array found in batch response');
+      return results;
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]) as BatchScoreItem[];
+
+    if (!Array.isArray(parsed)) {
+      console.warn('Batch response is not an array');
+      return results;
+    }
+
+    // Process each item in the response
+    for (const item of parsed) {
+      if (!item.id) {
+        console.warn('Batch item missing id field');
+        continue;
+      }
+
+      // Validate and normalize the score response
+      const required = ['severity', 'marketSize', 'technicalComplexity', 'timeToMvp'] as const;
+      let isValid = true;
+
+      for (const field of required) {
+        if (!item[field] || typeof item[field].score !== 'number') {
+          console.warn(`Batch item ${item.id} missing or invalid field: ${field}`);
+          isValid = false;
+          break;
+        }
+        // Clamp scores to valid range
+        item[field].score = Math.max(1, Math.min(10, Math.round(item[field].score)));
+        item[field].reasoning = item[field].reasoning || '';
+      }
+
+      if (isValid) {
+        results.set(item.id, {
+          severity: item.severity,
+          marketSize: item.marketSize,
+          technicalComplexity: item.technicalComplexity,
+          timeToMvp: item.timeToMvp,
+        });
+      }
+    }
+
+    // Log if we got fewer results than expected
+    if (results.size < clusterIds.length) {
+      console.warn(`Batch response had ${results.size}/${clusterIds.length} valid scores`);
+    }
+
+    return results;
+  } catch (error) {
+    console.warn('Failed to parse batch score response:', error);
+    return results;
+  }
+}
+
+/**
  * Create default scores when AI scoring fails
  */
 export function createDefaultScores(cluster: ProblemCluster): ScoreResponse {
