@@ -11,15 +11,22 @@
     "test:run": "vitest run",
     "lint": "eslint src --ext .ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push:pg",
     "db:studio": "drizzle-kit studio",
+    "db:seed": "ts-node scripts/db-seed.ts",
+    "db:verify": "ts-node scripts/db-verify.ts",
     "scheduler": "ts-node src/scheduler/cli.ts",
     "scheduler:run": "ts-node src/scheduler/cli.ts run",
     "scheduler:dry-run": "ts-node src/scheduler/cli.ts run --dry-run",
     "scheduler:start": "ts-node src/scheduler/cli.ts schedule",
     "scheduler:health": "ts-node src/scheduler/cli.ts health"
   },
-  "keywords": ["saas", "scraper", "ideas", "business"],
+  "keywords": [
+    "saas",
+    "scraper",
+    "ideas",
+    "business"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
@@ -38,14 +45,15 @@
     "pino": "^9.0.0",
     "pino-pretty": "^10.3.1",
     "postgres": "^3.4.3",
+    "stripe": "^20.3.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
     "@types/node-cron": "^3.0.11",
     "drizzle-kit": "^0.20.12",
+    "ts-node": "^10.9.2",
     "typescript": "^5.3.0",
-    "vitest": "^1.1.0",
-    "ts-node": "^10.9.2"
+    "vitest": "^1.1.0"
   }
 }

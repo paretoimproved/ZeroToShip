@@ -41,7 +41,9 @@ export const users = pgTable(
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
   },
-  (table) => [index('users_email_idx').on(table.email)]
+  (table) => ({
+    emailIdx: index('users_email_idx').on(table.email),
+  })
 );
 
 /**
@@ -78,7 +80,9 @@ export const apiKeys = pgTable(
     isActive: boolean('is_active').notNull().default(true),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
-  (table) => [index('api_keys_key_idx').on(table.key)]
+  (table) => ({
+    keyIdx: index('api_keys_key_idx').on(table.key),
+  })
 );
 
 /**
@@ -134,12 +138,12 @@ export const ideas = pgTable(
     publishedAt: timestamp('published_at'),
     isPublished: boolean('is_published').notNull().default(false),
   },
-  (table) => [
-    index('ideas_priority_idx').on(table.priorityScore),
-    index('ideas_published_at_idx').on(table.publishedAt),
-    index('ideas_category_idx').on(table.category),
-    index('ideas_effort_idx').on(table.effortEstimate),
-  ]
+  (table) => ({
+    priorityIdx: index('ideas_priority_idx').on(table.priorityScore),
+    publishedAtIdx: index('ideas_published_at_idx').on(table.publishedAt),
+    categoryIdx: index('ideas_category_idx').on(table.category),
+    effortIdx: index('ideas_effort_idx').on(table.effortEstimate),
+  })
 );
 
 /**
@@ -157,10 +161,10 @@ export const savedIdeas = pgTable(
       .references(() => ideas.id, { onDelete: 'cascade' }),
     savedAt: timestamp('saved_at').notNull().defaultNow(),
   },
-  (table) => [
-    index('saved_ideas_user_idx').on(table.userId),
-    index('saved_ideas_idea_idx').on(table.ideaId),
-  ]
+  (table) => ({
+    userIdx: index('saved_ideas_user_idx').on(table.userId),
+    ideaIdx: index('saved_ideas_idea_idx').on(table.ideaId),
+  })
 );
 
 /**
@@ -178,10 +182,10 @@ export const viewedIdeas = pgTable(
       .references(() => ideas.id, { onDelete: 'cascade' }),
     viewedAt: timestamp('viewed_at').notNull().defaultNow(),
   },
-  (table) => [
-    index('viewed_ideas_user_idx').on(table.userId),
-    index('viewed_ideas_idea_idx').on(table.ideaId),
-  ]
+  (table) => ({
+    userIdx: index('viewed_ideas_user_idx').on(table.userId),
+    ideaIdx: index('viewed_ideas_idea_idx').on(table.ideaId),
+  })
 );
 
 /**
@@ -217,10 +221,10 @@ export const rateLimits = pgTable(
     windowStart: timestamp('window_start').notNull().defaultNow(),
     windowEnd: timestamp('window_end').notNull(),
   },
-  (table) => [
-    index('rate_limits_identifier_idx').on(table.identifier),
-    index('rate_limits_window_idx').on(table.windowEnd),
-  ]
+  (table) => ({
+    identifierIdx: index('rate_limits_identifier_idx').on(table.identifier),
+    windowIdx: index('rate_limits_window_idx').on(table.windowEnd),
+  })
 );
 
 /**
