@@ -13,16 +13,19 @@ import {
   WebSearchClient,
   generateSearchQueries,
   type SearchResponse,
+  type SearchResult,
   type WebSearchConfig,
 } from './web-search';
 import {
   analyzeCompetitors,
+  analyzeCompetitorsBatch,
   calculateCompetitionScore,
   summarizeAnalysis,
   type Competitor,
   type CompetitorAnalysis,
   type CompetitorAnalysisOptions,
 } from './competitor';
+import { getBatchModel } from '../config/models';
 
 /**
  * Complete gap analysis for a problem
@@ -59,7 +62,7 @@ const DEFAULT_CONFIG: Required<GapAnalysisConfig> = {
     rateLimitDelay: 1000,
   },
   competitor: {
-    model: 'gpt-4o-mini',
+    model: getBatchModel(),
     maxCompetitors: 10,
   },
   concurrency: 2,
@@ -186,46 +189,144 @@ export async function analyzeGaps(
 }
 
 /**
+ * Create a skipped analysis result for low-frequency problems
+ */
+function createSkippedAnalysis(
+  problem: ProblemCluster,
+  minFrequency: number
+): GapAnalysis {
+  return {
+    problemId: problem.id,
+    problemStatement: problem.problemStatement,
+    searchQueries: [],
+    existingSolutions: [],
+    gaps: ['Skipped - low frequency problem'],
+    marketOpportunity: 'medium',
+    differentiationAngles: [],
+    recommendation: 'SKIPPED: Problem frequency too low for detailed analysis. Monitor for increased mentions.',
+    competitionScore: 0,
+    analysisNotes: `Skipped analysis for problem with frequency ${problem.frequency} (threshold: ${minFrequency})`,
+    analyzedAt: new Date(),
+  };
+}
+
+/**
  * Analyze gaps for multiple problem clusters
- * Processes in batches to respect rate limits
+ * Uses batch competitor analysis for cost efficiency (20 problems per API call)
  */
 export async function analyzeAllGaps(
   problems: ProblemCluster[],
   config: GapAnalysisConfig = {}
 ): Promise<GapAnalysis[]> {
-  const opts = { ...DEFAULT_CONFIG, ...config };
+  const opts = {
+    ...DEFAULT_CONFIG,
+    ...config,
+    webSearch: { ...DEFAULT_CONFIG.webSearch, ...config.webSearch },
+    competitor: { ...DEFAULT_CONFIG.competitor, ...config.competitor },
+  };
   const results: GapAnalysis[] = [];
 
   console.log(`Starting gap analysis for ${problems.length} problems...`);
 
-  // Process in batches based on concurrency
-  for (let i = 0; i < problems.length; i += opts.concurrency) {
-    const batch = problems.slice(i, i + opts.concurrency);
+  // Filter problems that need analysis vs skipped
+  const toAnalyze = problems.filter(
+    p => !opts.skipSearchForLowFrequency || p.frequency >= opts.minFrequencyForSearch
+  );
 
-    const batchPromises = batch.map(problem =>
-      analyzeGaps(problem, config).catch(error => {
-        console.error(`Failed to analyze problem ${problem.id}:`, error);
-        // Return a minimal result on error
+  const skipped = problems.filter(
+    p => opts.skipSearchForLowFrequency && p.frequency < opts.minFrequencyForSearch
+  );
+
+  // Add skipped results
+  for (const problem of skipped) {
+    results.push(createSkippedAnalysis(problem, opts.minFrequencyForSearch));
+  }
+
+  if (toAnalyze.length === 0) {
+    console.log('No problems meet frequency threshold for analysis');
+    return results;
+  }
+
+  console.log(`Analyzing gaps for ${toAnalyze.length} problems in batches...`);
+
+  // Step 1: Run all web searches (with concurrency limit)
+  const searchClient = new WebSearchClient(opts.webSearch);
+  const searchResults = new Map<string, SearchResult[]>();
+
+  for (let i = 0; i < toAnalyze.length; i += opts.concurrency) {
+    const batch = toAnalyze.slice(i, i + opts.concurrency);
+
+    const searchPromises = batch.map(async problem => {
+      try {
+        const responses = await searchClient.searchForProblem(problem.problemStatement);
         return {
+          id: problem.id,
+          results: WebSearchClient.deduplicateResults(responses),
+        };
+      } catch (error) {
+        console.warn(`Search failed for ${problem.id}:`, error);
+        return { id: problem.id, results: [] as SearchResult[] };
+      }
+    });
+
+    const batchSearchResults = await Promise.all(searchPromises);
+    for (const { id, results: searchRes } of batchSearchResults) {
+      searchResults.set(id, searchRes);
+    }
+  }
+
+  // Step 2: Batch competitor analysis (20 problems per API call)
+  const COMPETITOR_BATCH_SIZE = 20;
+
+  for (let i = 0; i < toAnalyze.length; i += COMPETITOR_BATCH_SIZE) {
+    const batch = toAnalyze.slice(i, i + COMPETITOR_BATCH_SIZE);
+
+    const batchInput = batch.map(p => ({
+      id: p.id,
+      statement: p.problemStatement,
+      results: searchResults.get(p.id) || [],
+    }));
+
+    const competitorResults = await analyzeCompetitorsBatch(batchInput, opts.competitor);
+
+    // Convert to GapAnalysis results
+    for (const problem of batch) {
+      const analysis = competitorResults.get(problem.id);
+      if (analysis) {
+        results.push({
           problemId: problem.id,
           problemStatement: problem.problemStatement,
-          searchQueries: [],
+          searchQueries: generateSearchQueries(problem.problemStatement),
+          existingSolutions: analysis.competitors,
+          gaps: analysis.gaps,
+          marketOpportunity: analysis.marketOpportunity,
+          differentiationAngles: analysis.differentiationAngles,
+          recommendation: generateRecommendation(analysis, problem.frequency),
+          competitionScore: calculateCompetitionScore(analysis),
+          analysisNotes: analysis.analysisNotes,
+          analyzedAt: new Date(),
+        });
+      } else {
+        // Fallback if somehow missing
+        results.push({
+          problemId: problem.id,
+          problemStatement: problem.problemStatement,
+          searchQueries: generateSearchQueries(problem.problemStatement),
           existingSolutions: [],
-          gaps: ['Analysis failed - see logs'],
-          marketOpportunity: 'medium' as const,
+          gaps: ['Analysis failed - no result returned'],
+          marketOpportunity: 'medium',
           differentiationAngles: [],
           recommendation: 'ERROR: Analysis failed. Manual research recommended.',
           competitionScore: 0,
-          analysisNotes: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          analysisNotes: 'Batch analysis did not return result for this problem',
           analyzedAt: new Date(),
-        };
-      })
+        });
+      }
+    }
+
+    console.log(
+      `Analyzed ${Math.min(i + COMPETITOR_BATCH_SIZE, toAnalyze.length)}/${toAnalyze.length} problems`
     );
-
-    const batchResults = await Promise.all(batchPromises);
-    results.push(...batchResults);
-
-    console.log(`Completed ${Math.min(i + opts.concurrency, problems.length)}/${problems.length} problems`);
   }
 
   console.log(`Gap analysis complete for ${results.length} problems`);

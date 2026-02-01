@@ -640,6 +640,72 @@ describe('Gap Analyzer Module', () => {
   });
 });
 
+describe('Batch Processing', () => {
+  it('analyzeAllGaps uses batch competitor analysis', async () => {
+    // Create multiple clusters
+    const clusters = Array(5).fill(null).map((_, i) =>
+      createMockCluster({
+        id: `cluster_${i}`,
+        problemStatement: `Problem ${i}`,
+        frequency: 5, // Above threshold
+      })
+    );
+
+    const results = await analyzeAllGaps(clusters, {
+      skipSearchForLowFrequency: true,
+      minFrequencyForSearch: 2,
+      webSearch: { rateLimitDelay: 0 }, // Speed up tests
+    });
+
+    // All should be analyzed
+    expect(results.length).toBe(5);
+    expect(results.every(r => r.problemId.startsWith('cluster_'))).toBe(true);
+  }, 30000); // Increased timeout
+
+  it('skips low-frequency problems in batch processing', async () => {
+    const clusters = [
+      createMockCluster({ id: 'high_freq', frequency: 10 }),
+      createMockCluster({ id: 'low_freq', frequency: 1 }),
+    ];
+
+    const results = await analyzeAllGaps(clusters, {
+      skipSearchForLowFrequency: true,
+      minFrequencyForSearch: 5,
+    });
+
+    expect(results.length).toBe(2);
+
+    const highFreq = results.find(r => r.problemId === 'high_freq');
+    const lowFreq = results.find(r => r.problemId === 'low_freq');
+
+    expect(highFreq?.recommendation).not.toContain('SKIPPED');
+    expect(lowFreq?.recommendation).toContain('SKIPPED');
+  });
+
+  it('handles mixed frequency clusters correctly', async () => {
+    const clusters = [
+      createMockCluster({ id: 'c1', frequency: 10 }),
+      createMockCluster({ id: 'c2', frequency: 1 }),
+      createMockCluster({ id: 'c3', frequency: 8 }),
+      createMockCluster({ id: 'c4', frequency: 2 }),
+    ];
+
+    const results = await analyzeAllGaps(clusters, {
+      skipSearchForLowFrequency: true,
+      minFrequencyForSearch: 3,
+    });
+
+    expect(results.length).toBe(4);
+
+    // c1 and c3 should be analyzed (freq >= 3)
+    const analyzed = results.filter(r => !r.recommendation.includes('SKIPPED'));
+    const skipped = results.filter(r => r.recommendation.includes('SKIPPED'));
+
+    expect(analyzed.length).toBe(2);
+    expect(skipped.length).toBe(2);
+  });
+});
+
 describe('Integration', () => {
   it('full pipeline: cluster -> gap analysis -> stats', async () => {
     const clusters = [
