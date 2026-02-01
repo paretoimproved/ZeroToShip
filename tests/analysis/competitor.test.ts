@@ -7,6 +7,7 @@ import {
   filterProductResults,
   createFallbackAnalysis,
   analyzeCompetitors,
+  analyzeCompetitorsBatch,
   calculateCompetitionScore,
   summarizeAnalysis,
   type CompetitorAnalysis,
@@ -496,6 +497,208 @@ describe('calculateCompetitionScore', () => {
 
     // 5 competitors (60 capped) + saturated (40) = 100
     expect(calculateCompetitionScore(analysis)).toBe(100);
+  });
+});
+
+describe('analyzeCompetitorsBatch', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    delete process.env.ANTHROPIC_API_KEY;
+  });
+
+  it('returns fallback for all problems when no API key', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const problems = [
+      { id: 'p1', statement: 'Problem 1', results: [createMockResult({ domain: 'producthunt.com' })] },
+      { id: 'p2', statement: 'Problem 2', results: [createMockResult({ domain: 'g2.com' })] },
+    ];
+
+    const results = await analyzeCompetitorsBatch(problems);
+
+    expect(results.size).toBe(2);
+    expect(results.get('p1')?.differentiationAngles).toContain('Requires manual competitive analysis');
+    expect(results.get('p2')?.differentiationAngles).toContain('Requires manual competitive analysis');
+
+    warnSpy.mockRestore();
+  });
+
+  it('batches multiple problems into single API call', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        content: [{
+          type: 'text',
+          text: JSON.stringify([
+            {
+              problemIndex: 0,
+              competitors: [{ name: 'Comp A', url: 'https://a.com', description: 'A', pricing: 'free', strengths: [], weaknesses: [] }],
+              gaps: ['Gap A1'],
+              marketOpportunity: 'high',
+              differentiationAngles: ['Angle A'],
+              analysisNotes: 'Notes A',
+            },
+            {
+              problemIndex: 1,
+              competitors: [{ name: 'Comp B', url: 'https://b.com', description: 'B', pricing: 'paid', strengths: [], weaknesses: [] }],
+              gaps: ['Gap B1'],
+              marketOpportunity: 'medium',
+              differentiationAngles: ['Angle B'],
+              analysisNotes: 'Notes B',
+            },
+          ]),
+        }],
+      }),
+    });
+
+    const problems = [
+      { id: 'p1', statement: 'Problem 1', results: [createMockResult()] },
+      { id: 'p2', statement: 'Problem 2', results: [createMockResult()] },
+    ];
+
+    const results = await analyzeCompetitorsBatch(problems, { anthropicApiKey: 'test-key' });
+
+    expect(mockFetch).toHaveBeenCalledTimes(1); // Single API call for both problems
+    expect(results.size).toBe(2);
+    expect(results.get('p1')?.marketOpportunity).toBe('high');
+    expect(results.get('p2')?.marketOpportunity).toBe('medium');
+  });
+
+  it('makes multiple API calls when exceeding batch size', async () => {
+    // Create 25 problems (should result in 2 API calls: 20 + 5)
+    const problems = Array(25).fill(null).map((_, i) => ({
+      id: `p${i}`,
+      statement: `Problem ${i}`,
+      results: [createMockResult()],
+    }));
+
+    // Mock two API responses
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          content: [{
+            type: 'text',
+            text: JSON.stringify(
+              Array(20).fill(null).map((_, i) => ({
+                problemIndex: i,
+                competitors: [],
+                gaps: [],
+                marketOpportunity: 'medium',
+                differentiationAngles: [],
+                analysisNotes: `Batch 1 - Problem ${i}`,
+              }))
+            ),
+          }],
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          content: [{
+            type: 'text',
+            text: JSON.stringify(
+              Array(5).fill(null).map((_, i) => ({
+                problemIndex: i,
+                competitors: [],
+                gaps: [],
+                marketOpportunity: 'high',
+                differentiationAngles: [],
+                analysisNotes: `Batch 2 - Problem ${i}`,
+              }))
+            ),
+          }],
+        }),
+      });
+
+    const results = await analyzeCompetitorsBatch(problems, { anthropicApiKey: 'test-key' });
+
+    expect(mockFetch).toHaveBeenCalledTimes(2); // 2 API calls: ceil(25/20)
+    expect(results.size).toBe(25);
+  });
+
+  it('returns fallbacks on API error', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+    });
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const problems = [
+      { id: 'p1', statement: 'Problem 1', results: [createMockResult({ domain: 'producthunt.com' })] },
+    ];
+
+    const results = await analyzeCompetitorsBatch(problems, { anthropicApiKey: 'test-key' });
+
+    expect(results.size).toBe(1);
+    expect(results.get('p1')?.differentiationAngles).toContain('Requires manual competitive analysis');
+
+    warnSpy.mockRestore();
+  });
+
+  it('handles missing problem indices in response', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        content: [{
+          type: 'text',
+          text: JSON.stringify([
+            // Only returns result for problemIndex 0, missing problemIndex 1
+            {
+              problemIndex: 0,
+              competitors: [],
+              gaps: ['Gap'],
+              marketOpportunity: 'high',
+              differentiationAngles: [],
+              analysisNotes: 'Notes',
+            },
+          ]),
+        }],
+      }),
+    });
+
+    const problems = [
+      { id: 'p1', statement: 'Problem 1', results: [createMockResult({ domain: 'producthunt.com' })] },
+      { id: 'p2', statement: 'Problem 2', results: [createMockResult({ domain: 'g2.com' })] },
+    ];
+
+    const results = await analyzeCompetitorsBatch(problems, { anthropicApiKey: 'test-key' });
+
+    expect(results.size).toBe(2);
+    expect(results.get('p1')?.marketOpportunity).toBe('high');
+    // p2 should get fallback since it wasn't in the response
+    expect(results.get('p2')?.differentiationAngles).toContain('Requires manual competitive analysis');
+  });
+
+  it('uses correct API parameters for batch', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        content: [{
+          type: 'text',
+          text: '[]',
+        }],
+      }),
+    });
+
+    const problems = [
+      { id: 'p1', statement: 'Problem 1', results: [createMockResult()] },
+    ];
+
+    await analyzeCompetitorsBatch(problems, {
+      anthropicApiKey: 'batch-test-key',
+      model: 'claude-3-5-haiku-20241022',
+    });
+
+    const [url, options] = mockFetch.mock.calls[0];
+    expect(url).toBe('https://api.anthropic.com/v1/messages');
+    expect(options.headers['x-api-key']).toBe('batch-test-key');
+
+    const body = JSON.parse(options.body);
+    expect(body.model).toBe('claude-3-5-haiku-20241022');
+    expect(body.max_tokens).toBe(6000); // Larger for batch
+    expect(body.messages[0].content).toContain('Problem 1');
   });
 });
 

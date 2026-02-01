@@ -6,6 +6,9 @@
  */
 
 import type { SearchResult } from './web-search';
+import { getBatchModel } from '../config/models';
+import { getGlobalMetrics } from '../scheduler/utils/api-metrics';
+import { estimateTokens } from '../scheduler/utils/token-estimator';
 
 /**
  * A competitor identified from search results
@@ -41,7 +44,7 @@ export interface CompetitorAnalysisOptions {
 
 const DEFAULT_OPTIONS: Required<CompetitorAnalysisOptions> = {
   anthropicApiKey: '',
-  model: 'claude-3-5-haiku-20241022',
+  model: getBatchModel(),
   maxCompetitors: 10,
 };
 
@@ -336,6 +339,255 @@ export function calculateCompetitionScore(analysis: CompetitorAnalysis): number 
   }
 
   return Math.min(score, 100);
+}
+
+// Batch analysis constants
+const BATCH_SIZE = 20;
+
+/**
+ * Build prompt for analyzing competitors for multiple problems in one call
+ */
+function buildBatchCompetitorPrompt(
+  problems: Array<{ statement: string; results: SearchResult[] }>
+): string {
+  const problemsList = problems
+    .map(
+      (p, i) => `
+## Problem ${i + 1}
+Statement: ${p.statement}
+Search Results:
+${p.results
+  .slice(0, 10)
+  .map((r, j) => `${j + 1}. "${r.title}" - ${r.url}\n   ${r.snippet}`)
+  .join('\n')}`
+    )
+    .join('\n---\n');
+
+  return `Analyze competitors for each of these ${problems.length} problems.
+
+${problemsList}
+
+For each problem, provide:
+1. competitors: Array of up to 3 competitors found
+2. gaps: Array of 2-3 unmet needs
+3. marketOpportunity: "high" | "medium" | "low" | "saturated"
+4. differentiationAngles: 2-3 ways to differentiate
+5. analysisNotes: 1-2 sentence summary
+
+Respond with a JSON array. Each element should have:
+- problemIndex (0-based)
+- competitors (array with name, url, description, pricing, strengths, weaknesses)
+- gaps (array of strings)
+- marketOpportunity (string)
+- differentiationAngles (array of strings)
+- analysisNotes (string)
+
+Example response format:
+[
+  {
+    "problemIndex": 0,
+    "competitors": [{"name": "...", "url": "...", "description": "...", "pricing": "...", "strengths": [...], "weaknesses": [...]}],
+    "gaps": ["..."],
+    "marketOpportunity": "medium",
+    "differentiationAngles": ["..."],
+    "analysisNotes": "..."
+  }
+]`;
+}
+
+/**
+ * Parse batch competitor response from AI
+ */
+function parseBatchCompetitorResponse(
+  responseText: string,
+  problemIds: string[]
+): Map<string, CompetitorAnalysis> {
+  const results = new Map<string, CompetitorAnalysis>();
+
+  try {
+    // Try to extract JSON array from the response
+    const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      throw new Error('No JSON array found in response');
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]) as Array<{
+      problemIndex?: number;
+      competitors?: Array<{
+        name?: string;
+        url?: string;
+        description?: string;
+        pricing?: string;
+        strengths?: string[];
+        weaknesses?: string[];
+      }>;
+      gaps?: string[];
+      marketOpportunity?: string;
+      differentiationAngles?: string[];
+      analysisNotes?: string;
+    }>;
+
+    for (const item of parsed) {
+      const index = item.problemIndex ?? -1;
+      if (index < 0 || index >= problemIds.length) continue;
+
+      const problemId = problemIds[index];
+
+      // Normalize competitors
+      const competitors: Competitor[] = (item.competitors || []).map(c => ({
+        name: c.name || 'Unknown',
+        url: c.url || '',
+        description: c.description || '',
+        pricing: c.pricing || 'unknown',
+        strengths: Array.isArray(c.strengths) ? c.strengths : [],
+        weaknesses: Array.isArray(c.weaknesses) ? c.weaknesses : [],
+      }));
+
+      // Normalize market opportunity
+      const opportunity = item.marketOpportunity?.toLowerCase();
+      const validOpportunities = ['high', 'medium', 'low', 'saturated'] as const;
+      const marketOpportunity = validOpportunities.includes(
+        opportunity as (typeof validOpportunities)[number]
+      )
+        ? (opportunity as 'high' | 'medium' | 'low' | 'saturated')
+        : 'medium';
+
+      results.set(problemId, {
+        competitors,
+        gaps: Array.isArray(item.gaps) ? item.gaps : [],
+        marketOpportunity,
+        differentiationAngles: Array.isArray(item.differentiationAngles)
+          ? item.differentiationAngles
+          : [],
+        analysisNotes: item.analysisNotes || '',
+      });
+    }
+  } catch (error) {
+    console.warn('Failed to parse batch response:', error);
+  }
+
+  return results;
+}
+
+/**
+ * Analyze competitors for multiple problems in one API call
+ * Batches up to BATCH_SIZE problems per call for cost efficiency
+ */
+export async function analyzeCompetitorsBatch(
+  problems: Array<{
+    id: string;
+    statement: string;
+    results: SearchResult[];
+  }>,
+  options: CompetitorAnalysisOptions = {}
+): Promise<Map<string, CompetitorAnalysis>> {
+  const opts = {
+    ...DEFAULT_OPTIONS,
+    ...options,
+    anthropicApiKey: options.anthropicApiKey || process.env.ANTHROPIC_API_KEY || '',
+  };
+
+  const allResults = new Map<string, CompetitorAnalysis>();
+
+  // If no API key, return fallback for all problems
+  if (!opts.anthropicApiKey) {
+    console.warn('No Anthropic API key available, using fallback analysis for batch');
+    for (const p of problems) {
+      allResults.set(p.id, createFallbackAnalysis(p.results));
+    }
+    return allResults;
+  }
+
+  const systemPrompt = 'You are a market research analyst. Analyze search results to identify competitors and market gaps. Always respond with valid JSON.';
+
+  // Process in batches of BATCH_SIZE
+  for (let i = 0; i < problems.length; i += BATCH_SIZE) {
+    const startTime = Date.now();
+    const batch = problems.slice(i, i + BATCH_SIZE);
+    const problemIds = batch.map(p => p.id);
+
+    const prompt = buildBatchCompetitorPrompt(
+      batch.map(p => ({ statement: p.statement, results: p.results }))
+    );
+
+    const inputTokens = estimateTokens(systemPrompt) + estimateTokens(prompt);
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': opts.anthropicApiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: opts.model,
+          max_tokens: 6000, // Larger for batch response
+          system: systemPrompt,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      });
+
+      if (!response.ok) {
+        // Record failed call
+        getGlobalMetrics().recordCall({
+          timestamp: new Date(),
+          module: 'competitor',
+          model: opts.model,
+          batchSize: batch.length,
+          itemsProcessed: 0,
+          inputTokens,
+          outputTokens: 0,
+          success: false,
+          durationMs: Date.now() - startTime,
+        });
+        throw new Error(`Batch analysis failed: ${response.status}`);
+      }
+
+      const data = (await response.json()) as {
+        content: Array<{ type: string; text: string }>;
+      };
+
+      const content = data.content[0]?.text;
+      if (content) {
+        // Record successful call
+        getGlobalMetrics().recordCall({
+          timestamp: new Date(),
+          module: 'competitor',
+          model: opts.model,
+          batchSize: batch.length,
+          itemsProcessed: batch.length,
+          inputTokens,
+          outputTokens: estimateTokens(content),
+          success: true,
+          durationMs: Date.now() - startTime,
+        });
+
+        const batchResults = parseBatchCompetitorResponse(content, problemIds);
+
+        // Merge results and add fallbacks for any missing
+        for (const p of batch) {
+          if (batchResults.has(p.id)) {
+            allResults.set(p.id, batchResults.get(p.id)!);
+          } else {
+            allResults.set(p.id, createFallbackAnalysis(p.results));
+          }
+        }
+      } else {
+        // Empty response, use fallbacks
+        for (const p of batch) {
+          allResults.set(p.id, createFallbackAnalysis(p.results));
+        }
+      }
+    } catch (error) {
+      console.warn('Batch competitor analysis failed, using fallbacks:', error);
+      for (const p of batch) {
+        allResults.set(p.id, createFallbackAnalysis(p.results));
+      }
+    }
+  }
+
+  return allResults;
 }
 
 /**
