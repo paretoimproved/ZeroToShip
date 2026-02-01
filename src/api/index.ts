@@ -8,9 +8,19 @@ export type { ServerConfig } from './server';
 
 // Database
 export { db, closeDatabase, checkDatabaseHealth } from './db/client';
-export * from './db/schema';
+export {
+  users,
+  ideas,
+  savedIdeas,
+  viewedIdeas,
+  apiKeys,
+  rateLimits,
+  userPreferences,
+  subscriptions,
+  validationRequests,
+} from './db/schema';
 
-// Schemas
+// Schemas (includes UserTier and EffortLevel types)
 export * from './schemas';
 
 // Middleware

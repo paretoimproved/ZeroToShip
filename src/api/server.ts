@@ -16,10 +16,13 @@ import {
   validatorCompiler,
   ZodTypeProvider,
 } from 'fastify-type-provider-zod';
-import { closeDatabase, checkDatabaseHealth } from './db/client';
+import { closeDatabase } from './db/client';
+import { healthRoutes } from './routes/health';
 import { ideasRoutes } from './routes/ideas';
 import { userRoutes } from './routes/user';
 import { enterpriseRoutes } from './routes/enterprise';
+import { billingRoutes } from './routes/billing';
+import { webhookRoutes } from './routes/webhooks';
 import type { UserTier } from './schemas';
 
 // Extend FastifyRequest to include user info
@@ -98,15 +101,8 @@ export async function createServer(config: ServerConfig = {}): Promise<FastifyIn
     }),
   });
 
-  // Health check endpoint
-  server.get('/health', async () => {
-    const dbHealthy = await checkDatabaseHealth();
-    return {
-      status: dbHealthy ? 'healthy' : 'degraded',
-      timestamp: new Date().toISOString(),
-      database: dbHealthy ? 'connected' : 'disconnected',
-    };
-  });
+  // Health, readiness, and liveness endpoints
+  await server.register(healthRoutes);
 
   // API version prefix
   server.get('/api/v1', async () => {
@@ -127,7 +123,12 @@ export async function createServer(config: ServerConfig = {}): Promise<FastifyIn
   // Register route modules
   await server.register(ideasRoutes, { prefix: '/api/v1/ideas' });
   await server.register(userRoutes, { prefix: '/api/v1/user' });
+  await server.register(billingRoutes, { prefix: '/api/v1/billing' });
   await server.register(enterpriseRoutes, { prefix: '/api/v1' });
+
+  // Webhooks need separate registration to avoid global JSON parsing
+  // The webhook route has its own content type parser for raw body
+  await server.register(webhookRoutes, { prefix: '/api/webhooks' });
 
   // Global error handler
   server.setErrorHandler((error, request, reply) => {

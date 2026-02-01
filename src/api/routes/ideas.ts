@@ -183,7 +183,7 @@ export const ideasRoutes: FastifyPluginAsync = async (fastify) => {
             message: 'Upgrade to Pro to see the full business brief',
             url: 'https://ideaforge.io/pricing',
           },
-        });
+        } as typeof filtered & { _upgrade: { message: string; url: string } });
       }
 
       return reply.send(filtered);
