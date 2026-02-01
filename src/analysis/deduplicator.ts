@@ -37,7 +37,8 @@ export interface ClusteringOptions {
   maxBodyChars?: number;          // Default: 500
   generateSummaries?: boolean;    // Default: true
   cacheDir?: string;              // Directory for embedding cache
-  openaiApiKey?: string;          // OpenAI API key (defaults to env)
+  openaiApiKey?: string;          // OpenAI API key for embeddings (defaults to env)
+  anthropicApiKey?: string;       // Anthropic API key for summaries (defaults to env)
 }
 
 const DEFAULT_OPTIONS: Required<ClusteringOptions> = {
@@ -46,6 +47,7 @@ const DEFAULT_OPTIONS: Required<ClusteringOptions> = {
   generateSummaries: true,
   cacheDir: '',
   openaiApiKey: '',
+  anthropicApiKey: '',
 };
 
 /**
@@ -100,11 +102,11 @@ function calculateTotalScore(posts: RawPost[]): number {
 }
 
 /**
- * Generate a problem statement summary using OpenAI
+ * Generate a problem statement summary using Anthropic Claude
  */
 async function generateProblemStatement(
   posts: RawPost[],
-  openaiApiKey: string
+  anthropicApiKey: string
 ): Promise<string> {
   const representative = selectRepresentative(posts);
 
@@ -121,17 +123,17 @@ ${postSummaries}
 Problem statement:`;
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openaiApiKey}`,
+        'x-api-key': anthropicApiKey,
+        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
+        model: 'claude-3-5-haiku-20241022',
         max_tokens: 150,
-        temperature: 0.3,
+        messages: [{ role: 'user', content: prompt }],
       }),
     });
 
@@ -141,10 +143,10 @@ Problem statement:`;
     }
 
     const data = await response.json() as {
-      choices: Array<{ message: { content: string } }>;
+      content: Array<{ type: string; text: string }>;
     };
 
-    return data.choices[0]?.message?.content?.trim() || representative.title;
+    return data.content[0]?.text?.trim() || representative.title;
   } catch (error) {
     console.warn('Error generating problem statement:', error);
     return representative.title;
@@ -202,7 +204,7 @@ export async function clusterPosts(
 
   // Step 5: Build problem clusters
   const clusters: ProblemCluster[] = [];
-  const openaiKey = opts.openaiApiKey || process.env.OPENAI_API_KEY || '';
+  const anthropicKey = opts.anthropicApiKey || process.env.ANTHROPIC_API_KEY || '';
 
   for (const [_label, indices] of clusterGroups) {
     const clusterPosts = indices.map(i => posts[i]);
@@ -218,8 +220,8 @@ export async function clusterPosts(
 
     // Generate or create problem statement
     let problemStatement: string;
-    if (opts.generateSummaries && openaiKey) {
-      problemStatement = await generateProblemStatement(clusterPosts, openaiKey);
+    if (opts.generateSummaries && anthropicKey) {
+      problemStatement = await generateProblemStatement(clusterPosts, anthropicKey);
     } else {
       problemStatement = createFallbackStatement(clusterPosts);
     }

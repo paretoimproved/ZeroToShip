@@ -34,14 +34,14 @@ export interface CompetitorAnalysis {
  * Options for competitor analysis
  */
 export interface CompetitorAnalysisOptions {
-  openaiApiKey?: string;
+  anthropicApiKey?: string;
   model?: string;
   maxCompetitors?: number;
 }
 
 const DEFAULT_OPTIONS: Required<CompetitorAnalysisOptions> = {
-  openaiApiKey: '',
-  model: 'gpt-4o-mini',
+  anthropicApiKey: '',
+  model: 'claude-3-5-haiku-20241022',
   maxCompetitors: 10,
 };
 
@@ -245,7 +245,7 @@ export function createFallbackAnalysis(results: SearchResult[]): CompetitorAnaly
 }
 
 /**
- * Analyze competitors using OpenAI
+ * Analyze competitors using Anthropic Claude
  */
 export async function analyzeCompetitors(
   problemStatement: string,
@@ -255,53 +255,50 @@ export async function analyzeCompetitors(
   const opts = {
     ...DEFAULT_OPTIONS,
     ...options,
-    openaiApiKey: options.openaiApiKey || process.env.OPENAI_API_KEY || '',
+    anthropicApiKey: options.anthropicApiKey || process.env.ANTHROPIC_API_KEY || '',
   };
 
   // Filter to relevant results
   const relevantResults = searchResults.slice(0, 15);
 
   // If no API key, return fallback analysis
-  if (!opts.openaiApiKey) {
-    console.warn('No OpenAI API key available, using fallback analysis');
+  if (!opts.anthropicApiKey) {
+    console.warn('No Anthropic API key available, using fallback analysis');
     return createFallbackAnalysis(relevantResults);
   }
 
   const prompt = buildAnalysisPrompt(problemStatement, relevantResults);
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${opts.openaiApiKey}`,
+        'x-api-key': opts.anthropicApiKey,
+        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
         model: opts.model,
+        max_tokens: 2000,
+        system: 'You are a market research analyst. Analyze search results to identify competitors, market gaps, and opportunities. Always respond with valid JSON.',
         messages: [
-          {
-            role: 'system',
-            content: 'You are a market research analyst. Analyze search results to identify competitors, market gaps, and opportunities. Always respond with valid JSON.',
-          },
           { role: 'user', content: prompt },
         ],
-        max_tokens: 2000,
-        temperature: 0.3,
       }),
     });
 
     if (!response.ok) {
-      console.warn(`OpenAI API error: ${response.status}, using fallback`);
+      console.warn(`Anthropic API error: ${response.status}, using fallback`);
       return createFallbackAnalysis(relevantResults);
     }
 
     const data = await response.json() as {
-      choices: Array<{ message: { content: string } }>;
+      content: Array<{ type: string; text: string }>;
     };
 
-    const content = data.choices[0]?.message?.content;
+    const content = data.content[0]?.text;
     if (!content) {
-      console.warn('Empty response from OpenAI, using fallback');
+      console.warn('Empty response from Anthropic, using fallback');
       return createFallbackAnalysis(relevantResults);
     }
 

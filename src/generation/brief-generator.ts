@@ -87,7 +87,7 @@ interface GPTBriefResponse {
  * Configuration for brief generation
  */
 export interface BriefGeneratorConfig {
-  openaiApiKey?: string;
+  anthropicApiKey?: string;
   model?: string;
   maxConcurrent?: number;
   delayBetweenCalls?: number;
@@ -95,8 +95,8 @@ export interface BriefGeneratorConfig {
 }
 
 const DEFAULT_CONFIG: Required<BriefGeneratorConfig> = {
-  openaiApiKey: '',
-  model: 'gpt-4o',
+  anthropicApiKey: '',
+  model: 'claude-sonnet-4-20250514',
   maxConcurrent: 2,
   delayBetweenCalls: 500,
   temperature: 0.7,
@@ -117,51 +117,52 @@ function generateBriefId(): string {
 }
 
 /**
- * Call OpenAI API for brief generation
+ * Call Anthropic API for brief generation
  */
-async function callGPT4(
+async function callClaude(
   prompt: string,
   apiKey: string,
   model: string,
   temperature: number
 ): Promise<GPTBriefResponse | null> {
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
         model,
-        messages: [
-          { role: 'system', content: BRIEF_SYSTEM_PROMPT },
-          { role: 'user', content: prompt },
-        ],
         max_tokens: 2000,
         temperature,
+        system: BRIEF_SYSTEM_PROMPT,
+        messages: [
+          { role: 'user', content: prompt },
+        ],
       }),
     });
 
     if (!response.ok) {
       const error = await response.text();
-      console.warn(`OpenAI API error (${response.status}):`, error);
+      console.warn(`Anthropic API error (${response.status}):`, error);
       return null;
     }
 
     const data = await response.json() as {
-      choices: Array<{ message: { content: string } }>;
+      content: Array<{ type: string; text: string }>;
     };
 
-    const content = data.choices[0]?.message?.content;
+    const content = data.content[0]?.text;
     if (!content) {
-      console.warn('No content in OpenAI response');
+      console.warn('No content in Anthropic response');
       return null;
     }
 
     return parseJsonResponse<GPTBriefResponse>(content);
   } catch (error) {
-    console.warn('OpenAI API call failed:', error);
+    console.warn('Anthropic API call failed:', error);
     return null;
   }
 }
@@ -284,7 +285,7 @@ export async function generateBrief(
   config: BriefGeneratorConfig = {}
 ): Promise<IdeaBrief> {
   const opts = { ...DEFAULT_CONFIG, ...config };
-  const apiKey = opts.openaiApiKey || process.env.OPENAI_API_KEY || '';
+  const apiKey = opts.anthropicApiKey || process.env.ANTHROPIC_API_KEY || '';
 
   // Determine effort level from scores
   const effortLevel = scoreToEffortLevel(problem.scores);
@@ -294,15 +295,15 @@ export async function generateBrief(
 
   // If no API key, return fallback
   if (!apiKey) {
-    console.warn('No OpenAI API key - returning fallback brief');
+    console.warn('No Anthropic API key - returning fallback brief');
     return createFallbackBrief(problem, gaps, effortLevel);
   }
 
   // Build prompt
   const prompt = buildBriefPrompt(problem, gaps, stackRec, effortLevel);
 
-  // Call GPT-4
-  const response = await callGPT4(prompt, apiKey, opts.model, opts.temperature);
+  // Call Claude
+  const response = await callClaude(prompt, apiKey, opts.model, opts.temperature);
 
   if (!response) {
     console.warn(`Brief generation failed for problem ${problem.id} - using fallback`);

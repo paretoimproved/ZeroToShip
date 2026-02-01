@@ -49,7 +49,7 @@ export interface ScoredProblem extends ProblemCluster {
  * Options for the scoring process
  */
 export interface ScoringOptions {
-  openaiApiKey?: string;
+  anthropicApiKey?: string;
   model?: string;
   maxConcurrent?: number;
   delayBetweenCalls?: number;
@@ -57,8 +57,8 @@ export interface ScoringOptions {
 }
 
 const DEFAULT_OPTIONS: Required<ScoringOptions> = {
-  openaiApiKey: '',
-  model: 'gpt-4o-mini',
+  anthropicApiKey: '',
+  model: 'claude-3-5-haiku-20241022',
   maxConcurrent: 3,
   delayBetweenCalls: 200,
   useAI: true,
@@ -98,50 +98,50 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * Call OpenAI API to score a problem cluster
+ * Call Anthropic API to score a problem cluster
  */
-async function callOpenAI(
+async function callAnthropic(
   prompt: string,
   apiKey: string,
   model: string
 ): Promise<ScoreResponse | null> {
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
         model,
+        max_tokens: 500,
+        system: SCORING_SYSTEM_PROMPT,
         messages: [
-          { role: 'system', content: SCORING_SYSTEM_PROMPT },
           { role: 'user', content: prompt },
         ],
-        max_tokens: 500,
-        temperature: 0.3,
       }),
     });
 
     if (!response.ok) {
       const error = await response.text();
-      console.warn(`OpenAI API error (${response.status}):`, error);
+      console.warn(`Anthropic API error (${response.status}):`, error);
       return null;
     }
 
     const data = await response.json() as {
-      choices: Array<{ message: { content: string } }>;
+      content: Array<{ type: string; text: string }>;
     };
 
-    const content = data.choices[0]?.message?.content;
+    const content = data.content[0]?.text;
     if (!content) {
-      console.warn('No content in OpenAI response');
+      console.warn('No content in Anthropic response');
       return null;
     }
 
     return parseScoreResponse(content);
   } catch (error) {
-    console.warn('OpenAI API call failed:', error);
+    console.warn('Anthropic API call failed:', error);
     return null;
   }
 }
@@ -165,7 +165,7 @@ export async function scoreProblem(
   options: ScoringOptions = {}
 ): Promise<ScoredProblem> {
   const opts = { ...DEFAULT_OPTIONS, ...options };
-  const apiKey = opts.openaiApiKey || process.env.OPENAI_API_KEY || '';
+  const apiKey = opts.anthropicApiKey || process.env.ANTHROPIC_API_KEY || '';
 
   // Calculate frequency score from cluster data
   const frequencyScore = calculateFrequencyScore(cluster.frequency);
@@ -174,7 +174,7 @@ export async function scoreProblem(
 
   if (opts.useAI && apiKey) {
     const prompt = buildScoringPrompt(cluster);
-    const response = await callOpenAI(prompt, apiKey, opts.model);
+    const response = await callAnthropic(prompt, apiKey, opts.model);
     aiScores = response || createDefaultScores(cluster);
   } else {
     aiScores = createDefaultScores(cluster);
