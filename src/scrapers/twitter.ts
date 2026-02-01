@@ -16,9 +16,9 @@
  */
 
 import { config } from 'dotenv';
-import { Tweet, TwitterConfig, TwitterSearchQuery, PAIN_POINT_SIGNALS } from './types.js';
-import { TwitterApiClient, createTwitterApiClient, DEFAULT_TWITTER_QUERIES } from './twitter-api.js';
-import { NitterScraper, createNitterScraper } from './twitter-nitter.js';
+import { Tweet, TwitterConfig, TwitterSearchQuery, PAIN_POINT_SIGNALS } from './types';
+import { TwitterApiClient, createTwitterApiClient, DEFAULT_TWITTER_QUERIES } from './twitter-api';
+import { NitterScraper, createNitterScraper } from './twitter-nitter';
 
 // Load environment variables
 config();

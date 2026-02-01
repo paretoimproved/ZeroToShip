@@ -10,7 +10,7 @@
 
 import * as cheerio from 'cheerio';
 import type { Element } from 'domhandler';
-import { Tweet, TwitterConfig, PAIN_POINT_SIGNALS } from './types.js';
+import { Tweet, TwitterConfig, PAIN_POINT_SIGNALS } from './types';
 
 /**
  * Default Nitter instances to try (in order of preference)

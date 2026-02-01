@@ -8,7 +8,7 @@
  * @see https://developer.twitter.com/en/docs/twitter-api/tweets/search/api-reference/get-tweets-search-recent
  */
 
-import { Tweet, TwitterConfig, PAIN_POINT_SIGNALS } from './types.js';
+import { Tweet, TwitterConfig, PAIN_POINT_SIGNALS } from './types';
 
 const TWITTER_API_BASE = 'https://api.twitter.com/2';
 
