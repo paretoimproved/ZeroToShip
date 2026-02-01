@@ -21,6 +21,7 @@ import {
 import {
   getClusterStats,
   exportClusters,
+  clusterPosts,
   type ProblemCluster,
 } from '../../src/analysis/deduplicator';
 
@@ -386,6 +387,136 @@ describe('Deduplicator Utils', () => {
       expect(parsed[0].problemStatement).toBe('A test problem statement');
       expect(parsed[0].relatedPostCount).toBe(0);
     });
+  });
+});
+
+describe('Batch Problem Statement Generation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should batch clusters into fewer API calls', async () => {
+    // Create 25 unique posts that will each become their own cluster
+    const posts: RawPost[] = Array(25).fill(null).map((_, i) => createMockPost({
+      id: `post_${i}`,
+      title: `Unique problem ${i}: ${Math.random().toString(36).slice(2)}`,
+      body: `Description for problem ${i}`,
+    }));
+
+    // Track Anthropic API calls for problem statements
+    let anthropicCallCount = 0;
+
+    const mockFetch = vi.fn().mockImplementation(async (url: string, options: RequestInit) => {
+      if (url.includes('openai.com')) {
+        // Parse the batch request to return matching number of embeddings
+        const body = JSON.parse(options.body as string);
+        const inputTexts = body.input as string[];
+        return {
+          ok: true,
+          json: async () => ({
+            data: inputTexts.map((_, idx) => ({
+              index: idx,
+              embedding: createRandomEmbedding(), // Each gets unique embedding
+            })),
+          }),
+        };
+      } else if (url.includes('anthropic.com')) {
+        // Batch problem statement API call
+        anthropicCallCount++;
+        // Parse the request to extract cluster IDs from the prompt
+        const body = JSON.parse(options.body as string);
+        const prompt = body.messages[0].content as string;
+        const idMatches = prompt.match(/ID: (cluster_\d+_[a-z0-9]+)/g) || [];
+        const ids = idMatches.map(m => m.replace('ID: ', ''));
+
+        return {
+          ok: true,
+          json: async () => ({
+            content: [{
+              type: 'text',
+              text: JSON.stringify(
+                ids.map((id) => ({
+                  id,
+                  statement: `Problem statement for ${id}`,
+                }))
+              ),
+            }],
+          }),
+        };
+      }
+      return { ok: false };
+    });
+
+    vi.stubGlobal('fetch', mockFetch);
+
+    const clusters = await clusterPosts(posts, {
+      generateSummaries: true,
+      anthropicApiKey: 'test-key',
+      openaiApiKey: 'test-key',
+      similarityThreshold: 0.99, // High threshold to keep clusters separate
+    });
+
+    // Verify clusters were created
+    expect(clusters.length).toBeGreaterThan(0);
+
+    // With batch size of 20, ceil(N/20) calls should be made
+    // For 25 clusters: ceil(25/20) = 2 calls
+    // This is much fewer than the old approach (25 calls)
+    expect(anthropicCallCount).toBeLessThanOrEqual(Math.ceil(clusters.length / 20) + 1);
+    expect(anthropicCallCount).toBeGreaterThan(0);
+
+    // The key assertion: batching reduces calls significantly
+    // Old approach would make 1 call per cluster (25 calls)
+    // New approach makes ceil(N/20) calls
+    expect(anthropicCallCount).toBeLessThan(clusters.length);
+
+    vi.unstubAllGlobals();
+  });
+
+  it('should handle API errors gracefully with fallback statements', async () => {
+    const posts: RawPost[] = [
+      createMockPost({ id: 'p1', title: 'Problem Alpha', body: 'Description A' }),
+      createMockPost({ id: 'p2', title: 'Problem Beta', body: 'Description B' }),
+    ];
+
+    const mockFetch = vi.fn().mockImplementation(async (url: string, options: RequestInit) => {
+      if (url.includes('openai.com')) {
+        const body = JSON.parse(options.body as string);
+        const inputTexts = body.input as string[];
+        return {
+          ok: true,
+          json: async () => ({
+            data: inputTexts.map((_, idx) => ({
+              index: idx,
+              embedding: createRandomEmbedding(),
+            })),
+          }),
+        };
+      } else if (url.includes('anthropic.com')) {
+        // Simulate API failure
+        return { ok: false, status: 500 };
+      }
+      return { ok: false };
+    });
+
+    vi.stubGlobal('fetch', mockFetch);
+
+    const clusters = await clusterPosts(posts, {
+      generateSummaries: true,
+      anthropicApiKey: 'test-key',
+      openaiApiKey: 'test-key',
+      similarityThreshold: 0.99,
+    });
+
+    // Should still return clusters with fallback statements (post titles)
+    expect(clusters.length).toBeGreaterThan(0);
+    for (const cluster of clusters) {
+      expect(cluster.problemStatement).toBeTruthy();
+      // Fallback should be one of the post titles
+      expect(['Problem Alpha', 'Problem Beta']).toContain(cluster.problemStatement);
+    }
+
+    vi.unstubAllGlobals();
   });
 });
 

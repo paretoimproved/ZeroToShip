@@ -14,6 +14,9 @@ import {
   computeCentroid,
 } from './similarity';
 import { calculateSignalStrength } from '../scrapers/signals';
+import { getBatchModel } from '../config/models';
+import { getGlobalMetrics } from '../scheduler/utils/api-metrics';
+import { estimateTokens } from '../scheduler/utils/token-estimator';
 
 /**
  * A cluster of related posts describing the same problem
@@ -49,6 +52,12 @@ const DEFAULT_OPTIONS: Required<ClusteringOptions> = {
   openaiApiKey: '',
   anthropicApiKey: '',
 };
+
+/**
+ * Batch size for generating problem statements
+ * Batching 20 clusters per call reduces API calls from ~174 to ~9 per run
+ */
+const STATEMENT_BATCH_SIZE = 20;
 
 /**
  * Generate a unique cluster ID
@@ -131,7 +140,7 @@ Problem statement:`;
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-haiku-20241022',
+        model: getBatchModel(),
         max_tokens: 150,
         messages: [{ role: 'user', content: prompt }],
       }),
@@ -159,6 +168,119 @@ Problem statement:`;
 function createFallbackStatement(posts: RawPost[]): string {
   const representative = selectRepresentative(posts);
   return representative.title;
+}
+
+/**
+ * Build prompt for generating multiple problem statements in a single call
+ */
+function buildBatchStatementPrompt(
+  clusters: Array<{ id: string; posts: RawPost[] }>
+): string {
+  const clustersList = clusters.map((c, i) => {
+    const postSummaries = c.posts
+      .slice(0, 3)
+      .map(p => `- ${p.title}${p.body ? `: ${p.body.slice(0, 150)}` : ''}`)
+      .join('\n');
+
+    return `## Cluster ${i + 1} (ID: ${c.id})
+Posts:
+${postSummaries}`;
+  }).join('\n\n---\n\n');
+
+  return `For each cluster of related posts, write a concise problem statement (1-2 sentences) that captures the core issue.
+
+${clustersList}
+
+Respond with JSON array:
+[
+  { "id": "cluster_id", "statement": "Problem statement here" },
+  ...
+]`;
+}
+
+/**
+ * Generate problem statements for multiple clusters in one API call
+ * Reduces API calls from N to ceil(N/20) for significant cost savings
+ */
+async function generateProblemStatementsBatch(
+  clusters: Array<{ id: string; posts: RawPost[] }>,
+  anthropicApiKey: string
+): Promise<Map<string, string>> {
+  const startTime = Date.now();
+  const prompt = buildBatchStatementPrompt(clusters);
+  const model = getBatchModel();
+  const inputTokens = estimateTokens(prompt);
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': anthropicApiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 3000,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    if (!response.ok) {
+      // Record failed call
+      getGlobalMetrics().recordCall({
+        timestamp: new Date(),
+        module: 'deduplicator',
+        model,
+        batchSize: clusters.length,
+        itemsProcessed: 0,
+        inputTokens,
+        outputTokens: 0,
+        success: false,
+        durationMs: Date.now() - startTime,
+      });
+      throw new Error(`Batch statement generation failed: ${response.status}`);
+    }
+
+    const data = await response.json() as {
+      content: Array<{ type: string; text: string }>;
+    };
+    const content = data.content[0]?.text;
+
+    // Record successful call
+    getGlobalMetrics().recordCall({
+      timestamp: new Date(),
+      module: 'deduplicator',
+      model,
+      batchSize: clusters.length,
+      itemsProcessed: clusters.length,
+      inputTokens,
+      outputTokens: estimateTokens(content || ''),
+      success: true,
+      durationMs: Date.now() - startTime,
+    });
+
+    // Parse JSON response - extract array from response
+    const jsonMatch = content?.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) throw new Error('No JSON array in response');
+
+    const parsed = JSON.parse(jsonMatch[0]) as Array<{ id: string; statement: string }>;
+
+    const results = new Map<string, string>();
+    for (const item of parsed) {
+      results.set(item.id, item.statement);
+    }
+
+    return results;
+  } catch (error) {
+    console.warn('Batch statement generation failed:', error);
+    // Return fallbacks using post titles
+    const results = new Map<string, string>();
+    for (const c of clusters) {
+      results.set(c.id, selectRepresentative(c.posts).title);
+    }
+    return results;
+  }
 }
 
 /**
@@ -202,41 +324,72 @@ export async function clusterPosts(
   const clusterGroups = groupByCluster(labels);
   console.log(`Found ${clusterGroups.size} clusters from ${posts.length} posts`);
 
-  // Step 5: Build problem clusters
-  const clusters: ProblemCluster[] = [];
+  // Step 5: Build cluster data without statements first
   const anthropicKey = opts.anthropicApiKey || process.env.ANTHROPIC_API_KEY || '';
 
+  interface ClusterData {
+    id: string;
+    posts: RawPost[];
+    representative: RawPost;
+    relatedPosts: RawPost[];
+    centroid: number[];
+  }
+
+  const clustersData: ClusterData[] = [];
+
   for (const [_label, indices] of clusterGroups) {
-    const clusterPosts = indices.map(i => posts[i]);
+    const clusterPostsList = indices.map(i => posts[i]);
     const clusterEmbeddings = indices.map(i => embeddings[i]);
 
     // Find most central embedding for the cluster
-    const centralIndex = findMostCentral(clusterEmbeddings);
+    const _centralIndex = findMostCentral(clusterEmbeddings);
     const centroid = computeCentroid(clusterEmbeddings);
 
     // Select representative post
-    const representative = selectRepresentative(clusterPosts);
-    const relatedPosts = clusterPosts.filter(p => p.id !== representative.id);
+    const representative = selectRepresentative(clusterPostsList);
+    const relatedPosts = clusterPostsList.filter(p => p.id !== representative.id);
 
-    // Generate or create problem statement
-    let problemStatement: string;
-    if (opts.generateSummaries && anthropicKey) {
-      problemStatement = await generateProblemStatement(clusterPosts, anthropicKey);
-    } else {
-      problemStatement = createFallbackStatement(clusterPosts);
-    }
-
-    clusters.push({
+    clustersData.push({
       id: generateClusterId(),
-      representativePost: representative,
+      posts: clusterPostsList,
+      representative,
       relatedPosts,
-      frequency: clusterPosts.length,
-      totalScore: calculateTotalScore(clusterPosts),
-      embedding: centroid,
-      problemStatement,
-      sources: aggregateSources(clusterPosts),
+      centroid,
     });
   }
+
+  // Step 6: Batch generate problem statements
+  const statements = new Map<string, string>();
+
+  if (opts.generateSummaries && anthropicKey) {
+    console.log(`Generating problem statements for ${clustersData.length} clusters in batches of ${STATEMENT_BATCH_SIZE}...`);
+
+    for (let i = 0; i < clustersData.length; i += STATEMENT_BATCH_SIZE) {
+      const batch = clustersData.slice(i, i + STATEMENT_BATCH_SIZE);
+      const batchStatements = await generateProblemStatementsBatch(
+        batch.map(c => ({ id: c.id, posts: c.posts })),
+        anthropicKey
+      );
+
+      for (const [id, statement] of batchStatements) {
+        statements.set(id, statement);
+      }
+
+      console.log(`Generated statements for ${Math.min(i + STATEMENT_BATCH_SIZE, clustersData.length)}/${clustersData.length} clusters`);
+    }
+  }
+
+  // Step 7: Build final problem clusters with statements
+  const clusters: ProblemCluster[] = clustersData.map(c => ({
+    id: c.id,
+    representativePost: c.representative,
+    relatedPosts: c.relatedPosts,
+    frequency: c.posts.length,
+    totalScore: calculateTotalScore(c.posts),
+    embedding: c.centroid,
+    problemStatement: statements.get(c.id) || createFallbackStatement(c.posts),
+    sources: aggregateSources(c.posts),
+  }));
 
   // Sort by frequency * total score (most significant problems first)
   clusters.sort((a, b) => {
