@@ -23,7 +23,13 @@
     "scheduler:dry-run": "ts-node src/scheduler/cli.ts run --dry-run",
     "scheduler:start": "ts-node src/scheduler/cli.ts schedule",
     "scheduler:health": "ts-node src/scheduler/cli.ts health",
-    "validate-costs": "npx tsx src/cli/validate-costs.ts"
+    "validate-costs": "npx tsx src/cli/validate-costs.ts",
+    "web:dev": "npm run dev --prefix web",
+    "web:build": "npm run build --prefix web",
+    "web:start": "npm run start --prefix web",
+    "web:lint": "npm run lint --prefix web",
+    "web:test:e2e": "npm run test:e2e --prefix web",
+    "web:test:e2e:ui": "npm run test:e2e:ui --prefix web"
   },
   "keywords": [
     "saas",

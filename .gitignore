@@ -35,4 +35,13 @@ docs/
 _Knowledge/
 _Resources/
 _Projects/
-# Test
+
+# Web frontend (Next.js)
+web/.next/
+web/node_modules/
+web/.env
+web/.env.local
+web/e2e/.auth/
+web/e2e/reports/
+web/e2e/test-results/
+web/*.tsbuildinfo

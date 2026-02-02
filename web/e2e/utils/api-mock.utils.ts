@@ -1,0 +1,180 @@
+/**
+ * API mocking utilities for E2E tests
+ */
+
+import { Page, Route } from '@playwright/test';
+import { API_URL, SEED_IDEAS, TIER_LIMITS, UserTier } from './test-data';
+
+export interface MockIdea {
+  id: string;
+  name: string;
+  tagline: string;
+  priorityScore: number;
+  effortEstimate: string;
+  revenueEstimate: string;
+  problemStatement: string;
+  targetAudience: string;
+  marketSize: string;
+  existingSolutions: string;
+  gaps: string;
+  proposedSolution: string;
+  keyFeatures: string[];
+  mvpScope: string;
+  technicalSpec: {
+    stack: string[];
+    architecture: string;
+    estimatedEffort: string;
+  };
+  businessModel: {
+    pricing: string;
+    revenueProjection: string;
+    monetizationPath: string;
+  };
+  goToMarket: {
+    launchStrategy: string;
+    channels: string[];
+    firstCustomers: string;
+  };
+  risks: string[];
+  generatedAt: string;
+}
+
+/**
+ * Generate mock ideas based on seed data
+ */
+export function generateMockIdeas(count: number = SEED_IDEAS.length): MockIdea[] {
+  return SEED_IDEAS.slice(0, count).map((seed, index) => ({
+    id: `mock-${index + 1}`,
+    name: seed.name,
+    tagline: `Tagline for ${seed.name}`,
+    priorityScore: seed.score,
+    effortEstimate: seed.effort,
+    revenueEstimate: '$5K-20K MRR',
+    problemStatement: `Problem statement for ${seed.name}`,
+    targetAudience: 'Developers and indie hackers',
+    marketSize: '$1B+ market',
+    existingSolutions: 'Various existing solutions',
+    gaps: 'Market gaps description',
+    proposedSolution: `Solution for ${seed.name}`,
+    keyFeatures: ['Feature 1', 'Feature 2', 'Feature 3'],
+    mvpScope: 'Core features for launch',
+    technicalSpec: {
+      stack: ['Next.js', 'PostgreSQL', 'Redis'],
+      architecture: 'Serverless',
+      estimatedEffort: seed.effort,
+    },
+    businessModel: {
+      pricing: '$9-29/mo',
+      revenueProjection: '$10K MRR',
+      monetizationPath: 'Freemium',
+    },
+    goToMarket: {
+      launchStrategy: 'Product Hunt launch',
+      channels: ['Twitter', 'Reddit', 'Indie Hackers'],
+      firstCustomers: 'Early adopters',
+    },
+    risks: ['Competition', 'Market changes'],
+    generatedAt: new Date().toISOString(),
+  }));
+}
+
+/**
+ * Setup API mocking for the ideas endpoint
+ */
+export async function mockIdeasApi(page: Page, tier: UserTier = 'anonymous'): Promise<void> {
+  const limit = TIER_LIMITS[tier].ideasVisible;
+  const ideas = generateMockIdeas(Math.min(limit, SEED_IDEAS.length));
+
+  await page.route(`${API_URL}/ideas/today`, async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ideas,
+        total: SEED_IDEAS.length,
+        limit,
+        tier,
+      }),
+    });
+  });
+}
+
+/**
+ * Setup API mocking for a single idea endpoint
+ */
+export async function mockIdeaDetailApi(page: Page, ideaId: string): Promise<void> {
+  const mockIdeas = generateMockIdeas();
+  const idea = mockIdeas.find((i) => i.id === ideaId) || mockIdeas[0];
+
+  await page.route(`${API_URL}/ideas/${ideaId}`, async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(idea),
+    });
+  });
+}
+
+/**
+ * Setup API mocking for the archive endpoint
+ */
+export async function mockArchiveApi(
+  page: Page,
+  options: { page?: number; pageSize?: number; tier?: UserTier } = {}
+): Promise<void> {
+  const { page: pageNum = 1, pageSize = 10, tier = 'anonymous' } = options;
+  const ideas = generateMockIdeas();
+
+  await page.route(`${API_URL}/ideas/archive*`, async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: ideas.slice(0, pageSize),
+        total: ideas.length,
+        page: pageNum,
+        pageSize,
+        hasMore: ideas.length > pageNum * pageSize,
+      }),
+    });
+  });
+}
+
+/**
+ * Setup API mocking for user subscription endpoint
+ */
+export async function mockSubscriptionApi(
+  page: Page,
+  plan: 'free' | 'pro' | 'enterprise' = 'free'
+): Promise<void> {
+  await page.route(`${API_URL}/subscription`, async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'sub_mock123',
+        userId: 'user_mock123',
+        plan,
+        status: 'active',
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        cancelAtPeriodEnd: false,
+      }),
+    });
+  });
+}
+
+/**
+ * Setup all common API mocks
+ */
+export async function setupAllApiMocks(
+  page: Page,
+  tier: UserTier = 'anonymous'
+): Promise<void> {
+  await mockIdeasApi(page, tier);
+  await mockArchiveApi(page, { tier });
+
+  if (tier !== 'anonymous') {
+    const plan = tier === 'free' ? 'free' : tier === 'pro' ? 'pro' : 'enterprise';
+    await mockSubscriptionApi(page, plan);
+  }
+}
