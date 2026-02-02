@@ -24,6 +24,30 @@ npm test
 npm run build
 ```
 
+## Verification Commands
+
+> **CRITICAL**: Always give Claude a way to verify its work. This 2-3x the quality of results.
+
+```bash
+# Full verification
+npm run build && npm test
+
+# Type checking
+npx tsc --noEmit
+
+# Cost validation
+npm run validate-costs
+```
+
+## Common Mistakes
+
+> **Living document**: After correcting Claude, add the mistake here to prevent recurrence.
+
+| Date | Mistake | Fix |
+|------|---------|-----|
+| 2026-02-01 | Used OpenAI SDK instead of Anthropic | Always use `@anthropic-ai/sdk`, not `openai` |
+| 2026-02-01 | Mocked wrong client in tests | Mock `Anthropic` from `@anthropic-ai/sdk` |
+
 ## Environment
 
 Requires `GIT_TO_DAILY_VAULT` environment variable for automatic daily logs.
