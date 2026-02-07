@@ -4,6 +4,7 @@
  * Creates test users for each tier and sample ideas for testing
  */
 
+import { randomBytes } from 'crypto';
 import { db } from './client';
 import { users, userPreferences, apiKeys, ideas, subscriptions } from './schema';
 import { eq } from 'drizzle-orm';
@@ -318,9 +319,10 @@ const seedIdeas = [
 // Generate test API key
 function generateApiKey(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const bytes = randomBytes(40);
   let key = 'if_test_';
   for (let i = 0; i < 40; i++) {
-    key += chars.charAt(Math.floor(Math.random() * chars.length));
+    key += chars.charAt(bytes[i] % chars.length);
   }
   return key;
 }

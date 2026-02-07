@@ -7,6 +7,7 @@
 
 import type { ScoredProblem } from '../analysis/scorer';
 import type { GapAnalysis } from '../analysis/gap-analyzer';
+import logger from '../lib/logger';
 import {
   BRIEF_SYSTEM_PROMPT,
   buildBriefPrompt,
@@ -155,7 +156,7 @@ async function callClaude(
 
     if (!response.ok) {
       const error = await response.text();
-      console.warn(`Anthropic API error (${response.status}):`, error);
+      logger.warn({ status: response.status, error }, 'Anthropic API error');
 
       // Record failed call
       getGlobalMetrics().recordCall({
@@ -179,7 +180,7 @@ async function callClaude(
 
     const content = data.content[0]?.text;
     if (!content) {
-      console.warn('No content in Anthropic response');
+      logger.warn('No content in Anthropic response');
       return null;
     }
 
@@ -198,7 +199,7 @@ async function callClaude(
 
     return parseJsonResponse<GPTBriefResponse>(content);
   } catch (error) {
-    console.warn('Anthropic API call failed:', error);
+    logger.warn({ err: error }, 'Anthropic API call failed');
 
     // Record failed call
     getGlobalMetrics().recordCall({
@@ -280,7 +281,7 @@ async function callClaudeBatch(
 
     if (!response.ok) {
       const error = await response.text();
-      console.warn(`Anthropic API error (${response.status}):`, error);
+      logger.warn({ status: response.status, error }, 'Anthropic API error');
 
       getGlobalMetrics().recordCall({
         timestamp: new Date(),
@@ -303,7 +304,7 @@ async function callClaudeBatch(
 
     const content = data.content[0]?.text;
     if (!content) {
-      console.warn('No content in Anthropic response');
+      logger.warn('No content in Anthropic response');
       return null;
     }
 
@@ -323,7 +324,7 @@ async function callClaudeBatch(
 
     return parsed;
   } catch (error) {
-    console.warn('Anthropic API batch call failed:', error);
+    logger.warn({ err: error }, 'Anthropic API batch call failed');
 
     getGlobalMetrics().recordCall({
       timestamp: new Date(),
@@ -472,7 +473,7 @@ export async function generateBrief(
 
   // If no API key, return fallback
   if (!apiKey) {
-    console.warn('No Anthropic API key - returning fallback brief');
+    logger.warn('No Anthropic API key - returning fallback brief');
     return createFallbackBrief(problem, gaps, effortLevel);
   }
 
@@ -480,11 +481,11 @@ export async function generateBrief(
   const prompt = buildBriefPrompt(problem, gaps, stackRec, effortLevel);
 
   // Call Claude with tier-appropriate model
-  console.log(`Generating brief with model: ${model} (tier: ${opts.userTier})`);
+  logger.info({ model, tier: opts.userTier }, 'Generating brief');
   const response = await callClaude(prompt, apiKey, model, opts.temperature);
 
   if (!response) {
-    console.warn(`Brief generation failed for problem ${problem.id} - using fallback`);
+    logger.warn({ problemId: problem.id }, 'Brief generation failed, using fallback');
     return createFallbackBrief(problem, gaps, effortLevel);
   }
 
@@ -508,7 +509,7 @@ export async function generateAllBriefs(
 
   const apiKey = opts.anthropicApiKey || process.env.ANTHROPIC_API_KEY || '';
   const model = opts.model || getBriefModel(opts.userTier);
-  console.log(`Generating ${scoredProblems.length} briefs with model: ${model} (tier: ${opts.userTier})`);
+  logger.info({ count: scoredProblems.length, model, tier: opts.userTier }, 'Generating briefs');
 
   // Batch size for brief generation (5 briefs per API call for quality balance)
   const BRIEF_BATCH_SIZE = 5;
@@ -524,7 +525,7 @@ export async function generateAllBriefs(
   for (const problem of scoredProblems) {
     const gaps = gapAnalyses.get(problem.id);
     if (!gaps) {
-      console.warn(`No gap analysis found for problem ${problem.id}`);
+      logger.warn({ problemId: problem.id }, 'No gap analysis found for problem');
       const effortLevel = scoreToEffortLevel(problem.scores);
       results.push(createFallbackBrief(problem, {
         problemId: problem.id,
@@ -549,7 +550,7 @@ export async function generateAllBriefs(
 
   // If no API key, return fallbacks for remaining
   if (!apiKey) {
-    console.warn('No Anthropic API key - returning fallback briefs');
+    logger.warn('No Anthropic API key - returning fallback briefs');
     for (const { problem, gaps, effortLevel } of problemsWithGaps) {
       results.push(createFallbackBrief(problem, gaps, effortLevel));
     }
@@ -596,14 +597,14 @@ export async function generateAllBriefs(
       }
     } else {
       // Fallback for failed batch
-      console.warn(`Batch brief generation failed for ${batch.length} problems - using fallbacks`);
+      logger.warn({ batchSize: batch.length }, 'Batch brief generation failed, using fallbacks');
       for (const { problem, gaps, effortLevel } of batch) {
         results.push(createFallbackBrief(problem, gaps, effortLevel));
       }
     }
 
     const completed = Math.min(i + BRIEF_BATCH_SIZE, problemsWithGaps.length);
-    console.log(`Generated ${completed}/${problemsWithGaps.length} briefs`);
+    logger.info({ completed, total: problemsWithGaps.length }, 'Brief generation progress');
 
     // Rate limiting between batches
     if (i + BRIEF_BATCH_SIZE < problemsWithGaps.length) {
@@ -614,7 +615,7 @@ export async function generateAllBriefs(
   // Sort by priority score
   results.sort((a, b) => b.priorityScore - a.priorityScore);
 
-  console.log('Brief generation complete');
+  logger.info('Brief generation complete');
   return results;
 }
 

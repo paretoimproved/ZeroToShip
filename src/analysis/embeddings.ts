@@ -8,6 +8,7 @@
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
+import logger from '../lib/logger';
 
 export interface EmbeddingResult {
   embedding: number[];
@@ -72,7 +73,7 @@ export class EmbeddingClient {
         this.cache = JSON.parse(data);
       }
     } catch (error) {
-      console.warn('Failed to load embedding cache:', error);
+      logger.warn({ err: error }, 'Failed to load embedding cache');
       this.cache = {};
     }
   }
@@ -90,7 +91,7 @@ export class EmbeddingClient {
       }
       fs.writeFileSync(this.cacheFile, JSON.stringify(this.cache), 'utf-8');
     } catch (error) {
-      console.warn('Failed to save embedding cache:', error);
+      logger.warn({ err: error }, 'Failed to save embedding cache');
     }
   }
 

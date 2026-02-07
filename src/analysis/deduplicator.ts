@@ -7,6 +7,7 @@
 
 import type { RawPost } from '../scrapers/types';
 import { EmbeddingClient, prepareTextForEmbedding } from './embeddings';
+import logger from '../lib/logger';
 import {
   hierarchicalCluster,
   groupByCluster,
@@ -147,7 +148,7 @@ Problem statement:`;
     });
 
     if (!response.ok) {
-      console.warn('Failed to generate problem statement:', response.status);
+      logger.warn({ status: response.status }, 'Failed to generate problem statement');
       return representative.title;
     }
 
@@ -157,7 +158,7 @@ Problem statement:`;
 
     return data.content[0]?.text?.trim() || representative.title;
   } catch (error) {
-    console.warn('Error generating problem statement:', error);
+    logger.warn({ err: error }, 'Error generating problem statement');
     return representative.title;
   }
 }
@@ -273,7 +274,7 @@ async function generateProblemStatementsBatch(
 
     return results;
   } catch (error) {
-    console.warn('Batch statement generation failed:', error);
+    logger.warn({ err: error }, 'Batch statement generation failed');
     // Return fallbacks using post titles
     const results = new Map<string, string>();
     for (const c of clusters) {
@@ -301,7 +302,7 @@ export async function clusterPosts(
     opts.cacheDir || undefined
   );
 
-  console.log(`Clustering ${posts.length} posts...`);
+  logger.info({ count: posts.length }, 'Clustering posts');
 
   // Step 1: Prepare texts for embedding
   const texts = posts.map(post =>
@@ -309,20 +310,20 @@ export async function clusterPosts(
   );
 
   // Step 2: Generate embeddings in batch
-  console.log('Generating embeddings...');
+  logger.info('Generating embeddings...');
   const embeddingResults = await embeddingClient.embedBatch(texts);
   const embeddings = embeddingResults.map(r => r.embedding);
 
   const cacheStats = embeddingClient.getCacheStats();
-  console.log(`Embedding cache: ${cacheStats.hits} hits, ${cacheStats.misses} misses`);
+  logger.info({ hits: cacheStats.hits, misses: cacheStats.misses }, 'Embedding cache stats');
 
   // Step 3: Cluster using hierarchical clustering
-  console.log('Clustering by similarity...');
+  logger.info('Clustering by similarity...');
   const labels = hierarchicalCluster(embeddings, opts.similarityThreshold);
 
   // Step 4: Group posts by cluster
   const clusterGroups = groupByCluster(labels);
-  console.log(`Found ${clusterGroups.size} clusters from ${posts.length} posts`);
+  logger.info({ clusters: clusterGroups.size, posts: posts.length }, 'Clustering results');
 
   // Step 5: Build cluster data without statements first
   const anthropicKey = opts.anthropicApiKey || process.env.ANTHROPIC_API_KEY || '';
@@ -362,7 +363,7 @@ export async function clusterPosts(
   const statements = new Map<string, string>();
 
   if (opts.generateSummaries && anthropicKey) {
-    console.log(`Generating problem statements for ${clustersData.length} clusters in batches of ${STATEMENT_BATCH_SIZE}...`);
+    logger.info({ clusters: clustersData.length, batchSize: STATEMENT_BATCH_SIZE }, 'Generating problem statements');
 
     for (let i = 0; i < clustersData.length; i += STATEMENT_BATCH_SIZE) {
       const batch = clustersData.slice(i, i + STATEMENT_BATCH_SIZE);
@@ -375,7 +376,7 @@ export async function clusterPosts(
         statements.set(id, statement);
       }
 
-      console.log(`Generated statements for ${Math.min(i + STATEMENT_BATCH_SIZE, clustersData.length)}/${clustersData.length} clusters`);
+      logger.info({ completed: Math.min(i + STATEMENT_BATCH_SIZE, clustersData.length), total: clustersData.length }, 'Statement generation progress');
     }
   }
 
@@ -398,7 +399,7 @@ export async function clusterPosts(
     return scoreB - scoreA;
   });
 
-  console.log(`Clustering complete: ${clusters.length} unique problems identified`);
+  logger.info({ uniqueProblems: clusters.length }, 'Clustering complete');
 
   return clusters;
 }

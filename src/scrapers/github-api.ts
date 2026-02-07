@@ -1,5 +1,6 @@
 import { Octokit } from '@octokit/rest';
 import { RateLimitInfo } from './types';
+import logger from '../lib/logger';
 
 /**
  * GitHub API wrapper using Octokit
@@ -51,7 +52,7 @@ export class GitHubAPI {
     if (this.rateLimitRemaining < 5) {
       const waitMs = Math.max(0, this.rateLimitResetAt.getTime() - Date.now());
       if (waitMs > 0) {
-        console.log('Rate limit low. Waiting ' + Math.ceil(waitMs / 1000) + 's...');
+        logger.info({ waitSeconds: Math.ceil(waitMs / 1000) }, 'Rate limit low, waiting');
         await new Promise(resolve => setTimeout(resolve, waitMs + 1000));
       }
     }
@@ -97,7 +98,7 @@ export class GitHubAPI {
         }
       } catch (error) {
         if (this.isRateLimitError(error)) {
-          console.warn('Rate limit exceeded, stopping pagination');
+          logger.warn('Rate limit exceeded, stopping pagination');
           break;
         }
         throw error;

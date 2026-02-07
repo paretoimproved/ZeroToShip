@@ -8,6 +8,7 @@
 import type { ScoredProblem } from '../analysis/scorer';
 import type { GapAnalysis } from '../analysis/gap-analyzer';
 import type { TechStackRecommendation, EffortLevel } from './tech-stacks';
+import logger from '../lib/logger';
 
 /**
  * System prompt for brief generation
@@ -266,8 +267,7 @@ export function parseJsonResponse<T>(response: string): T | null {
 
     return JSON.parse(cleaned) as T;
   } catch (error) {
-    console.warn('Failed to parse JSON response:', error);
-    console.warn('Raw response:', response);
+    logger.warn({ err: error, rawResponse: response.slice(0, 200) }, 'Failed to parse JSON response');
     return null;
   }
 }

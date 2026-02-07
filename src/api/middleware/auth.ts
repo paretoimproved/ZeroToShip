@@ -6,6 +6,7 @@
  * - API keys (for Enterprise tier programmatic access)
  */
 
+import { randomBytes } from 'crypto';
 import { FastifyRequest, FastifyReply, FastifyPluginAsync } from 'fastify';
 import { createClient } from '@supabase/supabase-js';
 import { eq } from 'drizzle-orm';
@@ -242,9 +243,10 @@ export const authPlugin: FastifyPluginAsync = async (fastify) => {
 export function generateApiKey(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   const prefix = 'if_';
+  const bytes = randomBytes(48);
   let key = prefix;
   for (let i = 0; i < 48; i++) {
-    key += chars.charAt(Math.floor(Math.random() * chars.length));
+    key += chars.charAt(bytes[i] % chars.length);
   }
   return key;
 }

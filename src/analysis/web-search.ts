@@ -5,6 +5,8 @@
  * Generates search queries from problem statements and fetches results.
  */
 
+import logger from '../lib/logger';
+
 /**
  * A single search result from any provider
  */
@@ -299,7 +301,7 @@ export class WebSearchClient {
         const response = await this.search(query);
         results.push(response);
       } catch (error) {
-        console.warn(`Search failed for query "${query}":`, error);
+        logger.warn({ err: error, query }, 'Search failed for query');
         // Continue with other queries
       }
     }

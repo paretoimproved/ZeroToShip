@@ -9,6 +9,7 @@
  */
 
 import type { ProblemCluster } from './deduplicator';
+import logger from '../lib/logger';
 import {
   WebSearchClient,
   generateSearchQueries,
@@ -154,7 +155,7 @@ export async function analyzeGaps(
   try {
     searchResponses = await searchClient.searchForProblem(problem.problemStatement);
   } catch (error) {
-    console.warn(`Search failed for problem ${problem.id}:`, error);
+    logger.warn({ err: error, problemId: problem.id }, 'Search failed for problem');
   }
 
   // Deduplicate search results
@@ -226,7 +227,7 @@ export async function analyzeAllGaps(
   };
   const results: GapAnalysis[] = [];
 
-  console.log(`Starting gap analysis for ${problems.length} problems...`);
+  logger.info({ count: problems.length }, 'Starting gap analysis');
 
   // Filter problems that need analysis vs skipped
   const toAnalyze = problems.filter(
@@ -243,11 +244,11 @@ export async function analyzeAllGaps(
   }
 
   if (toAnalyze.length === 0) {
-    console.log('No problems meet frequency threshold for analysis');
+    logger.info('No problems meet frequency threshold for analysis');
     return results;
   }
 
-  console.log(`Analyzing gaps for ${toAnalyze.length} problems in batches...`);
+  logger.info({ count: toAnalyze.length }, 'Analyzing gaps in batches');
 
   // Step 1: Run all web searches (with concurrency limit)
   const searchClient = new WebSearchClient(opts.webSearch);
@@ -264,7 +265,7 @@ export async function analyzeAllGaps(
           results: WebSearchClient.deduplicateResults(responses),
         };
       } catch (error) {
-        console.warn(`Search failed for ${problem.id}:`, error);
+        logger.warn({ err: error, problemId: problem.id }, 'Search failed');
         return { id: problem.id, results: [] as SearchResult[] };
       }
     });
@@ -324,12 +325,10 @@ export async function analyzeAllGaps(
       }
     }
 
-    console.log(
-      `Analyzed ${Math.min(i + COMPETITOR_BATCH_SIZE, toAnalyze.length)}/${toAnalyze.length} problems`
-    );
+    logger.info({ completed: Math.min(i + COMPETITOR_BATCH_SIZE, toAnalyze.length), total: toAnalyze.length }, 'Gap analysis progress');
   }
 
-  console.log(`Gap analysis complete for ${results.length} problems`);
+  logger.info({ count: results.length }, 'Gap analysis complete');
   return results;
 }
 

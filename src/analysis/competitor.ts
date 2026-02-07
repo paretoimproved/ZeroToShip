@@ -7,6 +7,7 @@
 
 import type { SearchResult } from './web-search';
 import { getBatchModel } from '../config/models';
+import logger from '../lib/logger';
 import { getGlobalMetrics } from '../scheduler/utils/api-metrics';
 import { estimateTokens } from '../scheduler/utils/token-estimator';
 
@@ -266,7 +267,7 @@ export async function analyzeCompetitors(
 
   // If no API key, return fallback analysis
   if (!opts.anthropicApiKey) {
-    console.warn('No Anthropic API key available, using fallback analysis');
+    logger.warn('No Anthropic API key available, using fallback analysis');
     return createFallbackAnalysis(relevantResults);
   }
 
@@ -291,7 +292,7 @@ export async function analyzeCompetitors(
     });
 
     if (!response.ok) {
-      console.warn(`Anthropic API error: ${response.status}, using fallback`);
+      logger.warn({ status: response.status }, 'Anthropic API error, using fallback');
       return createFallbackAnalysis(relevantResults);
     }
 
@@ -301,13 +302,13 @@ export async function analyzeCompetitors(
 
     const content = data.content[0]?.text;
     if (!content) {
-      console.warn('Empty response from Anthropic, using fallback');
+      logger.warn('Empty response from Anthropic, using fallback');
       return createFallbackAnalysis(relevantResults);
     }
 
     return parseAnalysisResponse(content);
   } catch (error) {
-    console.warn('Error analyzing competitors:', error);
+    logger.warn({ err: error }, 'Error analyzing competitors');
     return createFallbackAnalysis(relevantResults);
   }
 }
@@ -463,7 +464,7 @@ function parseBatchCompetitorResponse(
       });
     }
   } catch (error) {
-    console.warn('Failed to parse batch response:', error);
+    logger.warn({ err: error }, 'Failed to parse batch response');
   }
 
   return results;
@@ -491,7 +492,7 @@ export async function analyzeCompetitorsBatch(
 
   // If no API key, return fallback for all problems
   if (!opts.anthropicApiKey) {
-    console.warn('No Anthropic API key available, using fallback analysis for batch');
+    logger.warn('No Anthropic API key available, using fallback analysis for batch');
     for (const p of problems) {
       allResults.set(p.id, createFallbackAnalysis(p.results));
     }
@@ -580,7 +581,7 @@ export async function analyzeCompetitorsBatch(
         }
       }
     } catch (error) {
-      console.warn('Batch competitor analysis failed, using fallbacks:', error);
+      logger.warn({ err: error }, 'Batch competitor analysis failed, using fallbacks');
       for (const p of batch) {
         allResults.set(p.id, createFallbackAnalysis(p.results));
       }

@@ -1,15 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GitHubScraper, DEFAULT_GITHUB_QUERIES, scrapeGitHub } from '../../src/scrapers/github';
-import { detectSignals, PAIN_POINT_SIGNALS } from '../../src/scrapers/types';
+import { PAIN_POINT_SIGNALS } from '../../src/scrapers/types';
+import { detectSignals } from '../../src/scrapers/signals';
 
 describe('GitHub Scraper', () => {
   describe('detectSignals', () => {
     it('should detect pain point signals in text', () => {
-      const text = 'It would be nice if this feature existed. I wish this had better docs.';
+      const text = 'It would be nice if this feature existed. I wish I had better docs.';
       const signals = detectSignals(text);
-      
+
       expect(signals).toContain('would be nice if');
-      expect(signals).toContain('wish this had');
+      expect(signals).toContain('i wish');
     });
 
     it('should return empty array when no signals found', () => {

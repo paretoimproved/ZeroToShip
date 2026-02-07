@@ -1,5 +1,7 @@
 import { GitHubAPI, GitHubSearchIssueItem } from './github-api';
-import { GitHubIssue, GitHubSearchQuery, ScrapeResult, detectSignals } from './types';
+import { GitHubIssue, GitHubSearchQuery, ScrapeResult } from './types';
+import { detectSignals } from './signals';
+import logger from '../lib/logger';
 
 /**
  * Default search queries for finding unmet needs in GitHub issues
@@ -60,14 +62,14 @@ export class GitHubScraper {
     let totalFound = 0;
     let rateLimitRemaining = 5000;
 
-    console.log('Starting GitHub scrape with ' + this.queries.length + ' queries...');
+    logger.info({ queryCount: this.queries.length }, 'Starting GitHub scrape');
 
     for (const queryConfig of this.queries) {
       try {
         const dateFilter = ' created:>' + cutoffDate.toISOString().split('T')[0];
         const fullQuery = queryConfig.query + dateFilter;
         
-        console.log('Searching: ' + queryConfig.description);
+        logger.info({ description: queryConfig.description }, 'Searching');
         
         const result = await this.api.searchIssues(fullQuery, {
           perPage: 100,
@@ -93,11 +95,11 @@ export class GitHubScraper {
         }
 
         if (rateLimitRemaining < 10) {
-          console.warn('Rate limit running low, stopping early');
+          logger.warn('Rate limit running low, stopping early');
           break;
         }
       } catch (error) {
-        console.error('Error with query "' + queryConfig.description + '":', error);
+        logger.error({ err: error, description: queryConfig.description }, 'Error with query');
       }
     }
 
@@ -107,7 +109,7 @@ export class GitHubScraper {
       return scoreB - scoreA;
     });
 
-    console.log('Scraped ' + sortedIssues.length + ' unique issues from ' + totalFound + ' total matches');
+    logger.info({ unique: sortedIssues.length, total: totalFound }, 'GitHub scrape complete');
 
     return {
       posts: sortedIssues,

@@ -9,6 +9,7 @@
  */
 
 import { Tweet, TwitterConfig, PAIN_POINT_SIGNALS } from './types';
+import logger from '../lib/logger';
 
 const TWITTER_API_BASE = 'https://api.twitter.com/2';
 
@@ -193,7 +194,7 @@ export class TwitterApiClient {
 
       if (!response.ok) {
         if (response.status === 429) {
-          console.warn('Rate limit hit, stopping pagination');
+          logger.warn('Rate limit hit, stopping pagination');
           break;
         }
         throw new Error(`Twitter API error: ${response.status}`);
@@ -298,7 +299,7 @@ export function createTwitterApiClient(bearerToken?: string): TwitterApiClient |
   const token = bearerToken ?? process.env.TWITTER_BEARER_TOKEN;
 
   if (!token) {
-    console.warn('No Twitter bearer token found. Set TWITTER_BEARER_TOKEN environment variable.');
+    logger.warn('No Twitter bearer token found. Set TWITTER_BEARER_TOKEN environment variable.');
     return null;
   }
 

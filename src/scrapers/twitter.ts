@@ -19,6 +19,7 @@ import { config } from 'dotenv';
 import { Tweet, TwitterConfig, TwitterSearchQuery, PAIN_POINT_SIGNALS } from './types';
 import { TwitterApiClient, createTwitterApiClient, DEFAULT_TWITTER_QUERIES } from './twitter-api';
 import { NitterScraper, createNitterScraper } from './twitter-nitter';
+import logger from '../lib/logger';
 
 // Load environment variables
 config();
@@ -80,7 +81,7 @@ export class TwitterScraper {
           }
         }
       } catch (error) {
-        console.error(`Error searching for "${query}":`, error);
+        logger.error({ err: error, query }, `Error searching for "${query}"`);
       }
     }
 
@@ -117,12 +118,12 @@ export class TwitterScraper {
       methodUsed = 'nitter';
     }
 
-    console.log(`Using ${methodUsed} method for Twitter scraping`);
+    logger.info(`Using ${methodUsed} method for Twitter scraping`);
 
     // Process default queries
     for (const { query, description } of DEFAULT_TWITTER_QUERIES) {
       try {
-        console.log(`Searching: ${description}...`);
+        logger.info(`Searching: ${description}...`);
         queriesUsed.push(query);
 
         const tweets = await this.searchWithFallback(query, {
@@ -138,11 +139,11 @@ export class TwitterScraper {
           }
         }
 
-        console.log(`  Found ${tweets.length} tweets`);
+        logger.info({ count: tweets.length }, `Found ${tweets.length} tweets`);
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         errors.push(`Query "${description}": ${errorMsg}`);
-        console.error(`  Error: ${errorMsg}`);
+        logger.error(`Error: ${errorMsg}`);
       }
     }
 
@@ -150,7 +151,7 @@ export class TwitterScraper {
     const hashtags = ['#buildinpublic', '#indiehacker', '#devtools'];
     for (const hashtag of hashtags) {
       try {
-        console.log(`Searching hashtag: ${hashtag}...`);
+        logger.info(`Searching hashtag: ${hashtag}...`);
         queriesUsed.push(hashtag);
 
         const tweets = await this.searchWithFallback(hashtag, {
@@ -166,21 +167,18 @@ export class TwitterScraper {
           }
         }
 
-        console.log(`  Found ${tweets.length} relevant tweets`);
+        logger.info({ count: tweets.length }, `Found ${tweets.length} relevant tweets`);
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         errors.push(`Hashtag "${hashtag}": ${errorMsg}`);
-        console.error(`  Error: ${errorMsg}`);
+        logger.error(`Error: ${errorMsg}`);
       }
     }
 
     const filteredTweets = this.filterAndSortTweets(allTweets);
     const duration = Date.now() - startTime;
 
-    console.log(`\nTwitter scraping complete:`);
-    console.log(`  Total tweets: ${filteredTweets.length}`);
-    console.log(`  Duration: ${(duration / 1000).toFixed(1)}s`);
-    console.log(`  Errors: ${errors.length}`);
+    logger.info({ total: filteredTweets.length, durationMs: duration, errorCount: errors.length }, 'Twitter scraping complete');
 
     return {
       tweets: filteredTweets,
@@ -204,7 +202,7 @@ export class TwitterScraper {
       try {
         return await this.apiClient.searchTweets(query, options);
       } catch (error) {
-        console.warn(`API search failed, trying Nitter: ${error}`);
+        logger.warn({ err: error }, 'API search failed, trying Nitter');
       }
     }
 
@@ -212,7 +210,7 @@ export class TwitterScraper {
     try {
       return await this.nitterScraper.searchTweets(query, options);
     } catch (error) {
-      console.error(`Nitter search also failed: ${error}`);
+      logger.error({ err: error }, 'Nitter search also failed');
       return [];
     }
   }
@@ -366,66 +364,37 @@ export const twitterScraper = new TwitterScraper();
  * CLI entry point
  */
 async function main() {
-  console.log('='.repeat(60));
-  console.log('IdeaForge Twitter Scraper');
-  console.log('='.repeat(60));
-  console.log();
+  logger.info('='.repeat(60));
+  logger.info('IdeaForge Twitter Scraper');
+  logger.info('='.repeat(60));
 
   const scraper = new TwitterScraper();
 
   // Check status
-  console.log('Checking scraper status...');
+  logger.info('Checking scraper status...');
   const status = await scraper.getStatus();
-  console.log(`  Twitter API: ${status.api.available ? 'Available' : 'Not available'} (token: ${status.api.hasToken ? 'present' : 'missing'})`);
-  console.log(`  Nitter: ${status.nitter.available ? `Available (${status.nitter.instance})` : 'Not available'}`);
-  console.log();
+  logger.info(`Twitter API: ${status.api.available ? 'Available' : 'Not available'} (token: ${status.api.hasToken ? 'present' : 'missing'})`);
+  logger.info(`Nitter: ${status.nitter.available ? `Available (${status.nitter.instance})` : 'Not available'}`);
 
   if (!status.api.available && !status.nitter.available) {
-    console.error('ERROR: No scraping methods available!');
-    console.error('Please either:');
-    console.error('  1. Set TWITTER_BEARER_TOKEN environment variable');
-    console.error('  2. Ensure at least one Nitter instance is accessible');
+    logger.error('No scraping methods available!');
+    logger.error('Please either: 1. Set TWITTER_BEARER_TOKEN environment variable, or 2. Ensure at least one Nitter instance is accessible');
     process.exit(1);
   }
 
   // Run scraper
-  console.log('Starting Twitter scrape...');
-  console.log();
+  logger.info('Starting Twitter scrape...');
 
   const result = await scraper.scrapeAll(24, 50);
 
-  console.log();
-  console.log('='.repeat(60));
-  console.log('Results Summary');
-  console.log('='.repeat(60));
-  console.log(`  Method used: ${result.method}`);
-  console.log(`  Total tweets: ${result.totalFound}`);
-  console.log(`  Duration: ${(result.duration / 1000).toFixed(1)}s`);
-
-  if (result.errors.length > 0) {
-    console.log(`  Errors: ${result.errors.length}`);
-    result.errors.forEach(err => console.log(`    - ${err}`));
-  }
-
-  console.log();
-  console.log('Top 10 Tweets (by relevance):');
-  console.log('-'.repeat(60));
+  logger.info({ method: result.method, total: result.totalFound, durationMs: result.duration, errors: result.errors.length }, 'Results Summary');
 
   result.tweets.slice(0, 10).forEach((tweet, i) => {
-    console.log(`\n${i + 1}. @${tweet.author} (${tweet.authorFollowers} followers)`);
-    console.log(`   ${tweet.body.slice(0, 200)}${tweet.body.length > 200 ? '...' : ''}`);
-    console.log(`   ❤️ ${tweet.likes} | 🔁 ${tweet.retweets} | 💬 ${tweet.commentCount}`);
-    if (tweet.signals.length > 0) {
-      console.log(`   Signals: ${tweet.signals.join(', ')}`);
-    }
-    console.log(`   ${tweet.url}`);
+    logger.info({ rank: i + 1, author: tweet.author, followers: tweet.authorFollowers, likes: tweet.likes, retweets: tweet.retweets, comments: tweet.commentCount, signals: tweet.signals, url: tweet.url }, `${tweet.body.slice(0, 200)}`);
   });
-
-  console.log();
-  console.log('='.repeat(60));
 }
 
 // Run if executed directly (CommonJS check)
 if (require.main === module) {
-  main().catch(console.error);
+  main().catch(err => logger.error({ err }, 'Twitter scraper failed'));
 }

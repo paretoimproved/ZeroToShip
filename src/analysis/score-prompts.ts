@@ -7,6 +7,7 @@
 
 import type { ProblemCluster } from './deduplicator';
 import type { RawPost } from '../scrapers/types';
+import logger from '../lib/logger';
 
 /**
  * Response format expected from the AI scoring
@@ -114,7 +115,7 @@ export function parseScoreResponse(response: string): ScoreResponse | null {
     // Extract JSON from the response (handle markdown code blocks)
     const jsonMatch = response.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      console.warn('No JSON found in response');
+      logger.warn('No JSON found in response');
       return null;
     }
 
@@ -124,7 +125,7 @@ export function parseScoreResponse(response: string): ScoreResponse | null {
     const required = ['severity', 'marketSize', 'technicalComplexity', 'timeToMvp'];
     for (const field of required) {
       if (!parsed[field] || typeof parsed[field].score !== 'number') {
-        console.warn(`Missing or invalid field: ${field}`);
+        logger.warn({ field }, 'Missing or invalid field');
         return null;
       }
       // Clamp scores to valid range
@@ -134,7 +135,7 @@ export function parseScoreResponse(response: string): ScoreResponse | null {
 
     return parsed as ScoreResponse;
   } catch (error) {
-    console.warn('Failed to parse score response:', error);
+    logger.warn({ err: error }, 'Failed to parse score response');
     return null;
   }
 }
@@ -224,21 +225,21 @@ export function parseBatchScoreResponse(
     // Extract JSON array from response (handle markdown code blocks)
     const jsonMatch = content.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
-      console.warn('No JSON array found in batch response');
+      logger.warn('No JSON array found in batch response');
       return results;
     }
 
     const parsed = JSON.parse(jsonMatch[0]) as BatchScoreItem[];
 
     if (!Array.isArray(parsed)) {
-      console.warn('Batch response is not an array');
+      logger.warn('Batch response is not an array');
       return results;
     }
 
     // Process each item in the response
     for (const item of parsed) {
       if (!item.id) {
-        console.warn('Batch item missing id field');
+        logger.warn('Batch item missing id field');
         continue;
       }
 
@@ -248,7 +249,7 @@ export function parseBatchScoreResponse(
 
       for (const field of required) {
         if (!item[field] || typeof item[field].score !== 'number') {
-          console.warn(`Batch item ${item.id} missing or invalid field: ${field}`);
+          logger.warn({ itemId: item.id, field }, 'Batch item missing or invalid field');
           isValid = false;
           break;
         }
@@ -269,12 +270,12 @@ export function parseBatchScoreResponse(
 
     // Log if we got fewer results than expected
     if (results.size < clusterIds.length) {
-      console.warn(`Batch response had ${results.size}/${clusterIds.length} valid scores`);
+      logger.warn({ valid: results.size, expected: clusterIds.length }, 'Batch response had fewer valid scores than expected');
     }
 
     return results;
   } catch (error) {
-    console.warn('Failed to parse batch score response:', error);
+    logger.warn({ err: error }, 'Failed to parse batch score response');
     return results;
   }
 }

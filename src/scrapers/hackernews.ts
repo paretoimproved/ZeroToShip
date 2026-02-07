@@ -24,6 +24,7 @@ import {
   type HNItem,
 } from './hn-api';
 import { type HNPost, PAIN_POINT_SIGNALS } from './types';
+import logger from '../lib/logger';
 
 /**
  * Default pain point search queries
@@ -175,7 +176,7 @@ async function scrapeAskHN(
       // Small delay between queries to be nice to the API
       await new Promise(resolve => setTimeout(resolve, 100));
     } catch (error) {
-      console.error(`Error scraping Ask HN for "${query}":`, error);
+      logger.error({ err: error, query }, `Error scraping Ask HN for "${query}"`);
     }
   }
 
@@ -203,7 +204,7 @@ async function scrapeComments(
 
       await new Promise(resolve => setTimeout(resolve, 100));
     } catch (error) {
-      console.error(`Error scraping comments for "${query}":`, error);
+      logger.error({ err: error, query }, `Error scraping comments for "${query}"`);
     }
   }
 
@@ -235,11 +236,11 @@ async function scrapeShowHNComments(hoursBack: number): Promise<HNPost[]> {
 
         await new Promise(resolve => setTimeout(resolve, 200));
       } catch (error) {
-        console.error(`Error fetching Show HN item ${hit.objectID}:`, error);
+        logger.error({ err: error, itemId: hit.objectID }, `Error fetching Show HN item ${hit.objectID}`);
       }
     }
   } catch (error) {
-    console.error('Error scraping Show HN:', error);
+    logger.error({ err: error }, 'Error scraping Show HN');
   }
 
   return posts;
@@ -291,7 +292,7 @@ async function scrapeFrontPage(hoursBack: number): Promise<HNPost[]> {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
   } catch (error) {
-    console.error('Error scraping front page:', error);
+    logger.error({ err: error }, 'Error scraping front page');
   }
 
   return posts;
@@ -310,7 +311,7 @@ export async function scrapeHackerNews(
   queries: string[] = [...DEFAULT_QUERIES],
   hoursBack = 48
 ): Promise<HNPost[]> {
-  console.log(`[HN Scraper] Starting scrape with ${queries.length} queries, ${hoursBack}h window`);
+  logger.info({ queryCount: queries.length, hoursBack }, 'Starting HN scrape');
 
   const allPosts: HNPost[] = [];
 
@@ -338,11 +339,7 @@ export async function scrapeHackerNews(
   // Sort by score descending
   relevantPosts.sort((a, b) => b.score - a.score);
 
-  console.log(`[HN Scraper] Found ${relevantPosts.length} relevant posts`);
-  console.log(`  - Ask HN: ${askHNPosts.length}`);
-  console.log(`  - Comments: ${commentPosts.length}`);
-  console.log(`  - Show HN feedback: ${showHNPosts.length}`);
-  console.log(`  - Front page: ${frontPagePosts.length}`);
+  logger.info({ total: relevantPosts.length, askHN: askHNPosts.length, comments: commentPosts.length, showHN: showHNPosts.length, frontPage: frontPagePosts.length }, 'HN scrape complete');
 
   return relevantPosts;
 }

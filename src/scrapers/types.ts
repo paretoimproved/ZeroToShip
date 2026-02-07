@@ -133,12 +133,3 @@ export const PAIN_POINT_SIGNALS = [
   'enhancement',
 ] as const;
 
-/**
- * Detect pain point signals in text
- */
-export function detectSignals(text: string): string[] {
-  const lowerText = text.toLowerCase();
-  return PAIN_POINT_SIGNALS.filter(signal => 
-    lowerText.includes(signal.toLowerCase())
-  );
-}

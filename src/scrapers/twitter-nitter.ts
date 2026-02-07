@@ -11,6 +11,7 @@
 import * as cheerio from 'cheerio';
 import type { Element } from 'domhandler';
 import { Tweet, TwitterConfig, PAIN_POINT_SIGNALS } from './types';
+import logger from '../lib/logger';
 
 /**
  * Default Nitter instances to try (in order of preference)
@@ -86,7 +87,7 @@ export class NitterScraper {
         });
 
         if (!response.ok) {
-          console.warn(`Nitter instance ${this.currentInstance} returned ${response.status}`);
+          logger.warn({ instance: this.currentInstance, status: response.status }, 'Nitter instance returned error status');
           if (this.switchInstance()) {
             attempts++;
             continue;
@@ -105,7 +106,7 @@ export class NitterScraper {
 
         return tweets;
       } catch (error) {
-        console.warn(`Error with Nitter instance ${this.currentInstance}:`, error);
+        logger.warn({ err: error, instance: this.currentInstance }, 'Error with Nitter instance');
         if (this.switchInstance()) {
           attempts++;
           continue;
@@ -153,7 +154,7 @@ export class NitterScraper {
           tweets.push(tweet);
         }
       } catch (error) {
-        console.warn('Error parsing tweet element:', error);
+        logger.warn({ err: error }, 'Error parsing tweet element');
       }
     });
 

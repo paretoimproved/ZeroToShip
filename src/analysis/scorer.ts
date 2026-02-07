@@ -6,6 +6,7 @@
  */
 
 import type { ProblemCluster } from './deduplicator';
+import logger from '../lib/logger';
 import {
   buildScoringPrompt,
   parseScoreResponse,
@@ -137,7 +138,7 @@ async function callAnthropic(
 
     if (!response.ok) {
       const error = await response.text();
-      console.warn(`Anthropic API error (${response.status}):`, error);
+      logger.warn({ status: response.status, error }, 'Anthropic API error');
       return null;
     }
 
@@ -147,13 +148,13 @@ async function callAnthropic(
 
     const content = data.content[0]?.text;
     if (!content) {
-      console.warn('No content in Anthropic response');
+      logger.warn('No content in Anthropic response');
       return null;
     }
 
     return parseScoreResponse(content);
   } catch (error) {
-    console.warn('Anthropic API call failed:', error);
+    logger.warn({ err: error }, 'Anthropic API call failed');
     return null;
   }
 }
@@ -193,7 +194,7 @@ async function scoreBatch(
 
     if (!response.ok) {
       const error = await response.text();
-      console.warn(`Batch scoring API error (${response.status}):`, error);
+      logger.warn({ status: response.status, error }, 'Batch scoring API error');
 
       // Record failed call
       getGlobalMetrics().recordCall({
@@ -217,7 +218,7 @@ async function scoreBatch(
 
     const content = data.content[0]?.text;
     if (!content) {
-      console.warn('No content in batch scoring response');
+      logger.warn('No content in batch scoring response');
       return new Map();
     }
 
@@ -236,7 +237,7 @@ async function scoreBatch(
 
     return parseBatchScoreResponse(content, clusterIds);
   } catch (error) {
-    console.warn('Batch scoring API call failed:', error);
+    logger.warn({ err: error }, 'Batch scoring API call failed');
 
     // Record failed call
     getGlobalMetrics().recordCall({
@@ -337,7 +338,7 @@ export async function scoreAll(
   if (clusters.length === 0) return [];
 
   const numBatches = Math.ceil(clusters.length / BATCH_SIZE);
-  console.log(`Batch scoring ${clusters.length} problems (${numBatches} batch${numBatches === 1 ? '' : 'es'})...`);
+  logger.info({ problems: clusters.length, batches: numBatches }, 'Batch scoring problems');
 
   const results: ScoredProblem[] = [];
 
@@ -394,7 +395,7 @@ export async function scoreAll(
 
     // Progress update
     const completed = Math.min(i + BATCH_SIZE, clusters.length);
-    console.log(`Scored ${completed}/${clusters.length} problems`);
+    logger.info({ completed, total: clusters.length }, 'Scoring progress');
 
     // Rate limiting delay between batches
     if (i + BATCH_SIZE < clusters.length && opts.delayBetweenCalls > 0) {
@@ -405,7 +406,7 @@ export async function scoreAll(
   // Sort by priority (highest first)
   results.sort((a, b) => b.scores.priority - a.scores.priority);
 
-  console.log(`Scoring complete. Top priority: ${results[0]?.scores.priority.toFixed(2) || 'N/A'}`);
+  logger.info({ topPriority: results[0]?.scores.priority.toFixed(2) || 'N/A' }, 'Scoring complete');
 
   return results;
 }

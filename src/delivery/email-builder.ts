@@ -5,6 +5,7 @@
  */
 
 import type { IdeaBrief } from '../generation/brief-generator';
+import logger from '../lib/logger';
 
 /**
  * Subscriber tier definitions
@@ -553,8 +554,6 @@ function buildPlainTextEmail(
  * Preview email in console (for debugging)
  */
 export function previewEmail(content: EmailContent): void {
-  console.log('Subject:', content.subject);
-  console.log('');
-  console.log('Plain Text Version:');
-  console.log(content.text);
+  logger.info({ subject: content.subject }, 'Email preview');
+  logger.info(content.text);
 }

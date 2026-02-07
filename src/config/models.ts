@@ -37,16 +37,16 @@ export function getBatchModel(): ClaudeModel {
 /**
  * Get the appropriate model for brief generation based on tier
  *
- * Cost optimization: Pro tier uses Haiku for cost efficiency.
- * Quality difference is minimal for brief generation tasks.
- * Enterprise gets Sonnet for premium quality.
+ * Free: Haiku (preview quality, cost-effective)
+ * Pro: Sonnet (full quality briefs)
+ * Enterprise: Opus (premium quality)
  */
 export function getBriefModel(tier: UserTier): ClaudeModel {
   switch (tier) {
     case 'enterprise':
-      return CLAUDE_MODELS.SONNET;
+      return CLAUDE_MODELS.OPUS;
     case 'pro':
-      return CLAUDE_MODELS.HAIKU;
+      return CLAUDE_MODELS.SONNET;
     case 'free':
     default:
       return CLAUDE_MODELS.HAIKU;

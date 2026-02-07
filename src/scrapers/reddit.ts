@@ -7,6 +7,7 @@
 
 import { RawPost } from './types';
 import { detectSignals, hasSignals } from './signals';
+import logger from '../lib/logger';
 
 /**
  * Reddit API listing response structure
@@ -241,7 +242,7 @@ async function scrapeSubreddit(
       // Rate limiting delay
       await sleep(config.requestDelay);
     } catch (error) {
-      console.error(`Error scraping r/${subreddit}:`, error);
+      logger.error({ err: error, subreddit }, `Error scraping r/${subreddit}`);
       break;
     }
   }
@@ -275,28 +276,24 @@ export async function scrapeReddit(
 
   const allPosts: RawPost[] = [];
 
-  console.log(
-    `Starting Reddit scrape of ${subreddits.length} subreddits, looking back ${hoursBack} hours`
-  );
+  logger.info({ subredditCount: subreddits.length, hoursBack }, 'Starting Reddit scrape');
 
   for (const subreddit of subreddits) {
-    console.log(`Scraping r/${subreddit}...`);
+    logger.info({ subreddit }, `Scraping r/${subreddit}...`);
 
     try {
       const posts = await scrapeSubreddit(subreddit, hoursBack, mergedConfig);
       allPosts.push(...posts);
-      console.log(
-        `  Found ${posts.length} posts with signals in r/${subreddit}`
-      );
+      logger.info({ subreddit, count: posts.length }, `Found ${posts.length} posts with signals in r/${subreddit}`);
 
       // Rate limiting between subreddits
       await sleep(mergedConfig.requestDelay);
     } catch (error) {
-      console.error(`Failed to scrape r/${subreddit}:`, error);
+      logger.error({ err: error, subreddit }, `Failed to scrape r/${subreddit}`);
     }
   }
 
-  console.log(`\nTotal: ${allPosts.length} posts with pain point signals`);
+  logger.info({ total: allPosts.length }, 'Reddit scrape complete');
 
   // Deduplicate by sourceId (in case same post appears in multiple places)
   const seen = new Set<string>();
