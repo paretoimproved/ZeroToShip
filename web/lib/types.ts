@@ -1,9 +1,25 @@
 /**
  * TypeScript types for IdeaForge Web Dashboard
- * Based on IdeaBrief interface from ideaforge core
+ *
+ * Shared API contract types (enums, generic responses, error shapes)
+ * are imported from @ideaforge/shared. Frontend-specific types that
+ * differ from the backend (User, UserPreferences, Subscription, and
+ * IdeaBrief with all fields required) are defined locally.
  */
 
-export type EffortLevel = "weekend" | "week" | "month" | "quarter";
+import type { EffortLevel } from '@ideaforge/shared';
+
+// Re-export shared types so existing imports from "@/lib/types" keep working
+export type {
+  EffortLevel,
+  PaginatedResponse,
+  ApiError,
+} from '@ideaforge/shared';
+
+// ─── Frontend-specific types ─────────────────────────────────────────────────
+// IdeaBrief: The frontend assumes all fields are populated (fully-loaded brief).
+// The backend schema marks many fields as optional to support partial creation,
+// but the frontend only displays complete briefs.
 
 export interface IdeaBrief {
   id: string;
@@ -69,18 +85,4 @@ export interface Subscription {
   status: "active" | "canceled" | "past_due";
   currentPeriodEnd: string;
   cancelAtPeriodEnd: boolean;
-}
-
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  pageSize: number;
-  hasMore: boolean;
-}
-
-export interface ApiError {
-  code: string;
-  message: string;
-  details?: Record<string, unknown>;
 }
