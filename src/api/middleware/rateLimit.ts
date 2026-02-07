@@ -10,28 +10,21 @@
 
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { eq, and, gt } from 'drizzle-orm';
+import { config } from '../../config/env';
 import { db, rateLimits } from '../db/client';
 import type { UserTier } from '../schemas';
+import {
+  RATE_LIMITS,
+  IDEAS_LIMIT,
+} from '../config/tiers';
 
-/**
- * Rate limit configuration per tier
- */
-export const RATE_LIMITS: Record<UserTier, { requests: number; windowMs: number }> = {
-  anonymous: { requests: 10, windowMs: 60 * 60 * 1000 }, // 10/hour
-  free: { requests: 100, windowMs: 60 * 60 * 1000 }, // 100/hour
-  pro: { requests: 1000, windowMs: 60 * 60 * 1000 }, // 1000/hour
-  enterprise: { requests: 10000, windowMs: 60 * 60 * 1000 }, // 10000/hour
-};
+export { RATE_LIMITS, IDEAS_LIMIT };
 
-/**
- * Ideas returned per tier
- */
-export const IDEAS_LIMIT: Record<UserTier, number> = {
-  anonymous: 3,
-  free: 3,
-  pro: 10,
-  enterprise: Infinity,
-};
+/** One hour in milliseconds */
+const ONE_HOUR_MS = 60 * 60 * 1000;
+
+/** Interval for cleaning up expired rate limit entries (10 minutes) */
+const CLEANUP_INTERVAL_MS = 10 * 60 * 1000;
 
 /**
  * In-memory rate limit tracking for performance
@@ -166,7 +159,7 @@ export async function rateLimitMiddleware(
 
   // Use memory store for development, DB for production
   const result =
-    process.env.NODE_ENV === 'production'
+    config.isProduction
       ? await checkRateLimitDb(key, tier)
       : checkRateLimitMemory(key, tier);
 
@@ -228,7 +221,7 @@ export function clearRateLimit(key: string): void {
  */
 export function cleanupExpiredRateLimits(): void {
   const now = Date.now();
-  const oneHourAgo = now - 60 * 60 * 1000;
+  const oneHourAgo = now - ONE_HOUR_MS;
 
   for (const [key, entry] of memoryStore.entries()) {
     if (entry.windowStart < oneHourAgo) {
@@ -238,6 +231,6 @@ export function cleanupExpiredRateLimits(): void {
 }
 
 // Clean up expired entries every 10 minutes
-if (process.env.NODE_ENV !== 'test') {
-  setInterval(cleanupExpiredRateLimits, 10 * 60 * 1000);
+if (!config.isTest) {
+  setInterval(cleanupExpiredRateLimits, CLEANUP_INTERVAL_MS);
 }

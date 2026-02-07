@@ -12,30 +12,54 @@ import { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { optionalAuth, requireAuth } from '../middleware/auth';
 import { rateLimitMiddleware } from '../middleware/rateLimit';
+import { createTierGate } from '../middleware/tierGate';
 import {
-  filterIdeasForTier,
-  filterIdeaForTier,
-  createTierGate,
-  canAccessFullBrief,
-} from '../middleware/tierGate';
-import {
-  getTodaysIdeas,
-  getRecentIdeas,
-  getIdeaById,
-  getArchivedIdeas,
-  trackView,
-  saveIdea,
+  listIdeas,
   unsaveIdea,
   getCategories,
+  getTodaysIdeasForTier,
+  getArchivedIdeasForTier,
+  getIdeaByIdForTier,
+  saveIdeaForUser,
 } from '../services/ideas';
 import {
   IdeaListResponseSchema,
   IdeaSummarySchema,
   ArchiveQuerySchema,
+  PaginationQuerySchema,
+  PaginatedIdeasResponseSchema,
 } from '../schemas';
 
 export const ideasRoutes: FastifyPluginAsync = async (fastify) => {
   const app = fastify.withTypeProvider<ZodTypeProvider>();
+
+  /**
+   * GET /api/v1/ideas
+   * List all published ideas with limit/offset pagination
+   */
+  app.get(
+    '/',
+    {
+      preHandler: [optionalAuth, rateLimitMiddleware],
+      schema: {
+        querystring: PaginationQuerySchema,
+        response: {
+          200: PaginatedIdeasResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const { limit, offset } = request.query;
+      const { data, total } = await listIdeas({ limit, offset });
+
+      return reply.send({
+        data,
+        total,
+        limit,
+        offset,
+      });
+    }
+  );
 
   /**
    * GET /api/v1/ideas/today
@@ -52,14 +76,7 @@ export const ideasRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request, reply) => {
-      // Get today's ideas, or recent if none today
-      let allIdeas = await getTodaysIdeas();
-      if (allIdeas.length === 0) {
-        allIdeas = await getRecentIdeas(20);
-      }
-
-      // Filter based on tier
-      const { ideas, total, limited } = filterIdeasForTier(allIdeas, request.userTier);
+      const { ideas, total } = await getTodaysIdeasForTier(request.userTier);
 
       return reply.send({
         ideas,
@@ -117,12 +134,7 @@ export const ideasRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, reply) => {
       const query = request.query;
-      const { ideas: allIdeas, total } = await getArchivedIdeas(query);
-
-      // Filter based on tier
-      const { ideas } = filterIdeasForTier(allIdeas, request.userTier);
-
-      const hasMore = query.page * query.pageSize < total;
+      const { ideas, total, hasMore } = await getArchivedIdeasForTier(query, request.userTier);
 
       return reply.send({
         ideas,
@@ -158,35 +170,23 @@ export const ideasRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, reply) => {
       const { id } = request.params;
-      const idea = await getIdeaById(id);
+      const result = await getIdeaByIdForTier(id, request.userTier, request.userId);
 
-      if (!idea) {
+      if (!result) {
         return reply.status(404).send({
           code: 'NOT_FOUND',
           message: 'Idea not found',
         });
       }
 
-      // Track view if authenticated
-      if (request.userId) {
-        trackView(request.userId, id).catch(() => {});
-      }
-
-      // Filter based on tier
-      const filtered = filterIdeaForTier(idea, request.userTier);
-
-      // Add upgrade prompt if user can't see full brief
-      if (!canAccessFullBrief(request.userTier)) {
+      if (result.upgrade) {
         return reply.send({
-          ...filtered,
-          _upgrade: {
-            message: 'Upgrade to Pro to see the full business brief',
-            url: 'https://ideaforge.io/pricing',
-          },
-        } as typeof filtered & { _upgrade: { message: string; url: string } });
+          ...result.idea,
+          _upgrade: result.upgrade,
+        } as typeof result.idea & { _upgrade: { message: string; url: string } });
       }
 
-      return reply.send(filtered);
+      return reply.send(result.idea);
     }
   );
 
@@ -216,22 +216,16 @@ export const ideasRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, reply) => {
       const { id } = request.params;
+      const result = await saveIdeaForUser(request.userId!, id);
 
-      // Verify idea exists
-      const idea = await getIdeaById(id);
-      if (!idea) {
+      if (!result) {
         return reply.status(404).send({
           code: 'NOT_FOUND',
           message: 'Idea not found',
         });
       }
 
-      const success = await saveIdea(request.userId!, id);
-
-      return reply.send({
-        success,
-        message: success ? 'Idea saved' : 'Already saved',
-      });
+      return reply.send(result);
     }
   );
 

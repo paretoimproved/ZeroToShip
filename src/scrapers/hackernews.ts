@@ -23,8 +23,37 @@ import {
   type HNAlgoliaHit,
   type HNItem,
 } from './hn-api';
-import { type HNPost, PAIN_POINT_SIGNALS } from './types';
+import { type HNPost } from './types';
+import { detectSignals, hasSignals } from './signals';
 import logger from '../lib/logger';
+import {
+  sleep,
+  stripHtml,
+  deduplicatePosts,
+  wrapScraperError,
+  truncateResults,
+} from './shared';
+
+/** Default results per Algolia search query */
+const ALGOLIA_RESULTS_PER_QUERY = 100;
+
+/** Results per Show HN / front page query (smaller to reduce noise) */
+const SHOW_HN_RESULTS_PER_QUERY = 30;
+
+/** Delay between sequential Algolia queries (ms) */
+const ALGOLIA_QUERY_DELAY_MS = 100;
+
+/** Delay between Show HN item detail fetches (ms) */
+const SHOW_HN_ITEM_DELAY_MS = 200;
+
+/** Minimum HN points for a front page story to be included */
+const MIN_FRONT_PAGE_POINTS = 10;
+
+/** Minimum HN comments for a front page story to be included */
+const MIN_FRONT_PAGE_COMMENTS = 5;
+
+/** Minimum score for a high-engagement story to bypass signal filter */
+const HIGH_ENGAGEMENT_SCORE_THRESHOLD = 50;
 
 /**
  * Default pain point search queries
@@ -100,61 +129,6 @@ function itemToPost(item: HNItem, storyTitle?: string): HNPost {
 }
 
 /**
- * Normalize apostrophes (smart quotes to straight quotes)
- */
-function normalizeApostrophes(text: string): string {
-  return text.replace(/[\u2018\u2019\u0060\u00B4]/g, "'");
-}
-
-/**
- * Detect pain point signals in text
- */
-function detectSignals(text: string): string[] {
-  const normalizedText = normalizeApostrophes(text.toLowerCase());
-  return PAIN_POINT_SIGNALS.filter(signal => {
-    const normalizedSignal = normalizeApostrophes(signal.toLowerCase());
-    return normalizedText.includes(normalizedSignal);
-  });
-}
-
-/**
- * Check if text contains any pain point signals
- */
-function hasPainPointSignals(text: string): boolean {
-  return detectSignals(text).length > 0;
-}
-
-/**
- * Remove HTML tags from text
- */
-function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&#x27;/g, "'")
-    .replace(/&nbsp;/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-/**
- * Deduplicate posts by sourceId
- */
-function deduplicatePosts(posts: HNPost[]): HNPost[] {
-  const seen = new Set<string>();
-  return posts.filter(post => {
-    if (seen.has(post.sourceId)) {
-      return false;
-    }
-    seen.add(post.sourceId);
-    return true;
-  });
-}
-
-/**
  * Scrape Ask HN posts matching queries
  */
 async function scrapeAskHN(
@@ -165,7 +139,7 @@ async function scrapeAskHN(
 
   for (const query of queries) {
     try {
-      const response = await searchAskHN(query, hoursBack, 0, 100);
+      const response = await searchAskHN(query, hoursBack, 0, ALGOLIA_RESULTS_PER_QUERY);
 
       for (const hit of response.hits) {
         const post = hitToPost(hit);
@@ -173,10 +147,10 @@ async function scrapeAskHN(
         posts.push(post);
       }
 
-      // Small delay between queries to be nice to the API
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await sleep(ALGOLIA_QUERY_DELAY_MS);
     } catch (error) {
-      logger.error({ err: error, query }, `Error scraping Ask HN for "${query}"`);
+      const scraperErr = wrapScraperError(error, 'hn', { query });
+      logger.error({ err: scraperErr, query }, `Error scraping Ask HN for "${query}"`);
     }
   }
 
@@ -194,7 +168,7 @@ async function scrapeComments(
 
   for (const query of queries) {
     try {
-      const response = await searchComments(query, hoursBack, 0, 100);
+      const response = await searchComments(query, hoursBack, 0, ALGOLIA_RESULTS_PER_QUERY);
 
       for (const hit of response.hits) {
         const post = hitToPost(hit);
@@ -202,9 +176,10 @@ async function scrapeComments(
         posts.push(post);
       }
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await sleep(ALGOLIA_QUERY_DELAY_MS);
     } catch (error) {
-      logger.error({ err: error, query }, `Error scraping comments for "${query}"`);
+      const scraperErr = wrapScraperError(error, 'hn', { query });
+      logger.error({ err: scraperErr, query }, `Error scraping comments for "${query}"`);
     }
   }
 
@@ -219,7 +194,7 @@ async function scrapeShowHNComments(hoursBack: number): Promise<HNPost[]> {
 
   try {
     // Get recent Show HN posts
-    const showHNResponse = await searchShowHN(hoursBack, 0, 30);
+    const showHNResponse = await searchShowHN(hoursBack, 0, SHOW_HN_RESULTS_PER_QUERY);
 
     // For each Show HN, get comments that contain pain point signals
     for (const hit of showHNResponse.hits) {
@@ -234,13 +209,15 @@ async function scrapeShowHNComments(hoursBack: number): Promise<HNPost[]> {
 
         posts.push(...commentsWithPainPoints);
 
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await sleep(SHOW_HN_ITEM_DELAY_MS);
       } catch (error) {
-        logger.error({ err: error, itemId: hit.objectID }, `Error fetching Show HN item ${hit.objectID}`);
+        const scraperErr = wrapScraperError(error, 'hn', { itemId: hit.objectID });
+        logger.error({ err: scraperErr, itemId: hit.objectID }, `Error fetching Show HN item ${hit.objectID}`);
       }
     }
   } catch (error) {
-    logger.error({ err: error }, 'Error scraping Show HN');
+    const scraperErr = wrapScraperError(error, 'hn');
+    logger.error({ err: scraperErr }, 'Error scraping Show HN');
   }
 
   return posts;
@@ -253,7 +230,7 @@ function extractPainPointComments(children: HNItem[], storyTitle: string): HNPos
   const posts: HNPost[] = [];
 
   for (const child of children) {
-    if (child.text && hasPainPointSignals(child.text)) {
+    if (child.text && hasSignals(child.text)) {
       const post = itemToPost(child, storyTitle);
       post.body = stripHtml(post.body);
       posts.push(post);
@@ -278,21 +255,22 @@ async function scrapeFrontPage(hoursBack: number): Promise<HNPost[]> {
   try {
     // Search for stories about tools/products
     for (const keyword of toolKeywords) {
-      const response = await searchStories(keyword, hoursBack, 0, 30);
+      const response = await searchStories(keyword, hoursBack, 0, SHOW_HN_RESULTS_PER_QUERY);
 
       for (const hit of response.hits) {
         // Only include stories with significant engagement
-        if ((hit.points || 0) >= 10 || (hit.num_comments || 0) >= 5) {
+        if ((hit.points || 0) >= MIN_FRONT_PAGE_POINTS || (hit.num_comments || 0) >= MIN_FRONT_PAGE_COMMENTS) {
           const post = hitToPost(hit);
           post.body = stripHtml(post.body);
           posts.push(post);
         }
       }
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await sleep(ALGOLIA_QUERY_DELAY_MS);
     }
   } catch (error) {
-    logger.error({ err: error }, 'Error scraping front page');
+    const scraperErr = wrapScraperError(error, 'hn');
+    logger.error({ err: scraperErr }, 'Error scraping front page');
   }
 
   return posts;
@@ -333,15 +311,18 @@ export async function scrapeHackerNews(
 
   // Filter to only posts with pain point signals (unless they're high-engagement stories)
   const relevantPosts = uniquePosts.filter(
-    post => post.signals.length > 0 || (post.hnType === 'story' && post.score >= 50)
+    post => post.signals.length > 0 || (post.hnType === 'story' && post.score >= HIGH_ENGAGEMENT_SCORE_THRESHOLD)
   );
 
   // Sort by score descending
   relevantPosts.sort((a, b) => b.score - a.score);
 
-  logger.info({ total: relevantPosts.length, askHN: askHNPosts.length, comments: commentPosts.length, showHN: showHNPosts.length, frontPage: frontPagePosts.length }, 'HN scrape complete');
+  // Truncate to MAX_POSTS_PER_SOURCE to prevent OOM and control downstream costs
+  const truncated = truncateResults(relevantPosts);
 
-  return relevantPosts;
+  logger.info({ total: truncated.length, askHN: askHNPosts.length, comments: commentPosts.length, showHN: showHNPosts.length, frontPage: frontPagePosts.length }, 'HN scrape complete');
+
+  return truncated;
 }
 
 /**
@@ -369,7 +350,7 @@ export const _internal = {
   hitToPost,
   itemToPost,
   detectSignals,
-  hasPainPointSignals,
+  hasPainPointSignals: hasSignals,
   stripHtml,
   deduplicatePosts,
   extractPainPointComments,

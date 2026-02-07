@@ -6,7 +6,9 @@
  */
 
 import type { ProblemCluster } from './deduplicator';
+import { config } from '../config/env';
 import logger from '../lib/logger';
+import { AnalysisError } from '../lib/errors';
 import {
   buildScoringPrompt,
   parseScoreResponse,
@@ -20,12 +22,40 @@ import {
 import { getBatchModel } from '../config/models';
 import { getGlobalMetrics } from '../scheduler/utils/api-metrics';
 import { estimateTokens } from '../scheduler/utils/token-estimator';
+import { ScoreCache, type ScoreCacheOptions } from './score-cache';
 
 /**
  * Batch size for batch scoring API calls
  * 20 problems per call balances quality and cost efficiency
  */
 const BATCH_SIZE = 20;
+
+/** Max tokens for a single problem scoring API call */
+const SCORING_MAX_TOKENS = 500;
+
+/** Max tokens for a batch scoring API call */
+const BATCH_SCORING_MAX_TOKENS = 4000;
+
+/** Frequency count at which a problem gets the max frequency score (10) */
+const FREQUENCY_HIGH_THRESHOLD = 100;
+
+/** Max effort score for "quick wins" filter (complexity * timeToMvp) */
+const QUICK_WINS_MAX_EFFORT = 25;
+
+/** Number of top problems to show in stats summaries */
+const TOP_N_DISPLAY_LIMIT = 5;
+
+/** Default max concurrent API calls for scoring */
+const DEFAULT_MAX_CONCURRENT = 3;
+
+/** Default delay between scoring API calls (ms) */
+const DEFAULT_DELAY_BETWEEN_CALLS_MS = 200;
+
+/** Max time-to-MVP score for "weekend project" filter */
+const WEEKEND_MAX_TIME_TO_MVP = 2;
+
+/** Max technical complexity for "weekend project" filter */
+const WEEKEND_MAX_COMPLEXITY = 4;
 
 /**
  * Score breakdown for a problem
@@ -67,14 +97,17 @@ export interface ScoringOptions {
   maxConcurrent?: number;
   delayBetweenCalls?: number;
   useAI?: boolean;
+  /** Options for the score dedup cache. Set { disabled: true } to skip caching. */
+  scoreCacheOptions?: ScoreCacheOptions;
 }
 
 const DEFAULT_OPTIONS: Required<ScoringOptions> = {
   anthropicApiKey: '',
   model: getBatchModel(),
-  maxConcurrent: 3,
-  delayBetweenCalls: 200,
+  maxConcurrent: DEFAULT_MAX_CONCURRENT,
+  delayBetweenCalls: DEFAULT_DELAY_BETWEEN_CALLS_MS,
   useAI: true,
+  scoreCacheOptions: {},
 };
 
 /**
@@ -128,7 +161,7 @@ async function callAnthropic(
       },
       body: JSON.stringify({
         model,
-        max_tokens: 500,
+        max_tokens: SCORING_MAX_TOKENS,
         system: SCORING_SYSTEM_PROMPT,
         messages: [
           { role: 'user', content: prompt },
@@ -138,7 +171,11 @@ async function callAnthropic(
 
     if (!response.ok) {
       const error = await response.text();
-      logger.warn({ status: response.status, error }, 'Anthropic API error');
+      const analysisErr = new AnalysisError(`Anthropic API error (${response.status})`, {
+        severity: 'degraded',
+        context: { statusCode: response.status, response: error },
+      });
+      logger.warn({ err: analysisErr, status: response.status }, 'Anthropic API error');
       return null;
     }
 
@@ -154,7 +191,11 @@ async function callAnthropic(
 
     return parseScoreResponse(content);
   } catch (error) {
-    logger.warn({ err: error }, 'Anthropic API call failed');
+    const analysisErr = new AnalysisError(
+      `Anthropic API call failed: ${error instanceof Error ? error.message : String(error)}`,
+      { severity: 'degraded', cause: error instanceof Error ? error : undefined }
+    );
+    logger.warn({ err: analysisErr }, 'Anthropic API call failed');
     return null;
   }
 }
@@ -186,7 +227,7 @@ async function scoreBatch(
       },
       body: JSON.stringify({
         model,
-        max_tokens: 4000, // Increased for batch response
+        max_tokens: BATCH_SCORING_MAX_TOKENS,
         system: BATCH_SCORING_SYSTEM_PROMPT,
         messages: [{ role: 'user', content: prompt }],
       }),
@@ -194,7 +235,11 @@ async function scoreBatch(
 
     if (!response.ok) {
       const error = await response.text();
-      logger.warn({ status: response.status, error }, 'Batch scoring API error');
+      const analysisErr = new AnalysisError(`Batch scoring API error (${response.status})`, {
+        severity: 'degraded',
+        context: { statusCode: response.status, batchSize: clusters.length },
+      });
+      logger.warn({ err: analysisErr, status: response.status }, 'Batch scoring API error');
 
       // Record failed call
       getGlobalMetrics().recordCall({
@@ -237,7 +282,11 @@ async function scoreBatch(
 
     return parseBatchScoreResponse(content, clusterIds);
   } catch (error) {
-    logger.warn({ err: error }, 'Batch scoring API call failed');
+    const analysisErr = new AnalysisError(
+      `Batch scoring API call failed: ${error instanceof Error ? error.message : String(error)}`,
+      { severity: 'degraded', context: { batchSize: clusters.length }, cause: error instanceof Error ? error : undefined }
+    );
+    logger.warn({ err: analysisErr }, 'Batch scoring API call failed');
 
     // Record failed call
     getGlobalMetrics().recordCall({
@@ -263,7 +312,7 @@ function calculateFrequencyScore(frequency: number): number {
   // Log scale normalization:
   // 1 mention = 1, 3 mentions = 3, 10 mentions = 5, 30 mentions = 7, 100+ = 10
   if (frequency <= 1) return 1;
-  if (frequency >= 100) return 10;
+  if (frequency >= FREQUENCY_HIGH_THRESHOLD) return 10;
   return Math.min(10, Math.max(1, Math.ceil(Math.log10(frequency) * 4 + 1)));
 }
 
@@ -275,7 +324,7 @@ export async function scoreProblem(
   options: ScoringOptions = {}
 ): Promise<ScoredProblem> {
   const opts = { ...DEFAULT_OPTIONS, ...options };
-  const apiKey = opts.anthropicApiKey || process.env.ANTHROPIC_API_KEY || '';
+  const apiKey = opts.anthropicApiKey || config.ANTHROPIC_API_KEY;
 
   // Calculate frequency score from cluster data
   const frequencyScore = calculateFrequencyScore(cluster.frequency);
@@ -325,82 +374,115 @@ export async function scoreProblem(
 }
 
 /**
- * Score all problem clusters using batch API calls
- * Batches BATCH_SIZE problems per API call to reduce costs by ~95%
+ * Score all problem clusters using batch API calls.
+ * Checks a local score cache first — clusters scored within the TTL
+ * (default 48h) are reused without calling the Anthropic API.
+ * Batches BATCH_SIZE problems per API call to reduce costs by ~95%.
  */
 export async function scoreAll(
   clusters: ProblemCluster[],
   options: ScoringOptions = {}
 ): Promise<ScoredProblem[]> {
   const opts = { ...DEFAULT_OPTIONS, ...options };
-  const apiKey = opts.anthropicApiKey || process.env.ANTHROPIC_API_KEY || '';
+  const apiKey = opts.anthropicApiKey || config.ANTHROPIC_API_KEY;
 
   if (clusters.length === 0) return [];
 
-  const numBatches = Math.ceil(clusters.length / BATCH_SIZE);
-  logger.info({ problems: clusters.length, batches: numBatches }, 'Batch scoring problems');
+  // Initialize score cache for dedup
+  const cache = new ScoreCache(opts.scoreCacheOptions);
 
-  const results: ScoredProblem[] = [];
+  // Separate cached vs. uncached clusters
+  const cachedResults: ScoredProblem[] = [];
+  const uncachedClusters: ProblemCluster[] = [];
 
-  // Process in batches of BATCH_SIZE
-  for (let i = 0; i < clusters.length; i += BATCH_SIZE) {
-    const batch = clusters.slice(i, i + BATCH_SIZE);
-    let batchScores: Map<string, ScoreResponse>;
-
-    // Try batch scoring with AI if enabled
-    if (opts.useAI && apiKey) {
-      batchScores = await scoreBatch(batch, apiKey, opts.model);
+  for (const cluster of clusters) {
+    const cached = cache.get(cluster.representativePost.url, cluster.problemStatement);
+    if (cached) {
+      cachedResults.push(cached);
     } else {
-      batchScores = new Map();
+      uncachedClusters.push(cluster);
+    }
+  }
+
+  if (cachedResults.length > 0) {
+    logger.info(
+      { cached: cachedResults.length, uncached: uncachedClusters.length, total: clusters.length },
+      'Score cache hit — reusing recent scores'
+    );
+  }
+
+  const results: ScoredProblem[] = [...cachedResults];
+
+  // Only score uncached clusters
+  if (uncachedClusters.length > 0) {
+    const numBatches = Math.ceil(uncachedClusters.length / BATCH_SIZE);
+    logger.info({ problems: uncachedClusters.length, batches: numBatches }, 'Batch scoring problems');
+
+    for (let i = 0; i < uncachedClusters.length; i += BATCH_SIZE) {
+      const batch = uncachedClusters.slice(i, i + BATCH_SIZE);
+      let batchScores: Map<string, ScoreResponse>;
+
+      // Try batch scoring with AI if enabled
+      if (opts.useAI && apiKey) {
+        batchScores = await scoreBatch(batch, apiKey, opts.model);
+      } else {
+        batchScores = new Map();
+      }
+
+      // Convert batch results to ScoredProblems
+      for (const cluster of batch) {
+        // Use AI score if available, otherwise fall back to defaults
+        const aiScores = batchScores.get(cluster.id) || createDefaultScores(cluster);
+        const frequencyScore = calculateFrequencyScore(cluster.frequency);
+
+        const impact = calculateImpact(
+          frequencyScore,
+          aiScores.severity.score,
+          aiScores.marketSize.score
+        );
+
+        const effort = calculateEffort(
+          aiScores.technicalComplexity.score,
+          aiScores.timeToMvp.score
+        );
+
+        const priority = calculatePriority(impact, effort);
+
+        const scored: ScoredProblem = {
+          ...cluster,
+          scores: {
+            frequency: frequencyScore,
+            severity: aiScores.severity.score,
+            marketSize: aiScores.marketSize.score,
+            technicalComplexity: aiScores.technicalComplexity.score,
+            timeToMvp: aiScores.timeToMvp.score,
+            impact,
+            effort,
+            priority,
+          },
+          reasoning: {
+            severity: aiScores.severity.reasoning,
+            marketSize: aiScores.marketSize.reasoning,
+            technicalComplexity: aiScores.technicalComplexity.reasoning,
+          },
+        };
+
+        results.push(scored);
+        cache.set(scored);
+      }
+
+      // Progress update
+      const completed = Math.min(i + BATCH_SIZE, uncachedClusters.length);
+      logger.info({ completed, total: uncachedClusters.length }, 'Scoring progress');
+
+      // Rate limiting delay between batches
+      if (i + BATCH_SIZE < uncachedClusters.length && opts.delayBetweenCalls > 0) {
+        await sleep(opts.delayBetweenCalls);
+      }
     }
 
-    // Convert batch results to ScoredProblems
-    for (const cluster of batch) {
-      // Use AI score if available, otherwise fall back to defaults
-      const aiScores = batchScores.get(cluster.id) || createDefaultScores(cluster);
-      const frequencyScore = calculateFrequencyScore(cluster.frequency);
-
-      const impact = calculateImpact(
-        frequencyScore,
-        aiScores.severity.score,
-        aiScores.marketSize.score
-      );
-
-      const effort = calculateEffort(
-        aiScores.technicalComplexity.score,
-        aiScores.timeToMvp.score
-      );
-
-      const priority = calculatePriority(impact, effort);
-
-      results.push({
-        ...cluster,
-        scores: {
-          frequency: frequencyScore,
-          severity: aiScores.severity.score,
-          marketSize: aiScores.marketSize.score,
-          technicalComplexity: aiScores.technicalComplexity.score,
-          timeToMvp: aiScores.timeToMvp.score,
-          impact,
-          effort,
-          priority,
-        },
-        reasoning: {
-          severity: aiScores.severity.reasoning,
-          marketSize: aiScores.marketSize.reasoning,
-          technicalComplexity: aiScores.technicalComplexity.reasoning,
-        },
-      });
-    }
-
-    // Progress update
-    const completed = Math.min(i + BATCH_SIZE, clusters.length);
-    logger.info({ completed, total: clusters.length }, 'Scoring progress');
-
-    // Rate limiting delay between batches
-    if (i + BATCH_SIZE < clusters.length && opts.delayBetweenCalls > 0) {
-      await sleep(opts.delayBetweenCalls);
-    }
+    // Persist cache after scoring new items
+    cache.save();
   }
 
   // Sort by priority (highest first)
@@ -442,20 +524,20 @@ export function getScoringStats(problems: ScoredProblem[]): {
   // Top 5 by priority
   const topByPriority = [...problems]
     .sort((a, b) => b.scores.priority - a.scores.priority)
-    .slice(0, 5)
+    .slice(0, TOP_N_DISPLAY_LIMIT)
     .map(p => ({ statement: p.problemStatement, priority: p.scores.priority }));
 
   // Top 5 by impact
   const topByImpact = [...problems]
     .sort((a, b) => b.scores.impact - a.scores.impact)
-    .slice(0, 5)
+    .slice(0, TOP_N_DISPLAY_LIMIT)
     .map(p => ({ statement: p.problemStatement, impact: p.scores.impact }));
 
   // Quick wins: high priority + low effort
   const quickWins = [...problems]
-    .filter(p => p.scores.effort <= 25) // Complexity * TimeToMVP <= 5*5
+    .filter(p => p.scores.effort <= QUICK_WINS_MAX_EFFORT)
     .sort((a, b) => b.scores.priority - a.scores.priority)
-    .slice(0, 5)
+    .slice(0, TOP_N_DISPLAY_LIMIT)
     .map(p => ({
       statement: p.problemStatement,
       priority: p.scores.priority,
@@ -522,6 +604,6 @@ export function filterByEffort(
  */
 export function getWeekendProjects(problems: ScoredProblem[]): ScoredProblem[] {
   return problems
-    .filter(p => p.scores.timeToMvp <= 2 && p.scores.technicalComplexity <= 4)
+    .filter(p => p.scores.timeToMvp <= WEEKEND_MAX_TIME_TO_MVP && p.scores.technicalComplexity <= WEEKEND_MAX_COMPLEXITY)
     .sort((a, b) => b.scores.priority - a.scores.priority);
 }

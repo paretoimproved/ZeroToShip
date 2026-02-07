@@ -8,12 +8,11 @@
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const pino = require('pino');
-
-const isDev = process.env.NODE_ENV !== 'production';
+import { config } from '../config/env';
 
 const logger = pino({
-  level: process.env.LOG_LEVEL || (isDev ? 'debug' : 'info'),
-  transport: isDev
+  level: config.logLevel,
+  transport: !config.isProduction
     ? {
         target: 'pino-pretty',
         options: {

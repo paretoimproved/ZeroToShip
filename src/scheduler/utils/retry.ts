@@ -6,6 +6,18 @@
 
 import { createLogger } from './logger';
 
+/** Default number of retry attempts before giving up */
+const DEFAULT_MAX_ATTEMPTS = 3;
+
+/** Default base delay for exponential backoff (ms) */
+const DEFAULT_BASE_DELAY_MS = 1000;
+
+/** Default maximum delay cap for exponential backoff (ms) */
+const DEFAULT_MAX_DELAY_MS = 30_000;
+
+/** Maximum random jitter added to backoff delay (ms) */
+const BACKOFF_JITTER_MS = 1000;
+
 export interface RetryOptions {
   maxAttempts: number;
   baseDelayMs: number;
@@ -14,9 +26,9 @@ export interface RetryOptions {
 }
 
 const DEFAULT_RETRY_OPTIONS: RetryOptions = {
-  maxAttempts: 3,
-  baseDelayMs: 1000,
-  maxDelayMs: 30000,
+  maxAttempts: DEFAULT_MAX_ATTEMPTS,
+  baseDelayMs: DEFAULT_BASE_DELAY_MS,
+  maxDelayMs: DEFAULT_MAX_DELAY_MS,
 };
 
 /**
@@ -48,7 +60,7 @@ export async function withRetry<T>(
 
       // Calculate delay with exponential backoff and jitter
       const delay = Math.min(
-        opts.baseDelayMs * Math.pow(2, attempt - 1) + Math.random() * 1000,
+        opts.baseDelayMs * Math.pow(2, attempt - 1) + Math.random() * BACKOFF_JITTER_MS,
         opts.maxDelayMs
       );
 

@@ -6,19 +6,20 @@
 
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
+import { config } from '../../config/env';
 import * as schema from './schema';
 
-// Database connection string from environment
-const connectionString = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || '';
+// Database connection string from centralized config
+const connectionString = config.databaseUrl;
 
-if (!connectionString && process.env.NODE_ENV !== 'test') {
+if (!connectionString && !config.isTest) {
   console.warn('No DATABASE_URL or SUPABASE_DB_URL environment variable set');
 }
 
 // Create postgres client
 // Use connection pooling for production
 const client = postgres(connectionString, {
-  max: process.env.NODE_ENV === 'production' ? 10 : 1,
+  max: config.isProduction ? 10 : 1,
   idle_timeout: 20,
   connect_timeout: 10,
 });

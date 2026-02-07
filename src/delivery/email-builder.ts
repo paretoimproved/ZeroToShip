@@ -17,6 +17,18 @@ export const TIER_LIMITS: Record<SubscriberTier, number> = {
   pro: 10,
 };
 
+/** Max ideas shown in the "other ideas" section of the email */
+const MAX_EMAIL_IDEAS = 10;
+
+/** Max hero features shown in the top idea section */
+const MAX_HERO_FEATURES = 4;
+
+/** Max tagline length before truncation */
+const TAGLINE_TRUNCATE_LENGTH = 60;
+
+/** Max revenue estimate display length */
+const REVENUE_DISPLAY_LENGTH = 20;
+
 /**
  * Email content structure
  */
@@ -266,7 +278,7 @@ function getEmailStyles(): string {
  * Build the hero section for the top idea
  */
 function buildHeroSection(brief: IdeaBrief): string {
-  const features = brief.keyFeatures.slice(0, 4);
+  const features = brief.keyFeatures.slice(0, MAX_HERO_FEATURES);
 
   return `
     <div class="hero">
@@ -288,7 +300,7 @@ function buildHeroSection(brief: IdeaBrief): string {
           <td width="4%"></td>
           <td width="33%" style="background: #fff; padding: 12px 16px; border-radius: 8px; border: 1px solid #e0e0e0; text-align: center;">
             <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px;">Revenue</div>
-            <div style="font-size: 14px; font-weight: 700; color: #667eea;">${escapeHtml(brief.revenueEstimate.slice(0, 20))}</div>
+            <div style="font-size: 14px; font-weight: 700; color: #667eea;">${escapeHtml(brief.revenueEstimate.slice(0, REVENUE_DISPLAY_LENGTH))}</div>
           </td>
         </tr>
       </table>
@@ -337,7 +349,7 @@ function buildIdeaRow(brief: IdeaBrief, rank: number, locked: boolean = false): 
       <div class="idea-rank">${rank}</div>
       <div class="idea-content">
         <div class="idea-name">${escapeHtml(brief.name)}</div>
-        <div class="idea-tagline">${escapeHtml(brief.tagline.slice(0, 60))}${brief.tagline.length > 60 ? '...' : ''}</div>
+        <div class="idea-tagline">${escapeHtml(brief.tagline.slice(0, TAGLINE_TRUNCATE_LENGTH))}${brief.tagline.length > TAGLINE_TRUNCATE_LENGTH ? '...' : ''}</div>
       </div>
       <div class="idea-score">${formatScore(brief.priorityScore)}</div>
     </div>
@@ -357,7 +369,7 @@ function buildOtherIdeasSection(
   }
 
   const limit = TIER_LIMITS[tier];
-  const otherBriefs = briefs.slice(1, 10);
+  const otherBriefs = briefs.slice(1, MAX_EMAIL_IDEAS);
 
   const rows = otherBriefs.map((brief, index) => {
     const rank = index + 2;
@@ -525,7 +537,7 @@ function buildPlainTextEmail(
     lines.push('MORE IDEAS TODAY');
     lines.push('='.repeat(50));
 
-    briefs.slice(1, 10).forEach((brief, index) => {
+    briefs.slice(1, MAX_EMAIL_IDEAS).forEach((brief, index) => {
       const rank = index + 2;
       const locked = rank > limit;
       const lockIcon = locked ? ' [LOCKED]' : '';

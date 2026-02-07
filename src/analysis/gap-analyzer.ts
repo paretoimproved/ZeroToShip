@@ -10,6 +10,7 @@
 
 import type { ProblemCluster } from './deduplicator';
 import logger from '../lib/logger';
+import { AnalysisError } from '../lib/errors';
 import {
   WebSearchClient,
   generateSearchQueries,
@@ -48,6 +49,33 @@ export interface GapAnalysis {
 /**
  * Configuration for gap analysis
  */
+/** Default max web search results per query */
+const DEFAULT_MAX_SEARCH_RESULTS = 10;
+
+/** Default delay between web search requests (ms) */
+const DEFAULT_SEARCH_RATE_LIMIT_DELAY_MS = 1000;
+
+/** Default max competitors to analyze per problem */
+const DEFAULT_MAX_COMPETITORS = 10;
+
+/** Default concurrent gap analysis operations */
+const DEFAULT_GAP_CONCURRENCY = 2;
+
+/** Default minimum post frequency to trigger web search analysis */
+const DEFAULT_MIN_FREQUENCY_FOR_SEARCH = 2;
+
+/** Batch size for competitor analysis API calls */
+const COMPETITOR_BATCH_SIZE = 20;
+
+/** Frequency threshold for "strong opportunity" recommendation */
+const STRONG_OPPORTUNITY_FREQUENCY = 5;
+
+/** Minimum gaps for "viable with differentiation" recommendation */
+const MIN_GAPS_FOR_DIFFERENTIATION = 3;
+
+/** Minimum differentiation angles for "challenging but possible" recommendation */
+const MIN_ANGLES_FOR_CHALLENGING = 2;
+
 export interface GapAnalysisConfig {
   webSearch?: WebSearchConfig;
   competitor?: CompetitorAnalysisOptions;
@@ -59,16 +87,16 @@ export interface GapAnalysisConfig {
 const DEFAULT_CONFIG: Required<GapAnalysisConfig> = {
   webSearch: {
     provider: 'auto',
-    maxResults: 10,
-    rateLimitDelay: 1000,
+    maxResults: DEFAULT_MAX_SEARCH_RESULTS,
+    rateLimitDelay: DEFAULT_SEARCH_RATE_LIMIT_DELAY_MS,
   },
   competitor: {
     model: getBatchModel(),
-    maxCompetitors: 10,
+    maxCompetitors: DEFAULT_MAX_COMPETITORS,
   },
-  concurrency: 2,
+  concurrency: DEFAULT_GAP_CONCURRENCY,
   skipSearchForLowFrequency: true,
-  minFrequencyForSearch: 2,
+  minFrequencyForSearch: DEFAULT_MIN_FREQUENCY_FOR_SEARCH,
 };
 
 /**
@@ -83,7 +111,7 @@ function generateRecommendation(
 
   // High opportunity scenarios
   if (opportunity === 'high') {
-    if (problemFrequency >= 5) {
+    if (problemFrequency >= STRONG_OPPORTUNITY_FREQUENCY) {
       return 'STRONG OPPORTUNITY: High demand with few competitors. Consider building an MVP quickly to capture early market share.';
     }
     return 'PROMISING: Few competitors exist. Validate demand further before committing significant resources.';
@@ -91,7 +119,7 @@ function generateRecommendation(
 
   // Medium opportunity scenarios
   if (opportunity === 'medium') {
-    if (analysis.gaps.length >= 3) {
+    if (analysis.gaps.length >= MIN_GAPS_FOR_DIFFERENTIATION) {
       return 'VIABLE WITH DIFFERENTIATION: Market has competitors but clear gaps exist. Focus on underserved niches or specific user segments.';
     }
     return 'PROCEED WITH CAUTION: Competition exists. Need strong differentiation strategy and unique value proposition.';
@@ -99,7 +127,7 @@ function generateRecommendation(
 
   // Low opportunity scenarios
   if (opportunity === 'low') {
-    if (analysis.differentiationAngles.length >= 2) {
+    if (analysis.differentiationAngles.length >= MIN_ANGLES_FOR_CHALLENGING) {
       return 'CHALLENGING: Crowded market. Only pursue if you have unique expertise or technology advantage.';
     }
     return 'NOT RECOMMENDED: Established competitors dominate. Consider pivoting to a related but less competitive niche.';
@@ -155,7 +183,11 @@ export async function analyzeGaps(
   try {
     searchResponses = await searchClient.searchForProblem(problem.problemStatement);
   } catch (error) {
-    logger.warn({ err: error, problemId: problem.id }, 'Search failed for problem');
+    const analysisErr = new AnalysisError(
+      `Search failed for problem ${problem.id}: ${error instanceof Error ? error.message : String(error)}`,
+      { severity: 'degraded', context: { problemId: problem.id }, cause: error instanceof Error ? error : undefined }
+    );
+    logger.warn({ err: analysisErr, problemId: problem.id }, 'Search failed for problem');
   }
 
   // Deduplicate search results
@@ -265,7 +297,11 @@ export async function analyzeAllGaps(
           results: WebSearchClient.deduplicateResults(responses),
         };
       } catch (error) {
-        logger.warn({ err: error, problemId: problem.id }, 'Search failed');
+        const analysisErr = new AnalysisError(
+          `Search failed for problem ${problem.id}: ${error instanceof Error ? error.message : String(error)}`,
+          { severity: 'degraded', context: { problemId: problem.id }, cause: error instanceof Error ? error : undefined }
+        );
+        logger.warn({ err: analysisErr, problemId: problem.id }, 'Search failed');
         return { id: problem.id, results: [] as SearchResult[] };
       }
     });
@@ -276,9 +312,7 @@ export async function analyzeAllGaps(
     }
   }
 
-  // Step 2: Batch competitor analysis (20 problems per API call)
-  const COMPETITOR_BATCH_SIZE = 20;
-
+  // Step 2: Batch competitor analysis
   for (let i = 0; i < toAnalyze.length; i += COMPETITOR_BATCH_SIZE) {
     const batch = toAnalyze.slice(i, i + COMPETITOR_BATCH_SIZE);
 

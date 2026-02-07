@@ -8,6 +8,7 @@ import { generateAllBriefs } from '../../generation/brief-generator';
 import type { ScoredProblem } from '../../analysis/scorer';
 import type { GapAnalysis } from '../../analysis/gap-analyzer';
 import { createPhaseLogger } from '../utils/logger';
+import { AnalysisError, wrapError } from '../../lib/errors';
 import type {
   PhaseResult,
   GeneratePhaseOutput,
@@ -49,6 +50,7 @@ export async function runGeneratePhase(
         success: false,
         data: null,
         error: 'No problems met the minimum priority threshold',
+        severity: 'fatal',
         duration: Date.now() - startTime,
         phase: 'generate',
         timestamp: new Date(),
@@ -79,15 +81,17 @@ export async function runGeneratePhase(
     };
   } catch (error) {
     const duration = Date.now() - startTime;
-    const errorMessage =
-      error instanceof Error ? error.message : String(error);
+    // Generate phase uses AnalysisError since it's part of the analysis pipeline
+    const wrappedError = wrapError(error, AnalysisError, { phase: 'generate' });
+    const errorMessage = wrappedError.message;
 
-    logger.error({ error: errorMessage }, 'Generate phase failed');
+    logger.error({ error: errorMessage, severity: wrappedError.severity }, 'Generate phase failed');
 
     return {
       success: false,
       data: null,
       error: errorMessage,
+      severity: wrappedError.severity,
       duration,
       phase: 'generate',
       timestamp: new Date(),

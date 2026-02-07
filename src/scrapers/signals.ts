@@ -5,6 +5,8 @@
  * in scraped content.
  */
 
+import { normalizeApostrophes } from './shared';
+
 /**
  * Categories of pain point signals with their patterns
  */
@@ -118,11 +120,11 @@ export interface SignalMatch {
 export function detectSignals(text: string): string[] {
   if (!text) return [];
 
-  const lowerText = text.toLowerCase();
+  const lowerText = normalizeApostrophes(text.toLowerCase());
   const matches: string[] = [];
 
   for (const pattern of ALL_SIGNALS) {
-    if (lowerText.includes(pattern.toLowerCase())) {
+    if (lowerText.includes(normalizeApostrophes(pattern.toLowerCase()))) {
       matches.push(pattern);
     }
   }
@@ -137,12 +139,12 @@ export function detectSignals(text: string): string[] {
 export function detectSignalsWithCategory(text: string): SignalMatch[] {
   if (!text) return [];
 
-  const lowerText = text.toLowerCase();
+  const lowerText = normalizeApostrophes(text.toLowerCase());
   const matches: SignalMatch[] = [];
 
   for (const [category, patterns] of Object.entries(SIGNAL_PATTERNS)) {
     for (const pattern of patterns) {
-      const index = lowerText.indexOf(pattern.toLowerCase());
+      const index = lowerText.indexOf(normalizeApostrophes(pattern.toLowerCase()));
       if (index !== -1) {
         matches.push({
           pattern,
@@ -163,9 +165,9 @@ export function detectSignalsWithCategory(text: string): SignalMatch[] {
 export function hasSignals(text: string): boolean {
   if (!text) return false;
 
-  const lowerText = text.toLowerCase();
+  const lowerText = normalizeApostrophes(text.toLowerCase());
   return ALL_SIGNALS.some(pattern =>
-    lowerText.includes(pattern.toLowerCase())
+    lowerText.includes(normalizeApostrophes(pattern.toLowerCase()))
   );
 }
 
@@ -210,11 +212,11 @@ export function extractSignalContext(
 ): Array<{ signal: string; context: string }> {
   if (!text) return [];
 
-  const lowerText = text.toLowerCase();
+  const lowerText = normalizeApostrophes(text.toLowerCase());
   const results: Array<{ signal: string; context: string }> = [];
 
   for (const pattern of ALL_SIGNALS) {
-    const index = lowerText.indexOf(pattern.toLowerCase());
+    const index = lowerText.indexOf(normalizeApostrophes(pattern.toLowerCase()));
     if (index !== -1) {
       const start = Math.max(0, index - contextChars);
       const end = Math.min(text.length, index + pattern.length + contextChars);

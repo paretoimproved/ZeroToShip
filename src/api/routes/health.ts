@@ -8,7 +8,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { checkDatabaseHealth } from '../db/client';
 import { isSchedulerRunning } from '../../scheduler';
 
-// Package version from package.json
+// Package version — npm_package_version is set by npm at runtime, not in .env
 const VERSION = process.env.npm_package_version || '1.0.0';
 
 interface ServiceStatus {

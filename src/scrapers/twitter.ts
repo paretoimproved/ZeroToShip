@@ -16,13 +16,41 @@
  */
 
 import { config } from 'dotenv';
-import { Tweet, TwitterConfig, TwitterSearchQuery, PAIN_POINT_SIGNALS } from './types';
+import { Tweet, TwitterConfig, TwitterSearchQuery } from './types';
+import { hasSignals } from './signals';
 import { TwitterApiClient, createTwitterApiClient, DEFAULT_TWITTER_QUERIES } from './twitter-api';
 import { NitterScraper, createNitterScraper } from './twitter-nitter';
 import logger from '../lib/logger';
+import { ScraperError } from '../lib/errors';
+import { wrapScraperError, getCutoffDate, truncateResults } from './shared';
 
 // Load environment variables
 config();
+
+/** Minimum tweet body length to avoid very short / empty tweets */
+const MIN_TWEET_LENGTH = 30;
+
+/** Minimum text length after removing links and mentions */
+const MIN_CLEAN_TEXT_LENGTH = 20;
+
+/** Engagement weight multipliers for relevance scoring */
+const LIKE_WEIGHT = 2;
+const RETWEET_WEIGHT = 3;
+const COMMENT_WEIGHT = 5;
+const SIGNAL_BONUS = 20;
+const HASHTAG_BONUS = 10;
+
+/** Follower thresholds for credibility bonuses */
+const FOLLOWER_THRESHOLD_MEDIUM = 1000;
+const FOLLOWER_THRESHOLD_HIGH = 10_000;
+const FOLLOWER_BONUS_MEDIUM = 10;
+const FOLLOWER_BONUS_HIGH = 20;
+
+/** Recency bonus thresholds (hours old) and bonus values */
+const RECENCY_HOURS_FRESH = 6;
+const RECENCY_HOURS_RECENT = 12;
+const RECENCY_BONUS_FRESH = 15;
+const RECENCY_BONUS_RECENT = 10;
 
 /**
  * Scraper method type
@@ -62,7 +90,7 @@ export class TwitterScraper {
     hoursBack: number = 24,
     maxResultsPerQuery: number = 50
   ): Promise<Tweet[]> {
-    const startTime = new Date(Date.now() - hoursBack * 60 * 60 * 1000);
+    const startTime = getCutoffDate(hoursBack);
     const allTweets: Tweet[] = [];
     const seenIds = new Set<string>();
 
@@ -81,7 +109,8 @@ export class TwitterScraper {
           }
         }
       } catch (error) {
-        logger.error({ err: error, query }, `Error searching for "${query}"`);
+        const scraperErr = wrapScraperError(error, 'twitter', { query });
+        logger.error({ err: scraperErr, query }, `Error searching for "${query}"`);
       }
     }
 
@@ -96,7 +125,7 @@ export class TwitterScraper {
     maxResultsPerQuery: number = 50
   ): Promise<TwitterScraperResult> {
     const startTime = Date.now();
-    const startDate = new Date(Date.now() - hoursBack * 60 * 60 * 1000);
+    const startDate = getCutoffDate(hoursBack);
     const allTweets: Tweet[] = [];
     const seenIds = new Set<string>();
     const errors: string[] = [];
@@ -141,9 +170,9 @@ export class TwitterScraper {
 
         logger.info({ count: tweets.length }, `Found ${tweets.length} tweets`);
       } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        errors.push(`Query "${description}": ${errorMsg}`);
-        logger.error(`Error: ${errorMsg}`);
+        const scraperErr = wrapScraperError(error, 'twitter', { query });
+        errors.push(scraperErr.message);
+        logger.error({ err: scraperErr }, `Error: ${scraperErr.message}`);
       }
     }
 
@@ -169,9 +198,9 @@ export class TwitterScraper {
 
         logger.info({ count: tweets.length }, `Found ${tweets.length} relevant tweets`);
       } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        errors.push(`Hashtag "${hashtag}": ${errorMsg}`);
-        logger.error(`Error: ${errorMsg}`);
+        const scraperErr = wrapScraperError(error, 'twitter', { hashtag });
+        errors.push(scraperErr.message);
+        logger.error({ err: scraperErr }, `Error: ${scraperErr.message}`);
       }
     }
 
@@ -210,7 +239,8 @@ export class TwitterScraper {
     try {
       return await this.nitterScraper.searchTweets(query, options);
     } catch (error) {
-      logger.error({ err: error }, 'Nitter search also failed');
+      const scraperErr = wrapScraperError(error, 'twitter', { query, method: 'nitter' });
+      logger.error({ err: scraperErr }, 'Nitter search also failed');
       return [];
     }
   }
@@ -220,28 +250,23 @@ export class TwitterScraper {
    */
   private hasPainPointSignal(tweet: Tweet): boolean {
     if (tweet.signals.length > 0) return true;
-
-    const textLower = tweet.body.toLowerCase();
-    return PAIN_POINT_SIGNALS.some(signal =>
-      textLower.includes(signal.toLowerCase())
-    );
+    return hasSignals(tweet.body);
   }
 
   /**
    * Filter out spam/low-quality tweets and sort by relevance
    */
   private filterAndSortTweets(tweets: Tweet[]): Tweet[] {
-    return tweets
+    const sorted = tweets
       .filter(tweet => {
-        // Filter out very short tweets
-        if (tweet.body.length < 30) return false;
+        if (tweet.body.length < MIN_TWEET_LENGTH) return false;
 
         // Filter out tweets that are mostly links/mentions
         const textOnly = tweet.body
           .replace(/https?:\/\/\S+/g, '')
           .replace(/@\w+/g, '')
           .trim();
-        if (textOnly.length < 20) return false;
+        if (textOnly.length < MIN_CLEAN_TEXT_LENGTH) return false;
 
         // Filter out obvious spam patterns
         const spamPatterns = [
@@ -263,6 +288,9 @@ export class TwitterScraper {
         const scoreB = this.calculateRelevanceScore(b);
         return scoreB - scoreA;
       });
+
+    // Truncate to MAX_POSTS_PER_SOURCE to prevent OOM and control downstream costs
+    return truncateResults(sorted);
   }
 
   /**
@@ -271,29 +299,25 @@ export class TwitterScraper {
   private calculateRelevanceScore(tweet: Tweet): number {
     let score = 0;
 
-    // Base engagement score
-    score += tweet.likes * 2;
-    score += tweet.retweets * 3;
-    score += tweet.commentCount * 5;
+    score += tweet.likes * LIKE_WEIGHT;
+    score += tweet.retweets * RETWEET_WEIGHT;
+    score += tweet.commentCount * COMMENT_WEIGHT;
 
-    // Bonus for pain point signals
-    score += tweet.signals.length * 20;
+    score += tweet.signals.length * SIGNAL_BONUS;
 
     // Bonus for relevant hashtags
     const relevantTags = ['buildinpublic', 'indiehacker', 'devtools', 'dev', 'coding'];
     const matchingTags = tweet.hashtags.filter(tag =>
       relevantTags.some(rt => tag.toLowerCase().includes(rt))
     );
-    score += matchingTags.length * 10;
+    score += matchingTags.length * HASHTAG_BONUS;
 
-    // Bonus for author with more followers (indicates credibility)
-    if (tweet.authorFollowers > 1000) score += 10;
-    if (tweet.authorFollowers > 10000) score += 20;
+    if (tweet.authorFollowers > FOLLOWER_THRESHOLD_MEDIUM) score += FOLLOWER_BONUS_MEDIUM;
+    if (tweet.authorFollowers > FOLLOWER_THRESHOLD_HIGH) score += FOLLOWER_BONUS_HIGH;
 
-    // Recency bonus (tweets from last 6 hours get boost)
     const hoursOld = (Date.now() - tweet.createdAt.getTime()) / (1000 * 60 * 60);
-    if (hoursOld < 6) score += 15;
-    else if (hoursOld < 12) score += 10;
+    if (hoursOld < RECENCY_HOURS_FRESH) score += RECENCY_BONUS_FRESH;
+    else if (hoursOld < RECENCY_HOURS_RECENT) score += RECENCY_BONUS_RECENT;
 
     return score;
   }

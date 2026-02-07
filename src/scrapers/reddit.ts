@@ -8,6 +8,15 @@
 import { RawPost } from './types';
 import { detectSignals, hasSignals } from './signals';
 import logger from '../lib/logger';
+import { ScraperError } from '../lib/errors';
+import {
+  generateId,
+  sleep,
+  getCutoffTime,
+  deduplicatePosts,
+  wrapScraperError,
+  truncateResults,
+} from './shared';
 
 /**
  * Reddit API listing response structure
@@ -61,6 +70,21 @@ export const DEFAULT_SUBREDDITS = [
 /**
  * Configuration for the Reddit scraper
  */
+/** Default delay between Reddit API requests to stay within 60/min rate limit (ms) */
+const DEFAULT_REQUEST_DELAY_MS = 1000;
+
+/** Default maximum posts to collect per subreddit */
+const DEFAULT_POSTS_PER_SUBREDDIT = 100;
+
+/** Default HTTP request timeout (ms) */
+const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
+
+/** Reddit API returns approximately this many posts per page */
+const REDDIT_POSTS_PER_PAGE = 25;
+
+/** Max posts requested per Reddit API call (100 is Reddit's max) */
+const REDDIT_API_PAGE_LIMIT = 100;
+
 export interface RedditScraperConfig {
   /** User agent string (required by Reddit API) */
   userAgent?: string;
@@ -76,29 +100,11 @@ export interface RedditScraperConfig {
 
 const DEFAULT_CONFIG: Required<RedditScraperConfig> = {
   userAgent: 'IdeaForge/1.0 (Pain Point Discovery Bot)',
-  requestDelay: 1000, // 1 second between requests (60/min rate limit)
-  postsPerSubreddit: 100,
+  requestDelay: DEFAULT_REQUEST_DELAY_MS,
+  postsPerSubreddit: DEFAULT_POSTS_PER_SUBREDDIT,
   signalsOnly: true,
-  timeout: 10000,
+  timeout: DEFAULT_REQUEST_TIMEOUT_MS,
 };
-
-/**
- * Generate a UUID v4
- */
-function generateId(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-}
-
-/**
- * Sleep for specified milliseconds
- */
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 /**
  * Fetch JSON from a URL with proper headers
@@ -122,9 +128,15 @@ async function fetchJson<T>(
 
     if (!response.ok) {
       if (response.status === 429) {
-        throw new Error('RATE_LIMITED: Reddit API rate limit exceeded');
+        throw new ScraperError('Reddit API rate limit exceeded', {
+          severity: 'degraded',
+          context: { source: 'reddit', statusCode: 429 },
+        });
       }
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      throw new ScraperError(`HTTP ${response.status}: ${response.statusText}`, {
+        severity: 'degraded',
+        context: { source: 'reddit', statusCode: response.status },
+      });
     }
 
     return (await response.json()) as T;
@@ -166,16 +178,16 @@ async function scrapeSubreddit(
   config: Required<RedditScraperConfig>
 ): Promise<RawPost[]> {
   const posts: RawPost[] = [];
-  const cutoffTime = Date.now() - hoursBack * 60 * 60 * 1000;
+  const cutoffTime = getCutoffTime(hoursBack);
   const scrapedAt = new Date();
 
   let after: string | null = null;
   let pageCount = 0;
-  const maxPages = Math.ceil(config.postsPerSubreddit / 25); // Reddit returns ~25 posts per page
+  const maxPages = Math.ceil(config.postsPerSubreddit / REDDIT_POSTS_PER_PAGE);
 
   while (pageCount < maxPages) {
     // Build URL with pagination
-    let url = `https://www.reddit.com/r/${subreddit}/new.json?limit=100`;
+    let url = `https://www.reddit.com/r/${subreddit}/new.json?limit=${REDDIT_API_PAGE_LIMIT}`;
     if (after) {
       url += `&after=${after}`;
     }
@@ -242,7 +254,8 @@ async function scrapeSubreddit(
       // Rate limiting delay
       await sleep(config.requestDelay);
     } catch (error) {
-      logger.error({ err: error, subreddit }, `Error scraping r/${subreddit}`);
+      const scraperErr = wrapScraperError(error, 'reddit', { subreddit });
+      logger.error({ err: scraperErr, subreddit }, `Error scraping r/${subreddit}`);
       break;
     }
   }
@@ -289,21 +302,15 @@ export async function scrapeReddit(
       // Rate limiting between subreddits
       await sleep(mergedConfig.requestDelay);
     } catch (error) {
-      logger.error({ err: error, subreddit }, `Failed to scrape r/${subreddit}`);
+      const scraperErr = wrapScraperError(error, 'reddit', { subreddit });
+      logger.error({ err: scraperErr, subreddit }, `Failed to scrape r/${subreddit}`);
     }
   }
 
   logger.info({ total: allPosts.length }, 'Reddit scrape complete');
 
-  // Deduplicate by sourceId (in case same post appears in multiple places)
-  const seen = new Set<string>();
-  const uniquePosts = allPosts.filter((post) => {
-    if (seen.has(post.sourceId)) return false;
-    seen.add(post.sourceId);
-    return true;
-  });
-
-  return uniquePosts;
+  const unique = deduplicatePosts(allPosts);
+  return truncateResults(sortBySignalStrength(unique));
 }
 
 /**

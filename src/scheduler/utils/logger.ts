@@ -6,6 +6,7 @@
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const pino = require('pino');
+import { config } from '../../config/env';
 
 export interface LogContext {
   runId?: string;
@@ -21,14 +22,12 @@ export interface Logger {
   child: (bindings: object) => Logger;
 }
 
-const isDev = process.env.NODE_ENV !== 'production';
-
 /**
  * Base logger configuration
  */
 const baseLogger: Logger = pino({
-  level: process.env.LOG_LEVEL || (isDev ? 'debug' : 'info'),
-  transport: isDev
+  level: config.logLevel,
+  transport: !config.isProduction
     ? {
         target: 'pino-pretty',
         options: {

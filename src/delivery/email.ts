@@ -6,12 +6,20 @@
  */
 
 import type { IdeaBrief } from '../generation/brief-generator';
+import { config as envConfig } from '../config/env';
 import {
   buildDailyEmail,
   type SubscriberTier,
   type EmailContent,
   type EmailBuilderConfig,
 } from './email-builder';
+import { DeliveryError } from '../lib/errors';
+
+/** Default concurrent email sends per batch */
+const DEFAULT_EMAIL_CONCURRENCY = 5;
+
+/** Default delay between email batches (ms) */
+const DEFAULT_EMAIL_DELAY_MS = 100;
 
 /**
  * Subscriber information
@@ -107,10 +115,14 @@ async function sendViaResend(
     });
 
     if (!response.ok) {
-      const error = (await response.json()) as ResendErrorResponse;
+      const errorBody = (await response.json()) as ResendErrorResponse;
+      const deliveryErr = new DeliveryError(
+        `Resend API error (${response.status}): ${errorBody.message}`,
+        { context: { to, statusCode: response.status } }
+      );
       return {
         success: false,
-        error: `Resend API error (${response.status}): ${error.message}`,
+        error: deliveryErr.message,
       };
     }
 
@@ -120,9 +132,13 @@ async function sendViaResend(
       messageId: data.id,
     };
   } catch (error) {
+    const deliveryErr = new DeliveryError(
+      error instanceof Error ? error.message : 'Unknown error',
+      { context: { to }, cause: error instanceof Error ? error : undefined }
+    );
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: deliveryErr.message,
     };
   }
 }
@@ -144,7 +160,7 @@ export async function sendDailyBrief(
   config: EmailServiceConfig = {}
 ): Promise<DeliveryStatus> {
   const opts = { ...DEFAULT_CONFIG, ...config };
-  const apiKey = opts.resendApiKey || process.env.RESEND_API_KEY || '';
+  const apiKey = opts.resendApiKey || envConfig.RESEND_API_KEY;
 
   const status: DeliveryStatus = {
     subscriberId: subscriber.id,
@@ -206,7 +222,7 @@ export async function sendDailyBriefsBatch(
     onProgress?: (completed: number, total: number) => void;
   } = {}
 ): Promise<BatchDeliveryResult> {
-  const { concurrency = 5, delayMs = 100, onProgress } = options;
+  const { concurrency = DEFAULT_EMAIL_CONCURRENCY, delayMs = DEFAULT_EMAIL_DELAY_MS, onProgress } = options;
 
   const result: BatchDeliveryResult = {
     total: subscribers.length,
@@ -290,8 +306,9 @@ export function getDeliveryStats(result: BatchDeliveryResult): {
   const successRate = result.total > 0 ? (result.sent / result.total) * 100 : 0;
   const failureRate = result.total > 0 ? (result.failed / result.total) * 100 : 0;
 
-  // Estimate delivery rate (assuming ~100ms per email with concurrency)
-  const averagePerSecond = result.total > 0 ? 50 : 0; // rough estimate
+  // Estimate delivery rate (concurrency * 1000 / delayMs)
+  const ESTIMATED_EMAILS_PER_SECOND = DEFAULT_EMAIL_CONCURRENCY * (1000 / DEFAULT_EMAIL_DELAY_MS);
+  const averagePerSecond = result.total > 0 ? ESTIMATED_EMAILS_PER_SECOND : 0;
 
   return {
     successRate,

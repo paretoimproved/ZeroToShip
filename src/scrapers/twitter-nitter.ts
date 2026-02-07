@@ -10,7 +10,9 @@
 
 import * as cheerio from 'cheerio';
 import type { Element } from 'domhandler';
-import { Tweet, TwitterConfig, PAIN_POINT_SIGNALS } from './types';
+import { Tweet, TwitterConfig } from './types';
+import { detectSignals } from './signals';
+import { config } from '../config/env';
 import logger from '../lib/logger';
 
 /**
@@ -220,10 +222,7 @@ export class NitterScraper {
     });
 
     // Detect pain point signals
-    const textLower = body.toLowerCase();
-    const signals = PAIN_POINT_SIGNALS.filter(signal =>
-      textLower.includes(signal.toLowerCase())
-    );
+    const signals = detectSignals(body);
 
     return {
       id: `twitter_${tweetId}`,
@@ -319,7 +318,7 @@ export class NitterScraper {
  * Factory function to create Nitter scraper
  */
 export function createNitterScraper(instances?: string[]): NitterScraper {
-  const configInstances = instances ?? process.env.NITTER_INSTANCES?.split(',');
+  const configInstances = instances ?? config.nitterInstances;
   return new NitterScraper({
     nitterInstances: configInstances,
   });

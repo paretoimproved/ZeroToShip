@@ -19,6 +19,8 @@ export interface PhaseResult<T = unknown> {
   success: boolean;
   data: T | null;
   error?: string;
+  /** Error severity: 'fatal' stops the pipeline, 'degraded' logs and continues */
+  severity?: 'fatal' | 'degraded';
   duration: number;
   phase: PhaseName;
   timestamp: Date;
@@ -52,6 +54,8 @@ export interface PipelineConfig {
   verbose: boolean;
   /** Collect and report API metrics (default: false) */
   reportMetrics?: boolean;
+  /** Resume a previous run from its last completed phase */
+  resumeRunId?: string;
 }
 
 /**
@@ -131,6 +135,7 @@ export interface PipelineError {
   message: string;
   timestamp: Date;
   recoverable: boolean;
+  severity?: 'fatal' | 'degraded';
 }
 
 /**

@@ -93,6 +93,14 @@ export const IdeaListResponseSchema = z.object({
   tier: UserTierSchema,
 });
 
+// Paginated ideas list response (limit/offset style)
+export const PaginatedIdeasResponseSchema = z.object({
+  data: z.array(IdeaSummarySchema),
+  total: z.number(),
+  limit: z.number(),
+  offset: z.number(),
+});
+
 // User preferences schema
 export const UserPreferencesSchema = z.object({
   categories: z.array(z.string()),
@@ -132,6 +140,12 @@ export const SubscriptionResponseSchema = z.object({
   status: SubscriptionStatusSchema,
   currentPeriodEnd: z.string().optional(),
   cancelAtPeriodEnd: z.boolean(),
+});
+
+// Pagination query params (limit/offset)
+export const PaginationQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
 });
 
 // Archive query params
@@ -200,5 +214,6 @@ export type ArchiveQuery = z.infer<typeof ArchiveQuerySchema>;
 export type SearchQuery = z.infer<typeof SearchQuerySchema>;
 export type ValidationRequest = z.infer<typeof ValidationRequestSchema>;
 export type ExportQuery = z.infer<typeof ExportQuerySchema>;
+export type PaginationQuery = z.infer<typeof PaginationQuerySchema>;
 export type ApiError = z.infer<typeof ApiErrorSchema>;
 export type RateLimitInfo = z.infer<typeof RateLimitInfoSchema>;

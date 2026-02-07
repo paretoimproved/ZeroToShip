@@ -8,11 +8,19 @@ import { eq, desc, gte, lte, and, like, sql, ilike, or } from 'drizzle-orm';
 import { db, ideas, savedIdeas, viewedIdeas, validationRequests } from '../db/client';
 import type {
   IdeaBrief,
+  IdeaSummary,
   ArchiveQuery,
   SearchQuery,
   ExportQuery,
   EffortLevel,
+  UserTier,
+  PaginationQuery,
 } from '../schemas';
+import {
+  filterIdeasForTier,
+  filterIdeaForTier,
+  canAccessFullBrief,
+} from '../middleware/tierGate';
 
 /**
  * Convert database row to IdeaBrief
@@ -84,6 +92,35 @@ export async function getRecentIdeas(limit: number = 10): Promise<IdeaBrief[]> {
     .limit(limit);
 
   return rows.map(rowToIdeaBrief);
+}
+
+/**
+ * List published ideas with limit/offset pagination
+ */
+export async function listIdeas(
+  pagination: PaginationQuery
+): Promise<{ data: IdeaBrief[]; total: number }> {
+  const whereClause = eq(ideas.isPublished, true);
+
+  const countResult = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(ideas)
+    .where(whereClause);
+
+  const total = countResult[0]?.count || 0;
+
+  const rows = await db
+    .select()
+    .from(ideas)
+    .where(whereClause)
+    .orderBy(desc(ideas.publishedAt), desc(ideas.priorityScore))
+    .limit(pagination.limit)
+    .offset(pagination.offset);
+
+  return {
+    data: rows.map(rowToIdeaBrief),
+    total,
+  };
 }
 
 /**
@@ -379,5 +416,92 @@ export async function getValidationStatus(
     status: row.status,
     result: row.result,
     completedAt: row.completedAt,
+  };
+}
+
+/**
+ * Get today's ideas with fallback to recent, filtered by tier.
+ * Encapsulates the "today or recent" fallback logic + tier filtering.
+ */
+export async function getTodaysIdeasForTier(
+  tier: UserTier
+): Promise<{ ideas: IdeaSummary[]; total: number }> {
+  let allIdeas = await getTodaysIdeas();
+  if (allIdeas.length === 0) {
+    allIdeas = await getRecentIdeas(20);
+  }
+
+  const { ideas: filtered, total } = filterIdeasForTier(allIdeas, tier);
+  return { ideas: filtered, total };
+}
+
+/**
+ * Get archived ideas filtered by tier, with pagination metadata.
+ */
+export async function getArchivedIdeasForTier(
+  query: ArchiveQuery,
+  tier: UserTier
+): Promise<{ ideas: IdeaSummary[]; total: number; hasMore: boolean }> {
+  const { ideas: allIdeas, total } = await getArchivedIdeas(query);
+  const { ideas: filtered } = filterIdeasForTier(allIdeas, tier);
+  const hasMore = query.page * query.pageSize < total;
+
+  return { ideas: filtered, total, hasMore };
+}
+
+/**
+ * Get a single idea by ID, filtered by tier.
+ * Returns the idea summary and an upgrade prompt if the user can't see the full brief.
+ */
+export async function getIdeaByIdForTier(
+  id: string,
+  tier: UserTier,
+  userId?: string
+): Promise<{
+  idea: IdeaSummary;
+  upgrade?: { message: string; url: string };
+} | null> {
+  const idea = await getIdeaById(id);
+  if (!idea) {
+    return null;
+  }
+
+  // Track view if authenticated
+  if (userId) {
+    trackView(userId, id).catch(() => {});
+  }
+
+  const filtered = filterIdeaForTier(idea, tier);
+
+  if (!canAccessFullBrief(tier)) {
+    return {
+      idea: filtered,
+      upgrade: {
+        message: 'Upgrade to Pro to see the full business brief',
+        url: 'https://ideaforge.io/pricing',
+      },
+    };
+  }
+
+  return { idea: filtered };
+}
+
+/**
+ * Save an idea for a user, verifying the idea exists first.
+ * Returns null if the idea doesn't exist.
+ */
+export async function saveIdeaForUser(
+  userId: string,
+  ideaId: string
+): Promise<{ success: boolean; message: string } | null> {
+  const idea = await getIdeaById(ideaId);
+  if (!idea) {
+    return null;
+  }
+
+  const success = await saveIdea(userId, ideaId);
+  return {
+    success,
+    message: success ? 'Idea saved' : 'Already saved',
   };
 }

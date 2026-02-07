@@ -5,11 +5,12 @@
  */
 
 import Stripe from 'stripe';
+import { config } from '../../config/env';
 
 /**
  * Stripe client instance
  */
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+export const stripe = new Stripe(config.STRIPE_SECRET_KEY, {
   apiVersion: '2025-01-27.acacia' as Stripe.LatestApiVersion,
   typescript: true,
 });
@@ -18,10 +19,10 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
  * Stripe price IDs from environment
  */
 export const STRIPE_PRICES = {
-  pro_monthly: process.env.STRIPE_PRICE_PRO_MONTHLY!,
-  pro_yearly: process.env.STRIPE_PRICE_PRO_YEARLY!,
-  enterprise_monthly: process.env.STRIPE_PRICE_ENT_MONTHLY!,
-  enterprise_yearly: process.env.STRIPE_PRICE_ENT_YEARLY!,
+  pro_monthly: config.STRIPE_PRICE_PRO_MONTHLY,
+  pro_yearly: config.STRIPE_PRICE_PRO_YEARLY,
+  enterprise_monthly: config.STRIPE_PRICE_ENT_MONTHLY,
+  enterprise_yearly: config.STRIPE_PRICE_ENT_YEARLY,
 } as const;
 
 /**
@@ -52,17 +53,14 @@ export function getTierFromPriceId(priceId: string): 'pro' | 'enterprise' | null
 /**
  * Webhook secret for signature verification
  */
-export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET!;
+export const STRIPE_WEBHOOK_SECRET = config.STRIPE_WEBHOOK_SECRET;
 
 /**
  * Frontend URLs for checkout redirects
  */
-export const CHECKOUT_SUCCESS_URL =
-  process.env.CHECKOUT_SUCCESS_URL || 'http://localhost:3000/account?session_id={CHECKOUT_SESSION_ID}';
-export const CHECKOUT_CANCEL_URL =
-  process.env.CHECKOUT_CANCEL_URL || 'http://localhost:3000/pricing';
-export const BILLING_PORTAL_RETURN_URL =
-  process.env.BILLING_PORTAL_RETURN_URL || 'http://localhost:3000/account';
+export const CHECKOUT_SUCCESS_URL = config.CHECKOUT_SUCCESS_URL;
+export const CHECKOUT_CANCEL_URL = config.CHECKOUT_CANCEL_URL;
+export const BILLING_PORTAL_RETURN_URL = config.BILLING_PORTAL_RETURN_URL;
 
 /**
  * Price display info for frontend

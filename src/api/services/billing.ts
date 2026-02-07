@@ -10,6 +10,7 @@ import { db, subscriptions, users } from '../db/client';
 import {
   stripe,
   STRIPE_PRICES,
+  PRICE_INFO,
   StripePriceKey,
   getTierFromPriceId,
   CHECKOUT_SUCCESS_URL,
@@ -17,7 +18,7 @@ import {
   BILLING_PORTAL_RETURN_URL,
   STRIPE_WEBHOOK_SECRET,
 } from '../config/stripe';
-import { updateSubscription, updateUserTier } from './users';
+import { updateSubscription, updateUserTier, getUserById } from './users';
 import type { UserTier } from '../schemas';
 
 /**
@@ -385,4 +386,102 @@ export async function getAvailablePrices(): Promise<
   }
 
   return prices;
+}
+
+/**
+ * Get available prices with fallback to static price info on error.
+ */
+export async function getAvailablePricesWithFallback(): Promise<
+  Array<{
+    key: string;
+    priceId: string;
+    amount: number;
+    currency: string;
+    interval: string;
+    tier: 'pro' | 'enterprise';
+  }>
+> {
+  try {
+    return await getAvailablePrices();
+  } catch (error) {
+    console.error('Get prices error:', error);
+    return Object.entries(PRICE_INFO).map(([key, info]) => ({
+      key,
+      priceId: STRIPE_PRICES[key as StripePriceKey] || '',
+      amount: info.amount,
+      currency: 'usd',
+      interval: info.interval,
+      tier: info.tier,
+    }));
+  }
+}
+
+/**
+ * Validate a checkout request and create a session.
+ * Returns an error object if validation fails, or the checkout result on success.
+ */
+export async function initiateCheckout(
+  userId: string,
+  priceKey: string
+): Promise<
+  | { url: string; sessionId: string }
+  | { error: { code: string; message: string; status: number } }
+> {
+  const user = await getUserById(userId);
+  if (!user) {
+    return { error: { code: 'USER_NOT_FOUND', message: 'User not found', status: 404 } };
+  }
+
+  const priceId = STRIPE_PRICES[priceKey as StripePriceKey];
+  if (!priceId) {
+    return {
+      error: {
+        code: 'INVALID_PRICE',
+        message: `Price key "${priceKey}" is not configured`,
+        status: 400,
+      },
+    };
+  }
+
+  try {
+    return await createCheckoutSession(userId, user.email, priceKey as StripePriceKey);
+  } catch (error) {
+    console.error('Checkout session error:', error);
+    return {
+      error: {
+        code: 'CHECKOUT_FAILED',
+        message: 'Failed to create checkout session',
+        status: 400,
+      },
+    };
+  }
+}
+
+/**
+ * Validate and create a billing portal session.
+ * Returns an error object if the user is not found.
+ */
+export async function initiateBillingPortal(
+  userId: string
+): Promise<
+  | { url: string }
+  | { error: { code: string; message: string; status: number } }
+> {
+  const user = await getUserById(userId);
+  if (!user) {
+    return { error: { code: 'USER_NOT_FOUND', message: 'User not found', status: 404 } };
+  }
+
+  try {
+    return await createBillingPortalSession(userId, user.email);
+  } catch (error) {
+    console.error('Portal session error:', error);
+    return {
+      error: {
+        code: 'PORTAL_FAILED',
+        message: 'Failed to create billing portal session',
+        status: 400,
+      },
+    };
+  }
 }

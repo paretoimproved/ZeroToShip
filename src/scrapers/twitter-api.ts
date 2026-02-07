@@ -8,7 +8,9 @@
  * @see https://developer.twitter.com/en/docs/twitter-api/tweets/search/api-reference/get-tweets-search-recent
  */
 
-import { Tweet, TwitterConfig, PAIN_POINT_SIGNALS } from './types';
+import { Tweet, TwitterConfig } from './types';
+import { detectSignals } from './signals';
+import { config } from '../config/env';
 import logger from '../lib/logger';
 
 const TWITTER_API_BASE = 'https://api.twitter.com/2';
@@ -236,10 +238,7 @@ export class TwitterApiClient {
     const hashtags = apiTweet.entities?.hashtags?.map(h => h.tag) ?? [];
 
     // Detect pain point signals in tweet text
-    const textLower = apiTweet.text.toLowerCase();
-    const signals = PAIN_POINT_SIGNALS.filter(signal =>
-      textLower.includes(signal.toLowerCase())
-    );
+    const signals = detectSignals(apiTweet.text);
 
     return {
       id: `twitter_${apiTweet.id}`,
@@ -296,7 +295,7 @@ export class TwitterApiClient {
  * Factory function to create Twitter API client
  */
 export function createTwitterApiClient(bearerToken?: string): TwitterApiClient | null {
-  const token = bearerToken ?? process.env.TWITTER_BEARER_TOKEN;
+  const token = bearerToken ?? config.TWITTER_BEARER_TOKEN;
 
   if (!token) {
     logger.warn('No Twitter bearer token found. Set TWITTER_BEARER_TOKEN environment variable.');

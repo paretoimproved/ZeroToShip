@@ -2,6 +2,28 @@ import { GitHubAPI, GitHubSearchIssueItem } from './github-api';
 import { GitHubIssue, GitHubSearchQuery, ScrapeResult } from './types';
 import { detectSignals } from './signals';
 import logger from '../lib/logger';
+import { getCutoffDate, wrapScraperError, truncateResults } from './shared';
+
+/** Default lookback window for GitHub scraping (7 days in hours) */
+const DEFAULT_HOURS_BACK = 168;
+
+/** Default max issues to collect per search query */
+const DEFAULT_MAX_PER_QUERY = 50;
+
+/** Default minimum star count for a repo to be included */
+const DEFAULT_MIN_STARS = 100;
+
+/** GitHub API results per page (max allowed by API) */
+const GITHUB_API_PER_PAGE = 100;
+
+/** Minimum remaining API rate limit before stopping early */
+const MIN_RATE_LIMIT_REMAINING = 10;
+
+/** Divisor for normalizing repo star count in relevance scoring */
+const STARS_SCORE_DIVISOR = 1000;
+
+/** Initial expected rate limit budget */
+const INITIAL_RATE_LIMIT_BUDGET = 5000;
 
 /**
  * Default search queries for finding unmet needs in GitHub issues
@@ -54,13 +76,13 @@ export class GitHubScraper {
     maxPerQuery?: number;
     minStars?: number;
   } = {}): Promise<ScrapeResult<GitHubIssue>> {
-    const { hoursBack = 168, maxPerQuery = 50, minStars = 100 } = options;
-    const cutoffDate = new Date(Date.now() - hoursBack * 60 * 60 * 1000);
-    
+    const { hoursBack = DEFAULT_HOURS_BACK, maxPerQuery = DEFAULT_MAX_PER_QUERY, minStars = DEFAULT_MIN_STARS } = options;
+    const cutoffDate = getCutoffDate(hoursBack);
+
     const allIssues: GitHubIssue[] = [];
     const seenIds = new Set<number>();
     let totalFound = 0;
-    let rateLimitRemaining = 5000;
+    let rateLimitRemaining = INITIAL_RATE_LIMIT_BUDGET;
 
     logger.info({ queryCount: this.queries.length }, 'Starting GitHub scrape');
 
@@ -72,8 +94,8 @@ export class GitHubScraper {
         logger.info({ description: queryConfig.description }, 'Searching');
         
         const result = await this.api.searchIssues(fullQuery, {
-          perPage: 100,
-          maxPages: Math.ceil(maxPerQuery / 100),
+          perPage: GITHUB_API_PER_PAGE,
+          maxPages: Math.ceil(maxPerQuery / GITHUB_API_PER_PAGE),
           sort: 'reactions',
           order: 'desc',
         });
@@ -94,25 +116,29 @@ export class GitHubScraper {
           if (allIssues.length >= maxPerQuery * this.queries.length) break;
         }
 
-        if (rateLimitRemaining < 10) {
+        if (rateLimitRemaining < MIN_RATE_LIMIT_REMAINING) {
           logger.warn('Rate limit running low, stopping early');
           break;
         }
       } catch (error) {
-        logger.error({ err: error, description: queryConfig.description }, 'Error with query');
+        const scraperErr = wrapScraperError(error, 'github', { query: queryConfig.query });
+        logger.error({ err: scraperErr, description: queryConfig.description }, 'Error with query');
       }
     }
 
     const sortedIssues = allIssues.sort((a, b) => {
-      const scoreA = a.reactions + a.commentCount + (a.repoStars / 1000);
-      const scoreB = b.reactions + b.commentCount + (b.repoStars / 1000);
+      const scoreA = a.reactions + a.commentCount + (a.repoStars / STARS_SCORE_DIVISOR);
+      const scoreB = b.reactions + b.commentCount + (b.repoStars / STARS_SCORE_DIVISOR);
       return scoreB - scoreA;
     });
 
-    logger.info({ unique: sortedIssues.length, total: totalFound }, 'GitHub scrape complete');
+    // Truncate to MAX_POSTS_PER_SOURCE to prevent OOM and control downstream costs
+    const truncated = truncateResults(sortedIssues);
+
+    logger.info({ unique: truncated.length, total: totalFound }, 'GitHub scrape complete');
 
     return {
-      posts: sortedIssues,
+      posts: truncated,
       totalFound,
       scrapedAt: new Date(),
       queryUsed: this.queries.map(q => q.query).join(' | '),
@@ -188,7 +214,7 @@ export class GitHubScraper {
  */
 export async function scrapeGitHub(
   queries?: string[],
-  hoursBack: number = 168
+  hoursBack: number = DEFAULT_HOURS_BACK
 ): Promise<GitHubIssue[]> {
   const customQueries = queries?.map(q => ({
     query: q,

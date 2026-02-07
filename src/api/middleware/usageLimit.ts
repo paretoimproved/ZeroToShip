@@ -19,6 +19,9 @@ import {
 } from '../services/usage';
 import type { UserTier } from '../config/tiers';
 
+/** Overage price per brief in cents (displayed in warning header) */
+const OVERAGE_PRICE_CENTS = 15;
+
 /**
  * Middleware to check if user can generate a fresh brief
  * Should be used as preHandler on brief generation endpoints
@@ -55,7 +58,7 @@ export async function checkBriefLimit(
   // Warn if would incur overage (for Enterprise users)
   if (status.wouldIncurOverage) {
     reply.header('X-Overage-Warning', 'true');
-    reply.header('X-Overage-Price-Cents', '15');
+    reply.header('X-Overage-Price-Cents', String(OVERAGE_PRICE_CENTS));
   }
 
   // Add usage info to headers for transparency

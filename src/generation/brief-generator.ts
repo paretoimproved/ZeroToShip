@@ -7,6 +7,7 @@
 
 import type { ScoredProblem } from '../analysis/scorer';
 import type { GapAnalysis } from '../analysis/gap-analyzer';
+import { config as envConfig } from '../config/env';
 import logger from '../lib/logger';
 import {
   BRIEF_SYSTEM_PROMPT,
@@ -91,6 +92,24 @@ interface GPTBriefResponse {
 /**
  * Configuration for brief generation
  */
+/** Max tokens for a single brief generation API call */
+const SINGLE_BRIEF_MAX_TOKENS = 2000;
+
+/** Estimated tokens per brief in batch generation */
+const TOKENS_PER_BRIEF_ESTIMATE = 1500;
+
+/** Max output tokens for Haiku model in batch calls */
+const BATCH_MAX_OUTPUT_TOKENS = 8000;
+
+/** Default max concurrent brief generation API calls */
+const DEFAULT_MAX_CONCURRENT = 2;
+
+/** Default delay between brief generation API calls (ms) */
+const DEFAULT_DELAY_BETWEEN_CALLS_MS = 500;
+
+/** Default temperature for AI brief generation (creativity vs consistency) */
+const DEFAULT_TEMPERATURE = 0.7;
+
 export interface BriefGeneratorConfig {
   anthropicApiKey?: string;
   model?: string;
@@ -104,9 +123,9 @@ const DEFAULT_CONFIG: Required<BriefGeneratorConfig> = {
   anthropicApiKey: '',
   model: '',
   userTier: 'pro',
-  maxConcurrent: 2,
-  delayBetweenCalls: 500,
-  temperature: 0.7,
+  maxConcurrent: DEFAULT_MAX_CONCURRENT,
+  delayBetweenCalls: DEFAULT_DELAY_BETWEEN_CALLS_MS,
+  temperature: DEFAULT_TEMPERATURE,
 };
 
 /**
@@ -145,7 +164,7 @@ async function callClaude(
       },
       body: JSON.stringify({
         model,
-        max_tokens: 2000,
+        max_tokens: SINGLE_BRIEF_MAX_TOKENS,
         temperature,
         system: BRIEF_SYSTEM_PROMPT,
         messages: [
@@ -256,9 +275,7 @@ async function callClaudeBatch(
   const startTime = Date.now();
   const inputTokens = estimateTokens(BRIEF_SYSTEM_PROMPT) + estimateTokens(prompt);
 
-  // Haiku has 8192 max output tokens, so cap appropriately
-  // ~1500 tokens per brief * batch size, capped at 8000
-  const maxTokens = Math.min(1500 * batchSize, 8000);
+  const maxTokens = Math.min(TOKENS_PER_BRIEF_ESTIMATE * batchSize, BATCH_MAX_OUTPUT_TOKENS);
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -460,7 +477,7 @@ export async function generateBrief(
   config: BriefGeneratorConfig = {}
 ): Promise<IdeaBrief> {
   const opts = { ...DEFAULT_CONFIG, ...config };
-  const apiKey = opts.anthropicApiKey || process.env.ANTHROPIC_API_KEY || '';
+  const apiKey = opts.anthropicApiKey || envConfig.ANTHROPIC_API_KEY;
 
   // Select model: explicit config > tier-based selection
   const model = opts.model || getBriefModel(opts.userTier);
@@ -507,7 +524,7 @@ export async function generateAllBriefs(
     return results;
   }
 
-  const apiKey = opts.anthropicApiKey || process.env.ANTHROPIC_API_KEY || '';
+  const apiKey = opts.anthropicApiKey || envConfig.ANTHROPIC_API_KEY;
   const model = opts.model || getBriefModel(opts.userTier);
   logger.info({ count: scoredProblems.length, model, tier: opts.userTier }, 'Generating briefs');
 

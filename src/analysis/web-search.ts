@@ -5,6 +5,7 @@
  * Generates search queries from problem statements and fetches results.
  */
 
+import { config as envConfig } from '../config/env';
 import logger from '../lib/logger';
 
 /**
@@ -109,8 +110,8 @@ export class WebSearchClient {
     this.config = {
       ...DEFAULT_CONFIG,
       ...config,
-      serpApiKey: config.serpApiKey || process.env.SERPAPI_KEY || '',
-      braveApiKey: config.braveApiKey || process.env.BRAVE_API_KEY || '',
+      serpApiKey: config.serpApiKey || envConfig.SERPAPI_KEY,
+      braveApiKey: config.braveApiKey || envConfig.BRAVE_API_KEY,
     };
   }
 

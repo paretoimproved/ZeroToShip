@@ -9,6 +9,7 @@ import { scoreAll } from '../../analysis/scorer';
 import { analyzeAllGaps } from '../../analysis/gap-analyzer';
 import type { RawPost } from '../../scrapers/types';
 import { createPhaseLogger } from '../utils/logger';
+import { AnalysisError, isIdeaForgeError, wrapError } from '../../lib/errors';
 import type {
   PhaseResult,
   AnalyzePhaseOutput,
@@ -43,6 +44,7 @@ export async function runAnalyzePhase(
         success: false,
         data: null,
         error: 'No clusters generated from posts',
+        severity: 'fatal',
         duration: Date.now() - startTime,
         phase: 'analyze',
         timestamp: new Date(),
@@ -92,15 +94,16 @@ export async function runAnalyzePhase(
     };
   } catch (error) {
     const duration = Date.now() - startTime;
-    const errorMessage =
-      error instanceof Error ? error.message : String(error);
+    const analysisError = wrapError(error, AnalysisError);
+    const errorMessage = analysisError.message;
 
-    logger.error({ error: errorMessage }, 'Analyze phase failed');
+    logger.error({ error: errorMessage, severity: analysisError.severity }, 'Analyze phase failed');
 
     return {
       success: false,
       data: null,
       error: errorMessage,
+      severity: analysisError.severity,
       duration,
       phase: 'analyze',
       timestamp: new Date(),

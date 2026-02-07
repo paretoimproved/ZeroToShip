@@ -5,6 +5,12 @@
  * for clustering similar posts together.
  */
 
+/** Default similarity threshold for clustering related posts */
+export const DEFAULT_SIMILARITY_THRESHOLD = 0.85;
+
+/** Default minimum points for DBSCAN core point classification */
+export const DEFAULT_DBSCAN_MIN_POINTS = 1;
+
 /**
  * Compute cosine similarity between two vectors
  * Returns a value between -1 and 1 (1 = identical, 0 = orthogonal, -1 = opposite)
@@ -90,8 +96,8 @@ export function findSimilarPairs(
  */
 export function dbscanCluster(
   vectors: number[][],
-  similarityThreshold: number = 0.85,
-  minPoints: number = 1
+  similarityThreshold: number = DEFAULT_SIMILARITY_THRESHOLD,
+  minPoints: number = DEFAULT_DBSCAN_MIN_POINTS
 ): number[] {
   const n = vectors.length;
   const labels = new Array(n).fill(-1); // -1 = unvisited
@@ -156,7 +162,7 @@ export function dbscanCluster(
  */
 export function hierarchicalCluster(
   vectors: number[][],
-  similarityThreshold: number = 0.85
+  similarityThreshold: number = DEFAULT_SIMILARITY_THRESHOLD
 ): number[] {
   const n = vectors.length;
   if (n === 0) return [];

@@ -10,12 +10,13 @@ import { randomBytes } from 'crypto';
 import { FastifyRequest, FastifyReply, FastifyPluginAsync } from 'fastify';
 import { createClient } from '@supabase/supabase-js';
 import { eq } from 'drizzle-orm';
+import { config } from '../../config/env';
 import { db, users, apiKeys, subscriptions } from '../db/client';
 import type { UserTier } from '../schemas';
 
 // Supabase client for JWT verification
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const supabaseUrl = config.SUPABASE_URL;
+const supabaseServiceKey = config.SUPABASE_SERVICE_ROLE_KEY;
 
 const supabase =
   supabaseUrl && supabaseServiceKey

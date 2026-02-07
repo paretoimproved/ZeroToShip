@@ -13,12 +13,10 @@ import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
 import { rateLimitMiddleware } from '../middleware/rateLimit';
 import {
-  createCheckoutSession,
-  createBillingPortalSession,
-  getAvailablePrices,
+  initiateCheckout,
+  initiateBillingPortal,
+  getAvailablePricesWithFallback,
 } from '../services/billing';
-import { getUserById } from '../services/users';
-import { STRIPE_PRICES, StripePriceKey, PRICE_INFO } from '../config/stripe';
 
 const CheckoutRequestSchema = z.object({
   priceKey: z.enum(['pro_monthly', 'pro_yearly', 'enterprise_monthly', 'enterprise_yearly']),
@@ -73,40 +71,16 @@ export const billingRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, reply) => {
       const { priceKey } = request.body;
+      const result = await initiateCheckout(request.userId!, priceKey);
 
-      // Get user email
-      const user = await getUserById(request.userId!);
-      if (!user) {
-        return reply.status(404).send({
-          code: 'USER_NOT_FOUND',
-          message: 'User not found',
+      if ('error' in result) {
+        return reply.status(result.error.status).send({
+          code: result.error.code,
+          message: result.error.message,
         });
       }
 
-      // Validate price key exists
-      const priceId = STRIPE_PRICES[priceKey as StripePriceKey];
-      if (!priceId) {
-        return reply.status(400).send({
-          code: 'INVALID_PRICE',
-          message: `Price key "${priceKey}" is not configured`,
-        });
-      }
-
-      try {
-        const result = await createCheckoutSession(
-          request.userId!,
-          user.email,
-          priceKey as StripePriceKey
-        );
-
-        return reply.send(result);
-      } catch (error) {
-        console.error('Checkout session error:', error);
-        return reply.status(400).send({
-          code: 'CHECKOUT_FAILED',
-          message: 'Failed to create checkout session',
-        });
-      }
+      return reply.send(result);
     }
   );
 
@@ -127,25 +101,16 @@ export const billingRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request, reply) => {
-      // Get user email
-      const user = await getUserById(request.userId!);
-      if (!user) {
-        return reply.status(404).send({
-          code: 'USER_NOT_FOUND',
-          message: 'User not found',
+      const result = await initiateBillingPortal(request.userId!);
+
+      if ('error' in result) {
+        return reply.status(result.error.status).send({
+          code: result.error.code,
+          message: result.error.message,
         });
       }
 
-      try {
-        const result = await createBillingPortalSession(request.userId!, user.email);
-        return reply.send(result);
-      } catch (error) {
-        console.error('Portal session error:', error);
-        return reply.status(400).send({
-          code: 'PORTAL_FAILED',
-          message: 'Failed to create billing portal session',
-        });
-      }
+      return reply.send(result);
     }
   );
 
@@ -163,22 +128,8 @@ export const billingRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (_request, reply) => {
-      try {
-        const prices = await getAvailablePrices();
-        return reply.send({ prices });
-      } catch (error) {
-        console.error('Get prices error:', error);
-        // Return static price info as fallback
-        const fallbackPrices = Object.entries(PRICE_INFO).map(([key, info]) => ({
-          key,
-          priceId: STRIPE_PRICES[key as StripePriceKey] || '',
-          amount: info.amount,
-          currency: 'usd',
-          interval: info.interval,
-          tier: info.tier,
-        }));
-        return reply.send({ prices: fallbackPrices });
-      }
+      const prices = await getAvailablePricesWithFallback();
+      return reply.send({ prices });
     }
   );
 };

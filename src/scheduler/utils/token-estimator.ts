@@ -5,13 +5,16 @@
  * Uses ~4 chars per token approximation for English text.
  */
 
+/** Average characters per token for English text (GPT/Claude tokenizers) */
+const CHARS_PER_TOKEN = 4;
+
 /**
  * Estimate tokens from text
- * Rough approximation: ~4 characters per token for English
+ * Rough approximation: ~CHARS_PER_TOKEN characters per token for English
  */
 export function estimateTokens(text: string): number {
   if (!text) return 0;
-  return Math.ceil(text.length / 4);
+  return Math.ceil(text.length / CHARS_PER_TOKEN);
 }
 
 /**

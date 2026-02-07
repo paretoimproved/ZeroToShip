@@ -6,19 +6,16 @@
  */
 
 import cron from 'node-cron';
-import { config as loadEnv } from 'dotenv';
+import { config as envConfig } from '../config/env';
 import { runPipeline, DEFAULT_PIPELINE_CONFIG } from './orchestrator';
 import { logger } from './utils/logger';
 import type { PipelineConfig, SchedulerConfig } from './types';
 
-// Load environment variables
-loadEnv();
-
 const DEFAULT_SCHEDULER_CONFIG: SchedulerConfig = {
-  cronExpression: process.env.SCHEDULER_CRON || '0 6 * * *', // 6 AM daily
-  timezone: process.env.SCHEDULER_TIMEZONE || 'America/New_York',
+  cronExpression: envConfig.SCHEDULER_CRON,
+  timezone: envConfig.SCHEDULER_TIMEZONE,
   pipelineConfig: {},
-  enabled: process.env.SCHEDULER_ENABLED !== 'false',
+  enabled: envConfig.SCHEDULER_ENABLED,
 };
 
 let scheduledTask: cron.ScheduledTask | null = null;

@@ -7,6 +7,7 @@
 
 import type { SearchResult } from './web-search';
 import { getBatchModel } from '../config/models';
+import { config } from '../config/env';
 import logger from '../lib/logger';
 import { getGlobalMetrics } from '../scheduler/utils/api-metrics';
 import { estimateTokens } from '../scheduler/utils/token-estimator';
@@ -259,7 +260,7 @@ export async function analyzeCompetitors(
   const opts = {
     ...DEFAULT_OPTIONS,
     ...options,
-    anthropicApiKey: options.anthropicApiKey || process.env.ANTHROPIC_API_KEY || '',
+    anthropicApiKey: options.anthropicApiKey || config.ANTHROPIC_API_KEY,
   };
 
   // Filter to relevant results
@@ -485,7 +486,7 @@ export async function analyzeCompetitorsBatch(
   const opts = {
     ...DEFAULT_OPTIONS,
     ...options,
-    anthropicApiKey: options.anthropicApiKey || process.env.ANTHROPIC_API_KEY || '',
+    anthropicApiKey: options.anthropicApiKey || config.ANTHROPIC_API_KEY,
   };
 
   const allResults = new Map<string, CompetitorAnalysis>();

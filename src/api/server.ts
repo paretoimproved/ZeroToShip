@@ -16,6 +16,8 @@ import {
   validatorCompiler,
   ZodTypeProvider,
 } from 'fastify-type-provider-zod';
+import { config as envConfig } from '../config/env';
+import { ApiError, isIdeaForgeError } from '../lib/errors';
 import { closeDatabase } from './db/client';
 import { healthRoutes } from './routes/health';
 import { ideasRoutes } from './routes/ideas';
@@ -42,10 +44,10 @@ export interface ServerConfig {
 }
 
 const DEFAULT_CONFIG: Required<ServerConfig> = {
-  port: parseInt(process.env.PORT || '3001', 10),
-  host: process.env.HOST || '0.0.0.0',
-  logger: process.env.NODE_ENV !== 'test',
-  trustProxy: process.env.NODE_ENV === 'production',
+  port: envConfig.PORT,
+  host: envConfig.HOST,
+  logger: !envConfig.isTest,
+  trustProxy: envConfig.isProduction,
 };
 
 /**
@@ -58,9 +60,9 @@ export async function createServer(config: ServerConfig = {}): Promise<FastifyIn
   const server = Fastify({
     logger: opts.logger
       ? {
-          level: process.env.LOG_LEVEL || 'info',
+          level: envConfig.logLevel,
           transport:
-            process.env.NODE_ENV !== 'production'
+            !envConfig.isProduction
               ? {
                   target: 'pino-pretty',
                   options: { colorize: true },
@@ -82,7 +84,7 @@ export async function createServer(config: ServerConfig = {}): Promise<FastifyIn
 
   // CORS
   await server.register(cors, {
-    origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000'],
+    origin: envConfig.corsOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
@@ -132,6 +134,26 @@ export async function createServer(config: ServerConfig = {}): Promise<FastifyIn
 
   // Global error handler
   server.setErrorHandler((error, request, reply) => {
+    // Handle ApiError from IdeaForge error classes
+    if (error instanceof ApiError) {
+      if (error.statusCode >= 500) {
+        request.log.error({ err: error, severity: error.severity, context: error.context }, error.message);
+      }
+      return reply.status(error.statusCode).send({
+        code: error.name,
+        message: error.message,
+      });
+    }
+
+    // Handle other IdeaForge errors
+    if (isIdeaForgeError(error)) {
+      request.log.error({ err: error, severity: error.severity, phase: error.phase }, error.message);
+      return reply.status(500).send({
+        code: error.name,
+        message: envConfig.isProduction ? 'An unexpected error occurred' : error.message,
+      });
+    }
+
     const statusCode = error.statusCode || 500;
 
     // Log server errors
@@ -160,7 +182,7 @@ export async function createServer(config: ServerConfig = {}): Promise<FastifyIn
     return reply.status(statusCode).send({
       code: error.code || 'INTERNAL_ERROR',
       message:
-        process.env.NODE_ENV === 'production'
+        envConfig.isProduction
           ? 'An unexpected error occurred'
           : error.message,
     });

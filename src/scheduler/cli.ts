@@ -6,14 +6,10 @@
  * Command-line interface for running and managing the pipeline.
  */
 
-import { config as loadEnv } from 'dotenv';
 import { runPipeline } from './orchestrator';
 import { startScheduler, stopScheduler } from './index';
 import { logger } from './utils/logger';
 import type { PipelineConfig } from './types';
-
-// Load environment variables
-loadEnv();
 
 interface CliOptions {
   command: 'run' | 'schedule' | 'health' | 'help';

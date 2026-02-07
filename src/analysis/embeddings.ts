@@ -8,6 +8,7 @@
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
+import { config } from '../config/env';
 import logger from '../lib/logger';
 
 export interface EmbeddingResult {
@@ -21,19 +22,26 @@ export interface EmbeddingCache {
 
 const EMBEDDING_MODEL = 'text-embedding-3-small';
 const EMBEDDING_DIMENSIONS = 1536;
-const MAX_INPUT_CHARS = 8000; // Safe limit for the model
+const MAX_INPUT_CHARS = 8000;
+const DEFAULT_MAX_BODY_CHARS = 500;
+
+/** Length of hex hash prefix used as cache key */
+const CACHE_HASH_LENGTH = 16;
+
+/** Max texts per OpenAI embedding API call (conservative limit) */
+const EMBEDDING_BATCH_SIZE = 100;
 
 /**
  * Creates a hash of the input text for cache lookup
  */
 function hashText(text: string): string {
-  return crypto.createHash('sha256').update(text).digest('hex').slice(0, 16);
+  return crypto.createHash('sha256').update(text).digest('hex').slice(0, CACHE_HASH_LENGTH);
 }
 
 /**
  * Prepares text for embedding by combining title and body
  */
-export function prepareTextForEmbedding(title: string, body: string, maxBodyChars: number = 500): string {
+export function prepareTextForEmbedding(title: string, body: string, maxBodyChars: number = DEFAULT_MAX_BODY_CHARS): string {
   const truncatedBody = body.slice(0, maxBodyChars);
   const combined = `${title}\n\n${truncatedBody}`.trim();
   return combined.slice(0, MAX_INPUT_CHARS);
@@ -50,7 +58,7 @@ export class EmbeddingClient {
   private cacheMisses = 0;
 
   constructor(apiKey?: string, cacheDir?: string) {
-    this.apiKey = apiKey || process.env.OPENAI_API_KEY || '';
+    this.apiKey = apiKey || config.OPENAI_API_KEY;
     if (!this.apiKey) {
       throw new Error('OpenAI API key is required. Set OPENAI_API_KEY environment variable.');
     }
@@ -163,10 +171,8 @@ export class EmbeddingClient {
 
     // Fetch uncached embeddings in batches
     if (uncachedTexts.length > 0) {
-      const BATCH_SIZE = 100; // Conservative batch size
-
-      for (let batchStart = 0; batchStart < uncachedTexts.length; batchStart += BATCH_SIZE) {
-        const batchEnd = Math.min(batchStart + BATCH_SIZE, uncachedTexts.length);
+      for (let batchStart = 0; batchStart < uncachedTexts.length; batchStart += EMBEDDING_BATCH_SIZE) {
+        const batchEnd = Math.min(batchStart + EMBEDDING_BATCH_SIZE, uncachedTexts.length);
         const batchTexts = uncachedTexts.slice(batchStart, batchEnd);
         const batchOriginalIndices = uncachedIndices.slice(batchStart, batchEnd);
 

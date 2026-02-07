@@ -1,5 +1,6 @@
 import { Octokit } from '@octokit/rest';
 import { RateLimitInfo } from './types';
+import { config } from '../config/env';
 import logger from '../lib/logger';
 
 /**
@@ -13,7 +14,7 @@ export class GitHubAPI {
 
   constructor(token?: string) {
     this.octokit = new Octokit({
-      auth: token || process.env.GITHUB_TOKEN,
+      auth: token || config.GITHUB_TOKEN,
       userAgent: 'IdeaForge/1.0',
     });
   }

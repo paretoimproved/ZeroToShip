@@ -7,12 +7,9 @@
  * - Cost reduced from $0.69 → ~$0.07 per run (90% reduction)
  */
 
-import { config as loadEnv } from 'dotenv';
+import { config } from '../config/env';
 import { runPipeline } from '../scheduler/orchestrator';
 import { CLAUDE_MODELS } from '../config/models';
-
-// Load environment variables
-loadEnv();
 
 interface ValidationResult {
   name: string;
@@ -36,7 +33,7 @@ async function main(): Promise<void> {
   console.log('=== IdeaForge Cost Optimization Validator ===\n');
 
   // Check for required environment variables
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = config.ANTHROPIC_API_KEY;
   if (!apiKey) {
     console.error('ERROR: ANTHROPIC_API_KEY environment variable is required');
     console.log('\nTo run validation, set the ANTHROPIC_API_KEY environment variable:');

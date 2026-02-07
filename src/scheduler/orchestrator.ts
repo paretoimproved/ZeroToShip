@@ -11,10 +11,21 @@ import { runScrapePhase } from './phases/scrape';
 import { runAnalyzePhase } from './phases/analyze';
 import { runGeneratePhase } from './phases/generate';
 import { runDeliverPhase } from './phases/deliver';
+import { isIdeaForgeError, isFatalError } from '../lib/errors';
+import {
+  initRunStatus,
+  savePhaseResult,
+  updatePhaseStatus,
+  loadRunStatus,
+  loadPhaseResult,
+  getResumePhase,
+} from './utils/persistence';
+import { DEFAULT_SIMILARITY_THRESHOLD } from '../analysis/similarity';
 import type {
   PipelineConfig,
   PipelineResult,
   PhaseResult,
+  PhaseName,
   ScrapePhaseOutput,
   AnalyzePhaseOutput,
   GeneratePhaseOutput,
@@ -22,21 +33,33 @@ import type {
   PipelineError,
 } from './types';
 
+/** Default scrape lookback window (hours) */
+const DEFAULT_HOURS_BACK = 24;
+
+/** Minimum post frequency for gap analysis to be worth running */
+const DEFAULT_MIN_FREQUENCY_FOR_GAP = 2;
+
+/** Maximum number of briefs to generate per pipeline run */
+const DEFAULT_MAX_BRIEFS = 10;
+
+/** Minimum priority score for a problem to be included in brief generation */
+const DEFAULT_MIN_PRIORITY_SCORE = 0.5;
+
 /**
  * Default pipeline configuration
  */
 export const DEFAULT_PIPELINE_CONFIG: PipelineConfig = {
-  hoursBack: 24,
+  hoursBack: DEFAULT_HOURS_BACK,
   scrapers: {
     reddit: true,
     hn: true,
     twitter: true,
     github: true,
   },
-  clusteringThreshold: 0.85,
-  minFrequencyForGap: 2,
-  maxBriefs: 10,
-  minPriorityScore: 0.5,
+  clusteringThreshold: DEFAULT_SIMILARITY_THRESHOLD,
+  minFrequencyForGap: DEFAULT_MIN_FREQUENCY_FOR_GAP,
+  maxBriefs: DEFAULT_MAX_BRIEFS,
+  minPriorityScore: DEFAULT_MIN_PRIORITY_SCORE,
   dryRun: false,
   verbose: false,
   reportMetrics: false,
@@ -102,13 +125,53 @@ function buildResult(
 }
 
 /**
+ * Check if a phase should be skipped during a resumed run.
+ * A phase is skipped if it already completed in the previous run
+ * and falls before the resume point.
+ */
+function shouldSkipPhase(
+  resumePhase: PhaseName | null,
+  currentPhase: PhaseName
+): boolean {
+  if (!resumePhase) return false;
+  const order: PhaseName[] = ['scrape', 'analyze', 'generate', 'deliver'];
+  return order.indexOf(currentPhase) < order.indexOf(resumePhase);
+}
+
+/**
  * Run the complete IdeaForge pipeline
+ *
+ * Supports resuming from a previous failed run via `config.resumeRunId`.
+ * When resuming, completed phase results are loaded from disk and the
+ * pipeline picks up from the first incomplete phase.
  */
 export async function runPipeline(
   config: Partial<PipelineConfig> = {}
 ): Promise<PipelineResult> {
   const fullConfig = { ...DEFAULT_PIPELINE_CONFIG, ...config };
-  const runId = generateRunId();
+
+  // Determine run ID and resume state
+  let runId: string;
+  let resumePhase: PhaseName | null = null;
+
+  if (fullConfig.resumeRunId) {
+    const previousStatus = loadRunStatus(fullConfig.resumeRunId);
+    if (!previousStatus) {
+      throw new Error(
+        `Cannot resume run "${fullConfig.resumeRunId}": status file not found or corrupted`
+      );
+    }
+    runId = fullConfig.resumeRunId;
+    resumePhase = getResumePhase(previousStatus);
+    if (!resumePhase) {
+      throw new Error(
+        `Cannot resume run "${runId}": all phases already completed`
+      );
+    }
+  } else {
+    runId = generateRunId();
+  }
+
   const logger = createRunLogger(runId);
   const metrics = new MetricsCollector(runId);
   const errors: PipelineError[] = [];
@@ -120,96 +183,191 @@ export async function runPipeline(
 
   const startedAt = new Date();
 
-  logger.info({ config: fullConfig }, 'Pipeline started');
+  if (resumePhase) {
+    logger.info(
+      { config: fullConfig, resumePhase },
+      'Pipeline resuming from previous run'
+    );
+  } else {
+    logger.info({ config: fullConfig }, 'Pipeline started');
+    initRunStatus(runId, fullConfig);
+  }
 
   // Phase 1: Scrape
-  metrics.startPhase('scrape');
-  const scrapeResult = await runScrapePhase(runId, fullConfig);
-  metrics.completePhase('scrape', scrapeResult.success, scrapeResult.data?.totalPosts || 0);
+  let scrapeResult: PhaseResult<ScrapePhaseOutput>;
+
+  if (shouldSkipPhase(resumePhase, 'scrape')) {
+    const cached = loadPhaseResult<ScrapePhaseOutput>(runId, 'scrape');
+    if (!cached) {
+      throw new Error(`Resume failed: could not load persisted scrape data for run "${runId}"`);
+    }
+    scrapeResult = {
+      success: true,
+      data: cached,
+      duration: 0,
+      phase: 'scrape',
+      timestamp: new Date(),
+    };
+    logger.info('Scrape phase: loaded from persisted data');
+  } else {
+    metrics.startPhase('scrape');
+    scrapeResult = await runScrapePhase(runId, fullConfig);
+    metrics.completePhase('scrape', scrapeResult.success, scrapeResult.data?.totalPosts || 0);
+
+    if (scrapeResult.success && scrapeResult.data) {
+      savePhaseResult(runId, 'scrape', scrapeResult.data);
+      updatePhaseStatus(runId, 'scrape', 'completed');
+    } else {
+      updatePhaseStatus(runId, 'scrape', 'failed');
+    }
+  }
 
   if (!scrapeResult.success || !scrapeResult.data) {
-    logger.error('Pipeline aborted: scrape phase failed');
+    const isFatal = scrapeResult.severity !== 'degraded';
+    logger.error({ severity: scrapeResult.severity ?? 'fatal' }, 'Scrape phase failed');
     errors.push({
       phase: 'scrape',
       message: scrapeResult.error || 'Unknown error',
       timestamp: new Date(),
-      recoverable: false,
+      recoverable: !isFatal,
+      severity: scrapeResult.severity,
     });
-    return buildResult(runId, startedAt, fullConfig, { scrape: scrapeResult }, errors);
+    if (isFatal) {
+      return buildResult(runId, startedAt, fullConfig, { scrape: scrapeResult }, errors);
+    }
   }
 
-  // Phase 2: Analyze
-  metrics.startPhase('analyze');
-  const analyzeResult = await runAnalyzePhase(
-    runId,
-    fullConfig,
-    scrapeResult.data.posts
-  );
-  metrics.completePhase('analyze', analyzeResult.success, analyzeResult.data?.scoredCount || 0);
+  // Phase 2: Analyze (requires scrape data)
+  let analyzeResult: PhaseResult<AnalyzePhaseOutput>;
+
+  if (shouldSkipPhase(resumePhase, 'analyze')) {
+    const cached = loadPhaseResult<AnalyzePhaseOutput>(runId, 'analyze');
+    if (!cached) {
+      throw new Error(`Resume failed: could not load persisted analyze data for run "${runId}"`);
+    }
+    analyzeResult = {
+      success: true,
+      data: cached,
+      duration: 0,
+      phase: 'analyze',
+      timestamp: new Date(),
+    };
+    logger.info('Analyze phase: loaded from persisted data');
+  } else {
+    metrics.startPhase('analyze');
+    analyzeResult = scrapeResult.data?.posts?.length
+      ? await runAnalyzePhase(runId, fullConfig, scrapeResult.data.posts)
+      : { success: false, data: null, error: 'No posts from scrape phase', severity: 'fatal' as const, duration: 0, phase: 'analyze' as const, timestamp: new Date() };
+    metrics.completePhase('analyze', analyzeResult.success, analyzeResult.data?.scoredCount || 0);
+
+    if (analyzeResult.success && analyzeResult.data) {
+      savePhaseResult(runId, 'analyze', analyzeResult.data);
+      updatePhaseStatus(runId, 'analyze', 'completed');
+    } else {
+      updatePhaseStatus(runId, 'analyze', 'failed');
+    }
+  }
 
   if (!analyzeResult.success || !analyzeResult.data) {
-    logger.error('Pipeline aborted: analyze phase failed');
+    const isFatal = analyzeResult.severity !== 'degraded';
+    logger.error({ severity: analyzeResult.severity ?? 'fatal' }, 'Analyze phase failed');
     errors.push({
       phase: 'analyze',
       message: analyzeResult.error || 'Unknown error',
       timestamp: new Date(),
-      recoverable: false,
+      recoverable: !isFatal,
+      severity: analyzeResult.severity,
     });
-    return buildResult(
-      runId,
-      startedAt,
-      fullConfig,
-      { scrape: scrapeResult, analyze: analyzeResult },
-      errors
-    );
+    if (isFatal) {
+      return buildResult(
+        runId,
+        startedAt,
+        fullConfig,
+        { scrape: scrapeResult, analyze: analyzeResult },
+        errors
+      );
+    }
   }
 
-  // Phase 3: Generate
-  metrics.startPhase('generate');
-  const generateResult = await runGeneratePhase(
-    runId,
-    fullConfig,
-    analyzeResult.data.scoredProblems,
-    analyzeResult.data.gapAnalyses
-  );
-  metrics.completePhase('generate', generateResult.success, generateResult.data?.briefCount || 0);
+  // Phase 3: Generate (requires analyze data)
+  let generateResult: PhaseResult<GeneratePhaseOutput>;
+
+  if (shouldSkipPhase(resumePhase, 'generate')) {
+    const cached = loadPhaseResult<GeneratePhaseOutput>(runId, 'generate');
+    if (!cached) {
+      throw new Error(`Resume failed: could not load persisted generate data for run "${runId}"`);
+    }
+    generateResult = {
+      success: true,
+      data: cached,
+      duration: 0,
+      phase: 'generate',
+      timestamp: new Date(),
+    };
+    logger.info('Generate phase: loaded from persisted data');
+  } else {
+    metrics.startPhase('generate');
+    generateResult = analyzeResult.data?.scoredProblems?.length
+      ? await runGeneratePhase(
+          runId,
+          fullConfig,
+          analyzeResult.data.scoredProblems,
+          analyzeResult.data.gapAnalyses
+        )
+      : { success: false, data: null, error: 'No scored problems from analyze phase', severity: 'fatal' as const, duration: 0, phase: 'generate' as const, timestamp: new Date() };
+    metrics.completePhase('generate', generateResult.success, generateResult.data?.briefCount || 0);
+
+    if (generateResult.success && generateResult.data) {
+      savePhaseResult(runId, 'generate', generateResult.data);
+      updatePhaseStatus(runId, 'generate', 'completed');
+    } else {
+      updatePhaseStatus(runId, 'generate', 'failed');
+    }
+  }
 
   if (!generateResult.success || !generateResult.data) {
-    logger.error('Pipeline aborted: generate phase failed');
+    const isFatal = generateResult.severity !== 'degraded';
+    logger.error({ severity: generateResult.severity ?? 'fatal' }, 'Generate phase failed');
     errors.push({
       phase: 'generate',
       message: generateResult.error || 'Unknown error',
       timestamp: new Date(),
-      recoverable: false,
+      recoverable: !isFatal,
+      severity: generateResult.severity,
     });
-    return buildResult(
-      runId,
-      startedAt,
-      fullConfig,
-      {
-        scrape: scrapeResult,
-        analyze: analyzeResult,
-        generate: generateResult,
-      },
-      errors
-    );
+    if (isFatal) {
+      return buildResult(
+        runId,
+        startedAt,
+        fullConfig,
+        {
+          scrape: scrapeResult,
+          analyze: analyzeResult,
+          generate: generateResult,
+        },
+        errors
+      );
+    }
   }
 
-  // Phase 4: Deliver
+  // Phase 4: Deliver (degraded by default — delivery failures don't stop pipeline)
   metrics.startPhase('deliver');
-  const deliverResult = await runDeliverPhase(
-    runId,
-    fullConfig,
-    generateResult.data.briefs
-  );
+  const deliverResult = generateResult.data?.briefs?.length
+    ? await runDeliverPhase(runId, fullConfig, generateResult.data.briefs)
+    : { success: true, data: { subscriberCount: 0, sent: 0, failed: 0, dryRun: fullConfig.dryRun }, duration: 0, phase: 'deliver' as const, timestamp: new Date() };
   metrics.completePhase('deliver', deliverResult.success, deliverResult.data?.sent || 0);
 
-  if (!deliverResult.success) {
+  if (deliverResult.success) {
+    savePhaseResult(runId, 'deliver', deliverResult.data);
+    updatePhaseStatus(runId, 'deliver', 'completed');
+  } else {
+    updatePhaseStatus(runId, 'deliver', 'failed');
     errors.push({
       phase: 'deliver',
       message: deliverResult.error || 'Unknown error',
       timestamp: new Date(),
       recoverable: true,
+      severity: deliverResult.severity ?? 'degraded',
     });
   }
 

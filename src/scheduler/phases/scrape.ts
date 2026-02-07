@@ -11,6 +11,7 @@ import { twitterScraper } from '../../scrapers/twitter';
 import { scrapeGitHub } from '../../scrapers/github';
 import { createPhaseLogger } from '../utils/logger';
 import { withRetry } from '../utils/retry';
+import { ScraperError, wrapError } from '../../lib/errors';
 import type {
   PhaseResult,
   ScrapePhaseOutput,
@@ -35,11 +36,12 @@ async function runScraper<T extends RawPost>(
     const posts = await withRetry(scraperFn, { maxAttempts: 2 }, `scraper:${name}`);
     return { name, posts, success: true };
   } catch (error) {
+    const scraperError = wrapError(error, ScraperError, { scraper: name });
     return {
       name,
       posts: [],
       success: false,
-      error: error instanceof Error ? error.message : String(error),
+      error: scraperError.message,
     };
   }
 }
@@ -107,8 +109,8 @@ export async function runScrapePhase(
     );
   }
 
-  // Run all scrapers in parallel
-  const results = await Promise.all(scraperPromises);
+  // Run all scrapers in parallel — allSettled ensures one failure can't abort others
+  const settled = await Promise.allSettled(scraperPromises);
 
   // Aggregate results
   const allPosts: RawPost[] = [];
@@ -121,23 +123,36 @@ export async function runScrapePhase(
     posts: [],
   };
 
-  for (const result of results) {
-    output[result.name] = {
-      count: result.posts.length,
-      success: result.success,
-      error: result.error,
-    };
+  for (const outcome of settled) {
+    if (outcome.status === 'fulfilled') {
+      const result = outcome.value;
+      output[result.name] = {
+        count: result.posts.length,
+        success: result.success,
+        error: result.error,
+      };
 
-    if (result.success) {
-      allPosts.push(...result.posts);
-      logger.info(
-        { scraper: result.name, count: result.posts.length },
-        'Scraper completed successfully'
-      );
+      if (result.success) {
+        allPosts.push(...result.posts);
+        logger.info(
+          { scraper: result.name, count: result.posts.length },
+          'Scraper completed successfully'
+        );
+      } else {
+        logger.warn(
+          { scraper: result.name, error: result.error },
+          'Scraper failed'
+        );
+      }
     } else {
-      logger.warn(
-        { scraper: result.name, error: result.error },
-        'Scraper failed'
+      // Unexpected rejection — runScraper should catch all errors,
+      // but allSettled guards against unforeseen failures
+      const error = wrapError(outcome.reason, ScraperError, {
+        note: 'Unexpected rejection in scraper promise',
+      });
+      logger.error(
+        { error: error.message },
+        'Scraper promise rejected unexpectedly'
       );
     }
   }
@@ -156,6 +171,7 @@ export async function runScrapePhase(
   return {
     success,
     data: output,
+    severity: success ? undefined : 'fatal',
     duration,
     phase: 'scrape',
     timestamp: new Date(),

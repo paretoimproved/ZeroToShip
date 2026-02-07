@@ -7,12 +7,14 @@
 
 import type { RawPost } from '../scrapers/types';
 import { EmbeddingClient, prepareTextForEmbedding } from './embeddings';
+import { config } from '../config/env';
 import logger from '../lib/logger';
 import {
   hierarchicalCluster,
   groupByCluster,
   findMostCentral,
   computeCentroid,
+  DEFAULT_SIMILARITY_THRESHOLD,
 } from './similarity';
 import { calculateSignalStrength } from '../scrapers/signals';
 import { getBatchModel } from '../config/models';
@@ -36,9 +38,12 @@ export interface ProblemCluster {
 /**
  * Options for the clustering process
  */
+/** Default max characters from post body for embedding input */
+const DEFAULT_MAX_BODY_CHARS = 500;
+
 export interface ClusteringOptions {
-  similarityThreshold?: number;   // Default: 0.85
-  maxBodyChars?: number;          // Default: 500
+  similarityThreshold?: number;   // Default: DEFAULT_SIMILARITY_THRESHOLD (0.85)
+  maxBodyChars?: number;          // Default: DEFAULT_MAX_BODY_CHARS (500)
   generateSummaries?: boolean;    // Default: true
   cacheDir?: string;              // Directory for embedding cache
   openaiApiKey?: string;          // OpenAI API key for embeddings (defaults to env)
@@ -46,8 +51,8 @@ export interface ClusteringOptions {
 }
 
 const DEFAULT_OPTIONS: Required<ClusteringOptions> = {
-  similarityThreshold: 0.85,
-  maxBodyChars: 500,
+  similarityThreshold: DEFAULT_SIMILARITY_THRESHOLD,
+  maxBodyChars: DEFAULT_MAX_BODY_CHARS,
   generateSummaries: true,
   cacheDir: '',
   openaiApiKey: '',
@@ -59,6 +64,27 @@ const DEFAULT_OPTIONS: Required<ClusteringOptions> = {
  * Batching 20 clusters per call reduces API calls from ~174 to ~9 per run
  */
 const STATEMENT_BATCH_SIZE = 20;
+
+/** Max tokens for a single problem statement API call */
+const STATEMENT_MAX_TOKENS = 150;
+
+/** Max tokens for a batch problem statement API call */
+const STATEMENT_BATCH_MAX_TOKENS = 3000;
+
+/** Max posts to include as context when generating a single statement */
+const MAX_CONTEXT_POSTS = 5;
+
+/** Max characters to include from each post body in context */
+const BODY_SNIPPET_CHARS = 200;
+
+/** Max posts per cluster in batch statement prompts */
+const BATCH_POST_LIMIT = 3;
+
+/** Max body characters per post in batch statement prompts */
+const BATCH_BODY_SNIPPET_CHARS = 150;
+
+/** Number of top problems to display in cluster stats */
+const TOP_PROBLEMS_DISPLAY_LIMIT = 10;
 
 /**
  * Generate a unique cluster ID
@@ -122,8 +148,8 @@ async function generateProblemStatement(
 
   // Prepare context from multiple posts
   const postSummaries = posts
-    .slice(0, 5) // Limit to 5 posts for context
-    .map(p => `- ${p.title}${p.body ? `: ${p.body.slice(0, 200)}` : ''}`)
+    .slice(0, MAX_CONTEXT_POSTS)
+    .map(p => `- ${p.title}${p.body ? `: ${p.body.slice(0, BODY_SNIPPET_CHARS)}` : ''}`)
     .join('\n');
 
   const prompt = `Based on these related posts about a problem or need, write a concise problem statement (1-2 sentences) that captures the core issue:
@@ -142,7 +168,7 @@ Problem statement:`;
       },
       body: JSON.stringify({
         model: getBatchModel(),
-        max_tokens: 150,
+        max_tokens: STATEMENT_MAX_TOKENS,
         messages: [{ role: 'user', content: prompt }],
       }),
     });
@@ -179,8 +205,8 @@ function buildBatchStatementPrompt(
 ): string {
   const clustersList = clusters.map((c, i) => {
     const postSummaries = c.posts
-      .slice(0, 3)
-      .map(p => `- ${p.title}${p.body ? `: ${p.body.slice(0, 150)}` : ''}`)
+      .slice(0, BATCH_POST_LIMIT)
+      .map(p => `- ${p.title}${p.body ? `: ${p.body.slice(0, BATCH_BODY_SNIPPET_CHARS)}` : ''}`)
       .join('\n');
 
     return `## Cluster ${i + 1} (ID: ${c.id})
@@ -222,7 +248,7 @@ async function generateProblemStatementsBatch(
       },
       body: JSON.stringify({
         model,
-        max_tokens: 3000,
+        max_tokens: STATEMENT_BATCH_MAX_TOKENS,
         messages: [{ role: 'user', content: prompt }],
       }),
     });
@@ -326,7 +352,7 @@ export async function clusterPosts(
   logger.info({ clusters: clusterGroups.size, posts: posts.length }, 'Clustering results');
 
   // Step 5: Build cluster data without statements first
-  const anthropicKey = opts.anthropicApiKey || process.env.ANTHROPIC_API_KEY || '';
+  const anthropicKey = opts.anthropicApiKey || config.ANTHROPIC_API_KEY;
 
   interface ClusterData {
     id: string;
@@ -533,7 +559,7 @@ export function getClusterStats(clusters: ProblemCluster[]): {
     totalPosts,
     averageClusterSize: totalPosts / clusters.length || 0,
     sourceDistribution,
-    topProblems: clusters.slice(0, 10).map(c => ({
+    topProblems: clusters.slice(0, TOP_PROBLEMS_DISPLAY_LIMIT).map(c => ({
       statement: c.problemStatement,
       frequency: c.frequency,
       score: c.totalScore,

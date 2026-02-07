@@ -86,3 +86,10 @@ export {
   type CompetitorAnalysis,
   type CompetitorAnalysisOptions,
 } from './competitor';
+
+// Score Cache (pipeline-level dedup)
+export {
+  ScoreCache,
+  getCacheKey,
+  type ScoreCacheOptions,
+} from './score-cache';

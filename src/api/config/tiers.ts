@@ -9,14 +9,17 @@
  */
 export type UserTier = 'anonymous' | 'free' | 'pro' | 'enterprise';
 
+/** One hour in milliseconds — standard rate limit window */
+const ONE_HOUR_MS = 60 * 60 * 1000;
+
 /**
  * Rate limit configuration per tier
  */
 export const RATE_LIMITS: Record<UserTier, { requests: number; windowMs: number }> = {
-  anonymous: { requests: 10, windowMs: 60 * 60 * 1000 }, // 10/hour
-  free: { requests: 100, windowMs: 60 * 60 * 1000 }, // 100/hour
-  pro: { requests: 1000, windowMs: 60 * 60 * 1000 }, // 1000/hour
-  enterprise: { requests: 10000, windowMs: 60 * 60 * 1000 }, // 10000/hour
+  anonymous: { requests: 10, windowMs: ONE_HOUR_MS },
+  free: { requests: 100, windowMs: ONE_HOUR_MS },
+  pro: { requests: 1000, windowMs: ONE_HOUR_MS },
+  enterprise: { requests: 10000, windowMs: ONE_HOUR_MS },
 };
 
 /**

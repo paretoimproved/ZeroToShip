@@ -10,6 +10,7 @@ import {
 } from '../../delivery/email';
 import type { IdeaBrief } from '../../generation/brief-generator';
 import { createPhaseLogger } from '../utils/logger';
+import { DeliveryError, wrapError } from '../../lib/errors';
 import type {
   PhaseResult,
   DeliverPhaseOutput,
@@ -122,15 +123,16 @@ export async function runDeliverPhase(
     };
   } catch (error) {
     const duration = Date.now() - startTime;
-    const errorMessage =
-      error instanceof Error ? error.message : String(error);
+    const deliveryError = wrapError(error, DeliveryError);
+    const errorMessage = deliveryError.message;
 
-    logger.error({ error: errorMessage }, 'Deliver phase failed');
+    logger.error({ error: errorMessage, severity: deliveryError.severity }, 'Deliver phase failed');
 
     return {
       success: false,
       data: null,
       error: errorMessage,
+      severity: deliveryError.severity,
       duration,
       phase: 'deliver',
       timestamp: new Date(),
