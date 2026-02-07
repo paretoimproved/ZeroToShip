@@ -22,6 +22,11 @@ Thumbs.db
 *.log
 npm-debug.log*
 
+# Pipeline run data
+data/runs/
+data/score-cache/
+data/test-score-cache/
+
 # Test coverage
 coverage/
 

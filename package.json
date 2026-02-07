@@ -29,7 +29,8 @@
     "web:start": "npm run start --prefix web",
     "web:lint": "npm run lint --prefix web",
     "web:test:e2e": "npm run test:e2e --prefix web",
-    "web:test:e2e:ui": "npm run test:e2e:ui --prefix web"
+    "web:test:e2e:ui": "npm run test:e2e:ui --prefix web",
+    "web:test": "npm run test --prefix web"
   },
   "keywords": [
     "saas",
