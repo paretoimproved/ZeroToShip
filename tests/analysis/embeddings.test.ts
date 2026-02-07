@@ -11,6 +11,7 @@ import {
   createZeroEmbedding,
   createRandomEmbedding,
 } from '../../src/analysis/embeddings';
+import { _resetConfigForTesting } from '../../src/config/env';
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -141,10 +142,12 @@ describe('EmbeddingClient', () => {
     it('throws error when no API key provided', () => {
       const originalEnv = process.env.OPENAI_API_KEY;
       delete process.env.OPENAI_API_KEY;
+      _resetConfigForTesting();
 
       expect(() => new EmbeddingClient()).toThrow('OpenAI API key is required');
 
       process.env.OPENAI_API_KEY = originalEnv;
+      _resetConfigForTesting();
     });
 
     it('accepts API key from constructor', () => {
@@ -155,11 +158,13 @@ describe('EmbeddingClient', () => {
     it('uses environment variable for API key', () => {
       const originalEnv = process.env.OPENAI_API_KEY;
       process.env.OPENAI_API_KEY = 'env-api-key';
+      _resetConfigForTesting();
 
       const client = new EmbeddingClient();
       expect(client).toBeDefined();
 
       process.env.OPENAI_API_KEY = originalEnv;
+      _resetConfigForTesting();
     });
 
     it('creates cache directory if cacheDir provided', () => {

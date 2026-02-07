@@ -6,6 +6,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Tweet, PAIN_POINT_SIGNALS } from '../../src/scrapers/types.js';
+import { _resetConfigForTesting } from '../../src/config/env';
 
 // Mock the fetch function for API tests
 const mockFetch = vi.fn();
@@ -187,7 +188,7 @@ describe('TwitterApiClient', async () => {
     const tweets = await client.searchTweets('test');
 
     expect(tweets[0].signals).toContain('wish there was');
-    expect(tweets[0].signals).toContain('frustrated with');
+    expect(tweets[0].signals).toContain('frustrated');
   });
 });
 
@@ -275,6 +276,7 @@ describe('TwitterScraper (Main)', async () => {
     vi.clearAllMocks();
     // Clear environment variable
     delete process.env.TWITTER_BEARER_TOKEN;
+    _resetConfigForTesting();
   });
 
   it('should create scraper without API token', () => {

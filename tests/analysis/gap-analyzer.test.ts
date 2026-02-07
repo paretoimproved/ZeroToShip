@@ -2,7 +2,8 @@
  * Tests for the Gap Analysis Module
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { _resetConfigForTesting } from '../../src/config/env';
 import type { RawPost } from '../../src/scrapers/types';
 import type { ProblemCluster } from '../../src/analysis/deduplicator';
 import {
@@ -138,6 +139,23 @@ describe('Web Search Module', () => {
   });
 
   describe('WebSearchClient', () => {
+    let origSerpKey: string | undefined;
+    let origBraveKey: string | undefined;
+
+    beforeEach(() => {
+      origSerpKey = process.env.SERPAPI_KEY;
+      origBraveKey = process.env.BRAVE_API_KEY;
+      delete process.env.SERPAPI_KEY;
+      delete process.env.BRAVE_API_KEY;
+      _resetConfigForTesting();
+    });
+
+    afterEach(() => {
+      if (origSerpKey !== undefined) process.env.SERPAPI_KEY = origSerpKey;
+      if (origBraveKey !== undefined) process.env.BRAVE_API_KEY = origBraveKey;
+      _resetConfigForTesting();
+    });
+
     it('defaults to mock provider without API keys', () => {
       const client = new WebSearchClient();
       expect(client.getActiveProvider()).toBe('mock');

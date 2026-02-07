@@ -9,6 +9,7 @@ import {
   type SearchResult,
   type SearchResponse,
 } from '../../src/analysis/web-search';
+import { _resetConfigForTesting } from '../../src/config/env';
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -89,6 +90,7 @@ describe('WebSearchClient', () => {
     // Clear environment variables for test isolation
     delete process.env.SERPAPI_KEY;
     delete process.env.BRAVE_API_KEY;
+    _resetConfigForTesting();
   });
 
   afterEach(() => {
@@ -103,12 +105,14 @@ describe('WebSearchClient', () => {
 
     it('uses serpapi when SERPAPI_KEY is set', () => {
       process.env.SERPAPI_KEY = 'test-serp-key';
+      _resetConfigForTesting();
       const client = new WebSearchClient();
       expect(client.getActiveProvider()).toBe('serpapi');
     });
 
     it('uses brave when BRAVE_API_KEY is set', () => {
       process.env.BRAVE_API_KEY = 'test-brave-key';
+      _resetConfigForTesting();
       const client = new WebSearchClient();
       expect(client.getActiveProvider()).toBe('brave');
     });
@@ -116,6 +120,7 @@ describe('WebSearchClient', () => {
     it('prefers serpapi over brave when both available', () => {
       process.env.SERPAPI_KEY = 'test-serp-key';
       process.env.BRAVE_API_KEY = 'test-brave-key';
+      _resetConfigForTesting();
       const client = new WebSearchClient();
       expect(client.getActiveProvider()).toBe('serpapi');
     });

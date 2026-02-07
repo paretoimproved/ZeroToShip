@@ -746,6 +746,7 @@ describe('Batch Scoring Integration', () => {
       useAI: true,
       anthropicApiKey: 'test-key',
       delayBetweenCalls: 0,
+      scoreCacheOptions: { disabled: true },
     });
 
     // Verify only 2 API calls made (ceil(25/20) = 2)
@@ -778,6 +779,7 @@ describe('Batch Scoring Integration', () => {
         useAI: true,
         anthropicApiKey: 'test-key',
         delayBetweenCalls: 0,
+        scoreCacheOptions: { disabled: true },
       });
 
       expect(fetchSpy).toHaveBeenCalledTimes(expectedBatches);
@@ -850,6 +852,7 @@ describe('Batch Scoring Integration', () => {
     const results = await scoreAll(clusters, {
       useAI: true,
       anthropicApiKey: 'test-key',
+      scoreCacheOptions: { disabled: true },
     });
 
     // Find results by problem statement (order may change due to sorting)

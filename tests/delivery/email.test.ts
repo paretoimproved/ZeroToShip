@@ -1,8 +1,12 @@
 /**
- * Tests for the Email Delivery Module
+ * Comprehensive tests for the Email Delivery Module
+ *
+ * Covers: template rendering (snapshots), Resend API mocking,
+ * failure paths, batch sending, data assembly, and tier filtering.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { _resetConfigForTesting } from '../../src/config/env';
 import {
   buildDailyEmail,
   TIER_LIMITS,
@@ -17,6 +21,7 @@ import {
   getDeliveryStats,
   createTestSubscriber,
   type Subscriber,
+  type BatchDeliveryResult,
 } from '../../src/delivery/email';
 import type { IdeaBrief } from '../../src/generation/brief-generator';
 
@@ -24,12 +29,13 @@ import type { IdeaBrief } from '../../src/generation/brief-generator';
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
-/**
- * Create a mock IdeaBrief for testing
- */
+// ---------------------------------------------------------------------------
+// Test data factories
+// ---------------------------------------------------------------------------
+
 function createMockBrief(overrides: Partial<IdeaBrief> = {}): IdeaBrief {
   return {
-    id: `brief_${Date.now()}`,
+    id: 'brief_stable_id',
     name: 'TestIdea',
     tagline: 'A test idea for testing purposes',
     priorityScore: 8.5,
@@ -59,14 +65,11 @@ function createMockBrief(overrides: Partial<IdeaBrief> = {}): IdeaBrief {
       firstCustomers: 'Indie hackers and startups',
     },
     risks: ['Competition from existing tools', 'Market saturation'],
-    generatedAt: new Date(),
+    generatedAt: new Date('2026-01-15T00:00:00Z'),
     ...overrides,
   };
 }
 
-/**
- * Create multiple mock briefs
- */
 function createMockBriefs(count: number): IdeaBrief[] {
   return Array.from({ length: count }, (_, i) =>
     createMockBrief({
@@ -78,6 +81,29 @@ function createMockBriefs(count: number): IdeaBrief[] {
   );
 }
 
+function mockResendSuccess(messageId = 'msg_123456') {
+  mockFetch.mockResolvedValueOnce({
+    ok: true,
+    json: async () => ({ id: messageId }),
+  });
+}
+
+function mockResendError(status = 401, message = 'Invalid API key') {
+  mockFetch.mockResolvedValueOnce({
+    ok: false,
+    status,
+    json: async () => ({
+      statusCode: status,
+      message,
+      name: 'ApiError',
+    }),
+  });
+}
+
+// ============================================================================
+// Email Builder — Template Rendering
+// ============================================================================
+
 describe('Email Builder', () => {
   describe('TIER_LIMITS', () => {
     it('defines correct limits for free tier', () => {
@@ -88,6 +114,77 @@ describe('Email Builder', () => {
       expect(TIER_LIMITS.pro).toBe(10);
     });
   });
+
+  // --------------------------------------------------------------------------
+  // Snapshot tests — captures structural integrity of template output
+  // --------------------------------------------------------------------------
+
+  describe('HTML template snapshots', () => {
+    it('matches snapshot for single brief (free tier)', () => {
+      const brief = createMockBrief({ name: 'SnapshotApp' });
+      const result = buildDailyEmail([brief], 'free', {
+        baseUrl: 'https://test.ideaforge.io',
+        unsubscribeUrl: 'https://test.ideaforge.io/unsub',
+        upgradeUrl: 'https://test.ideaforge.io/upgrade',
+      });
+
+      expect(result.html).toMatchSnapshot();
+    });
+
+    it('matches snapshot for multiple briefs (free tier)', () => {
+      const briefs = createMockBriefs(5);
+      const result = buildDailyEmail(briefs, 'free', {
+        baseUrl: 'https://test.ideaforge.io',
+        unsubscribeUrl: 'https://test.ideaforge.io/unsub',
+        upgradeUrl: 'https://test.ideaforge.io/upgrade',
+      });
+
+      expect(result.html).toMatchSnapshot();
+    });
+
+    it('matches snapshot for multiple briefs (pro tier)', () => {
+      const briefs = createMockBriefs(5);
+      const result = buildDailyEmail(briefs, 'pro', {
+        baseUrl: 'https://test.ideaforge.io',
+        unsubscribeUrl: 'https://test.ideaforge.io/unsub',
+        upgradeUrl: 'https://test.ideaforge.io/upgrade',
+      });
+
+      expect(result.html).toMatchSnapshot();
+    });
+
+    it('matches snapshot for empty briefs', () => {
+      const result = buildDailyEmail([], 'free');
+
+      expect(result.html).toMatchSnapshot();
+    });
+
+    it('matches snapshot for plain text (free tier)', () => {
+      const briefs = createMockBriefs(5);
+      const result = buildDailyEmail(briefs, 'free', {
+        baseUrl: 'https://test.ideaforge.io',
+        unsubscribeUrl: 'https://test.ideaforge.io/unsub',
+        upgradeUrl: 'https://test.ideaforge.io/upgrade',
+      });
+
+      expect(result.text).toMatchSnapshot();
+    });
+
+    it('matches snapshot for plain text (pro tier)', () => {
+      const briefs = createMockBriefs(5);
+      const result = buildDailyEmail(briefs, 'pro', {
+        baseUrl: 'https://test.ideaforge.io',
+        unsubscribeUrl: 'https://test.ideaforge.io/unsub',
+        upgradeUrl: 'https://test.ideaforge.io/upgrade',
+      });
+
+      expect(result.text).toMatchSnapshot();
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // buildDailyEmail — structural tests
+  // --------------------------------------------------------------------------
 
   describe('buildDailyEmail', () => {
     it('returns empty message when no briefs provided', () => {
@@ -102,7 +199,7 @@ describe('Email Builder', () => {
       const briefs = [createMockBrief({ name: 'SuperApp' })];
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.subject).toContain('SuperApp');
+      expect(result.subject).toBe("Today's Top Startup Idea: SuperApp");
     });
 
     it('includes hero section with top idea details', () => {
@@ -127,6 +224,60 @@ describe('Email Builder', () => {
       expect(result.html).toContain('Users need better testing tools');
     });
 
+    it('includes target audience section', () => {
+      const brief = createMockBrief({
+        targetAudience: 'Senior DevOps engineers at mid-size companies',
+      });
+      const result = buildDailyEmail([brief], 'pro');
+
+      expect(result.html).toContain('Target Audience');
+      expect(result.html).toContain('Senior DevOps engineers at mid-size companies');
+    });
+
+    it('includes proposed solution section', () => {
+      const brief = createMockBrief({
+        proposedSolution: 'A CLI tool that auto-deploys with zero config',
+      });
+      const result = buildDailyEmail([brief], 'pro');
+
+      expect(result.html).toContain('Proposed Solution');
+      expect(result.html).toContain('A CLI tool that auto-deploys with zero config');
+    });
+
+    it('includes go-to-market section with strategy and first customers', () => {
+      const brief = createMockBrief({
+        goToMarket: {
+          launchStrategy: 'Product Hunt launch + beta program',
+          channels: ['Twitter', 'Reddit'],
+          firstCustomers: 'Early-stage SaaS founders',
+        },
+      });
+      const result = buildDailyEmail([brief], 'pro');
+
+      expect(result.html).toContain('Go-to-Market');
+      expect(result.html).toContain('Product Hunt launch + beta program');
+      expect(result.html).toContain('Early-stage SaaS founders');
+    });
+
+    it('includes effort estimate in score bar', () => {
+      const brief = createMockBrief({ effortEstimate: 'weekend' });
+      const result = buildDailyEmail([brief], 'free');
+
+      expect(result.html).toContain('Effort');
+      expect(result.html).toContain('weekend');
+    });
+
+    it('includes revenue estimate in score bar (truncated to 20 chars)', () => {
+      const brief = createMockBrief({
+        revenueEstimate: '$50K-$100K MRR within first year',
+      });
+      const result = buildDailyEmail([brief], 'free');
+
+      expect(result.html).toContain('Revenue');
+      // revenueEstimate.slice(0, 20) = '$50K-$100K MRR withi'
+      expect(result.html).toContain('$50K-$100K MRR withi');
+    });
+
     it('includes key features list', () => {
       const brief = createMockBrief({
         keyFeatures: ['Auto-testing', 'CI integration', 'Reports'],
@@ -138,6 +289,18 @@ describe('Email Builder', () => {
       expect(result.html).toContain('Reports');
     });
 
+    it('limits hero features to 4 items', () => {
+      const brief = createMockBrief({
+        keyFeatures: ['F1', 'F2', 'F3', 'F4', 'F5', 'F6'],
+      });
+      const result = buildDailyEmail([brief], 'free');
+
+      expect(result.html).toContain('F1');
+      expect(result.html).toContain('F4');
+      expect(result.html).not.toContain('>F5<');
+      expect(result.html).not.toContain('>F6<');
+    });
+
     it('shows other ideas section when multiple briefs', () => {
       const briefs = createMockBriefs(5);
       const result = buildDailyEmail(briefs, 'pro');
@@ -145,6 +308,22 @@ describe('Email Builder', () => {
       expect(result.html).toContain('More Ideas Today');
       expect(result.html).toContain('Idea 2');
       expect(result.html).toContain('Idea 3');
+    });
+
+    it('does not show other ideas section with single brief', () => {
+      const briefs = [createMockBrief()];
+      const result = buildDailyEmail(briefs, 'pro');
+
+      expect(result.html).not.toContain('More Ideas Today');
+    });
+
+    it('caps other ideas to max 9 (ranks 2-10)', () => {
+      const briefs = createMockBriefs(15);
+      const result = buildDailyEmail(briefs, 'pro');
+
+      // Should include up to rank 10, not beyond
+      expect(result.html).toContain('Idea 10');
+      expect(result.html).not.toContain('Idea 11');
     });
 
     it('shows upgrade CTA for free tier users', () => {
@@ -170,13 +349,27 @@ describe('Email Builder', () => {
       expect(result.html).toContain('unsubscribe');
     });
 
-    it('generates plain text version', () => {
-      const brief = createMockBrief({ name: 'PlainTextIdea' });
-      const result = buildDailyEmail([brief], 'free');
+    it('includes IdeaForge branding in header', () => {
+      const briefs = [createMockBrief()];
+      const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.text).toContain('IDEAFORGE DAILY BRIEF');
-      expect(result.text).toContain('PlainTextIdea');
-      expect(result.text).toContain('THE PROBLEM');
+      expect(result.html).toContain('<h1>IdeaForge</h1>');
+    });
+
+    it('includes copyright in footer', () => {
+      const briefs = [createMockBrief()];
+      const result = buildDailyEmail(briefs, 'free');
+
+      expect(result.html).toContain('IdeaForge. All rights reserved.');
+    });
+
+    it('generates valid HTML document', () => {
+      const briefs = [createMockBrief()];
+      const result = buildDailyEmail(briefs, 'free');
+
+      expect(result.html).toContain('<!DOCTYPE html>');
+      expect(result.html).toContain('<html lang="en">');
+      expect(result.html).toContain('</html>');
     });
 
     it('escapes HTML characters in content', () => {
@@ -191,6 +384,24 @@ describe('Email Builder', () => {
       expect(result.html).toContain('&amp;');
     });
 
+    it('escapes quotes in HTML content', () => {
+      const brief = createMockBrief({
+        name: 'Idea with "quotes"',
+      });
+      const result = buildDailyEmail([brief], 'free');
+
+      expect(result.html).toContain('&quot;quotes&quot;');
+    });
+
+    it('escapes single quotes in HTML content', () => {
+      const brief = createMockBrief({
+        name: "It's an idea",
+      });
+      const result = buildDailyEmail([brief], 'free');
+
+      expect(result.html).toContain('&#39;s an idea');
+    });
+
     it('uses custom config URLs', () => {
       const briefs = [createMockBrief()];
       const result = buildDailyEmail(briefs, 'free', {
@@ -201,25 +412,136 @@ describe('Email Builder', () => {
 
       expect(result.html).toContain('https://custom.com/unsub');
       expect(result.html).toContain('https://custom.com/upgrade');
+      expect(result.html).toContain('https://custom.com');
     });
 
-    it('limits features to 4 items', () => {
+    it('uses default config when no config provided', () => {
+      const briefs = [createMockBrief()];
+      const result = buildDailyEmail(briefs, 'free');
+
+      expect(result.html).toContain('https://ideaforge.io/unsubscribe');
+      expect(result.html).toContain('https://ideaforge.io/upgrade');
+    });
+
+    it('truncates long taglines in secondary idea rows to 60 chars', () => {
+      const briefs = [
+        createMockBrief({ name: 'Top Idea' }),
+        createMockBrief({
+          name: 'Secondary Idea',
+          tagline: 'A'.repeat(80),
+        }),
+      ];
+      const result = buildDailyEmail(briefs, 'pro');
+
+      // Should truncate and add ellipsis
+      expect(result.html).toContain('...');
+    });
+
+    it('does not add ellipsis to short taglines in secondary rows', () => {
+      const briefs = [
+        createMockBrief({ name: 'Top Idea' }),
+        createMockBrief({
+          name: 'Secondary Idea',
+          tagline: 'Short tagline',
+        }),
+      ];
+      const result = buildDailyEmail(briefs, 'pro');
+
+      expect(result.html).toContain('Short tagline');
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // Plain text email generation
+  // --------------------------------------------------------------------------
+
+  describe('plain text email', () => {
+    it('generates plain text version with structured sections', () => {
+      const brief = createMockBrief({ name: 'PlainTextIdea' });
+      const result = buildDailyEmail([brief], 'free');
+
+      expect(result.text).toContain('IDEAFORGE DAILY BRIEF');
+      expect(result.text).toContain('PlainTextIdea');
+      expect(result.text).toContain('THE PROBLEM');
+      expect(result.text).toContain('TARGET AUDIENCE');
+      expect(result.text).toContain('PROPOSED SOLUTION');
+      expect(result.text).toContain('KEY FEATURES');
+    });
+
+    it('includes priority score and effort in plain text', () => {
       const brief = createMockBrief({
-        keyFeatures: ['F1', 'F2', 'F3', 'F4', 'F5', 'F6'],
+        priorityScore: 7.3,
+        effortEstimate: 'weekend',
       });
       const result = buildDailyEmail([brief], 'free');
 
-      expect(result.html).toContain('F1');
-      expect(result.html).toContain('F4');
-      // F5 and F6 should not appear in hero section
+      expect(result.text).toContain('Priority Score: 7.3');
+      expect(result.text).toContain('Effort: weekend');
+    });
+
+    it('includes tagline in quotes in plain text', () => {
+      const brief = createMockBrief({ tagline: 'My awesome tagline' });
+      const result = buildDailyEmail([brief], 'free');
+
+      expect(result.text).toContain('"My awesome tagline"');
+    });
+
+    it('lists key features with dash prefix in plain text', () => {
+      const brief = createMockBrief({
+        keyFeatures: ['Alpha', 'Beta', 'Gamma'],
+      });
+      const result = buildDailyEmail([brief], 'free');
+
+      expect(result.text).toContain('- Alpha');
+      expect(result.text).toContain('- Beta');
+      expect(result.text).toContain('- Gamma');
+    });
+
+    it('includes MORE IDEAS TODAY header for multiple briefs', () => {
+      const briefs = createMockBriefs(4);
+      const result = buildDailyEmail(briefs, 'pro');
+
+      expect(result.text).toContain('MORE IDEAS TODAY');
+    });
+
+    it('includes unsubscribe URL in plain text', () => {
+      const briefs = [createMockBrief()];
+      const result = buildDailyEmail(briefs, 'free', {
+        unsubscribeUrl: 'https://example.com/unsub',
+      });
+
+      expect(result.text).toContain('Unsubscribe: https://example.com/unsub');
+    });
+
+    it('returns simple text for empty briefs', () => {
+      const result = buildDailyEmail([], 'pro');
+
+      expect(result.text).toBe('No startup ideas found today. Check back tomorrow!');
+    });
+
+    it('shows unlocked taglines for ideas within tier limit', () => {
+      const briefs = createMockBriefs(5);
+      const result = buildDailyEmail(briefs, 'pro');
+
+      // Pro can see all 5; ideas 2-5 should show taglines
+      expect(result.text).toContain('Tagline for idea 2');
+      expect(result.text).toContain('Tagline for idea 5');
     });
   });
 });
+
+// ============================================================================
+// Email Service — API interactions
+// ============================================================================
 
 describe('Email Service', () => {
   beforeEach(() => {
     vi.resetAllMocks();
   });
+
+  // --------------------------------------------------------------------------
+  // isValidEmail
+  // --------------------------------------------------------------------------
 
   describe('isValidEmail', () => {
     it('returns true for valid email', () => {
@@ -236,6 +558,10 @@ describe('Email Service', () => {
       expect(isValidEmail('spaces in@email.com')).toBe(false);
     });
   });
+
+  // --------------------------------------------------------------------------
+  // createTestSubscriber
+  // --------------------------------------------------------------------------
 
   describe('createTestSubscriber', () => {
     it('creates subscriber with default free tier', () => {
@@ -254,8 +580,17 @@ describe('Email Service', () => {
     });
   });
 
+  // --------------------------------------------------------------------------
+  // sendDailyBrief — Resend API mocking
+  // --------------------------------------------------------------------------
+
   describe('sendDailyBrief', () => {
     it('returns failed status when no API key', async () => {
+      // Clear env API key so fallback is also empty
+      const origKey = process.env.RESEND_API_KEY;
+      delete process.env.RESEND_API_KEY;
+      _resetConfigForTesting();
+
       const subscriber = createTestSubscriber('test@example.com');
       const briefs = [createMockBrief()];
 
@@ -265,13 +600,15 @@ describe('Email Service', () => {
 
       expect(result.status).toBe('failed');
       expect(result.error).toContain('No Resend API key');
+      expect(mockFetch).not.toHaveBeenCalled();
+
+      // Restore
+      if (origKey !== undefined) process.env.RESEND_API_KEY = origKey;
+      _resetConfigForTesting();
     });
 
     it('sends email via Resend API successfully', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ id: 'msg_123456' }),
-      });
+      mockResendSuccess('msg_123456');
 
       const subscriber = createTestSubscriber('test@example.com');
       const briefs = [createMockBrief()];
@@ -282,27 +619,53 @@ describe('Email Service', () => {
 
       expect(result.status).toBe('sent');
       expect(result.messageId).toBe('msg_123456');
+      expect(result.subscriberId).toBe(subscriber.id);
+      expect(result.email).toBe('test@example.com');
+      expect(result.sentAt).toBeInstanceOf(Date);
       expect(mockFetch).toHaveBeenCalledWith(
         'https://api.resend.com/emails',
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
-            Authorization: 'Bearer test_api_key',
+            'Authorization': 'Bearer test_api_key',
+            'Content-Type': 'application/json',
           }),
         })
       );
     });
 
-    it('handles Resend API error', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-        json: async () => ({
-          statusCode: 401,
-          message: 'Invalid API key',
-          name: 'UnauthorizedError',
-        }),
+    it('sends correct email body to Resend API', async () => {
+      mockResendSuccess();
+
+      const subscriber = createTestSubscriber('test@example.com');
+      const briefs = [createMockBrief({ name: 'TestPayload' })];
+
+      await sendDailyBrief(subscriber, briefs, {
+        resendApiKey: 'key_123',
       });
+
+      const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(callBody.to).toEqual(['test@example.com']);
+      expect(callBody.subject).toContain('TestPayload');
+      expect(callBody.html).toBeDefined();
+      expect(callBody.text).toBeDefined();
+      expect(callBody.reply_to).toBe('hello@ideaforge.io');
+    });
+
+    it('includes default from address', async () => {
+      mockResendSuccess();
+
+      const subscriber = createTestSubscriber('test@example.com');
+      await sendDailyBrief(subscriber, [createMockBrief()], {
+        resendApiKey: 'key_123',
+      });
+
+      const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(callBody.from).toBe('IdeaForge <briefs@ideaforge.io>');
+    });
+
+    it('handles Resend API error response', async () => {
+      mockResendError(401, 'Invalid API key');
 
       const subscriber = createTestSubscriber('test@example.com');
       const briefs = [createMockBrief()];
@@ -313,9 +676,25 @@ describe('Email Service', () => {
 
       expect(result.status).toBe('failed');
       expect(result.error).toContain('Resend API error');
+      expect(result.error).toContain('401');
+      expect(result.messageId).toBeNull();
     });
 
-    it('handles network error', async () => {
+    it('handles Resend rate limit error (429)', async () => {
+      mockResendError(429, 'Rate limit exceeded');
+
+      const subscriber = createTestSubscriber('test@example.com');
+
+      const result = await sendDailyBrief(subscriber, [createMockBrief()], {
+        resendApiKey: 'key_123',
+      });
+
+      expect(result.status).toBe('failed');
+      expect(result.error).toContain('429');
+      expect(result.error).toContain('Rate limit exceeded');
+    });
+
+    it('handles network error (fetch throws)', async () => {
       mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
       const subscriber = createTestSubscriber('test@example.com');
@@ -329,11 +708,21 @@ describe('Email Service', () => {
       expect(result.error).toContain('Network error');
     });
 
-    it('uses custom from email and name', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ id: 'msg_789' }),
+    it('handles non-Error thrown objects', async () => {
+      mockFetch.mockRejectedValueOnce('string error');
+
+      const subscriber = createTestSubscriber('test@example.com');
+
+      const result = await sendDailyBrief(subscriber, [createMockBrief()], {
+        resendApiKey: 'key_123',
       });
+
+      expect(result.status).toBe('failed');
+      expect(result.error).toBe('Unknown error');
+    });
+
+    it('uses custom from email and name', async () => {
+      mockResendSuccess();
 
       const subscriber = createTestSubscriber('test@example.com');
       const briefs = [createMockBrief()];
@@ -344,14 +733,81 @@ describe('Email Service', () => {
         fromName: 'Custom Sender',
       });
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({
-          body: expect.stringContaining('Custom Sender <custom@sender.com>'),
-        })
-      );
+      const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(callBody.from).toBe('Custom Sender <custom@sender.com>');
+    });
+
+    it('uses custom reply-to address', async () => {
+      mockResendSuccess();
+
+      const subscriber = createTestSubscriber('test@example.com');
+
+      await sendDailyBrief(subscriber, [createMockBrief()], {
+        resendApiKey: 'key_123',
+        replyTo: 'support@custom.io',
+      });
+
+      const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(callBody.reply_to).toBe('support@custom.io');
+    });
+
+    it('builds personalized unsubscribe URL using token', async () => {
+      mockResendSuccess();
+
+      const subscriber: Subscriber = {
+        id: 'sub_42',
+        email: 'user@example.com',
+        tier: 'pro',
+        unsubscribeToken: 'my-unsub-token',
+      };
+
+      await sendDailyBrief(subscriber, [createMockBrief()], {
+        resendApiKey: 'key_123',
+      });
+
+      const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(callBody.html).toContain('my-unsub-token');
+    });
+
+    it('falls back to subscriber id when no unsubscribe token', async () => {
+      mockResendSuccess();
+
+      const subscriber: Subscriber = {
+        id: 'sub_fallback',
+        email: 'user@example.com',
+        tier: 'free',
+      };
+
+      await sendDailyBrief(subscriber, [createMockBrief()], {
+        resendApiKey: 'key_123',
+      });
+
+      const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(callBody.html).toContain('sub_fallback');
+    });
+
+    it('returns pending-initialized delivery status with subscriber info', async () => {
+      mockResendSuccess('msg_abc');
+
+      const subscriber: Subscriber = {
+        id: 'sub_99',
+        email: 'jane@example.com',
+        tier: 'pro',
+      };
+
+      const result = await sendDailyBrief(subscriber, [createMockBrief()], {
+        resendApiKey: 'key_123',
+      });
+
+      expect(result.subscriberId).toBe('sub_99');
+      expect(result.email).toBe('jane@example.com');
+      expect(result.sentAt).toBeInstanceOf(Date);
     });
   });
+
+  // --------------------------------------------------------------------------
+  // sendDailyBriefsBatch — batch sending logic
+  // --------------------------------------------------------------------------
 
   describe('sendDailyBriefsBatch', () => {
     it('handles empty subscriber list', async () => {
@@ -362,18 +818,12 @@ describe('Email Service', () => {
       expect(result.sent).toBe(0);
       expect(result.failed).toBe(0);
       expect(result.deliveries).toEqual([]);
+      expect(mockFetch).not.toHaveBeenCalled();
     });
 
     it('sends to multiple subscribers', async () => {
-      mockFetch
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({ id: 'msg_1' }),
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({ id: 'msg_2' }),
-        });
+      mockResendSuccess('msg_1');
+      mockResendSuccess('msg_2');
 
       const subscribers: Subscriber[] = [
         createTestSubscriber('user1@example.com'),
@@ -388,22 +838,18 @@ describe('Email Service', () => {
       expect(result.total).toBe(2);
       expect(result.sent).toBe(2);
       expect(result.failed).toBe(0);
+      expect(result.deliveries).toHaveLength(2);
     });
 
-    it('tracks failed deliveries', async () => {
-      mockFetch
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({ id: 'msg_1' }),
-        })
-        .mockResolvedValueOnce({
-          ok: false,
-          json: async () => ({ message: 'Invalid email' }),
-        });
+    it('tracks mixed success and failure deliveries', async () => {
+      mockResendSuccess('msg_1');
+      mockResendError(400, 'Invalid email');
+      mockResendSuccess('msg_3');
 
       const subscribers: Subscriber[] = [
         createTestSubscriber('good@example.com'),
         createTestSubscriber('bad@example.com'),
+        createTestSubscriber('also-good@example.com'),
       ];
       const briefs = [createMockBrief()];
 
@@ -411,12 +857,56 @@ describe('Email Service', () => {
         resendApiKey: 'test_key',
       });
 
-      expect(result.total).toBe(2);
-      expect(result.sent).toBe(1);
+      expect(result.total).toBe(3);
+      expect(result.sent).toBe(2);
       expect(result.failed).toBe(1);
+      expect(result.deliveries[1].status).toBe('failed');
     });
 
-    it('calls progress callback', async () => {
+    it('respects concurrency setting', async () => {
+      // With concurrency=2 and 4 subscribers, we expect 2 batches
+      for (let i = 0; i < 4; i++) {
+        mockResendSuccess(`msg_${i}`);
+      }
+
+      const subscribers = Array.from({ length: 4 }, (_, i) =>
+        createTestSubscriber(`user${i}@example.com`)
+      );
+
+      const result = await sendDailyBriefsBatch(
+        subscribers,
+        [createMockBrief()],
+        { resendApiKey: 'test_key' },
+        { concurrency: 2, delayMs: 0 }
+      );
+
+      expect(result.total).toBe(4);
+      expect(result.sent).toBe(4);
+      expect(mockFetch).toHaveBeenCalledTimes(4);
+    });
+
+    it('uses default concurrency of 5', async () => {
+      // 7 subscribers with default concurrency 5 => batch of 5 then batch of 2
+      for (let i = 0; i < 7; i++) {
+        mockResendSuccess(`msg_${i}`);
+      }
+
+      const subscribers = Array.from({ length: 7 }, (_, i) =>
+        createTestSubscriber(`user${i}@example.com`)
+      );
+
+      const result = await sendDailyBriefsBatch(
+        subscribers,
+        [createMockBrief()],
+        { resendApiKey: 'test_key' },
+        { delayMs: 0 }
+      );
+
+      expect(result.total).toBe(7);
+      expect(result.sent).toBe(7);
+    });
+
+    it('calls progress callback with correct values', async () => {
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ id: 'msg_x' }),
@@ -425,12 +915,11 @@ describe('Email Service', () => {
       const subscribers = Array.from({ length: 10 }, (_, i) =>
         createTestSubscriber(`user${i}@example.com`)
       );
-      const briefs = [createMockBrief()];
       const progressCalls: Array<[number, number]> = [];
 
       await sendDailyBriefsBatch(
         subscribers,
-        briefs,
+        [createMockBrief()],
         { resendApiKey: 'test_key' },
         {
           concurrency: 3,
@@ -441,10 +930,92 @@ describe('Email Service', () => {
         }
       );
 
-      expect(progressCalls.length).toBeGreaterThan(0);
-      expect(progressCalls[progressCalls.length - 1][0]).toBe(10);
+      // With 10 subscribers and concurrency 3: batches at indices 0,3,6,9
+      // Progress calls: (3,10), (6,10), (9,10), (10,10)
+      expect(progressCalls.length).toBe(4);
+      expect(progressCalls[0]).toEqual([3, 10]);
+      expect(progressCalls[1]).toEqual([6, 10]);
+      expect(progressCalls[2]).toEqual([9, 10]);
+      expect(progressCalls[3]).toEqual([10, 10]);
+    });
+
+    it('does not call progress callback with empty list', async () => {
+      const onProgress = vi.fn();
+
+      await sendDailyBriefsBatch(
+        [],
+        [createMockBrief()],
+        { resendApiKey: 'test_key' },
+        { onProgress }
+      );
+
+      expect(onProgress).not.toHaveBeenCalled();
+    });
+
+    it('handles single subscriber', async () => {
+      mockResendSuccess('msg_single');
+
+      const result = await sendDailyBriefsBatch(
+        [createTestSubscriber('solo@example.com')],
+        [createMockBrief()],
+        { resendApiKey: 'test_key' },
+        { delayMs: 0 }
+      );
+
+      expect(result.total).toBe(1);
+      expect(result.sent).toBe(1);
+      expect(result.deliveries[0].status).toBe('sent');
+    });
+
+    it('handles all sends failing', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => ({ statusCode: 500, message: 'Server error', name: 'InternalError' }),
+      });
+
+      const subscribers = Array.from({ length: 3 }, (_, i) =>
+        createTestSubscriber(`user${i}@example.com`)
+      );
+
+      const result = await sendDailyBriefsBatch(
+        subscribers,
+        [createMockBrief()],
+        { resendApiKey: 'test_key' },
+        { delayMs: 0 }
+      );
+
+      expect(result.total).toBe(3);
+      expect(result.sent).toBe(0);
+      expect(result.failed).toBe(3);
+    });
+
+    it('does not delay after the last batch', async () => {
+      const start = Date.now();
+
+      // 2 subscribers with concurrency 2 — single batch, no delay needed
+      mockResendSuccess('msg_1');
+      mockResendSuccess('msg_2');
+
+      await sendDailyBriefsBatch(
+        [
+          createTestSubscriber('a@example.com'),
+          createTestSubscriber('b@example.com'),
+        ],
+        [createMockBrief()],
+        { resendApiKey: 'test_key' },
+        { concurrency: 2, delayMs: 5000 }
+      );
+
+      const elapsed = Date.now() - start;
+      // Should not have waited 5s since there's only one batch
+      expect(elapsed).toBeLessThan(2000);
     });
   });
+
+  // --------------------------------------------------------------------------
+  // previewDailyBrief
+  // --------------------------------------------------------------------------
 
   describe('previewDailyBrief', () => {
     it('returns email content without sending', () => {
@@ -456,18 +1027,41 @@ describe('Email Service', () => {
       expect(result.text).toContain('PreviewIdea');
       expect(mockFetch).not.toHaveBeenCalled();
     });
+
+    it('respects tier parameter', () => {
+      const briefs = createMockBriefs(5);
+
+      const freeResult = previewDailyBrief('free', briefs);
+      const proResult = previewDailyBrief('pro', briefs);
+
+      expect(freeResult.html).toContain('Upgrade to Pro');
+      expect(proResult.html).not.toContain('Upgrade to Pro');
+    });
+
+    it('accepts custom config', () => {
+      const briefs = [createMockBrief()];
+      const result = previewDailyBrief('free', briefs, {
+        upgradeUrl: 'https://custom.com/upgrade',
+      });
+
+      expect(result.html).toContain('https://custom.com/upgrade');
+    });
   });
 
+  // --------------------------------------------------------------------------
+  // getFailedDeliveries
+  // --------------------------------------------------------------------------
+
   describe('getFailedDeliveries', () => {
-    it('filters failed deliveries', () => {
-      const result = {
+    it('filters only failed deliveries', () => {
+      const result: BatchDeliveryResult = {
         total: 3,
         sent: 2,
         failed: 1,
         deliveries: [
-          { subscriberId: '1', email: 'a@x.com', messageId: 'msg_1', status: 'sent' as const, sentAt: new Date() },
-          { subscriberId: '2', email: 'b@x.com', messageId: null, status: 'failed' as const, error: 'Bad', sentAt: new Date() },
-          { subscriberId: '3', email: 'c@x.com', messageId: 'msg_3', status: 'sent' as const, sentAt: new Date() },
+          { subscriberId: '1', email: 'a@x.com', messageId: 'msg_1', status: 'sent', sentAt: new Date() },
+          { subscriberId: '2', email: 'b@x.com', messageId: null, status: 'failed', error: 'Bad email', sentAt: new Date() },
+          { subscriberId: '3', email: 'c@x.com', messageId: 'msg_3', status: 'sent', sentAt: new Date() },
         ],
       };
 
@@ -475,12 +1069,45 @@ describe('Email Service', () => {
 
       expect(failed).toHaveLength(1);
       expect(failed[0].subscriberId).toBe('2');
+      expect(failed[0].error).toBe('Bad email');
+    });
+
+    it('returns empty array when all succeeded', () => {
+      const result: BatchDeliveryResult = {
+        total: 2,
+        sent: 2,
+        failed: 0,
+        deliveries: [
+          { subscriberId: '1', email: 'a@x.com', messageId: 'msg_1', status: 'sent', sentAt: new Date() },
+          { subscriberId: '2', email: 'b@x.com', messageId: 'msg_2', status: 'sent', sentAt: new Date() },
+        ],
+      };
+
+      expect(getFailedDeliveries(result)).toEqual([]);
+    });
+
+    it('returns all when everything failed', () => {
+      const result: BatchDeliveryResult = {
+        total: 2,
+        sent: 0,
+        failed: 2,
+        deliveries: [
+          { subscriberId: '1', email: 'a@x.com', messageId: null, status: 'failed', error: 'err1', sentAt: new Date() },
+          { subscriberId: '2', email: 'b@x.com', messageId: null, status: 'failed', error: 'err2', sentAt: new Date() },
+        ],
+      };
+
+      expect(getFailedDeliveries(result)).toHaveLength(2);
     });
   });
 
+  // --------------------------------------------------------------------------
+  // getDeliveryStats
+  // --------------------------------------------------------------------------
+
   describe('getDeliveryStats', () => {
-    it('calculates correct statistics', () => {
-      const result = {
+    it('calculates correct success and failure rates', () => {
+      const result: BatchDeliveryResult = {
         total: 10,
         sent: 8,
         failed: 2,
@@ -494,43 +1121,310 @@ describe('Email Service', () => {
     });
 
     it('handles zero total', () => {
-      const result = {
+      const stats = getDeliveryStats({
         total: 0,
         sent: 0,
         failed: 0,
         deliveries: [],
-      };
-
-      const stats = getDeliveryStats(result);
+      });
 
       expect(stats.successRate).toBe(0);
       expect(stats.failureRate).toBe(0);
+      expect(stats.averagePerSecond).toBe(0);
+    });
+
+    it('handles 100% success rate', () => {
+      const stats = getDeliveryStats({
+        total: 5,
+        sent: 5,
+        failed: 0,
+        deliveries: [],
+      });
+
+      expect(stats.successRate).toBe(100);
+      expect(stats.failureRate).toBe(0);
+    });
+
+    it('handles 100% failure rate', () => {
+      const stats = getDeliveryStats({
+        total: 5,
+        sent: 0,
+        failed: 5,
+        deliveries: [],
+      });
+
+      expect(stats.successRate).toBe(0);
+      expect(stats.failureRate).toBe(100);
+    });
+
+    it('returns averagePerSecond estimate', () => {
+      const stats = getDeliveryStats({
+        total: 10,
+        sent: 10,
+        failed: 0,
+        deliveries: [],
+      });
+
+      expect(stats.averagePerSecond).toBe(50);
     });
   });
 });
 
-describe('Tier-based content', () => {
-  it('free tier sees only 3 unlocked ideas', () => {
-    const briefs = createMockBriefs(10);
-    const result = buildDailyEmail(briefs, 'free');
+// ============================================================================
+// Tier-based content filtering
+// ============================================================================
 
-    // Ideas 4-10 should show as locked
-    expect(result.text).toContain('[LOCKED]');
+describe('Tier-based content', () => {
+  describe('free tier', () => {
+    it('shows first 3 ideas unlocked (hero + 2 others)', () => {
+      const briefs = createMockBriefs(10);
+      const result = buildDailyEmail(briefs, 'free');
+
+      // Idea 1 is in hero (always visible)
+      // Ideas 2-3 are unlocked in secondary list
+      // Ideas 4-10 are locked
+      expect(result.text).toContain('#2 Idea 2');
+      expect(result.text).toContain('Tagline for idea 2');
+      expect(result.text).toContain('#3 Idea 3');
+      expect(result.text).toContain('Tagline for idea 3');
+    });
+
+    it('marks ideas beyond limit as LOCKED in plain text', () => {
+      const briefs = createMockBriefs(10);
+      const result = buildDailyEmail(briefs, 'free');
+
+      expect(result.text).toContain('#4 Idea 4 [LOCKED]');
+      expect(result.text).toContain('#10 Idea 10 [LOCKED]');
+    });
+
+    it('does not show taglines for locked ideas in plain text', () => {
+      const briefs = createMockBriefs(6);
+      const result = buildDailyEmail(briefs, 'free');
+
+      // Idea 4 is locked (rank 4 > limit 3)
+      expect(result.text).toContain('[LOCKED]');
+      // The locked idea's tagline should not appear on the line after it
+      const lines = result.text.split('\n');
+      const lockedLineIdx = lines.findIndex(l => l.includes('Idea 4 [LOCKED]'));
+      expect(lockedLineIdx).toBeGreaterThan(-1);
+      // Next line should not have the tagline
+      expect(lines[lockedLineIdx + 1]).not.toContain('Tagline for idea 4');
+    });
+
+    it('shows locked class on HTML ideas beyond tier limit', () => {
+      const briefs = createMockBriefs(6);
+      const result = buildDailyEmail(briefs, 'free');
+
+      expect(result.html).toContain('locked-idea');
+    });
+
+    it('shows "available with Pro" message for free tier', () => {
+      const briefs = createMockBriefs(10);
+      const result = buildDailyEmail(briefs, 'free');
+
+      expect(result.html).toContain('available with Pro');
+    });
+
+    it('shows correct locked count for free tier', () => {
+      // 10 briefs. Hero uses #1. Others = #2-#10 (9 items).
+      // Free limit = 3. Unlocked = #2-#3 (2 items). Locked = #4-#10 (7 items).
+      const briefs = createMockBriefs(10);
+      const result = buildDailyEmail(briefs, 'free');
+
+      expect(result.html).toContain('7 more ideas available with Pro');
+    });
+
+    it('shows upgrade URL in plain text', () => {
+      const briefs = createMockBriefs(10);
+      const result = buildDailyEmail(briefs, 'free');
+
+      expect(result.text).toContain('Upgrade to Pro for all 10 daily ideas');
+    });
   });
 
-  it('pro tier sees all 10 ideas unlocked', () => {
-    const briefs = createMockBriefs(10);
+  describe('pro tier', () => {
+    it('shows all ideas unlocked', () => {
+      const briefs = createMockBriefs(10);
+      const result = buildDailyEmail(briefs, 'pro');
+
+      expect(result.text).not.toContain('[LOCKED]');
+    });
+
+    it('does not show upgrade CTA in HTML', () => {
+      const briefs = createMockBriefs(10);
+      const result = buildDailyEmail(briefs, 'pro');
+
+      expect(result.html).not.toContain('Unlock All Ideas');
+      expect(result.html).not.toContain('Upgrade to Pro</a>');
+    });
+
+    it('does not show upgrade message in plain text', () => {
+      const briefs = createMockBriefs(10);
+      const result = buildDailyEmail(briefs, 'pro');
+
+      expect(result.text).not.toContain('Upgrade to Pro');
+    });
+
+    it('does not apply locked-idea class to any idea rows', () => {
+      const briefs = createMockBriefs(10);
+      const result = buildDailyEmail(briefs, 'pro');
+
+      // The CSS class definition exists in the style block, but no idea row
+      // should have the locked-idea class applied in the HTML body
+      expect(result.html).not.toContain('class="idea-row locked-idea"');
+    });
+
+    it('shows taglines for all secondary ideas in plain text', () => {
+      const briefs = createMockBriefs(10);
+      const result = buildDailyEmail(briefs, 'pro');
+
+      for (let i = 2; i <= 10; i++) {
+        expect(result.text).toContain(`Tagline for idea ${i}`);
+      }
+    });
+  });
+
+  describe('boundary cases', () => {
+    it('exactly at tier limit shows no locked ideas', () => {
+      // Free limit is 3, so 3 briefs => hero (1) + 2 others, none locked
+      const briefs = createMockBriefs(3);
+      const result = buildDailyEmail(briefs, 'free');
+
+      expect(result.text).not.toContain('[LOCKED]');
+      expect(result.html).not.toContain('class="idea-row locked-idea"');
+    });
+
+    it('one above tier limit shows exactly 1 locked idea', () => {
+      // Free limit is 3, 4 briefs => hero (1) + others (#2-#4)
+      // #2-#3 unlocked, #4 locked
+      const briefs = createMockBriefs(4);
+      const result = buildDailyEmail(briefs, 'free');
+
+      const lockedMatches = result.text.match(/\[LOCKED\]/g);
+      expect(lockedMatches).toHaveLength(1);
+    });
+
+    it('single brief shows no other ideas section for any tier', () => {
+      const briefs = [createMockBrief()];
+
+      const freeResult = buildDailyEmail(briefs, 'free');
+      const proResult = buildDailyEmail(briefs, 'pro');
+
+      expect(freeResult.html).not.toContain('More Ideas Today');
+      expect(proResult.html).not.toContain('More Ideas Today');
+    });
+
+    it('two briefs shows 1 other idea, no locked indicators for free', () => {
+      // Free limit = 3, 2 briefs, both visible
+      const briefs = createMockBriefs(2);
+      const result = buildDailyEmail(briefs, 'free');
+
+      expect(result.html).toContain('More Ideas Today');
+      expect(result.text).not.toContain('[LOCKED]');
+    });
+  });
+});
+
+// ============================================================================
+// Data assembly — how briefs are formatted into email content
+// ============================================================================
+
+describe('Data assembly', () => {
+  it('formats priority score to one decimal place', () => {
+    const brief = createMockBrief({ priorityScore: 7.856 });
+    const result = buildDailyEmail([brief], 'free');
+
+    expect(result.html).toContain('7.9');
+    expect(result.text).toContain('7.9');
+  });
+
+  it('formats whole number scores with .0', () => {
+    const brief = createMockBrief({ priorityScore: 10 });
+    const result = buildDailyEmail([brief], 'free');
+
+    expect(result.html).toContain('10.0');
+    expect(result.text).toContain('10.0');
+  });
+
+  it('ranks secondary ideas correctly starting from #2', () => {
+    const briefs = createMockBriefs(4);
     const result = buildDailyEmail(briefs, 'pro');
 
-    // No locked indicators for pro
-    expect(result.text).not.toContain('[LOCKED]');
+    // Check rank numbers in plain text
+    expect(result.text).toContain('#2 Idea 2');
+    expect(result.text).toContain('#3 Idea 3');
+    expect(result.text).toContain('#4 Idea 4');
   });
 
-  it('free tier plain text shows locked count', () => {
-    const briefs = createMockBriefs(10);
-    const result = buildDailyEmail(briefs, 'free');
+  it('orders ideas by their original array position', () => {
+    const briefs = [
+      createMockBrief({ name: 'First', priorityScore: 5 }),
+      createMockBrief({ name: 'Second', priorityScore: 10 }),
+      createMockBrief({ name: 'Third', priorityScore: 7 }),
+    ];
+    const result = buildDailyEmail(briefs, 'pro');
 
-    // Should mention upgrade
-    expect(result.text).toContain('Upgrade to Pro');
+    // Hero should be "First" (array position 0), not highest score
+    expect(result.subject).toContain('First');
+    // Second should be at rank #2
+    expect(result.text).toContain('#2 Second');
+    expect(result.text).toContain('#3 Third');
+  });
+
+  it('includes all brief sections in HTML for hero idea', () => {
+    const brief = createMockBrief({
+      problemStatement: 'Big problem here',
+      targetAudience: 'Small business owners',
+      proposedSolution: 'An elegant solution',
+      goToMarket: {
+        launchStrategy: 'Viral launch',
+        channels: ['Twitter'],
+        firstCustomers: 'Early adopters',
+      },
+    });
+    const result = buildDailyEmail([brief], 'pro');
+
+    expect(result.html).toContain('The Problem');
+    expect(result.html).toContain('Big problem here');
+    expect(result.html).toContain('Target Audience');
+    expect(result.html).toContain('Small business owners');
+    expect(result.html).toContain('Proposed Solution');
+    expect(result.html).toContain('An elegant solution');
+    expect(result.html).toContain('Go-to-Market');
+    expect(result.html).toContain('Viral launch');
+    expect(result.html).toContain('Early adopters');
+  });
+
+  it('displays score for each secondary idea in HTML', () => {
+    const briefs = [
+      createMockBrief({ name: 'Top', priorityScore: 9.5 }),
+      createMockBrief({ name: 'Second', priorityScore: 8.2 }),
+      createMockBrief({ name: 'Third', priorityScore: 7.1 }),
+    ];
+    const result = buildDailyEmail(briefs, 'pro');
+
+    expect(result.html).toContain('8.2');
+    expect(result.html).toContain('7.1');
+  });
+
+  it('displays score for each secondary idea in plain text', () => {
+    const briefs = [
+      createMockBrief({ name: 'Top', priorityScore: 9.5 }),
+      createMockBrief({ name: 'Second', priorityScore: 8.2 }),
+    ];
+    const result = buildDailyEmail(briefs, 'pro');
+
+    expect(result.text).toContain('Score: 8.2');
+  });
+
+  it('returns all three email content fields', () => {
+    const result = buildDailyEmail([createMockBrief()], 'free');
+
+    expect(result).toHaveProperty('subject');
+    expect(result).toHaveProperty('html');
+    expect(result).toHaveProperty('text');
+    expect(typeof result.subject).toBe('string');
+    expect(typeof result.html).toBe('string');
+    expect(typeof result.text).toBe('string');
   });
 });

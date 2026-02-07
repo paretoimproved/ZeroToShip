@@ -15,6 +15,14 @@ import {
   filterIdeasForTier,
 } from '../../src/api/config/filters';
 import type { IdeaBrief } from '../../src/api/config/filters';
+import {
+  IdeaSummarySchema,
+  IdeaListResponseSchema,
+  IdeaBriefSchema,
+  ArchiveQuerySchema,
+  ApiErrorSchema,
+} from '../../src/api/schemas';
+import { expectSchemaValid, expectSchemaInvalid } from './helpers';
 
 // Mock idea for testing
 const mockIdea: IdeaBrief = {
@@ -246,6 +254,273 @@ describe('Idea Summary Fields', () => {
     expect(typeof result.priorityScore).toBe('number');
     expect(typeof result.effortEstimate).toBe('string');
     expect(typeof result.generatedAt).toBe('string');
+  });
+});
+
+// ============================================================================
+// Schema Validation Tests
+// ============================================================================
+
+describe('Schema Validation', () => {
+  describe('IdeaSummarySchema', () => {
+    it('should validate a free-tier summary (no brief)', () => {
+      const result = filterIdeaForTier(mockIdea, 'free');
+      expectSchemaValid(IdeaSummarySchema, result);
+    });
+
+    it('should validate a pro-tier summary (with brief)', () => {
+      const result = filterIdeaForTier(mockIdea, 'pro');
+      expectSchemaValid(IdeaSummarySchema, result);
+    });
+
+    it('should validate an enterprise-tier summary (with brief)', () => {
+      const result = filterIdeaForTier(mockIdea, 'enterprise');
+      expectSchemaValid(IdeaSummarySchema, result);
+    });
+
+    it('should validate summary with minimal fields', () => {
+      const minimalIdea: IdeaBrief = {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        name: 'Minimal',
+        tagline: 'Minimal idea',
+        priorityScore: 50,
+        effortEstimate: 'weekend',
+        problemStatement: 'A problem',
+        generatedAt: '2026-01-31T00:00:00.000Z',
+      };
+      const result = filterIdeaForTier(minimalIdea, 'free');
+      expectSchemaValid(IdeaSummarySchema, result);
+    });
+  });
+
+  describe('IdeaBriefSchema', () => {
+    it('should validate the full mock idea brief', () => {
+      expectSchemaValid(IdeaBriefSchema, mockIdea);
+    });
+
+    it('should validate a minimal idea brief', () => {
+      const minimal = {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        name: 'Minimal',
+        tagline: 'A minimal idea',
+        priorityScore: 50,
+        effortEstimate: 'weekend',
+        problemStatement: 'A real problem',
+        generatedAt: '2026-01-31T00:00:00.000Z',
+      };
+      expectSchemaValid(IdeaBriefSchema, minimal);
+    });
+
+    it('should reject idea brief with missing required fields', () => {
+      const invalid = {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        name: 'Missing Fields',
+        // missing tagline, priorityScore, effortEstimate, problemStatement, generatedAt
+      };
+      expectSchemaInvalid(IdeaBriefSchema, invalid);
+    });
+
+    it('should reject idea brief with invalid UUID', () => {
+      const invalid = {
+        ...mockIdea,
+        id: 'not-a-uuid',
+      };
+      expectSchemaInvalid(IdeaBriefSchema, invalid);
+    });
+
+    it('should reject idea brief with invalid effortEstimate', () => {
+      const invalid = {
+        ...mockIdea,
+        effortEstimate: 'decade', // not in enum
+      };
+      expectSchemaInvalid(IdeaBriefSchema, invalid);
+    });
+
+    it('should reject idea brief with wrong priorityScore type', () => {
+      const invalid = {
+        ...mockIdea,
+        priorityScore: 'high', // should be number
+      };
+      expectSchemaInvalid(IdeaBriefSchema, invalid);
+    });
+  });
+
+  describe('IdeaListResponseSchema', () => {
+    it('should validate a well-formed ideas list response', () => {
+      const ideas = Array.from({ length: 3 }, (_, i) => ({
+        ...mockIdea,
+        id: `123e4567-e89b-12d3-a456-42661417400${i}`,
+        name: `Idea ${i}`,
+      }));
+      const { ideas: filtered, total } = filterIdeasForTier(ideas, 'free');
+
+      const response = {
+        ideas: filtered,
+        total,
+        page: 1,
+        pageSize: filtered.length,
+        tier: 'free' as const,
+      };
+
+      expectSchemaValid(IdeaListResponseSchema, response);
+    });
+
+    it('should validate an empty ideas list response', () => {
+      const response = {
+        ideas: [],
+        total: 0,
+        page: 1,
+        pageSize: 0,
+        tier: 'anonymous' as const,
+      };
+
+      expectSchemaValid(IdeaListResponseSchema, response);
+    });
+
+    it('should reject response with invalid tier', () => {
+      const response = {
+        ideas: [],
+        total: 0,
+        page: 1,
+        pageSize: 0,
+        tier: 'premium', // invalid
+      };
+
+      expectSchemaInvalid(IdeaListResponseSchema, response);
+    });
+
+    it('should reject response with missing total', () => {
+      const response = {
+        ideas: [],
+        page: 1,
+        pageSize: 0,
+        tier: 'free',
+      };
+
+      expectSchemaInvalid(IdeaListResponseSchema, response);
+    });
+  });
+
+  describe('ApiErrorSchema', () => {
+    it('should validate a standard error response', () => {
+      const error = {
+        code: 'NOT_FOUND',
+        message: 'Idea not found',
+      };
+      expectSchemaValid(ApiErrorSchema, error);
+    });
+
+    it('should validate an error response with details', () => {
+      const error = {
+        code: 'TIER_RESTRICTED',
+        message: 'This feature requires pro tier or above',
+        details: {
+          feature: 'ideas.fullBrief',
+          requiredTier: 'pro',
+          currentTier: 'free',
+          upgradeUrl: 'https://ideaforge.io/pricing',
+        },
+      };
+      expectSchemaValid(ApiErrorSchema, error);
+    });
+
+    it('should reject error response with missing code', () => {
+      const error = {
+        message: 'Something went wrong',
+      };
+      expectSchemaInvalid(ApiErrorSchema, error);
+    });
+
+    it('should reject error response with missing message', () => {
+      const error = {
+        code: 'INTERNAL_ERROR',
+      };
+      expectSchemaInvalid(ApiErrorSchema, error);
+    });
+  });
+});
+
+// ============================================================================
+// Request Validation (Negative Tests)
+// ============================================================================
+
+describe('Request Validation', () => {
+  describe('ArchiveQuerySchema', () => {
+    it('should accept valid archive query with defaults', () => {
+      const result = ArchiveQuerySchema.safeParse({});
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.page).toBe(1);
+        expect(result.data.pageSize).toBe(10);
+      }
+    });
+
+    it('should accept valid archive query with all params', () => {
+      const result = ArchiveQuerySchema.safeParse({
+        page: 2,
+        pageSize: 25,
+        category: 'developer-tools',
+        effort: 'week',
+        minScore: 80,
+        from: '2026-01-01T00:00:00.000Z',
+        to: '2026-02-01T00:00:00.000Z',
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject page less than 1', () => {
+      const result = ArchiveQuerySchema.safeParse({ page: 0 });
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject negative page', () => {
+      const result = ArchiveQuerySchema.safeParse({ page: -1 });
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject pageSize over 100', () => {
+      const result = ArchiveQuerySchema.safeParse({ pageSize: 101 });
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject pageSize of 0', () => {
+      const result = ArchiveQuerySchema.safeParse({ pageSize: 0 });
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject invalid effort level', () => {
+      const result = ArchiveQuerySchema.safeParse({ effort: 'decade' });
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject minScore over 100', () => {
+      const result = ArchiveQuerySchema.safeParse({ minScore: 150 });
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject negative minScore', () => {
+      const result = ArchiveQuerySchema.safeParse({ minScore: -10 });
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject invalid from date format', () => {
+      const result = ArchiveQuerySchema.safeParse({ from: 'not-a-date' });
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject invalid to date format', () => {
+      const result = ArchiveQuerySchema.safeParse({ to: '2026-13-01' });
+      expect(result.success).toBe(false);
+    });
+
+    it('should coerce string numbers for page and pageSize', () => {
+      const result = ArchiveQuerySchema.safeParse({ page: '3', pageSize: '20' });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.page).toBe(3);
+        expect(result.data.pageSize).toBe(20);
+      }
+    });
   });
 });
 

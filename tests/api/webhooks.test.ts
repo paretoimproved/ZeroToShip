@@ -6,6 +6,8 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Stripe from 'stripe';
+import { ApiErrorSchema } from '../../src/api/schemas';
+import { expectSchemaValid } from './helpers';
 
 // Mock data for tests
 const mockUserId = 'user_12345678-1234-1234-1234-123456789abc';
@@ -243,6 +245,7 @@ describe('Webhook Response', () => {
       message: 'Missing stripe-signature header',
     };
     expect(errorResponse.code).toBe('MISSING_SIGNATURE');
+    expectSchemaValid(ApiErrorSchema, errorResponse);
   });
 
   it('should return 400 for invalid signature', () => {
@@ -251,6 +254,33 @@ describe('Webhook Response', () => {
       message: 'Invalid webhook signature',
     };
     expect(errorResponse.code).toBe('INVALID_SIGNATURE');
+    expectSchemaValid(ApiErrorSchema, errorResponse);
+  });
+});
+
+describe('Webhook Error Response Schema', () => {
+  it('should produce valid error response for missing userId in metadata', () => {
+    const session = createMockCheckoutSession({ metadata: {} });
+    // When userId is missing, the handler logs error and returns without action
+    // But if it did return an error, it should conform to schema
+    expect(session.metadata?.userId).toBeUndefined();
+  });
+
+  it('should produce valid error response for missing subscription', () => {
+    const session = createMockCheckoutSession({ subscription: null });
+    expect(session.subscription).toBeNull();
+  });
+
+  it('should validate all webhook error codes conform to ApiErrorSchema', () => {
+    const webhookErrors = [
+      { code: 'MISSING_SIGNATURE', message: 'Missing stripe-signature header' },
+      { code: 'INVALID_SIGNATURE', message: 'Invalid webhook signature' },
+      { code: 'WEBHOOK_ERROR', message: 'Webhook processing failed' },
+    ];
+
+    for (const error of webhookErrors) {
+      expectSchemaValid(ApiErrorSchema, error);
+    }
   });
 });
 

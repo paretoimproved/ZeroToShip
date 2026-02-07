@@ -13,6 +13,7 @@ import {
   type CompetitorAnalysis,
 } from '../../src/analysis/competitor';
 import type { SearchResult } from '../../src/analysis/web-search';
+import { _resetConfigForTesting } from '../../src/config/env';
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -225,6 +226,7 @@ describe('analyzeCompetitors', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     delete process.env.ANTHROPIC_API_KEY;
+    _resetConfigForTesting();
   });
 
   it('returns fallback analysis when no API key', async () => {
@@ -381,6 +383,7 @@ describe('analyzeCompetitors', () => {
 
   it('uses environment variable for API key', async () => {
     process.env.ANTHROPIC_API_KEY = 'env-key';
+    _resetConfigForTesting();
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -504,6 +507,7 @@ describe('analyzeCompetitorsBatch', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     delete process.env.ANTHROPIC_API_KEY;
+    _resetConfigForTesting();
   });
 
   it('returns fallback for all problems when no API key', async () => {
