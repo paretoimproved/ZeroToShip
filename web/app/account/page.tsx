@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { api } from "@/lib/api";
+import { isAuthenticated } from "@/lib/auth";
 import {
   createCheckoutSession,
   openBillingPortal,
@@ -76,6 +78,11 @@ export default function AccountPage() {
   const [error, setError] = useState<string | null>(null);
   const [upgradeLoading, setUpgradeLoading] = useState<string | null>(null);
   const [billingYearly, setBillingYearly] = useState(false);
+  const [isAuth, setIsAuth] = useState(false);
+
+  useEffect(() => {
+    setIsAuth(isAuthenticated());
+  }, []);
 
   // Fetch subscription on mount
   useEffect(() => {
@@ -121,6 +128,25 @@ export default function AccountPage() {
       );
     }
   };
+
+  if (!isAuth) {
+    return (
+      <div className="max-w-4xl mx-auto text-center py-16">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+          Account
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
+          Sign in to manage your account and subscription.
+        </p>
+        <Link
+          href="/landing"
+          className="inline-block px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+        >
+          Sign Up
+        </Link>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

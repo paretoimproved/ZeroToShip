@@ -40,11 +40,11 @@ export const test = base.extend<AuthFixtures>({
    * Anonymous user - clears any existing auth state
    */
   asAnonymous: async ({ page }, use) => {
+    // Navigate first so localStorage is accessible
+    await page.goto('/');
+
     // Clear any existing authentication
     await clearAuth(page);
-
-    // Navigate to home to ensure clean state
-    await page.goto('/');
 
     await use(page);
   },

@@ -1,8 +1,15 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import BriefView from "@/components/BriefView";
+import { isAuthenticated } from "@/lib/auth";
 import type { IdeaBrief } from "@/lib/types";
 
-// Mock data - in production, fetch from API
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
+
+// Mock data for fallback when API is unavailable
 const mockBrief: IdeaBrief = {
   id: "1",
   name: "DevOps Dashboard",
@@ -60,15 +67,89 @@ const mockBrief: IdeaBrief = {
   generatedAt: new Date().toISOString(),
 };
 
-interface PageProps {
-  params: Promise<{ id: string }>;
-}
+export default function IdeaPage() {
+  const params = useParams<{ id: string }>();
+  const id = params.id;
 
-export default async function IdeaPage({ params }: PageProps) {
-  const { id } = await params;
+  const [brief, setBrief] = useState<IdeaBrief | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isAuth, setIsAuth] = useState(false);
 
-  // In production: const brief = await api.getIdea(id);
-  const brief = { ...mockBrief, id };
+  useEffect(() => {
+    setIsAuth(isAuthenticated());
+  }, []);
+
+  useEffect(() => {
+    async function fetchIdea() {
+      try {
+        const res = await fetch(`${API_URL}/ideas/${id}`);
+        if (!res.ok) throw new Error(`API returned ${res.status}`);
+        const data = await res.json();
+
+        const idea: IdeaBrief = {
+          id: data.id,
+          name: data.name,
+          tagline: data.tagline,
+          priorityScore: data.priorityScore,
+          effortEstimate: data.effortEstimate || "week",
+          revenueEstimate: data.revenueEstimate || "TBD",
+          problemStatement: data.problemStatement || data.tagline,
+          targetAudience: data.targetAudience || "TBD",
+          marketSize: data.marketSize || "TBD",
+          existingSolutions: data.existingSolutions || "TBD",
+          gaps: data.gaps || "TBD",
+          proposedSolution: data.proposedSolution || data.tagline,
+          keyFeatures: data.keyFeatures || [],
+          mvpScope: data.mvpScope || "TBD",
+          technicalSpec: data.technicalSpec || { stack: [], architecture: "TBD", estimatedEffort: "TBD" },
+          businessModel: data.businessModel || { pricing: "TBD", revenueProjection: "TBD", monetizationPath: "TBD" },
+          goToMarket: data.goToMarket || { launchStrategy: "TBD", channels: [], firstCustomers: "TBD" },
+          risks: data.risks || [],
+          generatedAt: data.generatedAt,
+        };
+
+        setBrief(idea);
+      } catch (error) {
+        console.log("API unavailable, using mock data:", error);
+        setBrief({ ...mockBrief, id });
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchIdea();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div>
+        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-40 mb-6 animate-pulse" />
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="animate-pulse">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="h-10 w-10 bg-gray-200 dark:bg-gray-700 rounded-full" />
+              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-24" />
+            </div>
+            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-3" />
+            <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 animate-pulse"
+              >
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2" />
+                <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!brief) return null;
 
   return (
     <div>
@@ -92,7 +173,7 @@ export default async function IdeaPage({ params }: PageProps) {
         Back to Today&apos;s Ideas
       </Link>
 
-      <BriefView brief={brief} />
+      <BriefView brief={brief} gated={!isAuth} />
     </div>
   );
 }

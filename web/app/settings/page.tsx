@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { isAuthenticated } from "@/lib/auth";
 import type { EffortLevel } from "@/lib/types";
 
 interface Settings {
@@ -40,6 +42,30 @@ const effortOptions: { value: EffortLevel; label: string }[] = [
 export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [saved, setSaved] = useState(false);
+  const [isAuth, setIsAuth] = useState(false);
+
+  useEffect(() => {
+    setIsAuth(isAuthenticated());
+  }, []);
+
+  if (!isAuth) {
+    return (
+      <div className="max-w-2xl mx-auto text-center py-16">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+          Settings
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
+          Sign in to access your settings and customize your experience.
+        </p>
+        <Link
+          href="/landing"
+          className="inline-block px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+        >
+          Sign Up
+        </Link>
+      </div>
+    );
+  }
 
   const handleCategoryToggle = (category: string) => {
     setSettings((prev) => ({

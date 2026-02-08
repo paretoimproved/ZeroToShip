@@ -1,11 +1,13 @@
+import Link from "next/link";
 import type { IdeaBrief } from "@/lib/types";
 import { ScoreBadge, EffortBadge } from "./ScoreBadge";
 
 interface BriefViewProps {
   brief: IdeaBrief;
+  gated?: boolean;
 }
 
-export default function BriefView({ brief }: BriefViewProps) {
+export default function BriefView({ brief, gated = false }: BriefViewProps) {
   return (
     <article className="max-w-4xl mx-auto">
       {/* Header */}
@@ -47,7 +49,25 @@ export default function BriefView({ brief }: BriefViewProps) {
         </div>
       </div>
 
-      {/* Main Content */}
+      {gated ? (
+        <div
+          data-testid="gated-content"
+          className="bg-white dark:bg-gray-800 rounded-xl p-8 border border-gray-200 dark:border-gray-700 text-center"
+        >
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            Full Analysis Locked
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
+            Sign up to unlock the complete idea breakdown including technical specs, business model, and go-to-market strategy.
+          </p>
+          <Link
+            href="/landing"
+            className="inline-block px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+          >
+            Sign Up
+          </Link>
+        </div>
+      ) : (
       <div className="space-y-8">
         <Section title="Problem Statement">
           <p className="text-gray-700 dark:text-gray-300">{brief.problemStatement}</p>
@@ -153,6 +173,7 @@ export default function BriefView({ brief }: BriefViewProps) {
           </ul>
         </Section>
       </div>
+      )}
     </article>
   );
 }

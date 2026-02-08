@@ -100,19 +100,36 @@ export async function mockIdeasApi(page: Page, tier: UserTier = 'anonymous'): Pr
 }
 
 /**
- * Setup API mocking for a single idea endpoint
+ * Setup API mocking for a single idea endpoint.
+ * When called without ideaId, uses a glob to match any mock idea ID.
  */
-export async function mockIdeaDetailApi(page: Page, ideaId: string): Promise<void> {
+export async function mockIdeaDetailApi(page: Page, ideaId?: string): Promise<void> {
   const mockIdeas = generateMockIdeas();
-  const idea = mockIdeas.find((i) => i.id === ideaId) || mockIdeas[0];
 
-  await page.route(`${API_URL}/ideas/${ideaId}`, async (route: Route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(idea),
+  if (ideaId) {
+    const idea = mockIdeas.find((i) => i.id === ideaId) || mockIdeas[0];
+
+    await page.route(`${API_URL}/ideas/${ideaId}`, async (route: Route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(idea),
+      });
     });
-  });
+  } else {
+    // Wildcard: match any idea detail request by mock ID
+    await page.route(`${API_URL}/ideas/mock-*`, async (route: Route) => {
+      const url = route.request().url();
+      const requestedId = url.split('/').pop() || '';
+      const idea = mockIdeas.find((i) => i.id === requestedId) || mockIdeas[0];
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(idea),
+      });
+    });
+  }
 }
 
 /**
@@ -170,6 +187,7 @@ export async function setupAllApiMocks(
   page: Page,
   tier: UserTier = 'anonymous'
 ): Promise<void> {
+  await mockIdeaDetailApi(page);
   await mockIdeasApi(page, tier);
   await mockArchiveApi(page, { tier });
 
