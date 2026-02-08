@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "./AuthProvider";
 import { useAdmin } from "./AdminProvider";
 
 const navItems = [
@@ -13,6 +14,7 @@ const navItems = [
 
 export default function NavBar() {
   const pathname = usePathname();
+  const { isAuthenticated, logout } = useAuth();
   const { isAdmin, tierOverride } = useAdmin();
 
   // Hide NavBar on the landing page
@@ -67,6 +69,15 @@ export default function NavBar() {
               <span className="ml-2 px-2 py-1 bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300 rounded text-xs font-medium">
                 {tierOverride}
               </span>
+            )}
+
+            {isAuthenticated && (
+              <button
+                onClick={logout}
+                className="ml-2 px-4 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors"
+              >
+                Log out
+              </button>
             )}
           </div>
         </div>
