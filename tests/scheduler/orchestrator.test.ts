@@ -142,7 +142,7 @@ function createMockScoredProblem(overrides: Partial<ScoredProblem> = {}): Scored
       timeToMvp: 4,
       impact: 56,
       effort: 20,
-      priority: 2.8,
+      priority: 18,
     },
     reasoning: {
       severity: 'High severity',
@@ -174,7 +174,7 @@ function createMockBrief(overrides: Partial<IdeaBrief> = {}): IdeaBrief {
     id: `brief_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
     name: 'TestApp',
     tagline: 'Test tagline',
-    priorityScore: 2.8,
+    priorityScore: 18,
     effortEstimate: 'week',
     revenueEstimate: '$10K MRR',
     problemStatement: 'Test problem',
@@ -547,7 +547,7 @@ describe('Pipeline Orchestrator', () => {
     it('should handle scored problems below minimum priority threshold', async () => {
       const { mocks } = await setupFullPipelineMocks();
 
-      // All problems have low priority (below default threshold of 0.5)
+      // All problems have low priority (below default threshold of 15)
       const lowPriorityProblem = createMockScoredProblem({
         scores: {
           frequency: 1,
@@ -557,7 +557,7 @@ describe('Pipeline Orchestrator', () => {
           timeToMvp: 1,
           impact: 1,
           effort: 1,
-          priority: 0.1,
+          priority: 0,
         },
       });
       vi.mocked(mocks.scoreAll).mockResolvedValue([lowPriorityProblem]);

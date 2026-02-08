@@ -94,13 +94,13 @@ interface GPTBriefResponse {
  * Configuration for brief generation
  */
 /** Max tokens for a single brief generation API call */
-const SINGLE_BRIEF_MAX_TOKENS = 2000;
+const SINGLE_BRIEF_MAX_TOKENS = 4000;
 
 /** Estimated tokens per brief in batch generation */
-const TOKENS_PER_BRIEF_ESTIMATE = 1500;
+const TOKENS_PER_BRIEF_ESTIMATE = 3500;
 
 /** Max output tokens for Haiku model in batch calls */
-const BATCH_MAX_OUTPUT_TOKENS = 8000;
+const BATCH_MAX_OUTPUT_TOKENS = 16000;
 
 /** Default max concurrent brief generation API calls */
 const DEFAULT_MAX_CONCURRENT = 2;
@@ -530,7 +530,7 @@ export async function generateAllBriefs(
   logger.info({ count: scoredProblems.length, model, tier: opts.userTier }, 'Generating briefs');
 
   // Batch size for brief generation (5 briefs per API call for quality balance)
-  const BRIEF_BATCH_SIZE = 5;
+  const BRIEF_BATCH_SIZE = 3;
 
   // Prepare all problems with their gap analyses
   const problemsWithGaps: Array<{

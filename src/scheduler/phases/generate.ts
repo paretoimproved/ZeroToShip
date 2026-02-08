@@ -14,7 +14,7 @@ import type {
   GeneratePhaseOutput,
   PipelineConfig,
 } from '../types';
-import type { UserTier } from '../../config/models';
+import { getPipelineBriefModel } from '../../config/models';
 import { db, ideas } from '../../api/db/client';
 
 /**
@@ -25,13 +25,12 @@ export async function runGeneratePhase(
   config: PipelineConfig,
   scoredProblems: ScoredProblem[],
   gapAnalyses: Map<string, GapAnalysis>,
-  userTier: UserTier = 'pro'
 ): Promise<PhaseResult<GeneratePhaseOutput>> {
   const logger = createPhaseLogger(runId, 'generate');
   const startTime = Date.now();
 
   logger.info(
-    { problemCount: scoredProblems.length, maxBriefs: config.maxBriefs, userTier },
+    { problemCount: scoredProblems.length, maxBriefs: config.maxBriefs },
     'Starting generate phase'
   );
 
@@ -60,7 +59,7 @@ export async function runGeneratePhase(
 
     // Generate briefs with tier-appropriate model
     const briefs = await generateAllBriefs(filteredProblems, gapAnalyses, {
-      userTier,
+      model: getPipelineBriefModel(),
     });
 
     // Persist generated briefs to database

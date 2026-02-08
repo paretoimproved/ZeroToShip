@@ -137,6 +137,16 @@ function calculatePriority(impact: number, effort: number): number {
 }
 
 /**
+ * Normalize raw priority score to 0-100 scale using log10.
+ * Calibration: raw 1→0, raw 3.16→20, raw 10→40, raw 31.6→60, raw 100→80, raw 316→96
+ */
+function normalizePriority(rawPriority: number): number {
+  if (rawPriority <= 0) return 0;
+  const normalized = Math.round(Math.log10(rawPriority) * 40);
+  return Math.max(0, Math.min(100, normalized));
+}
+
+/**
  * Sleep helper for rate limiting
  */
 function sleep(ms: number): Promise<void> {
@@ -351,7 +361,7 @@ export async function scoreProblem(
     aiScores.timeToMvp.score
   );
 
-  const priority = calculatePriority(impact, effort);
+  const priority = normalizePriority(calculatePriority(impact, effort));
 
   return {
     ...cluster,
@@ -446,7 +456,7 @@ export async function scoreAll(
           aiScores.timeToMvp.score
         );
 
-        const priority = calculatePriority(impact, effort);
+        const priority = normalizePriority(calculatePriority(impact, effort));
 
         const scored: ScoredProblem = {
           ...cluster,

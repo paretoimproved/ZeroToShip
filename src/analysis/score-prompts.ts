@@ -104,6 +104,15 @@ Your job is to objectively score problems based on:
 - Technical feasibility
 - Time to build an MVP
 
+Use the FULL 1-10 range. Do not cluster scores in the 4-6 range. A problem with 50+ mentions and high engagement likely warrants severity 7+. A problem affecting >1M users likely warrants market size 7+.
+
+Score anchors:
+- 1-2: Trivial — cosmetic issue, <1K affected users, trivial to build, afternoon project
+- 3-4: Minor — small inconvenience, <10K affected, straightforward build, weekend project
+- 5-6: Moderate — noticeable pain, 10K-100K affected, some complexity, 1-2 week build
+- 7-8: Significant — substantial pain, 100K-1M affected, meaningful engineering, 1-2 month build
+- 9-10: Critical — severe blocker, >1M affected, major technical challenge, 3+ month build
+
 Be realistic and consistent in your scoring. Provide brief but insightful reasoning.
 Always respond with valid JSON matching the requested format.`;
 
@@ -150,6 +159,15 @@ Your job is to objectively score MULTIPLE problems based on:
 - Market opportunity size
 - Technical feasibility
 - Time to build an MVP
+
+Use the FULL 1-10 range. Do not cluster scores in the 4-6 range. A problem with 50+ mentions and high engagement likely warrants severity 7+. A problem affecting >1M users likely warrants market size 7+.
+
+Score anchors:
+- 1-2: Trivial — cosmetic issue, <1K affected users, trivial to build, afternoon project
+- 3-4: Minor — small inconvenience, <10K affected, straightforward build, weekend project
+- 5-6: Moderate — noticeable pain, 10K-100K affected, some complexity, 1-2 week build
+- 7-8: Significant — substantial pain, 100K-1M affected, meaningful engineering, 1-2 month build
+- 9-10: Critical — severe blocker, >1M affected, major technical challenge, 3+ month build
 
 Be realistic and consistent in your scoring. Provide brief but insightful reasoning.
 You will receive multiple problems to score in one request. Score each one independently.

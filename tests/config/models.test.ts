@@ -7,6 +7,7 @@ import {
   CLAUDE_MODELS,
   getBatchModel,
   getBriefModel,
+  getPipelineBriefModel,
   getModelDisplayName,
   MODEL_PRICING,
   type UserTier,
@@ -56,6 +57,18 @@ describe('Model Configuration', () => {
     it('should default to Haiku for unknown tier', () => {
       // TypeScript would catch this, but testing runtime behavior
       expect(getBriefModel('unknown' as UserTier)).toBe(CLAUDE_MODELS.HAIKU);
+    });
+  });
+
+  describe('getPipelineBriefModel', () => {
+    it('should return Sonnet for pipeline brief generation', () => {
+      expect(getPipelineBriefModel()).toBe(CLAUDE_MODELS.SONNET);
+    });
+
+    it('should return a consistent value', () => {
+      const first = getPipelineBriefModel();
+      const second = getPipelineBriefModel();
+      expect(first).toBe(second);
     });
   });
 

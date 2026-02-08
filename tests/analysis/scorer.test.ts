@@ -72,7 +72,7 @@ function createMockScoredProblem(overrides: Partial<ScoredProblem> = {}): Scored
       timeToMvp: 3,
       impact: 210,
       effort: 12,
-      priority: 17.5,
+      priority: 50,
     },
     reasoning: {
       severity: 'Moderate pain point affecting daily workflow',
@@ -459,9 +459,10 @@ describe('Scorer', () => {
       const cluster = createMockCluster();
       const scored = await scoreProblem(cluster, { useAI: false });
 
-      // PRIORITY = IMPACT / EFFORT
-      const expectedPriority = scored.scores.impact / scored.scores.effort;
-      expect(scored.scores.priority).toBeCloseTo(expectedPriority);
+      // PRIORITY = normalizePriority(IMPACT / EFFORT)
+      const rawPriority = scored.scores.impact / scored.scores.effort;
+      const expectedPriority = Math.max(0, Math.min(100, Math.round(Math.log10(rawPriority) * 40)));
+      expect(scored.scores.priority).toBe(expectedPriority);
     });
 
     it('preserves cluster data', async () => {
@@ -540,14 +541,14 @@ describe('Scorer', () => {
           scores: {
             frequency: 5, severity: 8, marketSize: 6,
             technicalComplexity: 4, timeToMvp: 3,
-            impact: 240, effort: 12, priority: 20,
+            impact: 240, effort: 12, priority: 52,
           },
         }),
         createMockScoredProblem({
           scores: {
             frequency: 3, severity: 6, marketSize: 4,
             technicalComplexity: 6, timeToMvp: 5,
-            impact: 72, effort: 30, priority: 2.4,
+            impact: 72, effort: 30, priority: 15,
           },
         }),
       ];
@@ -555,7 +556,7 @@ describe('Scorer', () => {
       const stats = getScoringStats(problems);
 
       expect(stats.count).toBe(2);
-      expect(stats.avgPriority).toBeCloseTo((20 + 2.4) / 2);
+      expect(stats.avgPriority).toBeCloseTo((52 + 15) / 2);
       expect(stats.avgImpact).toBeCloseTo((240 + 72) / 2);
       expect(stats.avgEffort).toBeCloseTo((12 + 30) / 2);
     });
@@ -593,7 +594,7 @@ describe('Scorer', () => {
           scores: {
             frequency: 5, severity: 8, marketSize: 7,
             technicalComplexity: 8, timeToMvp: 8,
-            impact: 280, effort: 64, priority: 4.375,
+            impact: 280, effort: 64, priority: 26,
           },
         }),
       ];
@@ -635,20 +636,20 @@ describe('Scorer', () => {
   describe('filterByPriority', () => {
     it('filters by minimum priority', () => {
       const problems = [
-        createMockScoredProblem({ scores: { ...createMockScoredProblem().scores, priority: 10 } }),
-        createMockScoredProblem({ scores: { ...createMockScoredProblem().scores, priority: 20 } }),
-        createMockScoredProblem({ scores: { ...createMockScoredProblem().scores, priority: 5 } }),
+        createMockScoredProblem({ scores: { ...createMockScoredProblem().scores, priority: 40 } }),
+        createMockScoredProblem({ scores: { ...createMockScoredProblem().scores, priority: 52 } }),
+        createMockScoredProblem({ scores: { ...createMockScoredProblem().scores, priority: 28 } }),
       ];
 
-      const filtered = filterByPriority(problems, 15);
+      const filtered = filterByPriority(problems, 45);
 
       expect(filtered.length).toBe(1);
-      expect(filtered[0].scores.priority).toBe(20);
+      expect(filtered[0].scores.priority).toBe(52);
     });
 
     it('returns empty for no matches', () => {
       const problems = [
-        createMockScoredProblem({ scores: { ...createMockScoredProblem().scores, priority: 5 } }),
+        createMockScoredProblem({ scores: { ...createMockScoredProblem().scores, priority: 28 } }),
       ];
 
       const filtered = filterByPriority(problems, 100);
@@ -676,15 +677,15 @@ describe('Scorer', () => {
       const problems = [
         createMockScoredProblem({
           problemStatement: 'Weekend project',
-          scores: { ...createMockScoredProblem().scores, timeToMvp: 2, technicalComplexity: 3, priority: 20 },
+          scores: { ...createMockScoredProblem().scores, timeToMvp: 2, technicalComplexity: 3, priority: 52 },
         }),
         createMockScoredProblem({
           problemStatement: 'Month project',
-          scores: { ...createMockScoredProblem().scores, timeToMvp: 7, technicalComplexity: 6, priority: 50 },
+          scores: { ...createMockScoredProblem().scores, timeToMvp: 7, technicalComplexity: 6, priority: 68 },
         }),
         createMockScoredProblem({
           problemStatement: 'Another weekend',
-          scores: { ...createMockScoredProblem().scores, timeToMvp: 1, technicalComplexity: 2, priority: 15 },
+          scores: { ...createMockScoredProblem().scores, timeToMvp: 1, technicalComplexity: 2, priority: 47 },
         }),
       ];
 
@@ -698,17 +699,17 @@ describe('Scorer', () => {
     it('sorts by priority', () => {
       const problems = [
         createMockScoredProblem({
-          scores: { ...createMockScoredProblem().scores, timeToMvp: 1, technicalComplexity: 2, priority: 10 },
+          scores: { ...createMockScoredProblem().scores, timeToMvp: 1, technicalComplexity: 2, priority: 40 },
         }),
         createMockScoredProblem({
-          scores: { ...createMockScoredProblem().scores, timeToMvp: 2, technicalComplexity: 3, priority: 30 },
+          scores: { ...createMockScoredProblem().scores, timeToMvp: 2, technicalComplexity: 3, priority: 59 },
         }),
       ];
 
       const weekendProjects = getWeekendProjects(problems);
 
-      expect(weekendProjects[0].scores.priority).toBe(30);
-      expect(weekendProjects[1].scores.priority).toBe(10);
+      expect(weekendProjects[0].scores.priority).toBe(59);
+      expect(weekendProjects[1].scores.priority).toBe(40);
     });
   });
 });

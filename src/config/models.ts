@@ -54,6 +54,14 @@ export function getBriefModel(tier: UserTier): ClaudeModel {
 }
 
 /**
+ * Get the model used for pipeline-generated briefs.
+ * Always uses Sonnet for quality — pipeline briefs are the core product output.
+ */
+export function getPipelineBriefModel(): ClaudeModel {
+  return CLAUDE_MODELS.SONNET;
+}
+
+/**
  * Get model display name for UI
  */
 export function getModelDisplayName(model: ClaudeModel): string {

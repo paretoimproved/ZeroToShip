@@ -519,6 +519,31 @@ describe('parseJsonResponse', () => {
 
     expect(result).toEqual({ data: true });
   });
+
+  it('recovers truncated JSON with unclosed braces', () => {
+    const truncated = '{"name": "TestApp", "tagline": "Great app"';
+    const result = parseJsonResponse<{ name: string; tagline: string }>(truncated);
+
+    expect(result).not.toBeNull();
+    expect(result!.name).toBe('TestApp');
+    expect(result!.tagline).toBe('Great app');
+  });
+
+  it('recovers truncated JSON array with unclosed brackets', () => {
+    const truncated = '[{"id": "p1", "name": "App1"}, {"id": "p2", "name": "App2"}';
+    const result = parseJsonResponse<Array<{ id: string; name: string }>>(truncated);
+
+    expect(result).not.toBeNull();
+    expect(result).toHaveLength(2);
+  });
+
+  it('recovers JSON with trailing comma', () => {
+    const truncated = '{"name": "TestApp", "features": ["a", "b"],';
+    const result = parseJsonResponse<{ name: string; features: string[] }>(truncated);
+
+    expect(result).not.toBeNull();
+    expect(result!.name).toBe('TestApp');
+  });
 });
 
 describe('effortToString', () => {

@@ -25,6 +25,7 @@ Guidelines:
 - Include specific tech recommendations suitable for the project scope
 - Identify 3-5 concrete risks with mitigations
 - Write in a direct, no-fluff style
+- CRITICAL: Every field must contain specific, substantive content. Do not leave any field empty or with placeholder text like "TBD" or "To be determined".
 
 Output format: Return valid JSON matching the requested schema. Do not include markdown code blocks.`;
 
@@ -266,9 +267,71 @@ export function parseJsonResponse<T>(response: string): T | null {
     cleaned = cleaned.trim();
 
     return JSON.parse(cleaned) as T;
-  } catch (error) {
-    logger.warn({ err: error, rawResponse: response.slice(0, 200) }, 'Failed to parse JSON response');
-    return null;
+  } catch (firstError) {
+    // Attempt to fix truncated JSON by closing unclosed brackets/braces
+    try {
+      let cleaned = response.trim();
+      if (cleaned.startsWith('```json')) {
+        cleaned = cleaned.slice(7);
+      } else if (cleaned.startsWith('```')) {
+        cleaned = cleaned.slice(3);
+      }
+      if (cleaned.endsWith('```')) {
+        cleaned = cleaned.slice(0, -3);
+      }
+      cleaned = cleaned.trim();
+
+      // Remove any trailing comma before we close brackets
+      cleaned = cleaned.replace(/,\s*$/, '');
+
+      // Count unclosed brackets and braces
+      let openBraces = 0;
+      let openBrackets = 0;
+      let inString = false;
+      let escapeNext = false;
+
+      for (const char of cleaned) {
+        if (escapeNext) {
+          escapeNext = false;
+          continue;
+        }
+        if (char === '\\' && inString) {
+          escapeNext = true;
+          continue;
+        }
+        if (char === '"') {
+          inString = !inString;
+          continue;
+        }
+        if (inString) continue;
+        if (char === '{') openBraces++;
+        if (char === '}') openBraces--;
+        if (char === '[') openBrackets++;
+        if (char === ']') openBrackets--;
+      }
+
+      // If we're inside a string, close it
+      if (inString) {
+        cleaned += '"';
+      }
+
+      // Close any unclosed braces/brackets
+      for (let i = 0; i < openBraces; i++) cleaned += '}';
+      for (let i = 0; i < openBrackets; i++) cleaned += ']';
+
+      if (openBraces > 0 || openBrackets > 0 || inString) {
+        const result = JSON.parse(cleaned) as T;
+        logger.info({ fixedBraces: openBraces, fixedBrackets: openBrackets }, 'Recovered truncated JSON response');
+        return result;
+      }
+
+      // If no structural fixes were needed, the JSON is truly invalid
+      logger.warn({ err: firstError, rawResponse: response.slice(0, 200) }, 'Failed to parse JSON response');
+      return null;
+    } catch (recoveryError) {
+      logger.warn({ err: firstError, rawResponse: response.slice(0, 200) }, 'Failed to parse JSON response');
+      return null;
+    }
   }
 }
 
@@ -311,11 +374,11 @@ export function buildBatchBriefPrompt(
 ): string {
   const problemsData = problems.map((p, index) => {
     const competitorList = p.gaps.existingSolutions
-      .slice(0, 3)
+      .slice(0, 5)
       .map(c => `${c.name}: ${c.description}`)
       .join('; ');
 
-    const gapsList = p.gaps.gaps.slice(0, 3).join('; ');
+    const gapsList = p.gaps.gaps.slice(0, 5).join('; ');
 
     return `
 ### Problem ${index + 1} (ID: ${p.id})
@@ -325,6 +388,9 @@ export function buildBatchBriefPrompt(
 **Market Opportunity:** ${p.gaps.marketOpportunity}
 **Competition:** ${competitorList || 'None identified'}
 **Gaps:** ${gapsList || 'None identified'}
+**Differentiation:** ${p.gaps.differentiationAngles.slice(0, 3).join('; ') || 'None identified'}
+**Architecture:** ${p.stackRecommendation.architecture}
+**Estimated Cost:** ${p.stackRecommendation.estimatedCost}
 **Effort Level:** ${p.effortLevel}
 **Suggested Stack:** ${p.stackRecommendation.stack.join(', ')}`;
   }).join('\n');
@@ -360,6 +426,8 @@ Return a JSON array with ${problems.length} briefs, one for each problem above. 
     "risks": ["Risk 1", "Risk 2", "Risk 3"]
   }
 ]
+
+CRITICAL: Every field in every brief must contain specific, substantive content. Do not use placeholder text like "TBD", "To be determined", or "Research required". Base all content on the problem data provided above.
 
 Important: Return ONLY the JSON array with ${problems.length} objects, no markdown or code blocks.`;
 }
