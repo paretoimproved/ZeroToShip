@@ -5,6 +5,9 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['tests/**/*.test.ts'],
+    env: {
+      PIPELINE_DATA_DIR: '/tmp/ideaforge-test-runs',
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

@@ -4,7 +4,7 @@
  * Creates business briefs from scored problems and gap analyses.
  */
 
-import { generateAllBriefs } from '../../generation/brief-generator';
+import { generateAllBriefs, validateBriefQuality } from '../../generation/brief-generator';
 import type { ScoredProblem } from '../../analysis/scorer';
 import type { GapAnalysis } from '../../analysis/gap-analyzer';
 import { createPhaseLogger } from '../utils/logger';
@@ -65,10 +65,29 @@ export async function runGeneratePhase(
     // Persist generated briefs to database
     try {
       if (briefs.length > 0) {
+        const validatedBriefs = briefs.map(brief => {
+          const quality = validateBriefQuality(brief);
+          if (!quality.valid) {
+            logger.warn(
+              { briefName: brief.name, reasons: quality.reasons },
+              'Brief failed quality validation — will not auto-publish'
+            );
+          }
+          return { brief, quality };
+        });
+
+        const publishableBriefs = validatedBriefs.filter(v => v.quality.valid);
+        const flaggedBriefs = validatedBriefs.filter(v => !v.quality.valid);
+
+        logger.info(
+          { publishable: publishableBriefs.length, flagged: flaggedBriefs.length },
+          'Brief quality validation results'
+        );
+
         await db
           .insert(ideas)
           .values(
-            briefs.map((brief) => ({
+            validatedBriefs.map(({ brief, quality }) => ({
               name: brief.name,
               tagline: brief.tagline,
               priorityScore: String(brief.priorityScore),
@@ -88,8 +107,8 @@ export async function runGeneratePhase(
               goToMarket: brief.goToMarket,
               risks: brief.risks,
               generatedAt: brief.generatedAt,
-              isPublished: true,
-              publishedAt: new Date(),
+              isPublished: quality.valid,
+              publishedAt: quality.valid ? new Date() : null,
             }))
           )
           .onConflictDoNothing();

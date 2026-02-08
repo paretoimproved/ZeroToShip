@@ -11,10 +11,10 @@ import type { FastifyPluginAsync } from 'fastify';
 import { requireAdmin } from '../middleware/auth';
 import { loadRunStatus } from '../../scheduler/utils/persistence';
 import { runPipeline, DEFAULT_PIPELINE_CONFIG } from '../../scheduler';
-import { db, ideas, subscriptions, users } from '../db/client';
-import { eq, count, sql } from 'drizzle-orm';
+import { db, ideas, subscriptions, users, pipelineRuns } from '../db/client';
+import { eq, count, desc, sql } from 'drizzle-orm';
 
-const DATA_DIR = path.join(process.cwd(), 'data', 'runs');
+const DATA_DIR = process.env.PIPELINE_DATA_DIR || path.join(process.cwd(), 'data', 'runs');
 
 /**
  * Get the most recent run ID from the data directory
@@ -40,6 +40,25 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
     '/pipeline-status',
     { preHandler: [requireAdmin] },
     async (request, reply) => {
+      // Try DB first
+      try {
+        const latestRun = await db.select().from(pipelineRuns).orderBy(desc(pipelineRuns.startedAt)).limit(1);
+        if (latestRun.length > 0) {
+          const run = latestRun[0];
+          return reply.send({
+            status: 'ok',
+            runId: run.runId,
+            startedAt: run.startedAt,
+            phases: run.phases,
+            success: run.success,
+            completedAt: run.completedAt,
+          });
+        }
+      } catch {
+        // DB query failed, fall through to file-system
+      }
+
+      // Fallback to file system (pre-migration runs)
       const latestRunId = getLatestRunId();
       if (!latestRunId) {
         return reply.send({
@@ -234,8 +253,27 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
         // DB query failed
       }
 
-      const latestRunId = getLatestRunId();
-      const runStatus = latestRunId ? loadRunStatus(latestRunId) : null;
+      // Try DB first for pipeline info
+      let lastRunId: string | null = null;
+      let lastRunAt: Date | null = null;
+
+      try {
+        const latestRun = await db.select().from(pipelineRuns).orderBy(desc(pipelineRuns.startedAt)).limit(1);
+        if (latestRun.length > 0) {
+          lastRunId = latestRun[0].runId;
+          lastRunAt = latestRun[0].startedAt;
+        }
+      } catch {
+        // DB query failed, fall through to file-system
+      }
+
+      // Fallback to file system if DB had no results
+      if (!lastRunId) {
+        const latestRunId = getLatestRunId();
+        const runStatus = latestRunId ? loadRunStatus(latestRunId) : null;
+        lastRunId = runStatus?.runId || null;
+        lastRunAt = runStatus?.startedAt ? new Date(runStatus.startedAt) : null;
+      }
 
       return reply.send({
         totalUsers,
@@ -243,10 +281,62 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
         totalIdeas,
         ideasToday,
         pipeline: {
-          lastRunId: runStatus?.runId || null,
-          lastRunAt: runStatus?.startedAt || null,
+          lastRunId,
+          lastRunAt,
         },
       });
     }
   );
+
+  /**
+   * GET /api/v1/admin/runs
+   * Paginated run history
+   */
+  server.get('/runs', { preHandler: [requireAdmin] }, async (request, reply) => {
+    const query = request.query as { page?: string; limit?: string; status?: string };
+    const page = Math.max(1, parseInt(query.page || '1'));
+    const limit = Math.min(100, Math.max(1, parseInt(query.limit || '20')));
+    const offset = (page - 1) * limit;
+
+    const statusFilter = query.status === 'completed'
+      ? eq(pipelineRuns.success, true)
+      : query.status === 'failed'
+        ? eq(pipelineRuns.success, false)
+        : undefined;
+
+    const baseQuery = statusFilter
+      ? db.select().from(pipelineRuns).where(statusFilter)
+      : db.select().from(pipelineRuns);
+
+    const countQuery = statusFilter
+      ? db.select({ count: count() }).from(pipelineRuns).where(statusFilter)
+      : db.select({ count: count() }).from(pipelineRuns);
+
+    const [runs, totalResult] = await Promise.all([
+      baseQuery.orderBy(desc(pipelineRuns.startedAt)).limit(limit).offset(offset),
+      countQuery,
+    ]);
+
+    return reply.send({
+      runs,
+      total: totalResult[0]?.count || 0,
+      page,
+      limit,
+    });
+  });
+
+  /**
+   * GET /api/v1/admin/runs/:runId
+   * Single run detail
+   */
+  server.get('/runs/:runId', { preHandler: [requireAdmin] }, async (request, reply) => {
+    const { runId } = request.params as { runId: string };
+    const result = await db.select().from(pipelineRuns).where(eq(pipelineRuns.runId, runId)).limit(1);
+
+    if (result.length === 0) {
+      return reply.status(404).send({ code: 'NOT_FOUND', message: 'Run not found' });
+    }
+
+    return reply.send({ run: result[0] });
+  });
 };

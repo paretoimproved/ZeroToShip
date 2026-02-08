@@ -16,7 +16,7 @@ import {
 } from '../../src/scheduler/utils/persistence';
 import type { PipelineConfig } from '../../src/scheduler/types';
 
-const TEST_DATA_DIR = path.join(process.cwd(), 'data', 'runs');
+const TEST_DATA_DIR = process.env.PIPELINE_DATA_DIR || path.join(process.cwd(), 'data', 'runs');
 const TEST_RUN_ID = 'test_run_persistence';
 
 const mockConfig: PipelineConfig = {
@@ -28,7 +28,6 @@ const mockConfig: PipelineConfig = {
   minPriorityScore: 0.5,
   dryRun: false,
   verbose: false,
-  reportMetrics: false,
 };
 
 function cleanupTestRun(): void {

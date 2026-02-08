@@ -10,6 +10,7 @@ import {
   varchar,
   text,
   integer,
+  serial,
   decimal,
   timestamp,
   jsonb,
@@ -274,6 +275,24 @@ export const usageTracking = pgTable(
     userIdx: index('usage_tracking_user_idx').on(table.userId),
   })
 );
+
+/**
+ * Pipeline runs — persisted results of each scheduler run
+ */
+export const pipelineRuns = pgTable('pipeline_runs', {
+  id: serial('id').primaryKey(),
+  runId: text('run_id').notNull().unique(),
+  startedAt: timestamp('started_at').notNull(),
+  completedAt: timestamp('completed_at'),
+  config: jsonb('config').notNull(),
+  phases: jsonb('phases').notNull(),
+  stats: jsonb('stats').notNull(),
+  success: boolean('success').notNull().default(false),
+  totalDuration: integer('total_duration'),
+  errors: jsonb('errors').default([]),
+  apiMetrics: jsonb('api_metrics'),
+  briefSummaries: jsonb('brief_summaries'),
+});
 
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({

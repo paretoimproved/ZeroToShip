@@ -67,13 +67,12 @@ async function main(): Promise<void> {
   try {
     const result = await runPipeline({
       dryRun: true,
-      reportMetrics: true,
       verbose: true,
     });
 
     if (!result.apiMetrics) {
       console.error('\nERROR: No metrics collected');
-      console.log('Make sure reportMetrics is enabled and the pipeline completed successfully.');
+      console.log('Make sure the pipeline completed successfully.');
       process.exit(1);
     }
 

@@ -17,7 +17,7 @@ import {
   parseJsonResponse,
   scoreToEffortLevel,
 } from './templates';
-import { getRecommendedStack, type EffortLevel } from './tech-stacks';
+import { getRecommendedStack, type EffortLevel, type TechStackRecommendation } from './tech-stacks';
 import { getBriefModel, type UserTier } from '../config/models';
 import { getGlobalMetrics } from '../scheduler/utils/api-metrics';
 import { estimateTokens } from '../scheduler/utils/token-estimator';
@@ -418,6 +418,69 @@ function createFallbackBrief(
 }
 
 /**
+ * Validate brief quality before publishing.
+ * Returns reasons array — empty means brief passes validation.
+ */
+export function validateBriefQuality(brief: IdeaBrief): { valid: boolean; reasons: string[] } {
+  const reasons: string[] = [];
+
+  // Placeholder content detection
+  const placeholderPatterns = [
+    /^TBD$/i,
+    /to be determined/i,
+    /placeholder/i,
+    /research required/i,
+    /pending$/i,
+    /^Untitled/i,
+    /^Core feature \d/i,
+    /^Feature \d$/i,
+    /^Test /i,
+    /^Our solution$/i,
+    /manual analysis required/i,
+  ];
+
+  const fieldsToCheck: Array<[string, string]> = [
+    ['name', brief.name],
+    ['tagline', brief.tagline],
+    ['problemStatement', brief.problemStatement],
+    ['targetAudience', brief.targetAudience],
+    ['marketSize', brief.marketSize],
+    ['existingSolutions', brief.existingSolutions],
+    ['gaps', brief.gaps],
+    ['proposedSolution', brief.proposedSolution],
+    ['mvpScope', brief.mvpScope],
+    ['revenueEstimate', brief.revenueEstimate],
+  ];
+
+  for (const [field, value] of fieldsToCheck) {
+    for (const pattern of placeholderPatterns) {
+      if (pattern.test(value)) {
+        reasons.push(`${field} contains placeholder content: "${value.slice(0, 50)}"`);
+        break;
+      }
+    }
+  }
+
+  // Minimum field lengths
+  if (brief.name.length < 2) reasons.push('name too short (< 2 chars)');
+  if (brief.tagline.length < 10) reasons.push('tagline too short (< 10 chars)');
+  if (brief.problemStatement.length < 50) reasons.push('problemStatement too short (< 50 chars)');
+  if (brief.targetAudience.length < 20) reasons.push('targetAudience too short (< 20 chars)');
+  if (brief.proposedSolution.length < 30) reasons.push('proposedSolution too short (< 30 chars)');
+
+  // Array minimums
+  if (brief.keyFeatures.length < 3) reasons.push(`keyFeatures has ${brief.keyFeatures.length} items (need >= 3)`);
+  if (brief.risks.length < 2) reasons.push(`risks has ${brief.risks.length} items (need >= 2)`);
+  if (brief.goToMarket.channels.length < 2) reasons.push(`channels has ${brief.goToMarket.channels.length} items (need >= 2)`);
+
+  // Nested object checks
+  if (brief.technicalSpec.stack.length < 2) reasons.push(`tech stack has ${brief.technicalSpec.stack.length} items (need >= 2)`);
+  if (brief.businessModel.pricing.length < 10) reasons.push('pricing too short (< 10 chars)');
+
+  return { valid: reasons.length === 0, reasons };
+}
+
+/**
  * Transform GPT response to IdeaBrief
  */
 function transformToBrief(
@@ -529,15 +592,15 @@ export async function generateAllBriefs(
   const model = opts.model || getBriefModel(opts.userTier);
   logger.info({ count: scoredProblems.length, model, tier: opts.userTier }, 'Generating briefs');
 
-  // Batch size for brief generation (5 briefs per API call for quality balance)
-  const BRIEF_BATCH_SIZE = 3;
+  // Batch size for brief generation — use 1 for full-context single prompts
+  const BRIEF_BATCH_SIZE = 1;
 
   // Prepare all problems with their gap analyses
   const problemsWithGaps: Array<{
     problem: ScoredProblem;
     gaps: GapAnalysis;
     effortLevel: EffortLevel;
-    stackRec: { stack: string[]; architecture: string; estimatedCost: string };
+    stackRec: TechStackRecommendation;
   }> = [];
 
   for (const problem of scoredProblems) {
@@ -580,44 +643,55 @@ export async function generateAllBriefs(
   for (let i = 0; i < problemsWithGaps.length; i += BRIEF_BATCH_SIZE) {
     const batch = problemsWithGaps.slice(i, i + BRIEF_BATCH_SIZE);
 
-    // Build batch prompt
-    const batchData = batch.map(({ problem, gaps, effortLevel, stackRec }) => ({
-      id: problem.id,
-      problem,
-      gaps,
-      stackRecommendation: stackRec,
-      effortLevel,
-    }));
+    if (batch.length === 1) {
+      // Single brief — use full-context prompt
+      const { problem, gaps, effortLevel, stackRec } = batch[0];
+      const prompt = buildBriefPrompt(problem, gaps, stackRec, effortLevel);
+      const response = await callClaude(prompt, apiKey, model, opts.temperature);
 
-    const prompt = buildBatchBriefPrompt(batchData);
-
-    // Call API with batch
-    const batchResponses = await callClaudeBatch(
-      prompt,
-      apiKey,
-      model,
-      opts.temperature,
-      batch.length
-    );
-
-    if (batchResponses && batchResponses.length > 0) {
-      // Map responses back to briefs
-      for (const response of batchResponses) {
-        const matchingData = batch.find(b => b.problem.id === response.id);
-        if (matchingData) {
-          results.push(transformToBrief(
-            response,
-            matchingData.problem,
-            matchingData.effortLevel,
-            matchingData.stackRec.stack
-          ));
-        }
+      if (response) {
+        results.push(transformToBrief(response, problem, effortLevel, stackRec.stack));
+      } else {
+        logger.warn({ problemId: problem.id }, 'Single brief generation failed, using fallback');
+        results.push(createFallbackBrief(problem, gaps, effortLevel));
       }
     } else {
-      // Fallback for failed batch
-      logger.warn({ batchSize: batch.length }, 'Batch brief generation failed, using fallbacks');
-      for (const { problem, gaps, effortLevel } of batch) {
-        results.push(createFallbackBrief(problem, gaps, effortLevel));
+      // Batch path (kept for future use but currently batch size is 1)
+      const batchData = batch.map(({ problem, gaps, effortLevel, stackRec }) => ({
+        id: problem.id,
+        problem,
+        gaps,
+        stackRecommendation: stackRec,
+        effortLevel,
+      }));
+
+      const prompt = buildBatchBriefPrompt(batchData);
+
+      const batchResponses = await callClaudeBatch(
+        prompt,
+        apiKey,
+        model,
+        opts.temperature,
+        batch.length
+      );
+
+      if (batchResponses && batchResponses.length > 0) {
+        for (const response of batchResponses) {
+          const matchingData = batch.find(b => b.problem.id === response.id);
+          if (matchingData) {
+            results.push(transformToBrief(
+              response,
+              matchingData.problem,
+              matchingData.effortLevel,
+              matchingData.stackRec.stack
+            ));
+          }
+        }
+      } else {
+        logger.warn({ batchSize: batch.length }, 'Batch brief generation failed, using fallbacks');
+        for (const { problem, gaps, effortLevel } of batch) {
+          results.push(createFallbackBrief(problem, gaps, effortLevel));
+        }
       }
     }
 

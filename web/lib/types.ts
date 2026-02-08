@@ -134,3 +134,40 @@ export interface Subscription {
   currentPeriodEnd: string;
   cancelAtPeriodEnd: boolean;
 }
+
+export interface PipelineRunRow {
+  id: number;
+  runId: string;
+  startedAt: string;
+  completedAt: string | null;
+  config: Record<string, unknown>;
+  phases: Record<string, string>;
+  stats: {
+    postsScraped: number;
+    clustersCreated: number;
+    ideasGenerated: number;
+    emailsSent: number;
+  };
+  success: boolean;
+  totalDuration: number;
+  errors: Array<{
+    phase: string;
+    message: string;
+    timestamp: string;
+    recoverable: boolean;
+    severity?: string;
+  }>;
+  apiMetrics: {
+    totalCalls: number;
+    totalInputTokens: number;
+    totalOutputTokens: number;
+    estimatedCost: number;
+    callsByModel: Record<string, number>;
+  } | null;
+  briefSummaries: Array<{
+    name: string;
+    tagline: string;
+    priorityScore: number;
+    effortEstimate: string;
+  }> | null;
+}

@@ -23,6 +23,7 @@ import {
   loadPhaseResult,
   getResumePhase,
 } from './utils/persistence';
+import { db, pipelineRuns } from '../api/db/client';
 import { DEFAULT_SIMILARITY_THRESHOLD } from '../analysis/similarity';
 import type {
   PipelineConfig,
@@ -65,7 +66,6 @@ export const DEFAULT_PIPELINE_CONFIG: PipelineConfig = {
   minPriorityScore: DEFAULT_MIN_PRIORITY_SCORE,
   dryRun: false,
   verbose: false,
-  reportMetrics: false,
 };
 
 /**
@@ -179,10 +179,8 @@ export async function runPipeline(
   const metrics = new MetricsCollector(runId);
   const errors: PipelineError[] = [];
 
-  // Reset API metrics at start if collecting
-  if (fullConfig.reportMetrics) {
-    resetGlobalMetrics();
-  }
+  // Reset API metrics at start
+  resetGlobalMetrics();
 
   const startedAt = new Date();
 
@@ -410,9 +408,43 @@ export async function runPipeline(
     errors
   );
 
-  // Add API metrics to result if collecting
-  if (fullConfig.reportMetrics) {
-    result.apiMetrics = getGlobalMetrics().getSummary();
+  // Attach API metrics to result
+  result.apiMetrics = getGlobalMetrics().getSummary();
+
+  // Persist run to database
+  try {
+    const briefSummaries = result.phases.generate.data?.briefs?.map(b => ({
+      name: b.name,
+      tagline: b.tagline,
+      priorityScore: b.priorityScore,
+      effortEstimate: b.effortEstimate,
+    })) || [];
+
+    await db.insert(pipelineRuns).values({
+      runId: result.runId,
+      startedAt: result.startedAt,
+      completedAt: result.completedAt,
+      config: fullConfig,
+      phases: {
+        scrape: scrapeResult.success ? 'completed' : 'failed',
+        analyze: analyzeResult.success ? 'completed' : 'failed',
+        generate: generateResult.success ? 'completed' : 'failed',
+        deliver: deliverResult.success ? 'completed' : 'failed',
+      },
+      stats: result.stats,
+      success: result.success,
+      totalDuration: result.totalDuration,
+      errors: result.errors,
+      apiMetrics: result.apiMetrics || null,
+      briefSummaries,
+    }).onConflictDoNothing();
+
+    logger.info({ runId }, 'Pipeline run persisted to database');
+  } catch (dbError) {
+    logger.warn(
+      { error: dbError instanceof Error ? dbError.message : String(dbError) },
+      'Failed to persist pipeline run to database (non-fatal)'
+    );
   }
 
   const summary = metrics.getSummary();

@@ -52,8 +52,6 @@ export interface PipelineConfig {
   dryRun: boolean;
   /** Enable verbose logging */
   verbose: boolean;
-  /** Collect and report API metrics (default: false) */
-  reportMetrics?: boolean;
   /** Resume a previous run from its last completed phase */
   resumeRunId?: string;
 }
@@ -123,7 +121,7 @@ export interface PipelineResult {
   success: boolean;
   totalDuration: number;
   errors: PipelineError[];
-  /** API call metrics for cost validation (when reportMetrics=true) */
+  /** API call metrics for cost validation */
   apiMetrics?: ApiMetricsSummary;
 }
 

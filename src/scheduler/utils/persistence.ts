@@ -15,7 +15,7 @@ import type { PhaseName, PipelineConfig } from '../types';
 const logger = createLogger({ context: 'persistence' });
 
 /** Base directory for all run data, relative to project root */
-const DATA_DIR = path.join(process.cwd(), 'data', 'runs');
+const DATA_DIR = process.env.PIPELINE_DATA_DIR || path.join(process.cwd(), 'data', 'runs');
 
 /**
  * Status of each phase within a persisted run
