@@ -20,8 +20,13 @@ A social signal scraper for identifying emerging startup ideas.
 
 ### End of Session
 1. Run `npm run build && npm test` — verify nothing is broken
-2. Update `vault/01-Projects/ideaforge/Context.md` (see rules below)
-3. If corrections were made by the user, add to Common Mistakes table
+2. Commit or stash any in-progress work — never leave a dirty working tree overnight
+3. Update `vault/01-Projects/ideaforge/Context.md`:
+   - "Last Updated" date
+   - "Recent Changes" table
+   - "Current Focus" — what to pick up next session
+   - "Known Issues" if anything new was discovered
+4. If corrections were made by the user, add to Common Mistakes table
 
 ---
 

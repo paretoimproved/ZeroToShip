@@ -51,3 +51,4 @@ web/e2e/.auth/
 web/e2e/reports/
 web/e2e/test-results/
 web/*.tsbuildinfo
+.vercel
