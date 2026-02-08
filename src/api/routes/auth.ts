@@ -42,6 +42,13 @@ const ErrorResponseSchema = z.object({
   message: z.string(),
 });
 
+/**
+ * Sanitize error message for safe JSON serialization
+ */
+function sanitizeMessage(msg: string): string {
+  return msg.replace(/[\x00-\x1F\x7F]/g, '');
+}
+
 export const authRoutes: FastifyPluginAsync = async (fastify) => {
   const app = fastify.withTypeProvider<ZodTypeProvider>();
 
@@ -78,7 +85,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
       if (error) {
         return reply.status(400).send({
           code: 'SIGNUP_FAILED',
-          message: error.message,
+          message: sanitizeMessage(error.message),
         });
       }
 
@@ -131,7 +138,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
       if (error) {
         return reply.status(401).send({
           code: 'LOGIN_FAILED',
-          message: error.message,
+          message: sanitizeMessage(error.message),
         });
       }
 
