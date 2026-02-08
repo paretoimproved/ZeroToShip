@@ -883,14 +883,15 @@ describe('Auth Routes E2E', () => {
       expect(body.code).toBe('UNAUTHORIZED');
     });
 
-    it('should return 401 when user not found in database', async () => {
+    it('should auto-create user when not found in database (first OAuth login)', async () => {
       mockGetUser.mockResolvedValue({
         data: { user: supabaseUser() },
         error: null,
       });
 
-      // User exists in Supabase but not in our DB
+      // User exists in Supabase but not in our DB — triggers auto-creation
       mockGetUserById.mockResolvedValue(null);
+      mockGetOrCreateUser.mockResolvedValue(TEST_USER);
 
       const response = await server.inject({
         method: 'GET',
@@ -900,10 +901,8 @@ describe('Auth Routes E2E', () => {
         },
       });
 
-      expect(response.statusCode).toBe(401);
-      const body = JSON.parse(response.payload);
-      expect(body.code).toBe('USER_NOT_FOUND');
-      expect(body.message).toBe('User not found');
+      expect(response.statusCode).toBe(200);
+      expect(mockGetOrCreateUser).toHaveBeenCalled();
     });
 
     it('should return 401 when Authorization header has wrong scheme', async () => {
@@ -921,6 +920,11 @@ describe('Auth Routes E2E', () => {
     });
 
     it('should return 401 for empty Bearer token', async () => {
+      mockGetUser.mockResolvedValue({
+        data: { user: null },
+        error: { message: 'Invalid token' },
+      });
+
       const response = await server.inject({
         method: 'GET',
         url: '/api/v1/auth/me',

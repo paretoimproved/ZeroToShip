@@ -137,6 +137,15 @@ export const ideas = pgTable(
 
     risks: jsonb('risks').$type<string[]>().default([]),
 
+    sources: jsonb('sources').$type<Array<{
+      platform: string;
+      title: string;
+      url: string;
+      score: number;
+      commentCount: number;
+      postedAt: string;
+    }>>().default([]),
+
     generatedAt: timestamp('generated_at').notNull().defaultNow(),
     publishedAt: timestamp('published_at'),
     isPublished: boolean('is_published').notNull().default(false),

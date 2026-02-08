@@ -60,7 +60,7 @@ function getTierFromPlan(plan: string | null): UserTier {
  */
 async function verifyJWT(
   token: string
-): Promise<{ userId: string; email: string } | null> {
+): Promise<{ userId: string; email: string; userMetadata?: Record<string, unknown> } | null> {
   if (!supabase) {
     console.warn('Supabase not configured - JWT verification disabled');
     return null;
@@ -79,6 +79,7 @@ async function verifyJWT(
     return {
       userId: user.id,
       email: user.email || '',
+      userMetadata: user.user_metadata as Record<string, unknown> | undefined,
     };
   } catch {
     return null;
@@ -205,6 +206,7 @@ export async function optionalAuth(
     if (userData) {
       request.userId = userData.userId;
       request.userEmail = userData.email;
+      request.userMetadata = userData.userMetadata;
       request.userTier = await getUserTier(userData.userId);
 
       // Admin tier override: if admin sends X-Tier-Override, apply it
@@ -312,6 +314,7 @@ export const authPlugin: FastifyPluginAsync = async (fastify) => {
   fastify.decorateRequest('userEmail', undefined);
   fastify.decorateRequest('userTier', 'anonymous' as UserTier);
   fastify.decorateRequest('apiKeyId', undefined);
+  fastify.decorateRequest('userMetadata', undefined);
 };
 
 /**

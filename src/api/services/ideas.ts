@@ -51,6 +51,7 @@ function rowToIdeaBrief(row: typeof ideas.$inferSelect): IdeaBrief {
     goToMarket: row.goToMarket as IdeaBrief['goToMarket'],
 
     risks: (row.risks as string[]) || undefined,
+    sources: (row.sources as IdeaBrief['sources']) || [],
     generatedAt: row.generatedAt.toISOString(),
   };
 }

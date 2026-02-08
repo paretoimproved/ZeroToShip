@@ -1,7 +1,8 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { login as authLogin, signup as authSignup, logout as authLogout, initAuth, getToken } from "@/lib/auth";
+import { login as authLogin, signup as authSignup, logout as authLogout, initAuth, getToken, handleOAuthCallback, loginWithOAuth } from "@/lib/auth";
+import type { OAuthProvider } from "@/lib/auth";
 import type { User } from "@/lib/types";
 
 interface AuthContextType {
@@ -10,6 +11,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<User>;
   signup: (email: string, password: string, name: string) => Promise<User>;
+  loginWithOAuth: (provider: OAuthProvider) => Promise<void>;
   logout: () => void;
 }
 
@@ -22,8 +24,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     async function restoreAuth() {
       try {
+        // Check for OAuth callback first (tokens in URL hash)
+        const oauthToken = await handleOAuthCallback();
+
         initAuth();
-        const token = getToken();
+        const token = oauthToken || getToken();
         if (token) {
           const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
           const response = await fetch(`${apiUrl}/auth/me`, {
@@ -55,6 +60,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return userData;
   }, []);
 
+  const loginWithOAuthHandler = useCallback(async (provider: OAuthProvider) => {
+    await loginWithOAuth(provider);
+  }, []);
+
   const logout = useCallback(() => {
     authLogout();
     setUser(null);
@@ -68,6 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: !!user,
         login,
         signup,
+        loginWithOAuth: loginWithOAuthHandler,
         logout,
       }}
     >

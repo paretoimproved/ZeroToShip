@@ -85,3 +85,47 @@ export function logout(): void {
 export function isAuthenticated(): boolean {
   return !!getToken();
 }
+
+export type OAuthProvider = "google" | "github";
+
+/**
+ * Initiate OAuth login/signup with a social provider.
+ * Redirects the browser to the provider's OAuth consent screen.
+ */
+export async function loginWithOAuth(provider: OAuthProvider): Promise<void> {
+  const { supabase } = await import("./supabase");
+
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo: `${window.location.origin}/dashboard`,
+    },
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+/**
+ * Handle the OAuth callback by extracting the session from the URL hash.
+ * Called by AuthProvider on mount to detect OAuth redirects.
+ * Returns the access token if an OAuth session was found, null otherwise.
+ */
+export async function handleOAuthCallback(): Promise<string | null> {
+  // Supabase puts tokens in the URL hash after OAuth redirect
+  if (typeof window === "undefined") return null;
+
+  const hashParams = new URLSearchParams(window.location.hash.substring(1));
+  const accessToken = hashParams.get("access_token");
+
+  if (!accessToken) return null;
+
+  // Store the token
+  setToken(accessToken);
+
+  // Clean the URL hash
+  window.history.replaceState(null, "", window.location.pathname + window.location.search);
+
+  return accessToken;
+}

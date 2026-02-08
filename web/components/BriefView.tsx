@@ -15,15 +15,16 @@ export default function BriefView({ brief, gated = false }: BriefViewProps) {
     { title: "Problem Statement", index: 0 },
     { title: "Existing Solutions", index: 1 },
     { title: "Market Gaps", index: 2 },
+    { title: "Signal Sources", index: 3 },
   ];
 
   const unlockedSections = [
-    { title: "Proposed Solution", index: 3 },
-    { title: "MVP Scope", index: 4 },
-    { title: "Technical Specification", index: 5 },
-    { title: "Business Model", index: 6 },
-    { title: "Go-to-Market Strategy", index: 7 },
-    { title: "Risks & Challenges", index: 8 },
+    { title: "Proposed Solution", index: 4 },
+    { title: "MVP Scope", index: 5 },
+    { title: "Technical Specification", index: 6 },
+    { title: "Business Model", index: 7 },
+    { title: "Go-to-Market Strategy", index: 8 },
+    { title: "Risks & Challenges", index: 9 },
   ];
 
   return (
@@ -100,6 +101,35 @@ export default function BriefView({ brief, gated = false }: BriefViewProps) {
         <CollapsibleSection title="Market Gaps" defaultOpen index={teaserSections[2].index}>
           <p className="text-gray-700 dark:text-gray-300">{brief.gaps}</p>
         </CollapsibleSection>
+
+        {brief.sources && brief.sources.length > 0 && (
+          <CollapsibleSection title="Signal Sources" defaultOpen index={teaserSections[3].index}>
+            <div className="space-y-3">
+              {brief.sources.map((source, index) => (
+                <a
+                  key={index}
+                  href={source.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                >
+                  <PlatformIcon platform={source.platform} />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      {source.title}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {source.score} upvotes · {source.commentCount} comments
+                    </div>
+                  </div>
+                  <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              ))}
+            </div>
+          </CollapsibleSection>
+        )}
 
         {gated ? (
           <div
@@ -261,6 +291,21 @@ function CollapsibleSection({
         </div>
       </div>
     </details>
+  );
+}
+
+function PlatformIcon({ platform }: { platform: string }) {
+  const config: Record<string, { label: string; bg: string; text: string }> = {
+    reddit: { label: "R", bg: "bg-orange-100 dark:bg-orange-900/50", text: "text-orange-600 dark:text-orange-400" },
+    hn: { label: "Y", bg: "bg-orange-100 dark:bg-orange-900/50", text: "text-orange-700 dark:text-orange-300" },
+    twitter: { label: "X", bg: "bg-blue-100 dark:bg-blue-900/50", text: "text-blue-600 dark:text-blue-400" },
+    github: { label: "G", bg: "bg-gray-100 dark:bg-gray-700", text: "text-gray-800 dark:text-gray-200" },
+  };
+  const { label, bg, text } = config[platform] || config.github;
+  return (
+    <div className={`w-8 h-8 rounded-lg ${bg} flex items-center justify-center flex-shrink-0`}>
+      <span className={`text-sm font-bold ${text}`}>{label}</span>
+    </div>
   );
 }
 

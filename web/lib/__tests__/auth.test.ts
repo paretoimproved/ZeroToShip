@@ -16,9 +16,21 @@ const mockLocalStorage = {
 };
 vi.stubGlobal('localStorage', mockLocalStorage);
 
+// Mock sessionStorage
+const sessionStore: Record<string, string> = {};
+const mockSessionStorage = {
+  getItem: vi.fn((key: string) => sessionStore[key] ?? null),
+  setItem: vi.fn((key: string, value: string) => { sessionStore[key] = value; }),
+  removeItem: vi.fn((key: string) => { delete sessionStore[key]; }),
+  clear: vi.fn(() => { Object.keys(sessionStore).forEach(k => delete sessionStore[k]); }),
+  length: 0,
+  key: vi.fn(),
+};
+vi.stubGlobal('sessionStorage', mockSessionStorage);
+
 // Mock window.location
 const mockLocation = { href: '' };
-vi.stubGlobal('window', { location: mockLocation, localStorage: mockLocalStorage });
+vi.stubGlobal('window', { location: mockLocation, localStorage: mockLocalStorage, sessionStorage: mockSessionStorage });
 
 import { api } from '../api';
 import {

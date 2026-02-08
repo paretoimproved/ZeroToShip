@@ -63,6 +63,14 @@ export interface IdeaBrief {
   };
 
   risks: string[];
+  sources: Array<{
+    platform: 'reddit' | 'hn' | 'twitter' | 'github';
+    title: string;
+    url: string;
+    score: number;
+    commentCount: number;
+    postedAt: string;
+  }>;
   generatedAt: Date;
 }
 
@@ -141,6 +149,26 @@ function sleep(ms: number): Promise<void> {
  */
 function generateBriefId(): string {
   return `brief_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+}
+
+/**
+ * Extract top source posts from a scored problem, ranked by engagement.
+ */
+function extractSources(problem: ScoredProblem): IdeaBrief['sources'] {
+  const allPosts = [problem.representativePost, ...problem.relatedPosts];
+  return allPosts
+    .sort((a, b) => (b.score + b.commentCount) - (a.score + a.commentCount))
+    .slice(0, 5)
+    .map(post => ({
+      platform: post.source,
+      title: post.title,
+      url: post.url,
+      score: post.score,
+      commentCount: post.commentCount,
+      postedAt: post.createdAt instanceof Date
+        ? post.createdAt.toISOString()
+        : String(post.createdAt),
+    }));
 }
 
 /**
@@ -413,6 +441,7 @@ function createFallbackBrief(
       'Technical feasibility to be verified',
     ],
 
+    sources: extractSources(problem),
     generatedAt: new Date(),
   };
 }
@@ -528,6 +557,7 @@ function transformToBrief(
 
     risks: response.risks || [],
 
+    sources: extractSources(problem),
     generatedAt: new Date(),
   };
 }
@@ -787,6 +817,14 @@ export function formatBriefMarkdown(brief: IdeaBrief): string {
     lines.push(`- ${risk}`);
   }
   lines.push('');
+
+  if (brief.sources.length > 0) {
+    lines.push('## Sources');
+    for (const source of brief.sources) {
+      lines.push(`- [${source.platform}] ${source.title} (${source.score} upvotes, ${source.commentCount} comments) - ${source.url}`);
+    }
+    lines.push('');
+  }
 
   lines.push('---');
   lines.push(`*Generated: ${brief.generatedAt.toISOString()}*`);

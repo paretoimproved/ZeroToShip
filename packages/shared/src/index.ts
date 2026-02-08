@@ -44,6 +44,16 @@ export const GoToMarketSchema = z.object({
 });
 export type GoToMarket = z.infer<typeof GoToMarketSchema>;
 
+export const IdeaSourceSchema = z.object({
+  platform: z.enum(['reddit', 'hn', 'twitter', 'github']),
+  title: z.string(),
+  url: z.string(),
+  score: z.number(),
+  commentCount: z.number(),
+  postedAt: z.string(),
+});
+export type IdeaSource = z.infer<typeof IdeaSourceSchema>;
+
 // ─── Idea Schemas ────────────────────────────────────────────────────────────
 
 export const IdeaBriefSchema = z.object({
@@ -70,6 +80,7 @@ export const IdeaBriefSchema = z.object({
   goToMarket: GoToMarketSchema.optional(),
 
   risks: z.array(z.string()).optional(),
+  sources: z.array(IdeaSourceSchema).optional(),
   generatedAt: z.string(),
   category: z.string().optional(),
 });

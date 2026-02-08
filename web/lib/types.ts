@@ -24,6 +24,15 @@ export interface ApiError {
   details?: Record<string, unknown>;
 }
 
+export interface IdeaSource {
+  platform: 'reddit' | 'hn' | 'twitter' | 'github';
+  title: string;
+  url: string;
+  score: number;
+  commentCount: number;
+  postedAt: string;
+}
+
 // ─── Frontend-specific types ─────────────────────────────────────────────────
 // IdeaBrief: The frontend assumes all fields are populated (fully-loaded brief).
 // The backend schema marks many fields as optional to support partial creation,
@@ -67,6 +76,7 @@ export interface IdeaBrief {
   };
 
   risks: string[];
+  sources?: IdeaSource[];
   generatedAt: string;
 }
 

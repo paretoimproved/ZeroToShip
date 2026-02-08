@@ -4,9 +4,21 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);
 
+// Mock sessionStorage
+const sessionStore: Record<string, string> = {};
+const mockSessionStorage = {
+  getItem: vi.fn((key: string) => sessionStore[key] ?? null),
+  setItem: vi.fn((key: string, value: string) => { sessionStore[key] = value; }),
+  removeItem: vi.fn((key: string) => { delete sessionStore[key]; }),
+  clear: vi.fn(() => { Object.keys(sessionStore).forEach(k => delete sessionStore[k]); }),
+  length: 0,
+  key: vi.fn(),
+};
+vi.stubGlobal('sessionStorage', mockSessionStorage);
+
 // Mock window.location
 const mockLocation = { href: '' };
-vi.stubGlobal('window', { location: mockLocation });
+vi.stubGlobal('window', { location: mockLocation, sessionStorage: mockSessionStorage });
 
 import { api } from '../api';
 import {

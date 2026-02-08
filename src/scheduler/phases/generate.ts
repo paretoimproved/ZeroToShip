@@ -106,6 +106,7 @@ export async function runGeneratePhase(
               businessModel: brief.businessModel,
               goToMarket: brief.goToMarket,
               risks: brief.risks,
+              sources: brief.sources,
               generatedAt: brief.generatedAt,
               isPublished: quality.valid,
               publishedAt: quality.valid ? new Date() : null,

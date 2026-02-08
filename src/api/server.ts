@@ -36,6 +36,7 @@ declare module 'fastify' {
     userEmail?: string;
     userTier: UserTier;
     apiKeyId?: string;
+    userMetadata?: Record<string, unknown>;
   }
 }
 

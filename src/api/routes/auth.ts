@@ -206,13 +206,20 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request, reply) => {
-      const user = await getUserById(request.userId!);
+      let user = await getUserById(request.userId!);
 
       if (!user) {
-        return reply.status(401).send({
-          code: 'USER_NOT_FOUND',
-          message: 'User not found',
-        });
+        // User exists in Supabase but not in our DB (first OAuth login).
+        // Extract display name from Supabase user_metadata.
+        const meta = request.userMetadata;
+        const name =
+          (meta?.full_name as string) ||
+          (meta?.name as string) ||
+          (meta?.user_name as string) ||
+          (meta?.preferred_username as string) ||
+          undefined;
+
+        user = await getOrCreateUser(request.userId!, request.userEmail!, name);
       }
 
       return reply.send({ ...user, isAdmin: isAdminEmail(user.email) });
