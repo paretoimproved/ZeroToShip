@@ -21,6 +21,27 @@ const config: Config = {
           900: "#0c4a6e",
         },
       },
+      fontFamily: {
+        mono: [
+          '"SF Mono"',
+          '"Fira Code"',
+          '"Fira Mono"',
+          "Menlo",
+          "Consolas",
+          '"Liberation Mono"',
+          '"Courier New"',
+          "monospace",
+        ],
+      },
+      keyframes: {
+        "grid-rows-expand": {
+          "0%": { gridTemplateRows: "0fr" },
+          "100%": { gridTemplateRows: "1fr" },
+        },
+      },
+      animation: {
+        "grid-rows-expand": "grid-rows-expand 300ms ease-out forwards",
+      },
     },
   },
   plugins: [],
