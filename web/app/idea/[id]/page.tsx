@@ -82,7 +82,6 @@ export default function IdeaPage() {
     async function fetchIdea() {
       try {
         const data = await api.getIdea(id);
-        // API may return partial data — fill in defaults so BriefView doesn't crash
         const idea: IdeaBrief = {
           ...data,
           effortEstimate: data.effortEstimate || "week",
@@ -114,28 +113,55 @@ export default function IdeaPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8">
+        {/* Back link skeleton */}
         <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-40 mb-6 animate-pulse" />
-        <div className="max-w-4xl mx-auto space-y-6">
+
+        <div className="space-y-6">
+          {/* Header skeleton */}
           <div className="animate-pulse">
-            <div className="flex items-center gap-4 mb-4">
+            <div className="flex items-center gap-3 mb-4">
               <div className="h-10 w-10 bg-gray-200 dark:bg-gray-700 rounded-full" />
-              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-24" />
+              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-full w-24" />
+              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-28" />
             </div>
-            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-3" />
-            <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
+            <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-2/3 mb-3" />
+            <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
           </div>
-          <div className="grid grid-cols-3 gap-4">
+
+          {/* Stats grid skeleton */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 animate-pulse"
+                className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 animate-pulse"
               >
+                <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg mb-3" />
                 <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2" />
                 <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
               </div>
             ))}
           </div>
+
+          {/* Collapsible section skeletons */}
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div
+              key={i}
+              className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 animate-pulse"
+            >
+              <div className="p-6 flex items-center justify-between">
+                <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
+                <div className="h-5 w-5 bg-gray-200 dark:bg-gray-700 rounded" />
+              </div>
+              {i <= 3 && (
+                <div className="px-6 pb-6 space-y-2">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6" />
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-4/6" />
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -144,10 +170,10 @@ export default function IdeaPage() {
   if (!brief) return null;
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8">
       <Link
         href="/"
-        className="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 mb-6"
+        className="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200 mb-6 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
       >
         <svg
           className="w-4 h-4 mr-1"

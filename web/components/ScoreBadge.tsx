@@ -21,7 +21,7 @@ export function ScoreBadge({ score, size = "md" }: ScoreBadgeProps) {
 
   return (
     <span
-      className={`inline-flex items-center font-semibold rounded-full ${getScoreColor(score)} ${sizeClasses[size]}`}
+      className={`inline-flex items-center font-semibold rounded-full shadow-sm transition-colors duration-200 ${getScoreColor(score)} ${sizeClasses[size]}`}
     >
       {score.toFixed(0)}
     </span>
@@ -63,7 +63,7 @@ export function EffortBadge({ effort, size = "md" }: EffortBadgeProps) {
 
   return (
     <span
-      className={`inline-flex items-center font-medium rounded-full ${config.color} ${sizeClasses[size]}`}
+      className={`inline-flex items-center font-medium rounded-full shadow-sm transition-colors duration-200 ${config.color} ${sizeClasses[size]}`}
     >
       {config.label}
     </span>

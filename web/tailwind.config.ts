@@ -38,9 +38,26 @@ const config: Config = {
           "0%": { gridTemplateRows: "0fr" },
           "100%": { gridTemplateRows: "1fr" },
         },
+        "fade-in-up": {
+          "0%": { opacity: "0", transform: "translateY(16px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "fade-in": {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
       },
       animation: {
         "grid-rows-expand": "grid-rows-expand 300ms ease-out forwards",
+        "fade-in-up": "fade-in-up 500ms ease-out forwards",
+        "fade-in": "fade-in 500ms ease-out forwards",
+      },
+      transitionDelay: {
+        0: "0ms",
+        150: "150ms",
+        300: "300ms",
+        450: "450ms",
+        600: "600ms",
       },
     },
   },

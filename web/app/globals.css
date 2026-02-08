@@ -59,3 +59,59 @@ details[open] .details-content {
 details .details-content > div {
   overflow: hidden;
 }
+
+/* Range slider styling */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: #e5e7eb;
+}
+
+@media (prefers-color-scheme: dark) {
+  input[type="range"]::-webkit-slider-runnable-track {
+    background: #374151;
+  }
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #0ea5e9;
+  border: 2px solid white;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  cursor: pointer;
+  margin-top: -6px;
+}
+
+input[type="range"]::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: #e5e7eb;
+}
+
+@media (prefers-color-scheme: dark) {
+  input[type="range"]::-moz-range-track {
+    background: #374151;
+  }
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #0ea5e9;
+  border: 2px solid white;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  cursor: pointer;
+}

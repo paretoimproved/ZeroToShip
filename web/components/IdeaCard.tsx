@@ -5,12 +5,19 @@ import { ScoreBadge, EffortBadge } from "./ScoreBadge";
 interface IdeaCardProps {
   idea: IdeaBrief;
   rank?: number;
+  index?: number;
 }
 
-export default function IdeaCard({ idea, rank }: IdeaCardProps) {
+export default function IdeaCard({ idea, rank, index }: IdeaCardProps) {
   return (
-    <Link href={`/idea/${idea.id}`}>
-      <article className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md hover:border-primary-300 dark:hover:border-primary-600 transition-all cursor-pointer">
+    <Link
+      href={`/idea/${idea.id}`}
+      className="focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 rounded-xl"
+    >
+      <article
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg hover:border-primary-300 dark:hover:border-primary-600 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer animate-fade-in-up opacity-0"
+        style={{ animationDelay: `${(index ?? 0) * 150}ms` }}
+      >
         <div className="flex items-start gap-4">
           {rank !== undefined && (
             <div className="flex-shrink-0 w-10 h-10 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center">

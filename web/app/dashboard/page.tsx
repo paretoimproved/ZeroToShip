@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import IdeaCard from "@/components/IdeaCard";
 import { api } from "@/lib/api";
 import type { IdeaBrief } from "@/lib/types";
@@ -90,9 +91,9 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8">
       <header className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-4xl mb-2">
           Today&apos;s Top Ideas
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
@@ -103,12 +104,12 @@ export default function HomePage() {
             day: "numeric",
           })}
           {source === "mock" && (
-            <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-              Using mock data (API unavailable)
+            <span className="ml-2 inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/30 px-3 py-1 text-xs font-medium text-yellow-800 dark:text-yellow-300">
+              Demo data
             </span>
           )}
           {source === "api" && (
-            <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+            <span className="ml-2 inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/30 px-3 py-1 text-xs font-medium text-green-800 dark:text-green-300">
               Live data
             </span>
           )}
@@ -122,9 +123,29 @@ export default function HomePage() {
               key={i}
               className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 animate-pulse"
             >
-              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-3" />
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3 mb-2" />
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+              <div className="flex items-start gap-4">
+                {/* Rank badge skeleton */}
+                <div className="flex-shrink-0 w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 mb-2">
+                    {/* Title skeleton */}
+                    <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
+                    {/* Score badge skeleton */}
+                    <div className="h-6 w-12 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                  </div>
+                  {/* Tagline skeleton */}
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3 mb-3" />
+                  {/* Problem statement skeleton */}
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-2" />
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-4" />
+                  {/* Meta row skeleton */}
+                  <div className="flex items-center gap-3">
+                    <div className="h-5 w-20 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                    <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
+                    <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
+                  </div>
+                </div>
+              </div>
             </div>
           ))}
         </div>
@@ -132,15 +153,40 @@ export default function HomePage() {
         <>
           <div className="space-y-4">
             {ideas.map((idea, index) => (
-              <IdeaCard key={idea.id} idea={idea} rank={index + 1} />
+              <IdeaCard key={idea.id} idea={idea} rank={index + 1} index={index} />
             ))}
           </div>
 
           {ideas.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500 dark:text-gray-400">
-                No ideas generated yet. Check back tomorrow!
+            <div className="text-center py-16">
+              <svg
+                className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.63 8.37m5.96 6a14.926 14.926 0 01-5.84 2.58m0 0a14.926 14.926 0 01-5.96-6 14.98 14.98 0 006.16-12.12m5.64 18.12a6 6 0 01-5.84-7.38"
+                />
+              </svg>
+              <h3 className="mt-4 text-lg font-semibold text-gray-900 dark:text-white">
+                No ideas yet
+              </h3>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Check back tomorrow or browse the archive for past ideas.
               </p>
+              <div className="mt-6">
+                <Link
+                  href="/archive"
+                  className="rounded-lg bg-primary-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+                >
+                  Browse Archive
+                </Link>
+              </div>
             </div>
           )}
         </>

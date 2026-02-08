@@ -69,12 +69,12 @@ export default function ArchivePage() {
   }, [searchQuery, effortFilter, minScore]);
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8">
       <header className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-4xl mb-2">
           Idea Archive
         </h1>
-        <p className="text-gray-600 dark:text-gray-400">
+        <p className="text-gray-600 dark:text-gray-400 text-balance">
           Browse past ideas and find hidden gems
         </p>
       </header>
@@ -89,14 +89,32 @@ export default function ArchivePage() {
             >
               Search
             </label>
-            <input
-              id="search"
-              type="text"
-              placeholder="Search ideas..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            />
+            <div className="relative">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                <svg
+                  className="h-4 w-4 text-gray-400 dark:text-gray-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
+              <input
+                id="search"
+                type="text"
+                placeholder="Search ideas..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 pl-10 pr-4 py-3 text-sm shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition-colors"
+              />
+            </div>
           </div>
 
           <div>
@@ -110,7 +128,7 @@ export default function ArchivePage() {
               id="effort"
               value={effortFilter}
               onChange={(e) => setEffortFilter(e.target.value as EffortLevel | "all")}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-3 text-sm shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition-colors"
             >
               {effortOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -134,7 +152,7 @@ export default function ArchivePage() {
               max="100"
               value={minScore}
               onChange={(e) => setMinScore(Number(e.target.value))}
-              className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
+              className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer mt-3"
             />
           </div>
         </div>
@@ -148,43 +166,97 @@ export default function ArchivePage() {
               key={i}
               className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 animate-pulse"
             >
-              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-3" />
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3 mb-2" />
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+              <div className="flex items-start gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 mb-2">
+                    {/* Title skeleton */}
+                    <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
+                    {/* Score badge skeleton */}
+                    <div className="h-6 w-12 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                  </div>
+                  {/* Tagline skeleton */}
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3 mb-3" />
+                  {/* Problem statement skeleton */}
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-2" />
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-4" />
+                  {/* Meta row skeleton */}
+                  <div className="flex items-center gap-3">
+                    <div className="h-5 w-20 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                    <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
+                    <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
+                  </div>
+                </div>
+              </div>
             </div>
           ))}
         </div>
       ) : error ? (
-        <div className="text-center py-12">
-          <p className="text-red-500 dark:text-red-400 mb-4">{error}</p>
-          <button
-            onClick={() => setMinScore((s) => s)}
-            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+        <div className="text-center py-16">
+          <svg
+            className="mx-auto h-12 w-12 text-red-400 dark:text-red-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
           >
-            Try Again
-          </button>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+            />
+          </svg>
+          <h3 className="mt-4 text-lg font-semibold text-gray-900 dark:text-white">
+            Something went wrong
+          </h3>
+          <p className="mt-2 text-sm text-red-500 dark:text-red-400">{error}</p>
+          <div className="mt-6">
+            <button
+              onClick={() => setMinScore((s) => s)}
+              className="rounded-lg bg-primary-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+            >
+              Try Again
+            </button>
+          </div>
         </div>
       ) : (
         <>
           <div className="space-y-4">
-            {ideas.map((idea) => (
-              <IdeaCard key={idea.id} idea={idea} />
+            {ideas.map((idea, index) => (
+              <IdeaCard key={idea.id} idea={idea} index={index} />
             ))}
           </div>
 
           {ideas.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500 dark:text-gray-400">
-                No ideas match your filters. Try adjusting your search criteria.
+            <div className="text-center py-16">
+              <svg
+                className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              <h3 className="mt-4 text-lg font-semibold text-gray-900 dark:text-white">
+                No matching ideas
+              </h3>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Try adjusting your search or filter criteria.
               </p>
             </div>
           )}
 
           {ideas.length > 0 && (
             <div className="mt-8 flex justify-center">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-400">
                 Showing {ideas.length} of {total} ideas
-              </p>
+              </span>
             </div>
           )}
         </>

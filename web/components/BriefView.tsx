@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import type { IdeaBrief } from "@/lib/types";
 import { ScoreBadge, EffortBadge } from "./ScoreBadge";
@@ -8,40 +10,76 @@ interface BriefViewProps {
 }
 
 export default function BriefView({ brief, gated = false }: BriefViewProps) {
+  // Build the list of sections with their index for stagger animation
+  const teaserSections = [
+    { title: "Problem Statement", index: 0 },
+    { title: "Existing Solutions", index: 1 },
+    { title: "Market Gaps", index: 2 },
+  ];
+
+  const unlockedSections = [
+    { title: "Proposed Solution", index: 3 },
+    { title: "MVP Scope", index: 4 },
+    { title: "Technical Specification", index: 5 },
+    { title: "Business Model", index: 6 },
+    { title: "Go-to-Market Strategy", index: 7 },
+    { title: "Risks & Challenges", index: 8 },
+  ];
+
   return (
     <article className="max-w-4xl mx-auto">
-      {/* Header */}
-      <header className="mb-8">
-        <div className="flex items-center gap-4 mb-4">
+      {/* Hero-style Header */}
+      <header className="mb-8 pb-8 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-3 mb-4">
           <ScoreBadge score={brief.priorityScore} size="lg" />
           <EffortBadge effort={brief.effortEstimate} size="lg" />
           <span className="text-sm text-gray-500 dark:text-gray-400">
             {new Date(brief.generatedAt).toLocaleDateString()}
           </span>
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-4xl mb-2">
           {brief.name}
         </h1>
-        <p className="text-xl text-gray-600 dark:text-gray-400 italic">
+        <p className="text-lg text-gray-600 dark:text-gray-400 italic text-balance">
           {brief.tagline}
         </p>
       </header>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+      {/* Quick Stats with Icons */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        {/* Revenue Potential */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
+          <div className="w-8 h-8 rounded-lg bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center mb-3">
+            <svg className="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
           <div className="text-sm text-gray-500 dark:text-gray-400">Revenue Potential</div>
           <div className="text-lg font-semibold text-gray-900 dark:text-white">
             {brief.revenueEstimate}
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+
+        {/* Market Size */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
+          <div className="w-8 h-8 rounded-lg bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center mb-3">
+            <svg className="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
           <div className="text-sm text-gray-500 dark:text-gray-400">Market Size</div>
           <div className="text-lg font-semibold text-gray-900 dark:text-white">
             {brief.marketSize}
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+
+        {/* Target Audience */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
+          <div className="w-8 h-8 rounded-lg bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center mb-3">
+            <svg className="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </div>
           <div className="text-sm text-gray-500 dark:text-gray-400">Target Audience</div>
           <div className="text-lg font-semibold text-gray-900 dark:text-white truncate">
             {brief.targetAudience}
@@ -49,41 +87,48 @@ export default function BriefView({ brief, gated = false }: BriefViewProps) {
         </div>
       </div>
 
-      <div className="space-y-8">
-        {/* Teaser sections: always visible */}
-        <Section title="Problem Statement">
+      <div className="space-y-4">
+        {/* Teaser sections: always visible, open by default */}
+        <CollapsibleSection title="Problem Statement" defaultOpen index={teaserSections[0].index}>
           <p className="text-gray-700 dark:text-gray-300">{brief.problemStatement}</p>
-        </Section>
+        </CollapsibleSection>
 
-        <Section title="Existing Solutions">
+        <CollapsibleSection title="Existing Solutions" defaultOpen index={teaserSections[1].index}>
           <p className="text-gray-700 dark:text-gray-300">{brief.existingSolutions}</p>
-        </Section>
+        </CollapsibleSection>
 
-        <Section title="Market Gaps">
+        <CollapsibleSection title="Market Gaps" defaultOpen index={teaserSections[2].index}>
           <p className="text-gray-700 dark:text-gray-300">{brief.gaps}</p>
-        </Section>
+        </CollapsibleSection>
 
         {gated ? (
           <div
             data-testid="gated-content"
-            className="bg-white dark:bg-gray-800 rounded-xl p-8 border border-gray-200 dark:border-gray-700 text-center"
+            className="rounded-xl p-8 border border-primary-200 dark:border-primary-800 text-center bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/30 dark:to-primary-800/30 animate-fade-in-up opacity-0"
+            style={{ animationDelay: "300ms", animationFillMode: "forwards" }}
           >
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            {/* Lock icon */}
+            <div className="mx-auto w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center mb-4">
+              <svg className="w-6 h-6 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
               Full Analysis Locked
             </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
               Sign up to unlock the complete idea breakdown including technical specs, business model, and go-to-market strategy.
             </p>
             <Link
               href="/landing"
-              className="inline-block px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+              className="inline-block rounded-lg bg-primary-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
             >
               Sign Up
             </Link>
           </div>
         ) : (
           <>
-            <Section title="Proposed Solution">
+            <CollapsibleSection title="Proposed Solution" defaultOpen index={unlockedSections[0].index}>
               <p className="text-gray-700 dark:text-gray-300 mb-4">{brief.proposedSolution}</p>
 
               <h4 className="font-medium text-gray-900 dark:text-white mb-2">Key Features</h4>
@@ -92,13 +137,13 @@ export default function BriefView({ brief, gated = false }: BriefViewProps) {
                   <li key={index}>{feature}</li>
                 ))}
               </ul>
-            </Section>
+            </CollapsibleSection>
 
-            <Section title="MVP Scope">
+            <CollapsibleSection title="MVP Scope" defaultOpen index={unlockedSections[1].index}>
               <p className="text-gray-700 dark:text-gray-300">{brief.mvpScope}</p>
-            </Section>
+            </CollapsibleSection>
 
-            <Section title="Technical Specification">
+            <CollapsibleSection title="Technical Specification" defaultOpen index={unlockedSections[2].index}>
               <div className="space-y-4">
                 <div>
                   <h4 className="font-medium text-gray-900 dark:text-white mb-2">Tech Stack</h4>
@@ -106,7 +151,7 @@ export default function BriefView({ brief, gated = false }: BriefViewProps) {
                     {brief.technicalSpec.stack.map((tech, index) => (
                       <span
                         key={index}
-                        className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-sm text-gray-700 dark:text-gray-300"
+                        className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                       >
                         {tech}
                       </span>
@@ -122,9 +167,9 @@ export default function BriefView({ brief, gated = false }: BriefViewProps) {
                   <p className="text-gray-700 dark:text-gray-300">{brief.technicalSpec.estimatedEffort}</p>
                 </div>
               </div>
-            </Section>
+            </CollapsibleSection>
 
-            <Section title="Business Model">
+            <CollapsibleSection title="Business Model" defaultOpen index={unlockedSections[3].index}>
               <div className="space-y-4">
                 <div>
                   <h4 className="font-medium text-gray-900 dark:text-white mb-1">Pricing</h4>
@@ -139,9 +184,9 @@ export default function BriefView({ brief, gated = false }: BriefViewProps) {
                   <p className="text-gray-700 dark:text-gray-300">{brief.businessModel.monetizationPath}</p>
                 </div>
               </div>
-            </Section>
+            </CollapsibleSection>
 
-            <Section title="Go-to-Market Strategy">
+            <CollapsibleSection title="Go-to-Market Strategy" defaultOpen index={unlockedSections[4].index}>
               <div className="space-y-4">
                 <div>
                   <h4 className="font-medium text-gray-900 dark:text-white mb-1">Launch Strategy</h4>
@@ -153,7 +198,7 @@ export default function BriefView({ brief, gated = false }: BriefViewProps) {
                     {brief.goToMarket.channels.map((channel, index) => (
                       <span
                         key={index}
-                        className="px-3 py-1 bg-primary-100 dark:bg-primary-900 rounded-full text-sm text-primary-700 dark:text-primary-300"
+                        className="px-3 py-1 bg-primary-100 dark:bg-primary-900 rounded-full text-sm text-primary-700 dark:text-primary-300 hover:bg-primary-200 dark:hover:bg-primary-800 transition-colors"
                       >
                         {channel}
                       </span>
@@ -165,15 +210,23 @@ export default function BriefView({ brief, gated = false }: BriefViewProps) {
                   <p className="text-gray-700 dark:text-gray-300">{brief.goToMarket.firstCustomers}</p>
                 </div>
               </div>
-            </Section>
+            </CollapsibleSection>
 
-            <Section title="Risks & Challenges">
-              <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300">
+            <CollapsibleSection title="Risks & Challenges" defaultOpen index={unlockedSections[5].index}>
+              <div className="space-y-3">
                 {brief.risks.map((risk, index) => (
-                  <li key={index}>{risk}</li>
+                  <div
+                    key={index}
+                    className="flex items-start gap-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 border border-amber-200 dark:border-amber-800"
+                  >
+                    <svg className="w-5 h-5 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <span className="text-amber-800 dark:text-amber-200">{risk}</span>
+                  </div>
                 ))}
-              </ul>
-            </Section>
+              </div>
+            </CollapsibleSection>
           </>
         )}
       </div>
@@ -181,19 +234,40 @@ export default function BriefView({ brief, gated = false }: BriefViewProps) {
   );
 }
 
-function Section({
+function CollapsibleSection({
   title,
   children,
+  defaultOpen = false,
+  index = 0,
 }: {
   title: string;
   children: React.ReactNode;
+  defaultOpen?: boolean;
+  index?: number;
 }) {
   return (
-    <section className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-        {title}
-      </h3>
-      {children}
-    </section>
+    <details
+      open={defaultOpen || undefined}
+      className="group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden animate-fade-in-up opacity-0"
+      style={{ animationDelay: `${index * 100}ms`, animationFillMode: "forwards" }}
+    >
+      <summary className="flex items-center justify-between p-6 cursor-pointer list-none font-semibold text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors [&::-webkit-details-marker]:hidden">
+        <span>{title}</span>
+        <ChevronIcon className="w-5 h-5 text-gray-500 transition-transform duration-200 group-open:rotate-180 flex-shrink-0 ml-4" />
+      </summary>
+      <div className="details-content">
+        <div>
+          <div className="px-6 pb-6">{children}</div>
+        </div>
+      </div>
+    </details>
+  );
+}
+
+function ChevronIcon({ className }: { className: string }) {
+  return (
+    <svg width={20} height={20} viewBox="0 0 20 20" fill="none" aria-hidden="true" className={className}>
+      <path d="M6 8l4 4 4-4" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
