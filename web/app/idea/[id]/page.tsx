@@ -82,7 +82,25 @@ export default function IdeaPage() {
     async function fetchIdea() {
       try {
         const data = await api.getIdea(id);
-        setBrief(data);
+        // API may return partial data — fill in defaults so BriefView doesn't crash
+        const idea: IdeaBrief = {
+          ...data,
+          effortEstimate: data.effortEstimate || "week",
+          revenueEstimate: data.revenueEstimate || "TBD",
+          problemStatement: data.problemStatement || data.tagline || "TBD",
+          targetAudience: data.targetAudience || "TBD",
+          marketSize: data.marketSize || "TBD",
+          existingSolutions: data.existingSolutions || "TBD",
+          gaps: data.gaps || "TBD",
+          proposedSolution: data.proposedSolution || data.tagline || "TBD",
+          keyFeatures: data.keyFeatures || [],
+          mvpScope: data.mvpScope || "TBD",
+          technicalSpec: data.technicalSpec || { stack: [], architecture: "TBD", estimatedEffort: "TBD" },
+          businessModel: data.businessModel || { pricing: "TBD", revenueProjection: "TBD", monetizationPath: "TBD" },
+          goToMarket: data.goToMarket || { launchStrategy: "TBD", channels: [], firstCustomers: "TBD" },
+          risks: data.risks || [],
+        };
+        setBrief(idea);
       } catch (error) {
         console.log("API unavailable, using mock data:", error);
         setBrief({ ...mockBrief, id });

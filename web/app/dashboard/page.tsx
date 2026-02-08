@@ -54,7 +54,26 @@ export default function HomePage() {
         const data = await api.getTodayIdeas();
 
         // getTodayIdeas returns the full response; extract ideas array
-        const ideas = Array.isArray(data) ? data : (data as unknown as { ideas: IdeaBrief[] }).ideas ?? [];
+        const raw = Array.isArray(data) ? data : (data as unknown as { ideas: IdeaBrief[] }).ideas ?? [];
+
+        // Fill in defaults for partial API responses
+        const ideas = raw.map((d: IdeaBrief) => ({
+          ...d,
+          effortEstimate: d.effortEstimate || "week",
+          revenueEstimate: d.revenueEstimate || "TBD",
+          problemStatement: d.problemStatement || d.tagline || "TBD",
+          targetAudience: d.targetAudience || "TBD",
+          marketSize: d.marketSize || "TBD",
+          existingSolutions: d.existingSolutions || "TBD",
+          gaps: d.gaps || "TBD",
+          proposedSolution: d.proposedSolution || d.tagline || "TBD",
+          keyFeatures: d.keyFeatures || [],
+          mvpScope: d.mvpScope || "TBD",
+          technicalSpec: d.technicalSpec || { stack: [], architecture: "TBD", estimatedEffort: "TBD" },
+          businessModel: d.businessModel || { pricing: "TBD", revenueProjection: "TBD", monetizationPath: "TBD" },
+          goToMarket: d.goToMarket || { launchStrategy: "TBD", channels: [], firstCustomers: "TBD" },
+          risks: d.risks || [],
+        }));
 
         setIdeas(ideas);
         setSource("api");
