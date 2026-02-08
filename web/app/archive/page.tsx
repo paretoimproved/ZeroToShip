@@ -35,7 +35,8 @@ export default function ArchivePage() {
 
         const data = await api.getArchive({ pageSize: 50 });
 
-        let results = data.data;
+        // API returns { ideas: [...] } not { data: [...] }
+        let results = (data as unknown as { ideas: IdeaBrief[] }).ideas ?? data.data ?? [];
         // Client-side filtering (archive endpoint returns all ideas)
         if (searchQuery) {
           const q = searchQuery.toLowerCase();
