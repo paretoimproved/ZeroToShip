@@ -1,29 +1,9 @@
-# Railway Configuration for IdeaForge API + Scheduler
-# Documentation: https://docs.railway.app/reference/config-as-code
-
 [build]
-builder = "nixpacks"
-buildCommand = "npm ci && npm run build"
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "node dist/api/server.js"
 healthcheckPath = "/health"
-healthcheckTimeout = 30
+healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
-
-# Environment variables to set in Railway dashboard:
-# - NODE_ENV=production
-# - DATABASE_URL=<supabase-connection-string>
-# - SUPABASE_URL=<supabase-project-url>
-# - SUPABASE_SERVICE_ROLE_KEY=<supabase-service-key>
-# - OPENAI_API_KEY=<openai-api-key>
-# - RESEND_API_KEY=<resend-api-key>
-# - SERPAPI_KEY=<serpapi-key> (optional)
-# - CORS_ORIGIN=https://ideaforge.app,https://www.ideaforge.app
-# - LOG_LEVEL=info
-
-# For scheduler worker (create separate service):
-# startCommand = "node dist/scheduler/cli.js schedule"
-# SCHEDULER_ENABLED=true
-# SCHEDULER_CRON="0 6 * * *"

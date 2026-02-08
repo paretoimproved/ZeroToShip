@@ -8,11 +8,28 @@ import Stripe from 'stripe';
 import { config } from '../../config/env';
 
 /**
- * Stripe client instance
+ * Stripe client instance (lazy — avoids crash when STRIPE_SECRET_KEY is not set)
  */
-export const stripe = new Stripe(config.STRIPE_SECRET_KEY, {
-  apiVersion: '2025-01-27.acacia' as Stripe.LatestApiVersion,
-  typescript: true,
+let _stripe: Stripe | null = null;
+
+export function getStripe(): Stripe {
+  if (!_stripe) {
+    if (!config.STRIPE_SECRET_KEY) {
+      throw new Error('STRIPE_SECRET_KEY is not configured');
+    }
+    _stripe = new Stripe(config.STRIPE_SECRET_KEY, {
+      apiVersion: '2025-01-27.acacia' as Stripe.LatestApiVersion,
+      typescript: true,
+    });
+  }
+  return _stripe;
+}
+
+/** @deprecated Use getStripe() instead — kept for backwards compatibility */
+export const stripe = new Proxy({} as Stripe, {
+  get(_target, prop) {
+    return (getStripe() as unknown as Record<string | symbol, unknown>)[prop];
+  },
 });
 
 /**

@@ -1,0 +1,14 @@
+node_modules
+dist
+*.tsbuildinfo
+.env
+.env.*
+.git
+.cursor
+.claude
+vault
+data
+tests
+*.md
+web/.next
+web/node_modules

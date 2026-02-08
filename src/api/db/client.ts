@@ -16,12 +16,19 @@ if (!connectionString && !config.isTest) {
   console.warn('No DATABASE_URL or SUPABASE_DB_URL environment variable set');
 }
 
+if (config.isProduction) {
+  const masked = connectionString ? connectionString.replace(/\/\/[^@]+@/, '//***@') : '(empty)';
+  console.log(`[DB] Connecting to: ${masked}, SSL: enabled`);
+}
+
 // Create postgres client
 // Use connection pooling for production
 const client = postgres(connectionString, {
   max: config.isProduction ? 10 : 1,
   idle_timeout: 20,
   connect_timeout: 10,
+  ssl: config.isProduction ? { rejectUnauthorized: false } : false,
+  prepare: config.isProduction ? false : true,
 });
 
 // Create drizzle instance with schema
@@ -47,7 +54,8 @@ export async function checkDatabaseHealth(): Promise<boolean> {
   try {
     await client`SELECT 1`;
     return true;
-  } catch {
+  } catch (err) {
+    console.error('[DB Health] Connection failed:', err instanceof Error ? err.message : err);
     return false;
   }
 }
