@@ -35,12 +35,12 @@ If nothing clicked, no worries. Tomorrow's ideas will be completely different—
 
 Still exploring? That's fine. The best builders I know evaluated dozens of ideas before committing.
 
-— The IdeaForge Team
+— The ZeroToShip Team
 
 ---
 
 ## Footer
-You're receiving this because you signed up for IdeaForge.
+You're receiving this because you signed up for ZeroToShip.
 [Manage preferences]({{preferencesUrl}}) · [Unsubscribe]({{unsubscribeUrl}})
 
 ---

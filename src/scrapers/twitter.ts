@@ -1,5 +1,5 @@
 /**
- * Twitter/X Scraper for IdeaForge
+ * Twitter/X Scraper for ZeroToShip
  *
  * Main orchestrator that combines Twitter API v2 and Nitter fallback
  * to collect developer complaints and wishlists.
@@ -389,7 +389,7 @@ export const twitterScraper = new TwitterScraper();
  */
 async function main() {
   logger.info('='.repeat(60));
-  logger.info('IdeaForge Twitter Scraper');
+  logger.info('ZeroToShip Twitter Scraper');
   logger.info('='.repeat(60));
 
   const scraper = new TwitterScraper();

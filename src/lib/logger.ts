@@ -1,5 +1,5 @@
 /**
- * Shared Pino Logger for IdeaForge
+ * Shared Pino Logger for ZeroToShip
  *
  * Provides structured logging across all modules.
  * The scheduler has its own logger at src/scheduler/utils/logger.ts;
@@ -23,7 +23,7 @@ const logger = pino({
       }
     : undefined,
   base: {
-    service: 'ideaforge',
+    service: 'zerotoship',
   },
 });
 

@@ -1,5 +1,5 @@
 /**
- * Generation Module for IdeaForge
+ * Generation Module for ZeroToShip
  *
  * Exports brief generation functionality
  */

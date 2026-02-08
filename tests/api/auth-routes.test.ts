@@ -1,5 +1,5 @@
 /**
- * End-to-End Auth Route Tests for IdeaForge API
+ * End-to-End Auth Route Tests for ZeroToShip API
  *
  * Tests the actual auth routes (signup, login, me) through Fastify's
  * inject() method with mocked Supabase and database dependencies.
@@ -149,7 +149,7 @@ vi.mock('../../src/lib/errors', () => {
   }
   return {
     ApiError,
-    isIdeaForgeError: (err: unknown) =>
+    isZeroToShipError: (err: unknown) =>
       err instanceof Error && 'severity' in err && 'phase' in err,
   };
 });
@@ -179,7 +179,7 @@ vi.mock('../../src/api/routes/admin', () => ({
 
 const TEST_USER = {
   id: 'user-uuid-123',
-  email: 'test@ideaforge.io',
+  email: 'test@zerotoship.dev',
   name: 'Test User',
   tier: 'free',
 };

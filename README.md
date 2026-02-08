@@ -1,4 +1,4 @@
-# IdeaForge
+# ZeroToShip
 
 Automated SaaS that scrapes the web for technical pain points and generates prioritized entrepreneurial ideas.
 
@@ -51,7 +51,7 @@ npm run dev reddit --all
 ### Programmatic Usage
 
 ```typescript
-import { scrapeReddit, detectSignals, getScrapeStats } from 'ideaforge';
+import { scrapeReddit, detectSignals, getScrapeStats } from 'zerotoship';
 
 // Scrape Reddit
 const posts = await scrapeReddit(['webdev', 'programming'], 24);

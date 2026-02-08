@@ -1,4 +1,4 @@
-# IdeaForge Business Analysis
+# ZeroToShip Business Analysis
 
 **Document Version**: 1.0
 **Date**: February 8, 2026
@@ -19,9 +19,9 @@
 
 ## 1. Executive Summary
 
-### What IdeaForge Is
+### What ZeroToShip Is
 
-IdeaForge is a production-ready SaaS platform that scrapes four major online communities (Reddit, Hacker News, Twitter/X, and GitHub), identifies recurring pain points using AI-powered analysis, and delivers actionable business briefs to founders daily. The platform operates an automated pipeline: scrape (6 AM UTC), analyze (7 AM), deliver (8 AM) -- converting raw social signal data into structured startup ideas complete with problem statements, market sizing, competitive gap analysis, technical specifications, and go-to-market strategies.
+ZeroToShip is a production-ready SaaS platform that scrapes four major online communities (Reddit, Hacker News, Twitter/X, and GitHub), identifies recurring pain points using AI-powered analysis, and delivers actionable business briefs to founders daily. The platform operates an automated pipeline: scrape (6 AM UTC), analyze (7 AM), deliver (8 AM) -- converting raw social signal data into structured startup ideas complete with problem statements, market sizing, competitive gap analysis, technical specifications, and go-to-market strategies.
 
 ### Current State
 
@@ -29,7 +29,7 @@ The product is in its **pre-launch infrastructure phase** with the core pipeline
 
 ### Market Opportunity
 
-The market timing is exceptionally favorable. GummySearch, the closest comparable product with approximately 135,000 users and $29-199/month pricing, has been discontinued, creating a significant vacuum in the social signal intelligence space. No single competitor offers IdeaForge's combination of multi-source scraping (4 platforms), AI-powered brief generation (Claude-powered structured output), competitive gap analysis, and email-first delivery at its price point. The broader market (Exploding Topics at $39-249/month, SparkToro at $38-112/month, Glimpse at $99/month+) is fragmented, overpriced for indie founders, and focused on trend data rather than actionable startup ideas.
+The market timing is exceptionally favorable. GummySearch, the closest comparable product with approximately 135,000 users and $29-199/month pricing, has been discontinued, creating a significant vacuum in the social signal intelligence space. No single competitor offers ZeroToShip's combination of multi-source scraping (4 platforms), AI-powered brief generation (Claude-powered structured output), competitive gap analysis, and email-first delivery at its price point. The broader market (Exploding Topics at $39-249/month, SparkToro at $38-112/month, Glimpse at $99/month+) is fragmented, overpriced for indie founders, and focused on trend data rather than actionable startup ideas.
 
 ### Key Strengths
 
@@ -276,9 +276,9 @@ The market timing is exceptionally favorable. GummySearch, the closest comparabl
 
 ## 3. Product-Market Gap Analysis
 
-### Market Expectations vs. IdeaForge Status
+### Market Expectations vs. ZeroToShip Status
 
-| # | Market Expectation | IdeaForge Status | Gap Level | Priority | Competitive Urgency |
+| # | Market Expectation | ZeroToShip Status | Gap Level | Priority | Competitive Urgency |
 |---|-------------------|------------------|-----------|----------|---------------------|
 | 1 | Real-time alerts (instant notification when high-scoring idea detected) | Not available; batch processing only (daily 6-7-8 AM cycle) | HIGH | Q2 | High -- users expect real-time in 2026; competitors will offer this |
 | 2 | Slack/Discord integration (delivery to team channels) | Not available | HIGH | Q1-Q2 | High -- standard expectation for team-oriented SaaS tools |
@@ -446,7 +446,7 @@ The market timing is exceptionally favorable. GummySearch, the closest comparabl
 
 **Industry benchmark**: 3:1 LTV:CAC is considered healthy; 5:1+ is excellent.
 
-Even with fully-paid acquisition at $20-30 CAC, IdeaForge's LTV:CAC ratios are exceptional. This is driven by the near-zero marginal cost structure (batch processing means each additional user costs almost nothing to serve).
+Even with fully-paid acquisition at $20-30 CAC, ZeroToShip's LTV:CAC ratios are exceptional. This is driven by the near-zero marginal cost structure (batch processing means each additional user costs almost nothing to serve).
 
 ### 4.6 Break-Even Analysis
 
@@ -460,7 +460,7 @@ Even with fully-paid acquisition at $20-30 CAC, IdeaForge's LTV:CAC ratios are e
 | Break-even (Month 6) | 8 Pro users OR 2 Enterprise users |
 | Break-even (Month 12) | 10 Pro users OR 2 Enterprise users |
 
-**IdeaForge is profitable from Month 1** with even modest conversion. At 25 Pro users ($475 MRR) against $85 total cost, the business generates $390/month in profit from day one.
+**ZeroToShip is profitable from Month 1** with even modest conversion. At 25 Pro users ($475 MRR) against $85 total cost, the business generates $390/month in profit from day one.
 
 ### 4.7 Cash Flow Scenarios (12-Month)
 
@@ -500,7 +500,7 @@ Even with fully-paid acquisition at $20-30 CAC, IdeaForge's LTV:CAC ratios are e
 | Cumulative costs | $12,000 |
 | **Cumulative profit** | **$156,000** |
 
-**Key takeaway:** Even the conservative scenario generates meaningful profit. The batch-processing cost structure means IdeaForge has effectively zero marginal cost up to several thousand users, creating a highly efficient economic engine.
+**Key takeaway:** Even the conservative scenario generates meaningful profit. The batch-processing cost structure means ZeroToShip has effectively zero marginal cost up to several thousand users, creating a highly efficient economic engine.
 
 ---
 
@@ -528,7 +528,7 @@ Even with fully-paid acquisition at $20-30 CAC, IdeaForge's LTV:CAC ratios are e
 | 12 | Supabase service disruption or limitations | Technical | LOW (1) | HIGH (3) | **3** | Supabase uses standard PostgreSQL; migration path to self-hosted Postgres is straightforward via Drizzle; keep database schema portable; maintain pg_dump backups |
 | 13 | User data/privacy compliance issues (GDPR, CCPA) | Legal | MEDIUM (2) | HIGH (3) | **6** | Implement data export/deletion endpoints before launch; add privacy policy and terms of service; minimize PII storage; Supabase is SOC 2 compliant; no scraping of private user data (only public posts) |
 | 14 | Negative launch reception (HN/PH backlash) | Market | LOW (1) | MEDIUM (2) | **2** | Prepare honest, non-hype launch copy; have working demo ready; respond quickly to feedback; be transparent about solo founder status (HN respects this); avoid "AI" in headline |
-| 15 | Competitor launches at lower price or free tier | Competitive | MEDIUM (2) | MEDIUM (2) | **4** | IdeaForge already has a free tier; $19/month is aggressive pricing; compete on quality and comprehensiveness rather than price; build switching costs via personalization and portfolio features; focus on brief quality as primary moat |
+| 15 | Competitor launches at lower price or free tier | Competitive | MEDIUM (2) | MEDIUM (2) | **4** | ZeroToShip already has a free tier; $19/month is aggressive pricing; compete on quality and comprehensiveness rather than price; build switching costs via personalization and portfolio features; focus on brief quality as primary moat |
 | 16 | Scheduler fails in production under load | Technical | MEDIUM (2) | HIGH (3) | **6** | Load test scheduler before launch; implement circuit breakers; add dead-man's-switch monitoring (alert if daily run doesn't complete); design for idempotent re-runs; persist phase completion state |
 | 17 | Key dependency vulnerability or supply chain attack | Technical | LOW (1) | HIGH (3) | **3** | Use npm audit regularly; pin dependency versions; monitor security advisories for Fastify, Next.js, Drizzle; Dependabot or similar automated scanning |
 | 18 | Free users consume disproportionate resources | Financial | MEDIUM (2) | LOW (1) | **2** | Free tier is already limited (3 ideas, summaries only); batch processing means free users cost nearly nothing to serve; rate limiting is implemented; monitor and adjust limits if needed |
@@ -587,7 +587,7 @@ Even with fully-paid acquisition at $20-30 CAC, IdeaForge's LTV:CAC ratios are e
 | Day | Channel | Action | Expected Signups |
 |-----|---------|--------|------------------|
 | 15 (Mon) | Pre-launch | Final quality audit of 20+ generated briefs; fix any issues found | -- |
-| 16 (Tue) | Show HN | Post "Show HN: IdeaForge -- Daily startup ideas from Reddit, HN, Twitter, and GitHub" | 200-500 |
+| 16 (Tue) | Show HN | Post "Show HN: ZeroToShip -- Daily startup ideas from Reddit, HN, Twitter, and GitHub" | 200-500 |
 | 17 (Wed) | Product Hunt | Coordinated launch with maker page, screenshots, demo video | 500-2,000 |
 | 17-18 | Twitter/X | Thread: "I built a tool that scrapes 4 platforms for startup ideas and delivers briefs daily" | 100-300 |
 | 18-19 | Indie Hackers | Product page + milestone post: "From idea to launch in 30 days" | 100-300 |
@@ -645,7 +645,7 @@ Even with fully-paid acquisition at $20-30 CAC, IdeaForge's LTV:CAC ratios are e
 | Notes on ideas | Free-form notes attached to saved ideas | Pro+ |
 | Portfolio analytics | Summary of saved ideas by category, effort, status | Pro+ |
 
-**Rationale:** Portfolio features create switching costs and increase Pro tier value. Users who organize ideas in IdeaForge are much less likely to churn.
+**Rationale:** Portfolio features create switching costs and increase Pro tier value. Users who organize ideas in ZeroToShip are much less likely to churn.
 
 **KPIs:** 20%+ of active users save at least one idea; 5%+ create a folder.
 
@@ -710,11 +710,11 @@ Even with fully-paid acquisition at $20-30 CAC, IdeaForge's LTV:CAC ratios are e
 
 | Feature | Description | Tier |
 |---------|-------------|------|
-| Slack integration | Daily idea digest posted to a Slack channel; /ideaforge slash command for search | Pro+ |
+| Slack integration | Daily idea digest posted to a Slack channel; /zerotoship slash command for search | Pro+ |
 | Discord bot | Similar to Slack; bot posts daily ideas to designated channel | Pro+ |
 | Configuration | Users choose Slack, Discord, Email, or any combination for delivery | All tiers (config), Pro+ (Slack/Discord) |
 
-**Rationale:** Slack/Discord integration is the #1 requested feature in comparable products. It meets users where they already work, reducing friction and increasing engagement. It also makes IdeaForge visible to teams, driving viral Enterprise adoption.
+**Rationale:** Slack/Discord integration is the #1 requested feature in comparable products. It meets users where they already work, reducing friction and increasing engagement. It also makes ZeroToShip visible to teams, driving viral Enterprise adoption.
 
 **KPIs:** 10%+ of Pro users connect Slack/Discord; integration drives 5+ organic Enterprise leads.
 
@@ -768,4 +768,4 @@ The following items are on the critical path to launch and must not slip:
 
 ---
 
-*This analysis was prepared on February 8, 2026 based on the IdeaForge codebase (18,819 LOC), database schema (9 tables), and market intelligence as of the analysis date. Financial projections are estimates based on comparable SaaS products and should be validated against actual market response post-launch.*
+*This analysis was prepared on February 8, 2026 based on the ZeroToShip codebase (18,819 LOC), database schema (9 tables), and market intelligence as of the analysis date. Financial projections are estimates based on comparable SaaS products and should be validated against actual market response post-launch.*

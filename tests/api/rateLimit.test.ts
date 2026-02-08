@@ -1,5 +1,5 @@
 /**
- * Rate Limiting Tests for IdeaForge API
+ * Rate Limiting Tests for ZeroToShip API
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';

@@ -1,5 +1,5 @@
 /**
- * Enterprise Routes for IdeaForge API
+ * Enterprise Routes for ZeroToShip API
  *
  * Endpoints (all require Enterprise tier):
  * - GET /api/v1/ideas/search - Full-text search across all ideas
@@ -212,7 +212,7 @@ export const enterpriseRoutes: FastifyPluginAsync = async (fastify) => {
           .header('Content-Type', 'text/csv')
           .header(
             'Content-Disposition',
-            `attachment; filename="ideaforge-export-${new Date().toISOString().split('T')[0]}.csv"`
+            `attachment; filename="zerotoship-export-${new Date().toISOString().split('T')[0]}.csv"`
           )
           .send(csv);
       }
@@ -222,7 +222,7 @@ export const enterpriseRoutes: FastifyPluginAsync = async (fastify) => {
         .header('Content-Type', 'application/json')
         .header(
           'Content-Disposition',
-          `attachment; filename="ideaforge-export-${new Date().toISOString().split('T')[0]}.json"`
+          `attachment; filename="zerotoship-export-${new Date().toISOString().split('T')[0]}.json"`
         )
         .send({
           exportedAt: new Date().toISOString(),

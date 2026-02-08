@@ -1,5 +1,5 @@
 /**
- * IdeaForge Scheduler
+ * ZeroToShip Scheduler
  *
  * Main entry point for the scheduler module.
  * Provides cron-based scheduling and manual pipeline execution.

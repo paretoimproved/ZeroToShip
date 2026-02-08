@@ -3,7 +3,7 @@
 ## Tweet 1 (Hook)
 I built a tool that scrapes the internet for startup ideas and delivers them to your inbox every morning.
 
-Here's how IdeaForge works:
+Here's how ZeroToShip works:
 
 ---
 
@@ -98,7 +98,7 @@ No more scrolling Reddit wondering what to build.
 Building this in public. Beta launching soon.
 
 ### Results Tweet
-Week 1 results from IdeaForge:
+Week 1 results from ZeroToShip:
 
 - 2,100+ posts scraped
 - 147 unique problems identified
@@ -110,7 +110,7 @@ The system works. [URL]
 ### Feature Tweet
 Most idea tools give you a title and a sentence.
 
-IdeaForge gives you:
+ZeroToShip gives you:
 - Target audience
 - Competitor analysis
 - Technical architecture

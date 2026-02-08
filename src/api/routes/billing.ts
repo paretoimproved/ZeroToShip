@@ -1,5 +1,5 @@
 /**
- * Billing Routes for IdeaForge API
+ * Billing Routes for ZeroToShip API
  *
  * Endpoints:
  * - POST /api/v1/billing/checkout - Create checkout session

@@ -1,5 +1,5 @@
 #!/bin/bash
-# IdeaForge API Deployment Script (Railway)
+# ZeroToShip API Deployment Script (Railway)
 # Usage: ./deploy-api.sh [environment]
 
 set -e
@@ -7,7 +7,7 @@ set -e
 ENVIRONMENT=${1:-production}
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
-echo "🚀 Deploying IdeaForge API to Railway ($ENVIRONMENT)"
+echo "🚀 Deploying ZeroToShip API to Railway ($ENVIRONMENT)"
 echo "================================================"
 
 # Check if Railway CLI is installed

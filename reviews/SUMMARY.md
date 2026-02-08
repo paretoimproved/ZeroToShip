@@ -1,4 +1,4 @@
-# IdeaForge Code Review Summary
+# ZeroToShip Code Review Summary
 
 **Date**: 2026-02-01
 **Reviewer**: Code Review Agent
@@ -231,7 +231,7 @@
 
 ## Conclusion
 
-The IdeaForge codebase is **production-ready** with excellent architecture and type safety. The main improvement areas are:
+The ZeroToShip codebase is **production-ready** with excellent architecture and type safety. The main improvement areas are:
 
 1. **Logging consistency** - Adopt Pino across all modules
 2. **Minor security hardening** - Cryptographic API key generation

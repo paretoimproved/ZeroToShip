@@ -1,5 +1,5 @@
 /**
- * Admin Route & Middleware Tests for IdeaForge API
+ * Admin Route & Middleware Tests for ZeroToShip API
  *
  * Tests:
  * 1. isAdminEmail — case-insensitive matching, undefined handling
@@ -114,16 +114,16 @@ describe('Admin Middleware & Helpers', () => {
 
   describe('isAdminEmail', () => {
     beforeEach(() => {
-      process.env.ADMIN_EMAILS = 'admin@ideaforge.io,Boss@Company.com';
+      process.env.ADMIN_EMAILS = 'admin@zerotoship.dev,Boss@Company.com';
       _resetConfigForTesting();
     });
 
     it('should return true for a matching admin email (exact case)', () => {
-      expect(isAdminEmail('admin@ideaforge.io')).toBe(true);
+      expect(isAdminEmail('admin@zerotoship.dev')).toBe(true);
     });
 
     it('should return true for a matching admin email (case-insensitive)', () => {
-      expect(isAdminEmail('ADMIN@IDEAFORGE.IO')).toBe(true);
+      expect(isAdminEmail('ADMIN@ZEROTOSHIP.DEV')).toBe(true);
       expect(isAdminEmail('boss@company.com')).toBe(true);
       expect(isAdminEmail('Boss@Company.Com')).toBe(true);
     });
@@ -172,7 +172,7 @@ describe('Admin Middleware & Helpers', () => {
 
   describe('requireAdmin middleware', () => {
     beforeEach(() => {
-      process.env.ADMIN_EMAILS = 'admin@ideaforge.io';
+      process.env.ADMIN_EMAILS = 'admin@zerotoship.dev';
       _resetConfigForTesting();
     });
 
@@ -209,7 +209,7 @@ describe('Admin Middleware & Helpers', () => {
     it('should pass for authenticated admin user', async () => {
       // Mock JWT verification to return an admin user
       mockGetUser.mockResolvedValue({
-        data: { user: { id: 'admin-123', email: 'admin@ideaforge.io' } },
+        data: { user: { id: 'admin-123', email: 'admin@zerotoship.dev' } },
         error: null,
       });
 
@@ -242,13 +242,13 @@ describe('Admin Middleware & Helpers', () => {
 
   describe('Tier override for admins', () => {
     beforeEach(() => {
-      process.env.ADMIN_EMAILS = 'admin@ideaforge.io';
+      process.env.ADMIN_EMAILS = 'admin@zerotoship.dev';
       _resetConfigForTesting();
     });
 
     it('should allow admin to override tier via X-Tier-Override header', async () => {
       mockGetUser.mockResolvedValue({
-        data: { user: { id: 'admin-123', email: 'admin@ideaforge.io' } },
+        data: { user: { id: 'admin-123', email: 'admin@zerotoship.dev' } },
         error: null,
       });
 
@@ -287,7 +287,7 @@ describe('Admin Middleware & Helpers', () => {
 
     it('should ignore invalid tier override values', async () => {
       mockGetUser.mockResolvedValue({
-        data: { user: { id: 'admin-123', email: 'admin@ideaforge.io' } },
+        data: { user: { id: 'admin-123', email: 'admin@zerotoship.dev' } },
         error: null,
       });
 

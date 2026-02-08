@@ -1,5 +1,5 @@
 /**
- * Ideas Routes for IdeaForge API
+ * Ideas Routes for ZeroToShip API
  *
  * Endpoints:
  * - GET /api/v1/ideas/today - Today's ranked ideas

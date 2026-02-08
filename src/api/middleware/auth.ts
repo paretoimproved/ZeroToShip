@@ -1,5 +1,5 @@
 /**
- * Authentication Middleware for IdeaForge API
+ * Authentication Middleware for ZeroToShip API
  *
  * Supports:
  * - JWT tokens (for web users via Supabase Auth)

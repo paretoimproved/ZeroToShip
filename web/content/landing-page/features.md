@@ -1,7 +1,7 @@
 # Features Section
 
 ## Section Header
-**How IdeaForge Works**
+**How ZeroToShip Works**
 
 ---
 
@@ -11,7 +11,7 @@
 Daily Ideas from Real Pain Points
 
 ### Description
-Every morning at 8 AM, IdeaForge scrapes Reddit, Hacker News, Twitter, and GitHub for problems people actually have. No more guessing what to build.
+Every morning at 8 AM, ZeroToShip scrapes Reddit, Hacker News, Twitter, and GitHub for problems people actually have. No more guessing what to build.
 
 ### Bullet Points
 - 8 subreddits monitored for complaints and wishes

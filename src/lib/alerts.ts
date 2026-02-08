@@ -1,5 +1,5 @@
 /**
- * Pipeline Failure Alerts for IdeaForge
+ * Pipeline Failure Alerts for ZeroToShip
  *
  * Sends alert emails via Resend when pipeline phases fail.
  */
@@ -38,9 +38,9 @@ export async function sendPipelineFailureAlert(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'IdeaForge Alerts <alerts@ideaforge.io>',
+        from: 'ZeroToShip Alerts <alerts@zerotoship.dev>',
         to: [alertEmail],
-        subject: `[IdeaForge] Pipeline ${severity.toUpperCase()}: ${phase} phase failed`,
+        subject: `[ZeroToShip] Pipeline ${severity.toUpperCase()}: ${phase} phase failed`,
         html: `
           <h2>Pipeline Failure Alert</h2>
           <table style="border-collapse: collapse; width: 100%;">

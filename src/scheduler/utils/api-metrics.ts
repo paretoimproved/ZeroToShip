@@ -1,5 +1,5 @@
 /**
- * API Metrics Collector for IdeaForge
+ * API Metrics Collector for ZeroToShip
  *
  * Tracks API call patterns, token usage, and costs for validation
  * of cost optimization targets.

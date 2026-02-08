@@ -1,5 +1,5 @@
 /**
- * Database Client for IdeaForge API
+ * Database Client for ZeroToShip API
  *
  * Connects to Supabase PostgreSQL using Drizzle ORM
  */

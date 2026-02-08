@@ -58,7 +58,7 @@ describe('Auth utilities', () => {
     });
 
     it('should return stored token from localStorage', () => {
-      storage['ideaforge_token'] = 'my-jwt-token';
+      storage['zerotoship_token'] = 'my-jwt-token';
 
       expect(getToken()).toBe('my-jwt-token');
     });
@@ -66,7 +66,7 @@ describe('Auth utilities', () => {
     it('should read from the correct localStorage key', () => {
       getToken();
 
-      expect(mockLocalStorage.getItem).toHaveBeenCalledWith('ideaforge_token');
+      expect(mockLocalStorage.getItem).toHaveBeenCalledWith('zerotoship_token');
     });
   });
 
@@ -74,7 +74,7 @@ describe('Auth utilities', () => {
     it('should store token in localStorage', () => {
       setToken('new-token');
 
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('ideaforge_token', 'new-token');
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('zerotoship_token', 'new-token');
     });
 
     it('should also set token on the api client', () => {
@@ -86,17 +86,17 @@ describe('Auth utilities', () => {
       api.getTodayIdeas();
 
       // The api client should now have the token set
-      expect(storage['ideaforge_token']).toBe('api-token');
+      expect(storage['zerotoship_token']).toBe('api-token');
     });
   });
 
   describe('clearToken', () => {
     it('should remove token from localStorage', () => {
-      storage['ideaforge_token'] = 'old-token';
+      storage['zerotoship_token'] = 'old-token';
 
       clearToken();
 
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('ideaforge_token');
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('zerotoship_token');
     });
 
     it('should set api client token to null', async () => {
@@ -113,7 +113,7 @@ describe('Auth utilities', () => {
 
   describe('initAuth', () => {
     it('should set api token from localStorage if token exists', async () => {
-      storage['ideaforge_token'] = 'persisted-token';
+      storage['zerotoship_token'] = 'persisted-token';
 
       initAuth();
 
@@ -162,7 +162,7 @@ describe('Auth utilities', () => {
       const user = await login('test@test.com', 'pass');
 
       expect(user).toEqual(mockUser);
-      expect(storage['ideaforge_token']).toBe('new-jwt');
+      expect(storage['zerotoship_token']).toBe('new-jwt');
     });
 
     it('should throw on failed login with API error message', async () => {
@@ -213,7 +213,7 @@ describe('Auth utilities', () => {
       const user = await signup('new@test.com', 'pass', 'New User');
 
       expect(user).toEqual(mockUser);
-      expect(storage['ideaforge_token']).toBe('signup-jwt');
+      expect(storage['zerotoship_token']).toBe('signup-jwt');
     });
 
     it('should throw on failed signup', async () => {
@@ -239,11 +239,11 @@ describe('Auth utilities', () => {
 
   describe('logout', () => {
     it('should clear the token from localStorage', () => {
-      storage['ideaforge_token'] = 'session-token';
+      storage['zerotoship_token'] = 'session-token';
 
       logout();
 
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('ideaforge_token');
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('zerotoship_token');
     });
 
     it('should redirect to /', () => {
@@ -259,7 +259,7 @@ describe('Auth utilities', () => {
     });
 
     it('should return true when a token exists', () => {
-      storage['ideaforge_token'] = 'some-token';
+      storage['zerotoship_token'] = 'some-token';
 
       expect(isAuthenticated()).toBe(true);
     });

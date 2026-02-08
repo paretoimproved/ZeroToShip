@@ -1,5 +1,5 @@
 /**
- * Usage Limit Middleware for IdeaForge API
+ * Usage Limit Middleware for ZeroToShip API
  *
  * Enforces daily usage limits on AI generation features:
  * - Fresh brief generation

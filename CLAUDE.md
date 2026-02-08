@@ -1,4 +1,4 @@
-# IdeaForge
+# ZeroToShip
 
 A social signal scraper for identifying emerging startup ideas.
 
@@ -97,7 +97,7 @@ scripts/            → One-off utilities (db-seed, stripe-setup)
 - **Models**: Import from `src/config/models.ts` — never hardcode model IDs
 - **Validation**: Zod schemas for all API request/response types
 - **Database**: Drizzle ORM, never raw SQL in application code
-- **Types**: Use `@ideaforge/shared` for types that cross the frontend/backend boundary
+- **Types**: Use `@zerotoship/shared` for types that cross the frontend/backend boundary
 - **Error handling**: Every AI call must have a fallback (heuristic or template data)
 - **Env vars**: Access via config objects, never `process.env` directly in business logic
 

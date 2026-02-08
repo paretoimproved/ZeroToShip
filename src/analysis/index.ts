@@ -1,5 +1,5 @@
 /**
- * Analysis Module for IdeaForge
+ * Analysis Module for ZeroToShip
  *
  * Provides deduplication and clustering capabilities for scraped posts.
  */

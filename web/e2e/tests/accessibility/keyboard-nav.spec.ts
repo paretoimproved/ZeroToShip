@@ -1,7 +1,7 @@
 /**
  * Keyboard Navigation Tests
  *
- * Tests for full keyboard accessibility of the IdeaForge application.
+ * Tests for full keyboard accessibility of the ZeroToShip application.
  * Ensures users can navigate and interact without a mouse.
  */
 

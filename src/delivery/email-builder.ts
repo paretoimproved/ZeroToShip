@@ -1,5 +1,5 @@
 /**
- * Email Builder for IdeaForge
+ * Email Builder for ZeroToShip
  *
  * Generates HTML emails from daily briefs for different subscriber tiers.
  */
@@ -48,9 +48,9 @@ export interface EmailBuilderConfig {
 }
 
 const DEFAULT_CONFIG: Required<EmailBuilderConfig> = {
-  baseUrl: 'https://ideaforge.io',
-  unsubscribeUrl: 'https://ideaforge.io/unsubscribe',
-  upgradeUrl: 'https://ideaforge.io/upgrade',
+  baseUrl: 'https://zerotoship.dev',
+  unsubscribeUrl: 'https://zerotoship.dev/unsubscribe',
+  upgradeUrl: 'https://zerotoship.dev/upgrade',
 };
 
 /**
@@ -415,12 +415,12 @@ function buildCtaSection(tier: SubscriberTier, config: Required<EmailBuilderConf
 function buildFooter(config: Required<EmailBuilderConfig>): string {
   return `
     <div class="footer">
-      <p>You're receiving this because you subscribed to IdeaForge daily briefs.</p>
+      <p>You're receiving this because you subscribed to ZeroToShip daily briefs.</p>
       <p>
         <a href="${escapeHtml(config.unsubscribeUrl)}">Unsubscribe</a> |
         <a href="${escapeHtml(config.baseUrl)}">View in browser</a>
       </p>
-      <p>&copy; ${new Date().getFullYear()} IdeaForge. All rights reserved.</p>
+      <p>&copy; ${new Date().getFullYear()} ZeroToShip. All rights reserved.</p>
     </div>
   `;
 }
@@ -437,7 +437,7 @@ export function buildDailyEmail(
 
   if (briefs.length === 0) {
     return {
-      subject: 'IdeaForge: No ideas today',
+      subject: 'ZeroToShip: No ideas today',
       html: '<p>No startup ideas found today. Check back tomorrow!</p>',
       text: 'No startup ideas found today. Check back tomorrow!',
     };
@@ -467,7 +467,7 @@ export function buildDailyEmail(
 <body>
   <div class="container">
     <div class="header">
-      <h1>IdeaForge</h1>
+      <h1>ZeroToShip</h1>
       <p class="date">${escapeHtml(dateStr)}</p>
     </div>
 
@@ -501,7 +501,7 @@ function buildPlainTextEmail(
   const topIdea = briefs[0];
   const lines: string[] = [];
 
-  lines.push('IDEAFORGE DAILY BRIEF');
+  lines.push('ZEROTOSHIP DAILY BRIEF');
   lines.push('='.repeat(50));
   lines.push('');
 

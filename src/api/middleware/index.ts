@@ -1,5 +1,5 @@
 /**
- * Middleware exports for IdeaForge API
+ * Middleware exports for ZeroToShip API
  */
 
 export {

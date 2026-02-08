@@ -1,5 +1,5 @@
 /**
- * Billing Tests for IdeaForge API
+ * Billing Tests for ZeroToShip API
  *
  * Tests for Stripe checkout, portal, and pricing endpoints
  */

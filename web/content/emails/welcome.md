@@ -2,8 +2,8 @@
 
 ## Subject Line Options
 - Your first startup ideas are ready
-- Welcome to IdeaForge - Your first ideas are inside
-- [IdeaForge] Let's find your next project
+- Welcome to ZeroToShip - Your first ideas are inside
+- [ZeroToShip] Let's find your next project
 
 ---
 
@@ -11,7 +11,7 @@
 
 Hey {{name}},
 
-Welcome to IdeaForge!
+Welcome to ZeroToShip!
 
 Starting tomorrow at 8 AM, you'll get {{ideaCount}} startup ideas delivered to your inbox. Each one scraped from Reddit, Hacker News, Twitter, and GitHub in the last 24 hours.
 
@@ -38,7 +38,7 @@ Starting tomorrow at 8 AM, you'll get {{ideaCount}} startup ideas delivered to y
 
 Questions? Just reply to this email.
 
-— The IdeaForge Team
+— The ZeroToShip Team
 
 ---
 
@@ -47,7 +47,7 @@ P.S. Want more ideas? [Upgrade to Pro]({{upgradeUrl}}) for 10 full briefs daily.
 ---
 
 ## Footer
-You're receiving this because you signed up for IdeaForge.
+You're receiving this because you signed up for ZeroToShip.
 [Manage preferences]({{preferencesUrl}}) · [Unsubscribe]({{unsubscribeUrl}})
 
 ---

@@ -1,4 +1,4 @@
-# IdeaForge Product Requirements
+# ZeroToShip Product Requirements
 
 > Generated: 2026-02-08 | Source: Competitive & Market Analysis
 
@@ -28,12 +28,12 @@
   - Exploding Topics: $249/mo (trend detection only, no briefs)
   - BuzzSumo: $199-999/mo (content monitoring, no idea generation)
   - Brandwatch: $800+/mo (full monitoring, but general-purpose)
-- **Recommendation**: Increase to $149/mo after adding Slack/Discord integration and Keyword Monitoring (unlimited). This positions IdeaForge at 42% below Exploding Topics while offering significantly more value. Grandfather early adopters at $99/mo.
+- **Recommendation**: Increase to $149/mo after adding Slack/Discord integration and Keyword Monitoring (unlimited). This positions ZeroToShip at 42% below Exploding Topics while offering significantly more value. Grandfather early adopters at $99/mo.
 
 **Validation Add-on ($49/idea)** -- Underpriced
 - Market research reports from firms like CB Insights cost $200-500+ per topic
 - Custom validation research from freelancers costs $500-2,000
-- IdeaForge's automated validation (competitor deep-dive, TAM analysis, customer interview scripts) delivers 60-70% of the value at 10% of the cost
+- ZeroToShip's automated validation (competitor deep-dive, TAM analysis, customer interview scripts) delivers 60-70% of the value at 10% of the cost
 - **Recommendation**: Increase to $79/idea for Pro users, $49/idea for Enterprise (volume discount). Consider bundling: 3 validations/month included in Enterprise.
 
 ### Pricing Roadmap
@@ -119,14 +119,14 @@ GummySearch's discontinuation creates a time-limited window to capture 135K+ dis
 **Tactics**:
 
 1. **Comparison Content**
-   - Create dedicated landing page: "IdeaForge vs GummySearch -- What's Different"
-   - Feature-by-feature comparison showing where IdeaForge exceeds GummySearch
-   - Honest about differences (IdeaForge is daily batch, not on-demand search)
+   - Create dedicated landing page: "ZeroToShip vs GummySearch -- What's Different"
+   - Feature-by-feature comparison showing where ZeroToShip exceeds GummySearch
+   - Honest about differences (ZeroToShip is daily batch, not on-demand search)
    - Highlight unique additions: HN, Twitter, GitHub, AI briefs
 
 2. **SEO Targeting**
    - Target keywords: "GummySearch alternative", "GummySearch replacement", "GummySearch shut down"
-   - Create blog post: "GummySearch Shut Down? Here Are Your Options" (include IdeaForge prominently)
+   - Create blog post: "GummySearch Shut Down? Here Are Your Options" (include ZeroToShip prominently)
    - FAQ page addressing common GummySearch user questions
 
 3. **Community Outreach**
@@ -136,13 +136,13 @@ GummySearch's discontinuation creates a time-limited window to capture 135K+ dis
    - Twitter engagement with GummySearch mention threads
 
 4. **Direct Migration Path**
-   - Build a "GummySearch Import" tool: users paste their GummySearch saved searches and IdeaForge creates equivalent keyword monitors
+   - Build a "GummySearch Import" tool: users paste their GummySearch saved searches and ZeroToShip creates equivalent keyword monitors
    - Offer first month free for verified GummySearch users
    - Create email sequence specifically for GummySearch migrants explaining feature mapping
 
 5. **Alternative Directory Listings**
    - Submit to AlternativeTo, G2, Capterra, Product Hunt alternatives
-   - Ensure IdeaForge appears in "GummySearch alternatives" lists
+   - Ensure ZeroToShip appears in "GummySearch alternatives" lists
 
 **Expected capture**: 500-1,000 users within 3 months (0.4-0.7% of GummySearch's user base). Conservative estimate given that many GummySearch users were free/trial.
 
@@ -165,7 +165,7 @@ GummySearch's discontinuation creates a time-limited window to capture 135K+ dis
 - Share development progress, metrics, and learnings on Twitter
 - Weekly revenue/growth updates after launch
 - Technical deep-dives on the scraping and AI pipeline
-- Attracts the exact audience (technical founders) who would use IdeaForge
+- Attracts the exact audience (technical founders) who would use ZeroToShip
 
 **Sample Idea Briefs as Lead Magnets**:
 - Publish 2-3 full idea briefs per month on the blog
@@ -174,8 +174,8 @@ GummySearch's discontinuation creates a time-limited window to capture 135K+ dis
 - Social proof: shows the quality of AI-generated analysis
 
 **Founder Case Studies** (Month 3+):
-- Document stories of founders who found and validated ideas through IdeaForge
-- "How [Founder] Found a $10K MRR Idea in Their IdeaForge Inbox"
+- Document stories of founders who found and validated ideas through ZeroToShip
+- "How [Founder] Found a $10K MRR Idea in Their ZeroToShip Inbox"
 - Most powerful conversion content but requires time for results to materialize
 
 ### Partnership Opportunities

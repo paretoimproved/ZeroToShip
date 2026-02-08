@@ -162,7 +162,7 @@ test.describe('Journey: Admin User', () => {
 
       // Should show correct user emails
       const emails = await usersPage.getUserEmails();
-      expect(emails).toContain('admin@ideaforge.io');
+      expect(emails).toContain('admin@zerotoship.dev');
       expect(emails).toContain('pro@example.com');
       expect(emails).toContain('free@example.com');
 
@@ -211,7 +211,7 @@ test.describe('Journey: Admin User', () => {
 
       // Verify sessionStorage was set
       const storedTier = await page.evaluate(() => {
-        return sessionStorage.getItem('ideaforge_tier_override');
+        return sessionStorage.getItem('zerotoship_tier_override');
       });
       expect(storedTier).toBe('free');
 
@@ -239,7 +239,7 @@ test.describe('Journey: Admin User', () => {
 
       // sessionStorage should be cleared
       const storedTier = await page.evaluate(() => {
-        return sessionStorage.getItem('ideaforge_tier_override');
+        return sessionStorage.getItem('zerotoship_tier_override');
       });
       expect(storedTier).toBeNull();
 

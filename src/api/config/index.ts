@@ -1,5 +1,5 @@
 /**
- * Configuration exports for IdeaForge API
+ * Configuration exports for ZeroToShip API
  */
 
 export * from './tiers';

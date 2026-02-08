@@ -61,12 +61,12 @@ For $19/mo, you get 10 complete briefs every day. That's research that would tak
 
 Not ready? No problem. You'll keep getting 3 ideas daily on the free plan.
 
-— The IdeaForge Team
+— The ZeroToShip Team
 
 ---
 
 ## Footer
-You're receiving this because you signed up for IdeaForge.
+You're receiving this because you signed up for ZeroToShip.
 [Manage preferences]({{preferencesUrl}}) · [Unsubscribe]({{unsubscribeUrl}})
 
 ---

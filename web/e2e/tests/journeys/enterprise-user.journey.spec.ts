@@ -2,7 +2,7 @@
  * Enterprise User Journey
  *
  * End-to-end journey simulating an enterprise tier user exploring the full
- * IdeaForge experience: viewing all ideas without limits, reading complete
+ * ZeroToShip experience: viewing all ideas without limits, reading complete
  * business briefs, searching and filtering the archive, exporting data,
  * managing API keys, configuring settings, verifying account plan, and
  * logging out.

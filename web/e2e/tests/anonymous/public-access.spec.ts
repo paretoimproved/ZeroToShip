@@ -17,7 +17,7 @@ test.describe('Anonymous User - Public Access', () => {
 
       await homePage.goto();
 
-      await expect(asAnonymous).toHaveTitle(/IdeaForge/i);
+      await expect(asAnonymous).toHaveTitle(/ZeroToShip/i);
       await expect(homePage.heading).toBeVisible();
     });
 

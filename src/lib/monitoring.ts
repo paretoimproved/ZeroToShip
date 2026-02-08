@@ -1,5 +1,5 @@
 /**
- * Monitoring Module for IdeaForge
+ * Monitoring Module for ZeroToShip
  *
  * Wraps Sentry for error tracking with graceful degradation
  * when SENTRY_DSN is not configured.

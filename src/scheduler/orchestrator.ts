@@ -12,7 +12,7 @@ import { runScrapePhase } from './phases/scrape';
 import { runAnalyzePhase } from './phases/analyze';
 import { runGeneratePhase } from './phases/generate';
 import { runDeliverPhase } from './phases/deliver';
-import { isIdeaForgeError, isFatalError } from '../lib/errors';
+import { isZeroToShipError, isFatalError } from '../lib/errors';
 import { initMonitoring, captureException } from '../lib/monitoring';
 import { sendPipelineFailureAlert } from '../lib/alerts';
 import {
@@ -142,7 +142,7 @@ function shouldSkipPhase(
 }
 
 /**
- * Run the complete IdeaForge pipeline
+ * Run the complete ZeroToShip pipeline
  *
  * Supports resuming from a previous failed run via `config.resumeRunId`.
  * When resuming, completed phase results are loaded from disk and the

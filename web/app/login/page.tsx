@@ -32,7 +32,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="bg-white dark:bg-gray-800 rounded-xl p-8 border border-gray-200 dark:border-gray-700">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
-            Sign In to IdeaForge
+            Sign In to ZeroToShip
           </h1>
 
           {error && (

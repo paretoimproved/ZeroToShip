@@ -1,5 +1,5 @@
 /**
- * Authentication & Authorization Tests for IdeaForge API
+ * Authentication & Authorization Tests for ZeroToShip API
  *
  * Tests:
  * 1. API key generation
@@ -85,7 +85,7 @@ function createTierGate(feature: string) {
           feature,
           requiredTier: featureConfig?.minTier,
           currentTier: request.userTier,
-          upgradeUrl: 'https://ideaforge.io/pricing',
+          upgradeUrl: 'https://zerotoship.dev/pricing',
         },
       });
     }
@@ -320,7 +320,7 @@ describe('Tier Gate Middleware', () => {
 
       await gate(request, reply);
 
-      expect(reply._body.details.upgradeUrl).toBe('https://ideaforge.io/pricing');
+      expect(reply._body.details.upgradeUrl).toBe('https://zerotoship.dev/pricing');
     });
   });
 });

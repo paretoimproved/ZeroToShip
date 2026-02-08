@@ -1,5 +1,5 @@
 /**
- * Hacker News Scraper for IdeaForge
+ * Hacker News Scraper for ZeroToShip
  *
  * Scrapes HN for pain points using the Algolia API:
  * - "Ask HN" posts from the last 24-48 hours

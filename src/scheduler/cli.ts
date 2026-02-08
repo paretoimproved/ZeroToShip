@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * IdeaForge Scheduler CLI
+ * ZeroToShip Scheduler CLI
  *
  * Command-line interface for running and managing the pipeline.
  */
@@ -100,7 +100,7 @@ async function checkHealth(): Promise<boolean> {
  */
 function printHelp(): void {
   console.log(`
-IdeaForge Scheduler CLI
+ZeroToShip Scheduler CLI
 
 USAGE:
   npx ts-node src/scheduler/cli.ts <command> [options]
@@ -138,7 +138,7 @@ async function main(): Promise<void> {
 
   switch (options.command) {
     case 'run': {
-      console.log('Running IdeaForge pipeline...\n');
+      console.log('Running ZeroToShip pipeline...\n');
 
       const pipelineConfig: Partial<PipelineConfig> = {
         hoursBack: options.hoursBack,
@@ -191,7 +191,7 @@ async function main(): Promise<void> {
     }
 
     case 'schedule': {
-      console.log('Starting IdeaForge scheduler...\n');
+      console.log('Starting ZeroToShip scheduler...\n');
 
       startScheduler({
         pipelineConfig: {

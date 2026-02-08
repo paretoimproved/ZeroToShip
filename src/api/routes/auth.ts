@@ -1,5 +1,5 @@
 /**
- * Auth Routes for IdeaForge API
+ * Auth Routes for ZeroToShip API
  */
 
 import { FastifyPluginAsync } from 'fastify';

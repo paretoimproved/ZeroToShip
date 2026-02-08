@@ -1,5 +1,5 @@
 /**
- * Tier Configuration Constants for IdeaForge API
+ * Tier Configuration Constants for ZeroToShip API
  *
  * Pure configuration - no dependencies on database or external services
  */
@@ -168,7 +168,7 @@ export function getUpgradePrompt(feature: string): {
     return {
       message: 'Upgrade to access this feature',
       requiredTier: 'pro',
-      upgradeUrl: 'https://ideaforge.io/pricing',
+      upgradeUrl: 'https://zerotoship.dev/pricing',
     };
   }
 
@@ -182,7 +182,7 @@ export function getUpgradePrompt(feature: string): {
   return {
     message: `Upgrade to ${tierNames[config.minTier]} to ${config.description.toLowerCase()}`,
     requiredTier: config.minTier,
-    upgradeUrl: 'https://ideaforge.io/pricing',
+    upgradeUrl: 'https://zerotoship.dev/pricing',
   };
 }
 

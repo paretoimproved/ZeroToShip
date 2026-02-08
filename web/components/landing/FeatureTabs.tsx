@@ -229,7 +229,7 @@ export default function FeatureTabs() {
           Everything You Need to Ship Faster
         </h2>
         <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
-          From discovery to launch — IdeaForge covers the full journey.
+          From discovery to launch — ZeroToShip covers the full journey.
         </p>
 
         <div className="mt-10 flex justify-center">

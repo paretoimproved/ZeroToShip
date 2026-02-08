@@ -2,7 +2,7 @@
  * Anonymous Visitor Journey
  *
  * End-to-end journey simulating a first-time anonymous visitor exploring
- * IdeaForge: landing on the homepage, browsing tier-limited ideas,
+ * ZeroToShip: landing on the homepage, browsing tier-limited ideas,
  * viewing a gated idea detail page, hitting auth gates on protected
  * routes, and discovering the landing/pricing page.
  */
@@ -29,7 +29,7 @@ test.describe('Journey: Anonymous Visitor', () => {
 
       await homePage.goto();
 
-      await expect(page).toHaveTitle(/IdeaForge/i);
+      await expect(page).toHaveTitle(/ZeroToShip/i);
       await expect(homePage.heading).toBeVisible();
       await expect(homePage.dateDisplay).toBeVisible();
 

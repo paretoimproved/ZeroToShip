@@ -1,5 +1,5 @@
 /**
- * Post Deduplication and Clustering for IdeaForge
+ * Post Deduplication and Clustering for ZeroToShip
  *
  * Takes raw posts from multiple sources, generates embeddings,
  * clusters similar posts together, and outputs deduplicated problem statements.

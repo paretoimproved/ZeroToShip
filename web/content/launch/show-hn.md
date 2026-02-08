@@ -1,13 +1,13 @@
 # Show HN Post
 
 ## Title
-Show HN: IdeaForge – Daily startup ideas scraped from Reddit, HN, Twitter, GitHub
+Show HN: ZeroToShip – Daily startup ideas scraped from Reddit, HN, Twitter, GitHub
 
 ---
 
 ## Body
 
-I built IdeaForge to solve my own problem: I have technical skills but struggle to find ideas worth building.
+I built ZeroToShip to solve my own problem: I have technical skills but struggle to find ideas worth building.
 
 Every morning at 8 AM, it:
 

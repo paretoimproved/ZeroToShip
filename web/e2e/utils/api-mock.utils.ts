@@ -280,7 +280,7 @@ export async function mockAdminAuthMe(
       contentType: 'application/json',
       body: JSON.stringify({
         id: 'admin-user-123',
-        email: 'admin@ideaforge.io',
+        email: 'admin@zerotoship.dev',
         name: 'Admin User',
         tier,
         isAdmin: true,
@@ -397,7 +397,7 @@ export async function mockAdminUsersApi(page: Page): Promise<void> {
         users: [
           {
             id: 'user-1',
-            email: 'admin@ideaforge.io',
+            email: 'admin@zerotoship.dev',
             name: 'Admin User',
             tier: 'enterprise',
             createdAt: '2026-01-15T00:00:00Z',

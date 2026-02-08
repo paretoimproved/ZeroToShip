@@ -1,5 +1,5 @@
 /**
- * Tier-Based Rate Limiting Middleware for IdeaForge API
+ * Tier-Based Rate Limiting Middleware for ZeroToShip API
  *
  * Enforces rate limits based on user tier:
  * - Anonymous: 10 requests/hour

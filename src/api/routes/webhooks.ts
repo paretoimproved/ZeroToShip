@@ -1,5 +1,5 @@
 /**
- * Webhook Routes for IdeaForge API
+ * Webhook Routes for ZeroToShip API
  *
  * Endpoints:
  * - POST /api/webhooks/stripe - Handle Stripe webhook events

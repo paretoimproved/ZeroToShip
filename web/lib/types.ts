@@ -1,12 +1,12 @@
 /**
- * TypeScript types for IdeaForge Web Dashboard
+ * TypeScript types for ZeroToShip Web Dashboard
  *
  * Shared API contract types are inlined here to allow independent
  * Vercel deployment without the workspace dependency.
  * Canonical source: packages/shared/src/index.ts
  */
 
-// ─── Shared types (inlined from @ideaforge/shared) ──────────────────────────
+// ─── Shared types (inlined from @zerotoship/shared) ──────────────────────────
 
 export type EffortLevel = 'weekend' | 'week' | 'month' | 'quarter';
 

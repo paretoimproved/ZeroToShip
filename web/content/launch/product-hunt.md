@@ -16,7 +16,7 @@ Wake up every morning to 10 validated startup ideas with technical specs, compet
 Indie hackers spend hours scrolling Reddit and Hacker News looking for problems to solve. By the time they find something interesting, they've forgotten it or someone else has already built it.
 
 ### The Solution
-IdeaForge scrapes 300+ posts daily, clusters similar problems, scores them by opportunity vs effort, and delivers the top 10 to your inbox at 8 AM—with complete technical specs.
+ZeroToShip scrapes 300+ posts daily, clusters similar problems, scores them by opportunity vs effort, and delivers the top 10 to your inbox at 8 AM—with complete technical specs.
 
 ### How It Works
 
@@ -54,7 +54,7 @@ You wake up to an email with today's best ideas, ready to build.
 
 Hey Product Hunt!
 
-I built IdeaForge because I kept seeing the same pattern: browse Reddit for hours, find interesting problems, forget to save them, then see someone else build it months later.
+I built ZeroToShip because I kept seeing the same pattern: browse Reddit for hours, find interesting problems, forget to save them, then see someone else build it months later.
 
 This tool automates the research part. Every morning you get 10 scored ideas with everything you need to start building—or decide it's not worth it.
 
@@ -93,7 +93,7 @@ Happy to answer any questions!
 ---
 
 ## First Comment (Maker)
-Thanks for checking out IdeaForge! Here's a quick look at this morning's top idea: [SCREENSHOT]
+Thanks for checking out ZeroToShip! Here's a quick look at this morning's top idea: [SCREENSHOT]
 
 The scoring prioritizes quick wins—high-impact problems you can ship in a weekend. What would you build first?
 

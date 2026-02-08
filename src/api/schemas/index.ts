@@ -1,8 +1,8 @@
 /**
- * Zod Schemas for IdeaForge API
+ * Zod Schemas for ZeroToShip API
  *
  * Request/response validation schemas for all endpoints.
- * Core types are imported from @ideaforge/shared; this module adds
+ * Core types are imported from @zerotoship/shared; this module adds
  * API-specific request/query schemas that are only used server-side.
  */
 
@@ -20,7 +20,7 @@ import {
   PaginatedResponseSchema,
   ApiErrorSchema,
   SubscriptionResponseSchema,
-} from '@ideaforge/shared';
+} from '@zerotoship/shared';
 
 // ─── Re-export shared types & schemas ────────────────────────────────────────
 // These are the single source of truth, shared with the frontend.
@@ -52,7 +52,7 @@ export type {
   PaginatedResponse,
   ApiError,
   SubscriptionResponse,
-} from '@ideaforge/shared';
+} from '@zerotoship/shared';
 
 // ─── API-specific schemas (server-side only) ─────────────────────────────────
 

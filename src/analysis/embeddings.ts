@@ -1,5 +1,5 @@
 /**
- * OpenAI Embedding Client for IdeaForge
+ * OpenAI Embedding Client for ZeroToShip
  *
  * Generates text embeddings using OpenAI's text-embedding-3-small model.
  * Includes caching to minimize API calls for repeated content.

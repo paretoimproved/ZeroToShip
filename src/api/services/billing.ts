@@ -1,5 +1,5 @@
 /**
- * Billing Service for IdeaForge API
+ * Billing Service for ZeroToShip API
  *
  * Handles Stripe checkout, portal, and subscription management
  */

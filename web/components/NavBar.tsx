@@ -28,7 +28,7 @@ export default function NavBar() {
             href="/"
             className="text-xl font-bold text-primary-600 dark:text-primary-400"
           >
-            IdeaForge
+            ZeroToShip
           </Link>
 
           <div className="flex items-center space-x-1">

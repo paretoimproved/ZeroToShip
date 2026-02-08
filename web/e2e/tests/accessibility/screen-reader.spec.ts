@@ -41,10 +41,10 @@ test.describe('Screen Reader Compatibility', () => {
     test('page title is descriptive and unique per page', async ({ page }) => {
       // Check multiple pages have unique titles
       const pagesToCheck = [
-        { url: '/', expectedPattern: /Today|Home|IdeaForge/i },
-        { url: '/archive', expectedPattern: /Archive|IdeaForge/i },
-        { url: '/settings', expectedPattern: /Settings|IdeaForge/i },
-        { url: '/account', expectedPattern: /Account|IdeaForge/i },
+        { url: '/', expectedPattern: /Today|Home|ZeroToShip/i },
+        { url: '/archive', expectedPattern: /Archive|ZeroToShip/i },
+        { url: '/settings', expectedPattern: /Settings|ZeroToShip/i },
+        { url: '/account', expectedPattern: /Account|ZeroToShip/i },
       ];
 
       const titles: string[] = [];
@@ -58,7 +58,7 @@ test.describe('Screen Reader Compatibility', () => {
         // Title should match expected pattern
         expect(title).toMatch(expectedPattern);
 
-        // Title should be reasonably descriptive (more than just "IdeaForge")
+        // Title should be reasonably descriptive (more than just "ZeroToShip")
         expect(title.length).toBeGreaterThan(5);
 
         titles.push(title);

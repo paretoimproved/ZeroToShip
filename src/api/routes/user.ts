@@ -1,5 +1,5 @@
 /**
- * User Routes for IdeaForge API
+ * User Routes for ZeroToShip API
  *
  * Endpoints:
  * - GET /api/v1/user/preferences - Get user preferences

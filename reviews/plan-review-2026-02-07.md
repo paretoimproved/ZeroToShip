@@ -1,4 +1,4 @@
-# IdeaForge Plan Review — 2026-02-07
+# ZeroToShip Plan Review — 2026-02-07
 
 Comprehensive 4-section review (Architecture, Code Quality, Tests, Performance) with 16 issues identified and user-approved decisions.
 

@@ -1,5 +1,5 @@
 /**
- * Database Seed Script for IdeaForge
+ * Database Seed Script for ZeroToShip
  *
  * Creates test users for each tier and sample ideas for testing
  */
@@ -12,17 +12,17 @@ import { eq } from 'drizzle-orm';
 // Test users for each tier
 const seedUsers = [
   {
-    email: 'free@test.ideaforge.io',
+    email: 'free@test.zerotoship.dev',
     name: 'Free Test User',
     tier: 'free' as const,
   },
   {
-    email: 'pro@test.ideaforge.io',
+    email: 'pro@test.zerotoship.dev',
     name: 'Pro Test User',
     tier: 'pro' as const,
   },
   {
-    email: 'enterprise@test.ideaforge.io',
+    email: 'enterprise@test.zerotoship.dev',
     name: 'Enterprise Test User',
     tier: 'enterprise' as const,
   },

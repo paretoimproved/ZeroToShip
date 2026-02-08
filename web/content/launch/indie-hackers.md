@@ -13,11 +13,11 @@ I've been lurking here for years, always looking for that next idea to build. Th
 
 Sound familiar?
 
-So I built **IdeaForge**—a tool that does the research for you and delivers scored startup ideas to your inbox every morning.
+So I built **ZeroToShip**—a tool that does the research for you and delivers scored startup ideas to your inbox every morning.
 
 ### How it works
 
-Every day at 6 AM, IdeaForge:
+Every day at 6 AM, ZeroToShip:
 
 1. **Scrapes 300+ posts** from Reddit, HN, Twitter, and GitHub
 2. **Detects pain point signals** like "I wish there was..." or "Why doesn't X exist?"
@@ -63,7 +63,7 @@ I kept seeing the same pattern:
 4. See someone else build it 6 months later
 5. "I should have built that"
 
-IdeaForge captures those problems automatically, scores them, and packages them so you can actually act on them.
+ZeroToShip captures those problems automatically, scores them, and packages them so you can actually act on them.
 
 ### Tech stack
 

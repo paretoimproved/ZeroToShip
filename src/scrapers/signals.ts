@@ -1,5 +1,5 @@
 /**
- * Pain Point Signal Detection for IdeaForge
+ * Pain Point Signal Detection for ZeroToShip
  *
  * Detects phrases that indicate pain points, frustrations, and product opportunities
  * in scraped content.

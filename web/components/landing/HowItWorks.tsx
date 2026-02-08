@@ -134,7 +134,7 @@ export default function HowItWorks() {
           id="how-heading"
           className="text-3xl font-bold text-center text-gray-900 dark:text-white mb-4"
         >
-          How IdeaForge Works
+          How ZeroToShip Works
         </h2>
         <p className="text-center text-gray-600 dark:text-gray-400 mb-16 max-w-2xl mx-auto">
           From raw social media posts to validated business briefs &mdash; fully automated, delivered

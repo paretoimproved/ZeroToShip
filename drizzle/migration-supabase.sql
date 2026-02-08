@@ -1,4 +1,4 @@
--- IdeaForge Database Schema for Supabase
+-- ZeroToShip Database Schema for Supabase
 -- Run this in the Supabase SQL Editor
 
 -- Create users table first (referenced by other tables)

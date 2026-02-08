@@ -24,7 +24,7 @@ export abstract class BasePage {
 
     // NavBar locators (based on NavBar.tsx)
     this.navBar = page.locator('nav');
-    this.logo = page.locator('a:has-text("IdeaForge")');
+    this.logo = page.locator('a:has-text("ZeroToShip")');
     this.todayLink = page.locator('nav a:has-text("Today")');
     this.archiveLink = page.locator('nav a:has-text("Archive")');
     this.settingsLink = page.locator('nav a:has-text("Settings")');

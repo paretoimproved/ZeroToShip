@@ -1,5 +1,5 @@
 /**
- * Gap Analyzer Module for IdeaForge
+ * Gap Analyzer Module for ZeroToShip
  *
  * For each problem cluster, searches for existing solutions,
  * analyzes competitors, and identifies market gaps and opportunities.

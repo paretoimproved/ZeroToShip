@@ -1,5 +1,5 @@
 /**
- * Tech Stack Recommendations for IdeaForge
+ * Tech Stack Recommendations for ZeroToShip
  *
  * Provides opinionated tech stack recommendations based on
  * problem characteristics and effort estimates.

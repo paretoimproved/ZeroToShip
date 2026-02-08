@@ -7,7 +7,7 @@
 ---
 
 ## Current Focus
-**Building IdeaForge** - A SaaS that scrapes the web daily for pain points and delivers prioritized business ideas with technical specs.
+**Building ZeroToShip** - A SaaS that scrapes the web daily for pain points and delivers prioritized business ideas with technical specs.
 
 **This sprint**: Build the core pipeline (scrapers → analysis → generation → delivery)
 
@@ -107,7 +107,7 @@ User wakes up → checks email → knows what to build today
 
 | File | Purpose |
 |------|---------|
-| [ideaforge.md](ideaforge.md) | Product overview, architecture, monetization |
+| [zerotoship.md](zerotoship.md) | Product overview, architecture, monetization |
 | [Feature-Plan.md](Feature-Plan.md) | Technical implementation details per module |
 | [Agent-Instructions.md](Agent-Instructions.md) | Copy-paste prompts for each agent |
 | [Decisions.md](Decisions.md) | Architecture decision records |
@@ -155,21 +155,21 @@ User wakes up → checks email → knows what to build today
 | [src/delivery/templates/daily.html](src/delivery/templates/daily.html) | Email template reference |
 | [tests/delivery/email.test.ts](tests/delivery/email.test.ts) | Email delivery test suite (35 tests) |
 
-### Web Dashboard (ideaforge-web/)
+### Web Dashboard (zerotoship-web/)
 | File | Purpose |
 |------|---------|
-| [app/page.tsx](../ideaforge-web/app/page.tsx) | Home page - today's ranked ideas |
-| [app/idea/[id]/page.tsx](../ideaforge-web/app/idea/[id]/page.tsx) | Full brief view for single idea |
-| [app/archive/page.tsx](../ideaforge-web/app/archive/page.tsx) | Historical ideas browser with filters |
-| [app/settings/page.tsx](../ideaforge-web/app/settings/page.tsx) | User preferences (categories, effort, notifications) |
-| [app/account/page.tsx](../ideaforge-web/app/account/page.tsx) | Subscription management and billing |
-| [components/IdeaCard.tsx](../ideaforge-web/components/IdeaCard.tsx) | Idea card component with ranking |
-| [components/BriefView.tsx](../ideaforge-web/components/BriefView.tsx) | Full brief display component |
-| [components/ScoreBadge.tsx](../ideaforge-web/components/ScoreBadge.tsx) | Score and effort badges |
-| [components/NavBar.tsx](../ideaforge-web/components/NavBar.tsx) | Navigation component |
-| [lib/api.ts](../ideaforge-web/lib/api.ts) | Backend API client |
-| [lib/auth.ts](../ideaforge-web/lib/auth.ts) | Authentication utilities |
-| [lib/types.ts](../ideaforge-web/lib/types.ts) | TypeScript types (IdeaBrief, User, Subscription) |
+| [app/page.tsx](../zerotoship-web/app/page.tsx) | Home page - today's ranked ideas |
+| [app/idea/[id]/page.tsx](../zerotoship-web/app/idea/[id]/page.tsx) | Full brief view for single idea |
+| [app/archive/page.tsx](../zerotoship-web/app/archive/page.tsx) | Historical ideas browser with filters |
+| [app/settings/page.tsx](../zerotoship-web/app/settings/page.tsx) | User preferences (categories, effort, notifications) |
+| [app/account/page.tsx](../zerotoship-web/app/account/page.tsx) | Subscription management and billing |
+| [components/IdeaCard.tsx](../zerotoship-web/components/IdeaCard.tsx) | Idea card component with ranking |
+| [components/BriefView.tsx](../zerotoship-web/components/BriefView.tsx) | Full brief display component |
+| [components/ScoreBadge.tsx](../zerotoship-web/components/ScoreBadge.tsx) | Score and effort badges |
+| [components/NavBar.tsx](../zerotoship-web/components/NavBar.tsx) | Navigation component |
+| [lib/api.ts](../zerotoship-web/lib/api.ts) | Backend API client |
+| [lib/auth.ts](../zerotoship-web/lib/auth.ts) | Authentication utilities |
+| [lib/types.ts](../zerotoship-web/lib/types.ts) | TypeScript types (IdeaBrief, User, Subscription) |
 
 ---
 
@@ -408,7 +408,7 @@ User wakes up → checks email → knows what to build today
   - Ready for scheduler integration (Module 4B)
 
 [2026-01-31] Web Dashboard Agent: ✅ Web Dashboard complete
-  - Created ideaforge-web/ Next.js project (separate repo)
+  - Created zerotoship-web/ Next.js project (separate repo)
   - Created app/page.tsx (today's top ideas with ranking)
   - Created app/idea/[id]/page.tsx (full brief view)
   - Created app/archive/page.tsx (historical browser with filters)
@@ -514,7 +514,7 @@ User wakes up → checks email → knows what to build today
 
 ## Links
 
-- [[ideaforge]] - Product overview
+- [[zerotoship]] - Product overview
 - [[Feature-Plan]] - Technical plan
 - [[Agent-Instructions]] - Agent prompts
 - [[START-HERE]] - Onboarding guide

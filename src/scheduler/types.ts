@@ -1,5 +1,5 @@
 /**
- * Scheduler Types for IdeaForge Pipeline
+ * Scheduler Types for ZeroToShip Pipeline
  */
 
 import type { RawPost } from '../scrapers/types';

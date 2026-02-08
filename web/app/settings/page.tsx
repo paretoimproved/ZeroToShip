@@ -116,7 +116,7 @@ export default function SettingsPage() {
           Settings
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Customize your IdeaForge experience
+          Customize your ZeroToShip experience
         </p>
       </header>
 

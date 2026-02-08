@@ -1,5 +1,5 @@
 /**
- * Structured Logger for IdeaForge Scheduler
+ * Structured Logger for ZeroToShip Scheduler
  *
  * Uses Pino for high-performance structured logging with context support.
  */
@@ -38,7 +38,7 @@ const baseLogger: Logger = pino({
       }
     : undefined,
   base: {
-    service: 'ideaforge-scheduler',
+    service: 'zerotoship-scheduler',
   },
 });
 

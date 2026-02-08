@@ -1,5 +1,5 @@
 /**
- * AI Model Configuration for IdeaForge
+ * AI Model Configuration for ZeroToShip
  *
  * Model selection based on subscription tier and task type.
  * See docs/cost-analysis.md for pricing rationale.

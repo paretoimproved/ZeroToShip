@@ -14,7 +14,7 @@ interface AdminContextType {
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
-const STORAGE_KEY = "ideaforge_tier_override";
+const STORAGE_KEY = "zerotoship_tier_override";
 
 export function AdminProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();

@@ -15,8 +15,8 @@
     "sourceMap": true,
     "moduleResolution": "node",
     "paths": {
-      "@ideaforge/shared": ["./packages/shared/src/index"],
-      "@ideaforge/shared/*": ["./packages/shared/src/*"]
+      "@zerotoship/shared": ["./packages/shared/src/index"],
+      "@zerotoship/shared/*": ["./packages/shared/src/*"]
     }
   },
   "include": ["src/**/*", "packages/shared/src/**/*"],

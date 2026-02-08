@@ -1,5 +1,5 @@
 /**
- * IdeaForge - Entry Point
+ * ZeroToShip - Entry Point
  *
  * Automated SaaS that scrapes the web for technical pain points
  * and generates prioritized entrepreneurial ideas.
@@ -40,7 +40,7 @@ async function main(): Promise<void> {
       break;
 
     default:
-      console.log('IdeaForge - Pain Point Discovery Engine\n');
+      console.log('ZeroToShip - Pain Point Discovery Engine\n');
       console.log('Usage: npm run dev <command> [options]\n');
       console.log('Commands:');
       console.log('  reddit     Scrape Reddit for pain points');
@@ -64,7 +64,7 @@ async function runRedditScraper(args: string[]): Promise<void> {
     : [...DEFAULT_SUBREDDITS];
 
   console.log('='.repeat(60));
-  console.log('  IDEAFORGE REDDIT SCRAPER');
+  console.log('  ZEROTOSHIP REDDIT SCRAPER');
   console.log('='.repeat(60));
   console.log(`\nConfiguration:`);
   console.log(`  Subreddits: ${subreddits.join(', ')}`);
@@ -192,7 +192,7 @@ function printCsv(posts: RawPost[]): void {
  */
 function printHelp(): void {
   console.log(`
-IdeaForge - Pain Point Discovery Engine
+ZeroToShip - Pain Point Discovery Engine
 
 USAGE:
   npm run dev <command> [options]

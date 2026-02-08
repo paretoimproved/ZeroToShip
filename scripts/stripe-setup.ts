@@ -1,5 +1,5 @@
 /**
- * Stripe Setup Script for IdeaForge
+ * Stripe Setup Script for ZeroToShip
  *
  * Creates products and prices in Stripe Dashboard.
  * Run this script once to set up your Stripe products.
@@ -40,7 +40,7 @@ interface ProductConfig {
 
 const products: ProductConfig[] = [
   {
-    name: 'IdeaForge Pro',
+    name: 'ZeroToShip Pro',
     description: 'Access to all 10 daily ideas with full business briefs, unlimited archive, and priority support.',
     prices: [
       {
@@ -58,7 +58,7 @@ const products: ProductConfig[] = [
     ],
   },
   {
-    name: 'IdeaForge Enterprise',
+    name: 'ZeroToShip Enterprise',
     description: 'Everything in Pro plus API access, custom categories, team sharing, and dedicated support.',
     prices: [
       {
@@ -78,7 +78,7 @@ const products: ProductConfig[] = [
 ];
 
 async function createProducts(): Promise<void> {
-  console.log('Setting up Stripe products and prices for IdeaForge...\n');
+  console.log('Setting up Stripe products and prices for ZeroToShip...\n');
 
   const envVars: Record<string, string> = {};
 

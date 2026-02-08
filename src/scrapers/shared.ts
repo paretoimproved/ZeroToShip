@@ -1,5 +1,5 @@
 /**
- * Shared Scraper Utilities for IdeaForge
+ * Shared Scraper Utilities for ZeroToShip
  *
  * Consolidates common patterns across all scrapers:
  * - ID generation

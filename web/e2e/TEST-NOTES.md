@@ -16,7 +16,7 @@
 
 ### 4. Auth gates block authenticated users under `SKIP_AUTH=true` — FIXED
 - **File**: `e2e/fixtures/auth.fixture.ts`
-- **Fix**: Authenticated fixtures now inject fake `ideaforge_token` into localStorage.
+- **Fix**: Authenticated fixtures now inject fake `zerotoship_token` into localStorage.
 
 ## Bugs — Open
 

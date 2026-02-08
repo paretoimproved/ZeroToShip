@@ -1,5 +1,5 @@
 /**
- * @ideaforge/shared — Shared types and Zod schemas
+ * @zerotoship/shared — Shared types and Zod schemas
  *
  * Single source of truth for API contract types used by both
  * the backend (src/) and frontend (web/).

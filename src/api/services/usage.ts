@@ -1,5 +1,5 @@
 /**
- * Usage Tracking Service for IdeaForge API
+ * Usage Tracking Service for ZeroToShip API
  *
  * Tracks daily usage of AI generation features to prevent abuse.
  * Enforces tier-based limits and handles overage billing for Enterprise users.

@@ -125,7 +125,7 @@ export default function LandingNav() {
             href="/"
             className={`text-xl font-bold text-gray-900 dark:text-white rounded-md ${focusRingClasses}`}
           >
-            IdeaForge
+            ZeroToShip
           </Link>
 
           {/* Desktop nav links */}
@@ -197,7 +197,7 @@ export default function LandingNav() {
           {/* Overlay header */}
           <div className="flex h-16 items-center justify-between px-4 sm:px-6">
             <span className="text-xl font-bold text-gray-900 dark:text-white">
-              IdeaForge
+              ZeroToShip
             </span>
             <button
               type="button"

@@ -9,7 +9,7 @@ import { scoreAll } from '../../analysis/scorer';
 import { analyzeAllGaps } from '../../analysis/gap-analyzer';
 import type { RawPost } from '../../scrapers/types';
 import { createPhaseLogger } from '../utils/logger';
-import { AnalysisError, isIdeaForgeError, wrapError } from '../../lib/errors';
+import { AnalysisError, isZeroToShipError, wrapError } from '../../lib/errors';
 import type {
   PhaseResult,
   AnalyzePhaseOutput,

@@ -1,5 +1,5 @@
 /**
- * Fastify Server for IdeaForge API
+ * Fastify Server for ZeroToShip API
  *
  * High-performance REST API server with:
  * - JWT + API key authentication
@@ -17,7 +17,7 @@ import {
   ZodTypeProvider,
 } from 'fastify-type-provider-zod';
 import { config as envConfig } from '../config/env';
-import { ApiError, isIdeaForgeError } from '../lib/errors';
+import { ApiError, isZeroToShipError } from '../lib/errors';
 import { closeDatabase } from './db/client';
 import { healthRoutes } from './routes/health';
 import { ideasRoutes } from './routes/ideas';
@@ -113,8 +113,8 @@ export async function createServer(config: ServerConfig = {}): Promise<FastifyIn
   server.get('/api/v1', async () => {
     return {
       version: '1.0.0',
-      name: 'IdeaForge API',
-      documentation: 'https://ideaforge.io/docs/api',
+      name: 'ZeroToShip API',
+      documentation: 'https://zerotoship.dev/docs/api',
     };
   });
 
@@ -139,7 +139,7 @@ export async function createServer(config: ServerConfig = {}): Promise<FastifyIn
 
   // Global error handler
   server.setErrorHandler((error, request, reply) => {
-    // Handle ApiError from IdeaForge error classes
+    // Handle ApiError from ZeroToShip error classes
     if (error instanceof ApiError) {
       if (error.statusCode >= 500) {
         request.log.error({ err: error, severity: error.severity, context: error.context }, error.message);
@@ -150,8 +150,8 @@ export async function createServer(config: ServerConfig = {}): Promise<FastifyIn
       });
     }
 
-    // Handle other IdeaForge errors
-    if (isIdeaForgeError(error)) {
+    // Handle other ZeroToShip errors
+    if (isZeroToShipError(error)) {
       request.log.error({ err: error, severity: error.severity, phase: error.phase }, error.message);
       return reply.status(500).send({
         code: error.name,

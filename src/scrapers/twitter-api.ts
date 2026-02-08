@@ -1,5 +1,5 @@
 /**
- * Twitter API v2 Client for IdeaForge
+ * Twitter API v2 Client for ZeroToShip
  *
  * Uses the official Twitter API v2 to search for developer pain points.
  * Requires a Twitter Developer account with at least Basic tier access.

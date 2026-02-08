@@ -1,5 +1,5 @@
 /**
- * Business Brief Generator for IdeaForge
+ * Business Brief Generator for ZeroToShip
  *
  * Generates comprehensive business briefs using GPT-4
  * from scored problems and gap analyses.

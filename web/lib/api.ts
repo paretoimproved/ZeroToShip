@@ -1,5 +1,5 @@
 /**
- * API client for IdeaForge backend
+ * API client for ZeroToShip backend
  */
 
 import type {
@@ -45,7 +45,7 @@ class ApiClient {
 
     // Admin tier override from sessionStorage
     if (typeof window !== "undefined") {
-      const tierOverride = sessionStorage.getItem("ideaforge_tier_override");
+      const tierOverride = sessionStorage.getItem("zerotoship_tier_override");
       if (tierOverride) {
         (headers as Record<string, string>)["X-Tier-Override"] = tierOverride;
       }

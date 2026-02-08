@@ -30,7 +30,7 @@ function getModelDisplayName(model: string): string {
 }
 
 async function main(): Promise<void> {
-  console.log('=== IdeaForge Cost Optimization Validator ===\n');
+  console.log('=== ZeroToShip Cost Optimization Validator ===\n');
 
   // Check for required environment variables
   const apiKey = config.ANTHROPIC_API_KEY;

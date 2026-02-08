@@ -8,7 +8,7 @@
 
 ## Summary
 
-The Scheduler module orchestrates the IdeaForge pipeline (scrape → analyze → generate → deliver) with cron-based scheduling. It includes structured logging (Pino), retry logic with exponential backoff, and comprehensive metrics collection.
+The Scheduler module orchestrates the ZeroToShip pipeline (scrape → analyze → generate → deliver) with cron-based scheduling. It includes structured logging (Pino), retry logic with exponential backoff, and comprehensive metrics collection.
 
 **Quality Score**: 9/10
 

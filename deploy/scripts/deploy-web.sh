@@ -1,5 +1,5 @@
 #!/bin/bash
-# IdeaForge Web Dashboard Deployment Script (Vercel)
+# ZeroToShip Web Dashboard Deployment Script (Vercel)
 # Usage: ./deploy-web.sh [--prod]
 
 set -e
@@ -9,15 +9,15 @@ if [[ "$1" == "--prod" ]]; then
     PROD_FLAG="--prod"
 fi
 
-WEB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)/ideaforge-web"
+WEB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)/zerotoship-web"
 
 # Check if web directory exists
 if [[ ! -d "$WEB_DIR" ]]; then
-    echo "❌ ideaforge-web directory not found at: $WEB_DIR"
+    echo "❌ zerotoship-web directory not found at: $WEB_DIR"
     exit 1
 fi
 
-echo "🚀 Deploying IdeaForge Web Dashboard to Vercel"
+echo "🚀 Deploying ZeroToShip Web Dashboard to Vercel"
 echo "=============================================="
 
 # Check if Vercel CLI is installed

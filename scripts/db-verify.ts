@@ -11,7 +11,7 @@ import { verify } from '../src/api/db/verify';
 import { closeDatabase } from '../src/api/db/client';
 
 async function main() {
-  console.log('IdeaForge Database Verification\n');
+  console.log('ZeroToShip Database Verification\n');
   console.log('Environment:', process.env.NODE_ENV || 'development');
   console.log('Database:', process.env.DATABASE_URL?.substring(0, 30) + '...\n');
 

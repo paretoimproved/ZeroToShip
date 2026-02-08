@@ -1,5 +1,5 @@
 /**
- * Users Service for IdeaForge API
+ * Users Service for ZeroToShip API
  *
  * Business logic for user management, preferences, and subscriptions
  */

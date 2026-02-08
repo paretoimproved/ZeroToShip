@@ -53,7 +53,7 @@
 - **Scheduler**: node-cron orchestrator with resume capability, phase persistence, metrics
 - **Payments**: Stripe integration with webhook handling
 - **Deployment**: Railway (API + scheduler), Vercel (web), Docker configs
-- **Shared Types**: `@ideaforge/shared` package with Zod schemas
+- **Shared Types**: `@zerotoship/shared` package with Zod schemas
 
 ### Remaining Work
 - [ ] Beta launch to 100 users
@@ -93,7 +93,7 @@
 |---------|-------------|----------|
 | **Founder Validation Network** | Crowdsourced "Would you build this?" voting on each idea. Aggregate signals: "312 founders viewed this, 47 would build it." Creates a data network effect moat. Unlocks enterprise data licensing and founder matching. | Cold start — needs ~1000 active users before signals are meaningful. |
 | **Idea-to-Action Execution Engine** | One click from idea to personalized execution roadmap: week-by-week plan, landing page copy, customer interview scripts, pricing strategy, boilerplate repo. Collapses the gap between reading and doing. | Scope creep — must stay focused on the first 48 hours, not become a project management tool. |
-| **Live Signal Feed + Custom Alerts** | Real-time pain point feed with custom filters ("alert me about CI/CD complaints with 50+ upvotes"). Slack/Discord integration, push notifications. Transforms IdeaForge from newsletter to intelligence tool. | Infrastructure cost — real-time scraping requires different architecture than daily batch. Start with 4x daily before true real-time. |
+| **Live Signal Feed + Custom Alerts** | Real-time pain point feed with custom filters ("alert me about CI/CD complaints with 50+ upvotes"). Slack/Discord integration, push notifications. Transforms ZeroToShip from newsletter to intelligence tool. | Infrastructure cost — real-time scraping requires different architecture than daily batch. Start with 4x daily before true real-time. |
 | **Competitive Intelligence Layer** | Continuous market monitoring for saved ideas. Track Product Hunt launches, GitHub repos, funding announcements. Alert: "A YC company just launched in this space." | Very high effort and ongoing API costs. Start with manual "re-analyze" triggers. |
 | **Platform API + Marketplace** | Public scoring/brief-generation API. Let AI assistants, startup tools, and accelerators plug in. Revenue from usage-based API calls ($0.01-0.10/call). | Requires validated product-market fit on core product first. Risk of cannibalizing the dashboard. |
 | **Community Discussion per Idea** | Lightweight comment threads on each idea for founders to discuss viability and collaborate. Drives engagement, SEO, and organic discovery. | Needs critical mass (~500+ active users) to avoid empty-room problem. |
@@ -104,7 +104,7 @@
 
 > Added: 2026-02-08 | Source: Strategic Analysis
 
-| Feature | IdeaForge | GummySearch (disc.) | Exploding Topics | SparkToro | Glimpse | BigIdeasDB | BuzzSumo | Brandwatch |
+| Feature | ZeroToShip | GummySearch (disc.) | Exploding Topics | SparkToro | Glimpse | BigIdeasDB | BuzzSumo | Brandwatch |
 |---------|-----------|---------------------|-------------------|-----------|---------|------------|----------|------------|
 | **Multi-source scraping** | ✅ 4 platforms | ❌ Reddit only | ⚠️ Multiple (trends) | ⚠️ Social profiles | ⚠️ Google Trends+ | ❌ Curated manually | ✅ Multiple sources | ✅ Multiple sources |
 | **Reddit monitoring** | ✅ 8 subreddits + 50 signals | ✅ Full Reddit search | ⚠️ Trend detection only | ❌ | ✅ Subreddit trends | ❌ | ✅ Content monitoring | ✅ Full monitoring |
@@ -130,10 +130,10 @@
 | **Enterprise price** | $99/mo | $199/mo (was) | $249/mo | $112/mo | $99+/mo | N/A | $999/mo | Custom |
 
 **Key takeaways**:
-- IdeaForge is the **only tool** combining multi-source scraping + AI pain point detection + business brief generation
+- ZeroToShip is the **only tool** combining multi-source scraping + AI pain point detection + business brief generation
 - HN scraping and GitHub issue tracking are **unique differentiators** no competitor offers
 - Biggest gaps vs competitors: real-time alerts, team features, and keyword monitoring (saved searches)
-- IdeaForge has the most generous free tier in the market
+- ZeroToShip has the most generous free tier in the market
 - Entry price ($19/mo) is the lowest among serious competitors
 
 ---
@@ -149,14 +149,14 @@
 | 2 | **Subreddit Analytics Dashboard** | Visual analytics showing which subreddits generate the most pain point signals, trending topics per subreddit, posting activity heatmaps, and sentiment trends over time. | GummySearch's most-used feature. Provides transparency into signal sources. No other idea-discovery tool offers this granularity. | Medium (2 weeks) | **P1 -- High** | Pro |
 | 3 | **Mobile PWA** | Responsive Progressive Web App with offline support, push notifications for new ideas, and mobile-optimized idea cards. Add-to-homescreen capability. | BuzzSumo and Brandwatch have mobile apps. Founders check ideas on the go -- mobile access increases daily engagement by 40-60% based on industry benchmarks. | Medium (2-3 weeks) | **P1 -- High** | All tiers |
 | 4 | **Slack/Discord Bot** | Deliver daily idea digests and real-time alerts directly to team Slack channels or Discord servers. Configurable: choose which ideas, frequency, and format. | Enterprise differentiator. Syften and F5Bot offer similar integrations. Slack integration is table stakes for B2B SaaS at $99+/mo price point. | Low-Medium (1-2 weeks) | **P1 -- High** | Enterprise |
-| 5 | **Browser Extension** | Chrome/Firefox extension that overlays IdeaForge analysis on Reddit, HN, and Twitter posts. See pain point scores, related ideas, and signal counts while browsing. | Glimpse built its entire product around a Chrome extension. Provides "aha moment" during natural browsing behavior. Drives habit formation. | Medium (3-4 weeks) | **P2 -- Medium** | Pro |
+| 5 | **Browser Extension** | Chrome/Firefox extension that overlays ZeroToShip analysis on Reddit, HN, and Twitter posts. See pain point scores, related ideas, and signal counts while browsing. | Glimpse built its entire product around a Chrome extension. Provides "aha moment" during natural browsing behavior. Drives habit formation. | Medium (3-4 weeks) | **P2 -- Medium** | Pro |
 | 6 | **Landing Page Auto-Generator** | From any idea brief, generate a complete landing page (HTML/CSS/JS) with value prop, features, pricing placeholder, and email capture form. One-click deploy to Vercel/Netlify. | No competitor offers this. Bridges the gap between idea and validation. Ties into Execution Engine concept but is standalone and immediately useful. | Medium (2-3 weeks) | **P2 -- Medium** | Pro (1/mo), Enterprise (unlimited) |
 | 7 | **Customer Interview Script Generator** | AI-generated interview scripts with 10-15 questions tailored to the specific pain point, target customer persona, and validation goals. Includes scoring rubric for responses. | No competitor offers this. Reduces time-to-validation from days to minutes. Natural extension of brief generation using existing Claude pipeline. | Low (1 week) | **P2 -- Medium** | Pro |
 | 8 | **Regulatory/Compliance Checker** | For each idea, automatically flag potential regulatory concerns: GDPR, HIPAA, PCI-DSS, fintech regulations, FDA requirements. Includes jurisdiction-specific notes and compliance cost estimates. | Valuable for healthcare/fintech verticals. No competitor offers this. Reduces founder risk by surfacing regulatory blockers early. Enables Niche/Vertical Editions. | Medium (2-3 weeks) | **P2 -- Medium** | Enterprise |
 | 9 | **Market Timing Indicator** | "Is now the right time?" composite signal based on Google Trends velocity, related VC funding activity, competitive density (new entrants per quarter), and technology maturity (Gartner-style). | No competitor offers timing analysis. Addresses the #1 founder question: "Why now?" Differentiates from static idea lists. | Medium-High (3-4 weeks) | **P2 -- Medium** | Pro (basic), Enterprise (detailed) |
 | 10 | **Idea Comparison Tool** | Side-by-side comparison of 2-3 ideas across all scoring dimensions: market size, competition, technical difficulty, time-to-MVP, regulatory risk, and trend direction. Visual radar charts. | Decision-making aid for founders evaluating multiple opportunities. No competitor offers structured comparison. Low effort, high perceived value. | Low (1 week) | **P1 -- High** | Pro |
 | 11 | **Founder Skill Matching** | Users declare their tech stack, domain expertise, and available resources. Each idea gets a "fit score" (0-100%) showing alignment. "This idea is a 90% match for your React + Python stack." | Personalization beyond preferences. No competitor offers skill-based matching. Increases conversion by showing personally relevant opportunities. | Low-Medium (1-2 weeks) | **P2 -- Medium** | Free (basic), Pro (detailed) |
-| 12 | **White-Label Reports** | Enterprise customers can brand IdeaForge reports with their logo, colors, and custom domain. Redistribute reports to their own clients (accelerators, VCs, consultancies). | Brandwatch offers white-labeling at $800+/mo. High-margin feature for Enterprise tier. Enables channel partnerships with accelerators and VCs. | Medium (2-3 weeks) | **P3 -- Low** | Enterprise (add-on) |
+| 12 | **White-Label Reports** | Enterprise customers can brand ZeroToShip reports with their logo, colors, and custom domain. Redistribute reports to their own clients (accelerators, VCs, consultancies). | Brandwatch offers white-labeling at $800+/mo. High-margin feature for Enterprise tier. Enables channel partnerships with accelerators and VCs. | Medium (2-3 weeks) | **P3 -- Low** | Enterprise (add-on) |
 
 ### Implementation Priority Order
 
@@ -201,7 +201,7 @@
 
 ### Pro Tier ($19/mo) -- Core Value, Below Competitor Pricing
 
-**Goal**: Justify $19/mo vs free AND outperform competitors charging $29-99/mo. At $19/mo, IdeaForge delivers more actionable output than GummySearch did at $29/mo or Exploding Topics at $39/mo.
+**Goal**: Justify $19/mo vs free AND outperform competitors charging $29-99/mo. At $19/mo, ZeroToShip delivers more actionable output than GummySearch did at $29/mo or Exploding Topics at $39/mo.
 
 **Current features**: 10 ideas/day, full briefs, archive access, priority email delivery
 
@@ -222,7 +222,7 @@
 - Browser Extension: full access
 - Mobile PWA: full access with push notifications
 
-**Competitive justification**: At $19/mo with these features, IdeaForge offers:
+**Competitive justification**: At $19/mo with these features, ZeroToShip offers:
 - 10x more actionable output than Exploding Topics ($39/mo)
 - Full Reddit + HN + Twitter + GitHub vs Reddit-only (GummySearch was $29/mo)
 - AI-generated briefs with tech specs (no competitor at any price)
@@ -246,7 +246,7 @@
 - Landing Page Auto-Generator: unlimited pages
 - Customer Interview Script Generator: unlimited scripts
 
-**Price increase rationale**: Market data shows $112-249 range for comparable tools. At $149/mo, IdeaForge is still 42% below Exploding Topics and offers unique features (briefs, GitHub tracking, multi-source pain point detection) no competitor matches.
+**Price increase rationale**: Market data shows $112-249 range for comparable tools. At $149/mo, ZeroToShip is still 42% below Exploding Topics and offers unique features (briefs, GitHub tracking, multi-source pain point detection) no competitor matches.
 
 ### Feature Unlock Matrix by Tier
 
@@ -294,12 +294,12 @@
 GummySearch's discontinuation leaves 135K+ users without their primary Reddit research tool. This is the single largest near-term opportunity.
 
 **Immediate actions**:
-- **Keyword Monitoring & Saved Searches**: Elevate from "not planned" to **Q1 Priority #1**. This is what GummySearch users are actively searching for replacements for. Without it, IdeaForge misses the migration window.
+- **Keyword Monitoring & Saved Searches**: Elevate from "not planned" to **Q1 Priority #1**. This is what GummySearch users are actively searching for replacements for. Without it, ZeroToShip misses the migration window.
 - **Subreddit Analytics Dashboard**: Elevate to **Q1 Priority #3**. GummySearch's most visual feature -- users expect this.
 - **"Share Idea as Link"** (existing Quick Win): Becomes **more urgent**. Public shareable pages capture organic search traffic from "GummySearch alternative" queries.
 - **"Source Links on Ideas"** (existing Quick Win): Becomes **more urgent**. GummySearch users expect to see and click through to raw Reddit posts. Without source links, the product feels like a black box.
 
-**Marketing implication**: Create "IdeaForge vs GummySearch" comparison page, target "GummySearch alternative" SEO keywords, and post in communities where GummySearch users congregate. Expected capture: 500-1,000 users from this channel alone.
+**Marketing implication**: Create "ZeroToShip vs GummySearch" comparison page, target "GummySearch alternative" SEO keywords, and post in communities where GummySearch users congregate. Expected capture: 500-1,000 users from this channel alone.
 
 ### 2. Emerging Competitor Defense
 
@@ -308,10 +308,10 @@ GummySearch's discontinuation leaves 135K+ users without their primary Reddit re
 **Defensive differentiation**:
 - **Multi-source advantage**: Neither competitor scrapes HN, Twitter, or GitHub. Emphasize "4 platforms, not just Reddit" in all positioning.
 - **Full briefs**: Neither generates business briefs with tech specs, GTM strategy, or risk analysis. This is the moat.
-- **Email delivery**: Both require users to check a dashboard. IdeaForge delivers to inbox. Convenience wins.
-- **Free tier**: Neither offers a meaningful free tier. IdeaForge's 3 ideas/day creates a funnel competitors can't match.
+- **Email delivery**: Both require users to check a dashboard. ZeroToShip delivers to inbox. Convenience wins.
+- **Free tier**: Neither offers a meaningful free tier. ZeroToShip's 3 ideas/day creates a funnel competitors can't match.
 
-**Action**: Accelerate Keyword Monitoring (matches Redreach's feature set) and maintain brief quality (where IdeaForge is unmatched).
+**Action**: Accelerate Keyword Monitoring (matches Redreach's feature set) and maintain brief quality (where ZeroToShip is unmatched).
 
 ### 3. Enterprise Tier Underpricing
 

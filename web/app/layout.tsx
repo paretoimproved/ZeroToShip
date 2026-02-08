@@ -5,16 +5,16 @@ import ClientProviders from "@/components/ClientProviders";
 import TierSwitcher from "@/components/TierSwitcher";
 
 export const metadata: Metadata = {
-  title: "IdeaForge — Daily Startup Ideas Scraped from Reddit, HN, Twitter & GitHub",
+  title: "ZeroToShip — Daily Startup Ideas Scraped from Reddit, HN, Twitter & GitHub",
   description: "Wake up to 10 AI-scored startup ideas with full technical specs, business models, and go-to-market strategies. Scraped from Reddit, Hacker News, Twitter, and GitHub. Free to start.",
   openGraph: {
-    title: "IdeaForge — Daily Startup Ideas with Full Business Briefs",
+    title: "ZeroToShip — Daily Startup Ideas with Full Business Briefs",
     description: "Every morning, get 10 startup ideas scraped from Reddit, HN, Twitter, and GitHub — scored by AI, with technical specs included.",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "IdeaForge — Daily Startup Ideas with Full Business Briefs",
+    title: "ZeroToShip — Daily Startup Ideas with Full Business Briefs",
     description: "Every morning, get 10 startup ideas scraped from Reddit, HN, Twitter, and GitHub — scored by AI, with technical specs included.",
   },
 };

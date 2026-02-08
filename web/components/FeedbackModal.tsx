@@ -87,7 +87,7 @@ export default function FeedbackModal({
     if (feedback.npsScore === null) return "";
     if (feedback.npsScore <= 6) return "We're sorry to hear that. What's the #1 thing we could do better?";
     if (feedback.npsScore <= 8) return "Thanks! What would make you rate us higher?";
-    return "Awesome! What do you love most about IdeaForge?";
+    return "Awesome! What do you love most about ZeroToShip?";
   };
 
   if (!isOpen) return null;
@@ -136,7 +136,7 @@ export default function FeedbackModal({
             <div className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-                  How likely are you to recommend IdeaForge to a friend or colleague?
+                  How likely are you to recommend ZeroToShip to a friend or colleague?
                 </label>
                 <div className="flex items-center justify-between gap-1">
                   {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => (
@@ -223,7 +223,7 @@ export default function FeedbackModal({
             <div className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  What feature would make IdeaForge 10x more valuable for you?
+                  What feature would make ZeroToShip 10x more valuable for you?
                 </label>
                 <textarea
                   value={feedback.featureRequest}

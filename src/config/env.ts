@@ -1,5 +1,5 @@
 /**
- * Centralized Environment Configuration for IdeaForge
+ * Centralized Environment Configuration for ZeroToShip
  *
  * Single source of truth for all environment variables.
  * Validates at startup using Zod and exports a typed config object.

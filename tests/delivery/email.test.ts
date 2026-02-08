@@ -123,9 +123,9 @@ describe('Email Builder', () => {
     it('matches snapshot for single brief (free tier)', () => {
       const brief = createMockBrief({ name: 'SnapshotApp' });
       const result = buildDailyEmail([brief], 'free', {
-        baseUrl: 'https://test.ideaforge.io',
-        unsubscribeUrl: 'https://test.ideaforge.io/unsub',
-        upgradeUrl: 'https://test.ideaforge.io/upgrade',
+        baseUrl: 'https://test.zerotoship.dev',
+        unsubscribeUrl: 'https://test.zerotoship.dev/unsub',
+        upgradeUrl: 'https://test.zerotoship.dev/upgrade',
       });
 
       expect(result.html).toMatchSnapshot();
@@ -134,9 +134,9 @@ describe('Email Builder', () => {
     it('matches snapshot for multiple briefs (free tier)', () => {
       const briefs = createMockBriefs(5);
       const result = buildDailyEmail(briefs, 'free', {
-        baseUrl: 'https://test.ideaforge.io',
-        unsubscribeUrl: 'https://test.ideaforge.io/unsub',
-        upgradeUrl: 'https://test.ideaforge.io/upgrade',
+        baseUrl: 'https://test.zerotoship.dev',
+        unsubscribeUrl: 'https://test.zerotoship.dev/unsub',
+        upgradeUrl: 'https://test.zerotoship.dev/upgrade',
       });
 
       expect(result.html).toMatchSnapshot();
@@ -145,9 +145,9 @@ describe('Email Builder', () => {
     it('matches snapshot for multiple briefs (pro tier)', () => {
       const briefs = createMockBriefs(5);
       const result = buildDailyEmail(briefs, 'pro', {
-        baseUrl: 'https://test.ideaforge.io',
-        unsubscribeUrl: 'https://test.ideaforge.io/unsub',
-        upgradeUrl: 'https://test.ideaforge.io/upgrade',
+        baseUrl: 'https://test.zerotoship.dev',
+        unsubscribeUrl: 'https://test.zerotoship.dev/unsub',
+        upgradeUrl: 'https://test.zerotoship.dev/upgrade',
       });
 
       expect(result.html).toMatchSnapshot();
@@ -162,9 +162,9 @@ describe('Email Builder', () => {
     it('matches snapshot for plain text (free tier)', () => {
       const briefs = createMockBriefs(5);
       const result = buildDailyEmail(briefs, 'free', {
-        baseUrl: 'https://test.ideaforge.io',
-        unsubscribeUrl: 'https://test.ideaforge.io/unsub',
-        upgradeUrl: 'https://test.ideaforge.io/upgrade',
+        baseUrl: 'https://test.zerotoship.dev',
+        unsubscribeUrl: 'https://test.zerotoship.dev/unsub',
+        upgradeUrl: 'https://test.zerotoship.dev/upgrade',
       });
 
       expect(result.text).toMatchSnapshot();
@@ -173,9 +173,9 @@ describe('Email Builder', () => {
     it('matches snapshot for plain text (pro tier)', () => {
       const briefs = createMockBriefs(5);
       const result = buildDailyEmail(briefs, 'pro', {
-        baseUrl: 'https://test.ideaforge.io',
-        unsubscribeUrl: 'https://test.ideaforge.io/unsub',
-        upgradeUrl: 'https://test.ideaforge.io/upgrade',
+        baseUrl: 'https://test.zerotoship.dev',
+        unsubscribeUrl: 'https://test.zerotoship.dev/unsub',
+        upgradeUrl: 'https://test.zerotoship.dev/upgrade',
       });
 
       expect(result.text).toMatchSnapshot();
@@ -349,18 +349,18 @@ describe('Email Builder', () => {
       expect(result.html).toContain('unsubscribe');
     });
 
-    it('includes IdeaForge branding in header', () => {
+    it('includes ZeroToShip branding in header', () => {
       const briefs = [createMockBrief()];
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.html).toContain('<h1>IdeaForge</h1>');
+      expect(result.html).toContain('<h1>ZeroToShip</h1>');
     });
 
     it('includes copyright in footer', () => {
       const briefs = [createMockBrief()];
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.html).toContain('IdeaForge. All rights reserved.');
+      expect(result.html).toContain('ZeroToShip. All rights reserved.');
     });
 
     it('generates valid HTML document', () => {
@@ -419,8 +419,8 @@ describe('Email Builder', () => {
       const briefs = [createMockBrief()];
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.html).toContain('https://ideaforge.io/unsubscribe');
-      expect(result.html).toContain('https://ideaforge.io/upgrade');
+      expect(result.html).toContain('https://zerotoship.dev/unsubscribe');
+      expect(result.html).toContain('https://zerotoship.dev/upgrade');
     });
 
     it('truncates long taglines in secondary idea rows to 60 chars', () => {
@@ -460,7 +460,7 @@ describe('Email Builder', () => {
       const brief = createMockBrief({ name: 'PlainTextIdea' });
       const result = buildDailyEmail([brief], 'free');
 
-      expect(result.text).toContain('IDEAFORGE DAILY BRIEF');
+      expect(result.text).toContain('ZEROTOSHIP DAILY BRIEF');
       expect(result.text).toContain('PlainTextIdea');
       expect(result.text).toContain('THE PROBLEM');
       expect(result.text).toContain('TARGET AUDIENCE');
@@ -649,7 +649,7 @@ describe('Email Service', () => {
       expect(callBody.subject).toContain('TestPayload');
       expect(callBody.html).toBeDefined();
       expect(callBody.text).toBeDefined();
-      expect(callBody.reply_to).toBe('hello@ideaforge.io');
+      expect(callBody.reply_to).toBe('hello@zerotoship.dev');
     });
 
     it('includes default from address', async () => {
@@ -661,7 +661,7 @@ describe('Email Service', () => {
       });
 
       const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(callBody.from).toBe('IdeaForge <briefs@ideaforge.io>');
+      expect(callBody.from).toBe('ZeroToShip <briefs@zerotoship.dev>');
     });
 
     it('handles Resend API error response', async () => {

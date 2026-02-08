@@ -1,5 +1,5 @@
 /**
- * Tier Gate Middleware for IdeaForge API
+ * Tier Gate Middleware for ZeroToShip API
  *
  * Enforces feature restrictions based on user tier:
  * - Anonymous/Free: Basic idea summaries (3 ideas)
@@ -65,7 +65,7 @@ export function createTierGate(feature: string) {
           feature,
           requiredTier: featureConfig?.minTier,
           currentTier: request.userTier,
-          upgradeUrl: 'https://ideaforge.io/pricing',
+          upgradeUrl: 'https://zerotoship.dev/pricing',
         },
       });
     }
@@ -163,7 +163,7 @@ export function getUpgradePrompt(feature: string): {
     return {
       message: 'Upgrade to access this feature',
       requiredTier: 'pro',
-      upgradeUrl: 'https://ideaforge.io/pricing',
+      upgradeUrl: 'https://zerotoship.dev/pricing',
     };
   }
 
@@ -177,6 +177,6 @@ export function getUpgradePrompt(feature: string): {
   return {
     message: `Upgrade to ${tierNames[config.minTier]} to ${config.description.toLowerCase()}`,
     requiredTier: config.minTier,
-    upgradeUrl: 'https://ideaforge.io/pricing',
+    upgradeUrl: 'https://zerotoship.dev/pricing',
   };
 }

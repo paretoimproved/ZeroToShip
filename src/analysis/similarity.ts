@@ -1,5 +1,5 @@
 /**
- * Similarity and Clustering Utilities for IdeaForge
+ * Similarity and Clustering Utilities for ZeroToShip
  *
  * Implements cosine similarity calculations and similarity matrix operations
  * for clustering similar posts together.

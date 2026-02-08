@@ -1,4 +1,4 @@
--- Row Level Security (RLS) Policies for IdeaForge
+-- Row Level Security (RLS) Policies for ZeroToShip
 -- Run this in Supabase SQL Editor
 
 -- Enable RLS on all tables

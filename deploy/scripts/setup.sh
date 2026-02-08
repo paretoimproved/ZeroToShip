@@ -1,15 +1,15 @@
 #!/bin/bash
-# IdeaForge Deployment Setup Script
+# ZeroToShip Deployment Setup Script
 # Run this once to set up both Vercel and Railway projects
 
 set -e
 
-echo "🛠️  IdeaForge Deployment Setup"
+echo "🛠️  ZeroToShip Deployment Setup"
 echo "=============================="
 echo ""
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-WEB_DIR="$(cd "$PROJECT_DIR/../ideaforge-web" 2>/dev/null && pwd)" || WEB_DIR=""
+WEB_DIR="$(cd "$PROJECT_DIR/../zerotoship-web" 2>/dev/null && pwd)" || WEB_DIR=""
 
 # Check prerequisites
 echo "📋 Checking prerequisites..."
@@ -78,7 +78,7 @@ if [[ -n "$WEB_DIR" ]]; then
         echo "  ✅ Already linked to Vercel"
     fi
 else
-    echo "  ⚠️  ideaforge-web directory not found"
+    echo "  ⚠️  zerotoship-web directory not found"
 fi
 
 echo ""
@@ -92,10 +92,10 @@ echo "  SUPABASE_URL=<supabase-project-url>"
 echo "  SUPABASE_SERVICE_ROLE_KEY=<service-role-key>"
 echo "  OPENAI_API_KEY=<openai-api-key>"
 echo "  RESEND_API_KEY=<resend-api-key>"
-echo "  CORS_ORIGIN=https://ideaforge.app"
+echo "  CORS_ORIGIN=https://zerotoship.dev"
 echo ""
 echo "Vercel (Web Dashboard):"
-echo "  NEXT_PUBLIC_API_URL=https://api.ideaforge.app"
+echo "  NEXT_PUBLIC_API_URL=https://api.zerotoship.dev"
 echo "  NEXT_PUBLIC_SUPABASE_URL=<supabase-project-url>"
 echo "  NEXT_PUBLIC_SUPABASE_ANON_KEY=<supabase-anon-key>"
 echo ""

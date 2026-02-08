@@ -1,5 +1,5 @@
 /**
- * Tier-based filtering functions for IdeaForge API
+ * Tier-based filtering functions for ZeroToShip API
  *
  * Pure functions - no database dependencies
  */

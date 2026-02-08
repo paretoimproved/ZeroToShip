@@ -1,4 +1,4 @@
-# IdeaForge Market Research & Competitive Intelligence
+# ZeroToShip Market Research & Competitive Intelligence
 
 **Document Type:** Strategic Business Intelligence Report
 **Prepared:** February 2026
@@ -45,7 +45,7 @@
 
 **Target Audience:** Indie hackers, startup founders, content marketers, product managers, investors
 
-**IdeaForge Differentiation:** IdeaForge directly fills the 135K-user vacuum GummySearch created. Everything GummySearch did for Reddit, IdeaForge does across four platforms (Reddit, HN, Twitter/X, GitHub), plus AI-powered business briefs with technical specifications delivered daily to inbox. No dashboard login required. Lower entry price ($19/mo vs $29/mo).
+**ZeroToShip Differentiation:** ZeroToShip directly fills the 135K-user vacuum GummySearch created. Everything GummySearch did for Reddit, ZeroToShip does across four platforms (Reddit, HN, Twitter/X, GitHub), plus AI-powered business briefs with technical specifications delivered daily to inbox. No dashboard login required. Lower entry price ($19/mo vs $29/mo).
 
 *Sources: [GummySearch Final Chapter](https://gummysearch.com/final-chapter/), [PainOnSocial Blog](https://painonsocial.com/blog/gummysearch-shutting-down), [Redreach Blog](https://redreach.ai/blog/gummysearch-shutdown-alternative)*
 
@@ -78,7 +78,7 @@
 
 **Target Audience:** Content marketers, SEO professionals, investors, enterprise strategists
 
-**IdeaForge Differentiation:** Exploding Topics finds what is trending; IdeaForge finds what is painful and turns it into a business plan. At $19/mo vs $39/mo, IdeaForge is 51% cheaper at entry level and delivers actionable business briefs to inbox rather than requiring dashboard exploration. IdeaForge detects demand signals from real user complaints, not keyword volume.
+**ZeroToShip Differentiation:** Exploding Topics finds what is trending; ZeroToShip finds what is painful and turns it into a business plan. At $19/mo vs $39/mo, ZeroToShip is 51% cheaper at entry level and delivers actionable business briefs to inbox rather than requiring dashboard exploration. ZeroToShip detects demand signals from real user complaints, not keyword volume.
 
 *Sources: [Exploding Topics Pricing](https://tipsonblogging.com/2025/05/exploding-topics-pricing/), [Semrush Acquisition](https://news.designrush.com/semrush-buys-exploding-topics-to-strengthen-market-research-capabilities)*
 
@@ -112,7 +112,7 @@
 
 **Target Audience:** Digital marketers, PR professionals, content strategists, agencies
 
-**IdeaForge Differentiation:** SparkToro answers "where does my audience hang out?" IdeaForge answers "what should I build?" Completely different use cases. IdeaForge at $19/mo is 83% cheaper than SparkToro's usable tier ($112/mo) and delivers proactive daily insights rather than requiring manual queries. IdeaForge focuses on opportunity discovery, not audience profiling.
+**ZeroToShip Differentiation:** SparkToro answers "where does my audience hang out?" ZeroToShip answers "what should I build?" Completely different use cases. ZeroToShip at $19/mo is 83% cheaper than SparkToro's usable tier ($112/mo) and delivers proactive daily insights rather than requiring manual queries. ZeroToShip focuses on opportunity discovery, not audience profiling.
 
 *Sources: [SparkToro Pricing](https://sparktoro.com/pricing), [SparkToro G2 Reviews](https://www.g2.com/products/sparktoro/reviews)*
 
@@ -145,7 +145,7 @@
 
 **Target Audience:** SEO professionals, content marketers, market researchers, enterprise teams
 
-**IdeaForge Differentiation:** Glimpse supercharges Google search data; IdeaForge mines social platforms for real human pain points that search data cannot capture. Glimpse tells you search volume for a keyword; IdeaForge tells you what people are frustrated about and how to solve it, with a full business brief. IdeaForge at $19/mo is 81% cheaper than Glimpse's $99/mo.
+**ZeroToShip Differentiation:** Glimpse supercharges Google search data; ZeroToShip mines social platforms for real human pain points that search data cannot capture. Glimpse tells you search volume for a keyword; ZeroToShip tells you what people are frustrated about and how to solve it, with a full business brief. ZeroToShip at $19/mo is 81% cheaper than Glimpse's $99/mo.
 
 *Sources: [Glimpse Chrome Web Store](https://chromewebstore.google.com/detail/glimpse-%E2%80%93-google-trends-s/ocmojhiloccgbpjnkeiooioedaklapap), [Glimpse Website](https://meetglimpse.com/google-trends-supercharged/)*
 
@@ -178,7 +178,7 @@
 
 **Target Audience:** Indie hackers, micro-SaaS builders, solopreneurs
 
-**IdeaForge Differentiation:** BigIdeasDB is a database you search; IdeaForge is a daily briefing service that comes to you. BigIdeasDB requires active exploration; IdeaForge delivers 10 scored opportunities with full business briefs to your inbox every morning. IdeaForge covers real-time signals from HN, Twitter/X, and GitHub that BigIdeasDB misses. Monthly pricing ($19/mo) is lower commitment than $50-200 LTD upfront.
+**ZeroToShip Differentiation:** BigIdeasDB is a database you search; ZeroToShip is a daily briefing service that comes to you. BigIdeasDB requires active exploration; ZeroToShip delivers 10 scored opportunities with full business briefs to your inbox every morning. ZeroToShip covers real-time signals from HN, Twitter/X, and GitHub that BigIdeasDB misses. Monthly pricing ($19/mo) is lower commitment than $50-200 LTD upfront.
 
 *Sources: [BigIdeasDB Website](https://bigideasdb.com/), [BigIdeasDB Futurepedia](https://www.futurepedia.io/tool/bigideasdb), [BigIdeasDB Review](https://www.automateed.com/bigideasdb-review)*
 
@@ -212,7 +212,7 @@
 
 **Target Audience:** Early-stage founders, idea validators, bootstrappers
 
-**IdeaForge Differentiation:** Painpoint is a manual, on-demand analysis tool; IdeaForge is an automated daily intelligence service. IdeaForge covers 4 platforms vs. Painpoint's Reddit-only approach, generates full business briefs with technical specifications, and delivers proactively via email. IdeaForge's $19/mo provides unlimited daily briefings vs. Painpoint's per-analysis credit model.
+**ZeroToShip Differentiation:** Painpoint is a manual, on-demand analysis tool; ZeroToShip is an automated daily intelligence service. ZeroToShip covers 4 platforms vs. Painpoint's Reddit-only approach, generates full business briefs with technical specifications, and delivers proactively via email. ZeroToShip's $19/mo provides unlimited daily briefings vs. Painpoint's per-analysis credit model.
 
 *Sources: [Painpoint.space](https://www.painpoint.space/)*
 
@@ -246,7 +246,7 @@
 
 **Target Audience:** Indie hackers, startup founders, product teams, agencies
 
-**IdeaForge Differentiation:** PainOnSocial is IdeaForge's closest direct competitor in pain point scoring, but is limited to Reddit and requires manual scanning. IdeaForge covers 4 platforms, generates full business briefs (not just solution ideas), delivers proactively via email, and matches PainOnSocial's Starter price at $19/mo while offering significantly more output per dollar.
+**ZeroToShip Differentiation:** PainOnSocial is ZeroToShip's closest direct competitor in pain point scoring, but is limited to Reddit and requires manual scanning. ZeroToShip covers 4 platforms, generates full business briefs (not just solution ideas), delivers proactively via email, and matches PainOnSocial's Starter price at $19/mo while offering significantly more output per dollar.
 
 *Sources: [PainOnSocial](https://painonsocial.com/), [PainOnSocial Pricing](https://painonsocial.com/pricing)*
 
@@ -280,7 +280,7 @@
 
 **Target Audience:** Startup founders validating specific ideas, product managers, indie hackers
 
-**IdeaForge Differentiation:** gappr.ai validates ideas you already have; IdeaForge discovers ideas you have not thought of yet. IdeaForge is proactive (daily briefs to inbox) vs. gappr's reactive (run a report when you have an idea). IdeaForge's pain point detection with 50+ patterns finds opportunities; gappr confirms or denies them. Complementary but different value propositions. Same $19/mo entry price.
+**ZeroToShip Differentiation:** gappr.ai validates ideas you already have; ZeroToShip discovers ideas you have not thought of yet. ZeroToShip is proactive (daily briefs to inbox) vs. gappr's reactive (run a report when you have an idea). ZeroToShip's pain point detection with 50+ patterns finds opportunities; gappr confirms or denies them. Complementary but different value propositions. Same $19/mo entry price.
 
 *Sources: [gappr.ai](https://gappr.ai)*
 
@@ -312,7 +312,7 @@
 
 **Target Audience:** Developers, brand monitors, hobbyists, anyone wanting free keyword alerts
 
-**IdeaForge Differentiation:** F5Bot is a free alerting pipe; IdeaForge is an intelligence engine. F5Bot sends raw keyword matches; IdeaForge sends scored, clustered, deduplicated business opportunities with full briefs. Apples to oranges. F5Bot is for monitoring your brand mentions; IdeaForge is for discovering your next business.
+**ZeroToShip Differentiation:** F5Bot is a free alerting pipe; ZeroToShip is an intelligence engine. F5Bot sends raw keyword matches; ZeroToShip sends scored, clustered, deduplicated business opportunities with full briefs. Apples to oranges. F5Bot is for monitoring your brand mentions; ZeroToShip is for discovering your next business.
 
 *Sources: [F5Bot](https://f5bot.com/), [F5Bot FAQ](https://f5bot.com/faq)*
 
@@ -345,7 +345,7 @@
 
 **Target Audience:** Small businesses, community managers, brand monitors, developers
 
-**IdeaForge Differentiation:** Syften monitors for keywords; IdeaForge monitors for pain points and transforms them into business opportunities. Syften tells you someone mentioned your keyword; IdeaForge tells you what problem 500 people are complaining about and how to solve it for profit. Similar platform coverage but fundamentally different output.
+**ZeroToShip Differentiation:** Syften monitors for keywords; ZeroToShip monitors for pain points and transforms them into business opportunities. Syften tells you someone mentioned your keyword; ZeroToShip tells you what problem 500 people are complaining about and how to solve it for profit. Similar platform coverage but fundamentally different output.
 
 *Sources: [Syften](https://syften.com/), [Syften Capterra](https://www.capterra.com/p/240533/Syften/)*
 
@@ -380,7 +380,7 @@
 
 **Target Audience:** Content marketers, PR professionals, agencies, enterprise marketing teams
 
-**IdeaForge Differentiation:** BuzzSumo analyzes what content performs well; IdeaForge analyzes what problems need solving. Completely different categories. BuzzSumo at $199-999/mo is 10-50x more expensive than IdeaForge's $19/mo. BuzzSumo is for marketing existing products; IdeaForge is for discovering what to build next.
+**ZeroToShip Differentiation:** BuzzSumo analyzes what content performs well; ZeroToShip analyzes what problems need solving. Completely different categories. BuzzSumo at $199-999/mo is 10-50x more expensive than ZeroToShip's $19/mo. BuzzSumo is for marketing existing products; ZeroToShip is for discovering what to build next.
 
 *Sources: [BuzzSumo Pricing](https://buzzsumo.com/pricing/), [BuzzSumo G2 Pricing](https://www.g2.com/products/buzzsumo/pricing)*
 
@@ -416,7 +416,7 @@
 
 **Target Audience:** Enterprise marketing teams, PR agencies, brand managers, corporate strategists
 
-**IdeaForge Differentiation:** Brandwatch is the enterprise gold standard for social listening; IdeaForge is the indie hacker's daily startup intelligence brief. Brandwatch costs 40-250x more ($800-5,000/mo vs $19/mo) and is designed for managing brand perception, not discovering startup opportunities. Different market entirely — IdeaForge will never compete with Brandwatch for enterprise budgets, and Brandwatch will never serve solo founders.
+**ZeroToShip Differentiation:** Brandwatch is the enterprise gold standard for social listening; ZeroToShip is the indie hacker's daily startup intelligence brief. Brandwatch costs 40-250x more ($800-5,000/mo vs $19/mo) and is designed for managing brand perception, not discovering startup opportunities. Different market entirely — ZeroToShip will never compete with Brandwatch for enterprise budgets, and Brandwatch will never serve solo founders.
 
 *Sources: [Brandwatch Plans](https://www.brandwatch.com/plans/), [Brandwatch Pricing Analysis](https://socialrails.com/blog/brandwatch-pricing)*
 
@@ -452,7 +452,7 @@
 
 **Target Audience:** PR teams, agencies, SMB marketers, brand managers
 
-**IdeaForge Differentiation:** Mention monitors your brand; IdeaForge discovers your next business. Mention is reactive (alerts when your name is mentioned); IdeaForge is proactive (discovers problems worth solving). At $19/mo vs $41-149/mo, IdeaForge is more affordable and serves a completely different use case: opportunity discovery vs. brand monitoring.
+**ZeroToShip Differentiation:** Mention monitors your brand; ZeroToShip discovers your next business. Mention is reactive (alerts when your name is mentioned); ZeroToShip is proactive (discovers problems worth solving). At $19/mo vs $41-149/mo, ZeroToShip is more affordable and serves a completely different use case: opportunity discovery vs. brand monitoring.
 
 *Sources: [Mention Pricing](https://mention.com/en/pricing/), [Mention Capterra](https://www.capterra.com/p/149705/Mention/)*
 
@@ -485,7 +485,7 @@
 
 **Target Audience:** First-time founders, idea-stage entrepreneurs, students
 
-**IdeaForge Differentiation:** ValidatorAI validates ideas you bring to it using AI inference; IdeaForge discovers and validates ideas from real human conversations across 4 platforms. IdeaForge's insights are backed by actual user complaints and pain points with source links, not AI-generated hypotheticals. IdeaForge is discovery + validation; ValidatorAI is validation only.
+**ZeroToShip Differentiation:** ValidatorAI validates ideas you bring to it using AI inference; ZeroToShip discovers and validates ideas from real human conversations across 4 platforms. ZeroToShip's insights are backed by actual user complaints and pain points with source links, not AI-generated hypotheticals. ZeroToShip is discovery + validation; ValidatorAI is validation only.
 
 *Sources: [ValidatorAI](https://validatorai.com/), [ValidatorAI Review](https://siteefy.com/ai-tools/validator-ai/)*
 
@@ -519,7 +519,7 @@
 
 **Target Audience:** Indie hackers, product launchers, startup founders tracking PH trends
 
-**IdeaForge Differentiation:** Product Huntr looks at what others are launching; IdeaForge looks at what users are complaining about. Product Huntr is backward-looking (what was built); IdeaForge is forward-looking (what should be built). IdeaForge mines raw demand signals from 4 platforms; Product Huntr mines launch performance from 1 platform.
+**ZeroToShip Differentiation:** Product Huntr looks at what others are launching; ZeroToShip looks at what users are complaining about. Product Huntr is backward-looking (what was built); ZeroToShip is forward-looking (what should be built). ZeroToShip mines raw demand signals from 4 platforms; Product Huntr mines launch performance from 1 platform.
 
 *Sources: [Product Huntr](https://producthuntr.com/), [Product Huntr on Product Hunt](https://www.producthunt.com/products/product-huntr-2)*
 
@@ -532,7 +532,7 @@ Reddit lead generation tool. AI monitors 100,000+ subreddits for keywords daily,
 *Source: [Redreach](https://redreach.ai/)*
 
 **Reddinbox (pricing undisclosed)**
-Multi-platform monitoring with AI-powered Reddit conversation synthesis. Users can ask AI questions about tracked conversations (e.g., "What are the top pain points about [competitor]?"). Designed for startups doing market research, feature validation, and competitive analysis. Closest to IdeaForge in concept but lacks structured daily delivery and business briefs.
+Multi-platform monitoring with AI-powered Reddit conversation synthesis. Users can ask AI questions about tracked conversations (e.g., "What are the top pain points about [competitor]?"). Designed for startups doing market research, feature validation, and competitive analysis. Closest to ZeroToShip in concept but lacks structured daily delivery and business briefs.
 *Source: [Reddinbox](https://reddinbox.com/blog/best-gummysearch-alternative)*
 
 **Indie Hackers Newsletter (Free)**
@@ -548,9 +548,9 @@ Tech news digest newsletters (TLDR, TLDR AI, TLDR Founders, etc.). Summarized ne
 
 ## 2. Feature Comparison Matrix
 
-### IdeaForge vs. Top 8 Competitors — Capability Comparison
+### ZeroToShip vs. Top 8 Competitors — Capability Comparison
 
-| Feature | IdeaForge | GummySearch (discontinued) | Exploding Topics | SparkToro | Glimpse | BigIdeasDB | BuzzSumo | Brandwatch |
+| Feature | ZeroToShip | GummySearch (discontinued) | Exploding Topics | SparkToro | Glimpse | BigIdeasDB | BuzzSumo | Brandwatch |
 |---------|-----------|---------------------------|-------------------|-----------|---------|------------|----------|------------|
 | **Data Sources** | | | | | | | | |
 | Multi-source scraping (Reddit+HN+Twitter+GitHub) | ✅ | ❌ | ❌ | ❌ | ❌ | ⚠️ Reddit+G2+Upwork+App Store | ❌ | ⚠️ Social+news only |
@@ -582,7 +582,7 @@ Tech news digest newsletters (TLDR, TLDR AI, TLDR Founders, etc.). Summarized ne
 
 ### Secondary Competitor Feature Comparison
 
-| Feature | IdeaForge | PainOnSocial | gappr.ai | Painpoint.space | F5Bot | Syften | ValidatorAI | Product Huntr |
+| Feature | ZeroToShip | PainOnSocial | gappr.ai | Painpoint.space | F5Bot | Syften | ValidatorAI | Product Huntr |
 |---------|-----------|--------------|----------|-----------------|-------|--------|-------------|---------------|
 | Multi-source (Reddit+HN+Twitter+GitHub) | ✅ | ❌ Reddit only | ⚠️ 6-11 platforms | ❌ Reddit only | ⚠️ Reddit+HN+Lobsters | ⚠️ Reddit+HN+GitHub+YouTube | ❌ None | ❌ PH only |
 | AI pain point scoring | ✅ | ✅ 0-100 scale | ✅ 0-10 scale | ✅ Impact scores | ❌ | ❌ | ⚠️ AI inference | ❌ |
@@ -600,7 +600,7 @@ Tech news digest newsletters (TLDR, TLDR AI, TLDR Founders, etc.). Summarized ne
 
 | Competitor | Free Tier | Entry Price | Mid Tier | Top/Enterprise | Annual Discount | LTD History |
 |-----------|-----------|-------------|----------|----------------|-----------------|-------------|
-| **IdeaForge** | **$0/mo (limited)** | **$19/mo** | **$99/mo** | **—** | **Planned** | **—** |
+| **ZeroToShip** | **$0/mo (limited)** | **$19/mo** | **$99/mo** | **—** | **Planned** | **—** |
 | GummySearch *(discontinued)* | ❌ | $29/mo | $59/mo | $199/mo | Yes | AppSumo LTD |
 | Exploding Topics | 7-day trial | $39/mo | $99/mo | $249/mo | Yes | ❌ |
 | SparkToro | 5 queries/mo | $112/mo | $225/mo | $450/mo | 25% (3 mo free) | ❌ |
@@ -621,22 +621,22 @@ Tech news digest newsletters (TLDR, TLDR AI, TLDR Founders, etc.). Summarized ne
 
 ### Key Pricing Insights
 
-**IdeaForge occupies the optimal price position in the market:**
+**ZeroToShip occupies the optimal price position in the market:**
 
 1. **Lowest serious entry point at $19/mo.** Only PainOnSocial and gappr.ai match this price, but both have narrower feature sets (Reddit-only or validation-only). F5Bot is free but provides zero intelligence.
 
-2. **Price gap exploitation.** The market has a clear gap between free newsletters/tools ($0) and professional research platforms ($39-249/mo). IdeaForge at $19/mo is the bridge:
+2. **Price gap exploitation.** The market has a clear gap between free newsletters/tools ($0) and professional research platforms ($39-249/mo). ZeroToShip at $19/mo is the bridge:
    - Free tools: F5Bot, ValidatorAI, IH Newsletter, PH Daily, TLDR ($0)
-   - **IdeaForge sweet spot: $19/mo**
+   - **ZeroToShip sweet spot: $19/mo**
    - Next tier up: Exploding Topics ($39/mo), Mention ($41/mo), PainOnSocial Pro ($49/mo), gappr.ai Pro ($49/mo)
    - Premium: Glimpse ($99/mo), SparkToro ($112/mo), BuzzSumo ($199/mo)
    - Enterprise: Brandwatch ($800+/mo)
 
-3. **ChatGPT Plus price anchor.** With ChatGPT Plus at $20/mo, consumers are conditioned to pay ~$20/mo for AI-powered tools. IdeaForge's $19/mo feels natural and fair in this context.
+3. **ChatGPT Plus price anchor.** With ChatGPT Plus at $20/mo, consumers are conditioned to pay ~$20/mo for AI-powered tools. ZeroToShip's $19/mo feels natural and fair in this context.
 
-4. **Value density advantage.** At $19/mo, IdeaForge delivers more output (daily business briefs across 4 platforms with tech specs) than competitors charging 2-5x more for narrower capabilities.
+4. **Value density advantage.** At $19/mo, ZeroToShip delivers more output (daily business briefs across 4 platforms with tech specs) than competitors charging 2-5x more for narrower capabilities.
 
-5. **GummySearch replacement economics.** Former GummySearch users paid $29-199/mo. IdeaForge at $19/mo offers more features at a lower price — easy migration pitch.
+5. **GummySearch replacement economics.** Former GummySearch users paid $29-199/mo. ZeroToShip at $19/mo offers more features at a lower price — easy migration pitch.
 
 ---
 
@@ -659,11 +659,11 @@ The TAM encompasses the full market opportunity for AI-powered market intelligen
 
 **Combined adjacent TAM: ~$14B+ by 2027** (web scraping + competitive intelligence + customer intelligence + decision intelligence convergence)
 
-The broader TAM includes the SEO tools market ($44-85B in 2025), as IdeaForge competes for the same "what should I work on?" budget that founders currently spend on SEO and market research tools.
+The broader TAM includes the SEO tools market ($44-85B in 2025), as ZeroToShip competes for the same "what should I work on?" budget that founders currently spend on SEO and market research tools.
 
 ### Serviceable Addressable Market (SAM)
 
-IdeaForge's SAM is the indie hacker/solopreneur/startup founder segment that actively seeks data-driven opportunity discovery tools.
+ZeroToShip's SAM is the indie hacker/solopreneur/startup founder segment that actively seeks data-driven opportunity discovery tools.
 
 | Segment | Size | Source |
 |---------|------|--------|
@@ -687,7 +687,7 @@ IdeaForge's SAM is the indie hacker/solopreneur/startup founder segment that act
 
 ### Serviceable Obtainable Market (SOM) — Year 1
 
-**Conservative SOM projection for IdeaForge Year 1:**
+**Conservative SOM projection for ZeroToShip Year 1:**
 
 | Metric | Conservative | Moderate | Aggressive |
 |--------|-------------|----------|------------|
@@ -723,7 +723,7 @@ IdeaForge's SAM is the indie hacker/solopreneur/startup founder segment that act
 
 ### 5.1 GummySearch Shutdown — Immediate Market Vacuum
 
-The single largest demand signal in IdeaForge's category:
+The single largest demand signal in ZeroToShip's category:
 
 - **135,000+ displaced users** actively seeking alternatives as of November 2025
 - GummySearch stopped accepting new signups/renewals November 30, 2025
@@ -733,7 +733,7 @@ The single largest demand signal in IdeaForge's category:
 - Multiple competitors (Redreach, PainOnSocial, BigIdeasDB, Reddinbox) are already publishing "GummySearch alternative" content, confirming the demand
 - Search volume for "GummySearch alternative" spiked immediately post-announcement
 
-**IdeaForge opportunity:** Position as the direct successor. "Everything GummySearch did, plus Hacker News, Twitter/X, GitHub, and full business briefs delivered to your inbox. $19/mo."
+**ZeroToShip opportunity:** Position as the direct successor. "Everything GummySearch did, plus Hacker News, Twitter/X, GitHub, and full business briefs delivered to your inbox. $19/mo."
 
 ### 5.2 Reddit Validation Becoming Mainstream
 
@@ -758,12 +758,12 @@ The research tool market is being reshaped by AI:
 
 ### 5.4 Build-in-Public Movement Growth
 
-The build-in-public movement represents IdeaForge's core distribution channel:
+The build-in-public movement represents ZeroToShip's core distribution channel:
 
 - **#buildinpublic on X/Twitter:** 300K+ tweets, 58.6K followers on @buildinpublic account
 - Build-in-Public Community on X has active daily engagement among founders
 - Movement emphasizes transparency, sharing metrics, and tool recommendations
-- IdeaForge's daily brief format aligns perfectly with BIP culture of sharing progress
+- ZeroToShip's daily brief format aligns perfectly with BIP culture of sharing progress
 - Early adopters in BIP community become organic evangelists
 
 ### 5.5 Bootstrapping Trend — Founders Prefer Lean, Low-Cost Tools
@@ -793,21 +793,21 @@ Investment signals confirm market appetite:
 ChatGPT Plus has established the market's price expectation for AI tools:
 
 - **$20/mo is the "default" price** consumers expect for AI-powered tools
-- IdeaForge at $19/mo sits just under this psychological anchor
+- ZeroToShip at $19/mo sits just under this psychological anchor
 - Founders already paying $20/mo for ChatGPT demonstrate willingness to pay for AI tools
 - Multiple AI tools clustering around $15-25/mo confirms this price band
-- IdeaForge benefits from this conditioning without needing to educate the market on AI pricing
+- ZeroToShip benefits from this conditioning without needing to educate the market on AI pricing
 
 ### 5.8 Remote Work Driving Solopreneur Growth
 
-The remote work revolution is expanding IdeaForge's addressable market:
+The remote work revolution is expanding ZeroToShip's addressable market:
 
 - **51.6% of solopreneurs operate from home** (BLS)
 - 34.6M working Americans work remotely; 70M+ in the gig economy
 - 80% of remote-capable workers are hybrid (52%) or fully remote (26%)
 - Women now make up 54.4% of solopreneurs, expanding the addressable demographic
 - Remote work enables side projects and part-time founder activity
-- IdeaForge's email-first delivery model is perfectly suited for asynchronous, remote workflows
+- ZeroToShip's email-first delivery model is perfectly suited for asynchronous, remote workflows
 
 ### 5.9 Search Trend Signals
 
@@ -840,7 +840,7 @@ Related search terms showing sustained or growing interest:
 
 ### 6.1 Primary Positioning: "Daily Startup Intelligence"
 
-IdeaForge should not position as a trend tool (Exploding Topics), a newsletter (TLDR), or an audience research platform (SparkToro). IdeaForge is a **daily briefing service for builders**.
+ZeroToShip should not position as a trend tool (Exploding Topics), a newsletter (TLDR), or an audience research platform (SparkToro). ZeroToShip is a **daily briefing service for builders**.
 
 **Category definition:** Startup Intelligence
 - Not market research (too academic, too expensive)
@@ -859,25 +859,25 @@ IdeaForge should not position as a trend tool (Exploding Topics), a newsletter (
 
 **Immediate opportunity (Window: Now through November 2026):**
 
-135,000 GummySearch users need a new tool. IdeaForge should be their first choice.
+135,000 GummySearch users need a new tool. ZeroToShip should be their first choice.
 
 **Tactics:**
 - Publish "GummySearch Alternative" landing page (SEO play — competitors already ranking for this term)
-- Create migration guide: "From GummySearch to IdeaForge in 5 Minutes"
+- Create migration guide: "From GummySearch to ZeroToShip in 5 Minutes"
 - Offer GummySearch users a special migration discount or extended free trial
 - Target GummySearch's subreddit communities, Twitter following, and newsletter list
-- Publish comparison content: "IdeaForge vs GummySearch — What Changed, What Improved"
+- Publish comparison content: "ZeroToShip vs GummySearch — What Changed, What Improved"
 
-**Messaging:** "Everything GummySearch did for Reddit, IdeaForge does for Reddit + Hacker News + Twitter + GitHub. Plus AI-powered business briefs delivered to your inbox daily. $19/mo — $10 less than GummySearch's starter plan."
+**Messaging:** "Everything GummySearch did for Reddit, ZeroToShip does for Reddit + Hacker News + Twitter + GitHub. Plus AI-powered business briefs delivered to your inbox daily. $19/mo — $10 less than GummySearch's starter plan."
 
 ### 6.3 Price Gap Filler
 
-IdeaForge occupies the most valuable position in the market's pricing landscape:
+ZeroToShip occupies the most valuable position in the market's pricing landscape:
 
 ```
 $0          $19         $39         $99         $199        $800+
 |           |           |           |           |           |
-Free tools  IdeaForge   Exploding   Glimpse     BuzzSumo    Brandwatch
+Free tools  ZeroToShip   Exploding   Glimpse     BuzzSumo    Brandwatch
 F5Bot       ◄────►      Topics      SparkToro
 ValidatorAI "Sweet Spot" gappr Pro
 TLDR                    Mention
@@ -888,7 +888,7 @@ PH Daily                PainOnSocial Pro
 
 ### 6.4 Email-First Delivery Advantage
 
-Most competitors require dashboard login. IdeaForge delivers value to inbox.
+Most competitors require dashboard login. ZeroToShip delivers value to inbox.
 
 **Why this matters:**
 - Zero friction — value arrives without any user action
@@ -902,7 +902,7 @@ Most competitors require dashboard login. IdeaForge delivers value to inbox.
 
 | Competitor | Delivery Model | User Effort Required |
 |-----------|---------------|---------------------|
-| **IdeaForge** | **Daily email brief** | **Zero (opens inbox)** |
+| **ZeroToShip** | **Daily email brief** | **Zero (opens inbox)** |
 | Exploding Topics | Dashboard | Login, explore, filter |
 | SparkToro | Dashboard + manual queries | Login, run queries, analyze |
 | Glimpse | Chrome extension | Open Google Trends, browse |
@@ -912,13 +912,13 @@ Most competitors require dashboard login. IdeaForge delivers value to inbox.
 | BuzzSumo | Dashboard | Login, configure, explore |
 | Brandwatch | Dashboard + reports | Login, configure, analyze |
 
-IdeaForge is the **only** competitor delivering complete, actionable intelligence directly to inbox with zero user effort.
+ZeroToShip is the **only** competitor delivering complete, actionable intelligence directly to inbox with zero user effort.
 
 ### 6.5 Actionable Output Advantage
 
-**The critical differentiator:** Competitors give data. IdeaForge gives business plans.
+**The critical differentiator:** Competitors give data. ZeroToShip gives business plans.
 
-| Competitor | What They Output | What IdeaForge Outputs |
+| Competitor | What They Output | What ZeroToShip Outputs |
 |-----------|-----------------|----------------------|
 | Exploding Topics | "Topic X is trending +250%" | "500 Reddit users are frustrated by [problem]. Here's a business plan with tech stack, MVP spec, and revenue model." |
 | SparkToro | "Your audience reads Blog X and follows @Y" | Full business brief with competitive landscape, target market, and implementation roadmap |
@@ -930,7 +930,7 @@ IdeaForge is the **only** competitor delivering complete, actionable intelligenc
 
 ### 6.6 Multi-Platform Intelligence Moat
 
-IdeaForge is the **only tool** simultaneously scraping Reddit + Hacker News + Twitter/X + GitHub for pain point signals.
+ZeroToShip is the **only tool** simultaneously scraping Reddit + Hacker News + Twitter/X + GitHub for pain point signals.
 
 **Why multi-platform matters:**
 
@@ -941,21 +941,21 @@ IdeaForge is the **only tool** simultaneously scraping Reddit + Hacker News + Tw
 | Twitter/X | Real-time frustration | "Why is there no [solution] for [problem]?" |
 | GitHub Issues | Technical pain points | Bugs, feature requests, and unmet needs in open-source |
 
-**Combined signal > any single platform.** A pain point that appears on Reddit AND HN AND Twitter is exponentially more validated than one appearing on Reddit alone. IdeaForge's multi-platform scoring is a structural advantage that single-platform tools cannot replicate without significant engineering investment.
+**Combined signal > any single platform.** A pain point that appears on Reddit AND HN AND Twitter is exponentially more validated than one appearing on Reddit alone. ZeroToShip's multi-platform scoring is a structural advantage that single-platform tools cannot replicate without significant engineering investment.
 
 ### 6.7 Category Creation Opportunity
 
-IdeaForge has the opportunity to **define "Startup Intelligence"** as a new product category.
+ZeroToShip has the opportunity to **define "Startup Intelligence"** as a new product category.
 
-**Existing categories and why IdeaForge doesn't fit them:**
+**Existing categories and why ZeroToShip doesn't fit them:**
 
-| Existing Category | Key Players | Why IdeaForge Is Different |
+| Existing Category | Key Players | Why ZeroToShip Is Different |
 |-------------------|-------------|---------------------------|
-| Trend Research | Exploding Topics, Glimpse | IdeaForge finds problems, not trends |
-| Social Listening | Brandwatch, Mention, BuzzSumo | IdeaForge serves builders, not brands |
-| Audience Research | SparkToro | IdeaForge discovers opportunities, not audiences |
-| Idea Validation | ValidatorAI, gappr.ai | IdeaForge discovers AND validates, not just validates |
-| Reddit Monitoring | F5Bot, Syften, GummySearch (RIP) | IdeaForge monitors 4 platforms and generates briefs |
+| Trend Research | Exploding Topics, Glimpse | ZeroToShip finds problems, not trends |
+| Social Listening | Brandwatch, Mention, BuzzSumo | ZeroToShip serves builders, not brands |
+| Audience Research | SparkToro | ZeroToShip discovers opportunities, not audiences |
+| Idea Validation | ValidatorAI, gappr.ai | ZeroToShip discovers AND validates, not just validates |
+| Reddit Monitoring | F5Bot, Syften, GummySearch (RIP) | ZeroToShip monitors 4 platforms and generates briefs |
 
 **"Startup Intelligence" category attributes:**
 - Multi-platform pain point scraping
@@ -965,7 +965,7 @@ IdeaForge has the opportunity to **define "Startup Intelligence"** as a new prod
 - Technical specifications included
 - Priced for individual founders ($19/mo)
 
-If IdeaForge can own this category name, every competitor becomes "not quite Startup Intelligence."
+If ZeroToShip can own this category name, every competitor becomes "not quite Startup Intelligence."
 
 ### 6.8 Messaging Framework
 
@@ -976,7 +976,7 @@ If IdeaForge can own this category name, every competitor becomes "not quite Sta
 > "10 validated startup ideas with tech specs. Every morning. $19/mo."
 
 **One-liner:**
-> "IdeaForge scrapes Reddit, Hacker News, Twitter, and GitHub for real pain points, scores them with AI, and delivers full business briefs to your inbox every day."
+> "ZeroToShip scrapes Reddit, Hacker News, Twitter, and GitHub for real pain points, scores them with AI, and delivers full business briefs to your inbox every day."
 
 **Differentiator Statement:**
 > "We don't just find trends. We find problems and write the business plan."
@@ -985,7 +985,7 @@ If IdeaForge can own this category name, every competitor becomes "not quite Sta
 > "Everything GummySearch did, plus Hacker News, Twitter, GitHub, and full business briefs. $19/mo."
 
 **Elevator Pitch (30 seconds):**
-> "Every day, thousands of people post their frustrations on Reddit, Hacker News, Twitter, and GitHub. IdeaForge's AI scrapes these platforms, detects pain points using 50+ signal patterns, clusters and scores them, then generates full business briefs — complete with market sizing, competitive analysis, tech stack, and MVP specs. You wake up to 10 validated startup ideas in your inbox. Think of it as a daily intelligence briefing for founders who want to build what people actually need."
+> "Every day, thousands of people post their frustrations on Reddit, Hacker News, Twitter, and GitHub. ZeroToShip's AI scrapes these platforms, detects pain points using 50+ signal patterns, clusters and scores them, then generates full business briefs — complete with market sizing, competitive analysis, tech stack, and MVP specs. You wake up to 10 validated startup ideas in your inbox. Think of it as a daily intelligence briefing for founders who want to build what people actually need."
 
 **Target Audience Copy Angles:**
 
@@ -995,7 +995,7 @@ If IdeaForge can own this category name, every competitor becomes "not quite Sta
 | Indie hackers | "Stop scrolling Reddit for ideas. We do it for you — across 4 platforms — and write the business plan." |
 | Side project founders | "Wake up to 10 validated side project ideas. Every morning. Cancel anytime." |
 | Bootstrappers | "Enterprise market intelligence for $19/mo. No sales calls. No dashboards to learn. Just your inbox." |
-| Build-in-public founders | "We're building IdeaForge in public. Our users are building their next startup with it." |
+| Build-in-public founders | "We're building ZeroToShip in public. Our users are building their next startup with it." |
 
 ---
 

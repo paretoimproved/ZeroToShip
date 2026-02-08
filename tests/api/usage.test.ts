@@ -1,5 +1,5 @@
 /**
- * Usage Limits Tests for IdeaForge API
+ * Usage Limits Tests for ZeroToShip API
  *
  * Tests the tier-based daily usage limits for AI generation features.
  * These limits protect against API abuse and control costs.

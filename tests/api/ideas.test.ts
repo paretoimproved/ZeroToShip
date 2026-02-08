@@ -1,5 +1,5 @@
 /**
- * Ideas Endpoint Tests for IdeaForge API
+ * Ideas Endpoint Tests for ZeroToShip API
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -213,7 +213,7 @@ describe('Upgrade Prompts', () => {
 
       expect(prompt.requiredTier).toBe('pro');
       expect(prompt.message).toContain('Pro');
-      expect(prompt.upgradeUrl).toBe('https://ideaforge.io/pricing');
+      expect(prompt.upgradeUrl).toBe('https://zerotoship.dev/pricing');
     });
 
     it('should return correct prompt for search feature', () => {
@@ -227,7 +227,7 @@ describe('Upgrade Prompts', () => {
       const prompt = getUpgradePrompt('unknown.feature');
 
       expect(prompt.requiredTier).toBe('pro');
-      expect(prompt.upgradeUrl).toBe('https://ideaforge.io/pricing');
+      expect(prompt.upgradeUrl).toBe('https://zerotoship.dev/pricing');
     });
   });
 });
@@ -418,7 +418,7 @@ describe('Schema Validation', () => {
           feature: 'ideas.fullBrief',
           requiredTier: 'pro',
           currentTier: 'free',
-          upgradeUrl: 'https://ideaforge.io/pricing',
+          upgradeUrl: 'https://zerotoship.dev/pricing',
         },
       };
       expectSchemaValid(ApiErrorSchema, error);

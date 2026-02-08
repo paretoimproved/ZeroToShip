@@ -1,5 +1,5 @@
 /**
- * Database Schema for IdeaForge API
+ * Database Schema for ZeroToShip API
  *
  * Uses Drizzle ORM with PostgreSQL (Supabase)
  */

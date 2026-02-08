@@ -1,5 +1,5 @@
 /**
- * Reddit Scraper for IdeaForge
+ * Reddit Scraper for ZeroToShip
  *
  * Scrapes subreddits for posts containing pain points and product ideas
  * using Reddit's JSON API (append .json to any URL).
@@ -99,7 +99,7 @@ export interface RedditScraperConfig {
 }
 
 const DEFAULT_CONFIG: Required<RedditScraperConfig> = {
-  userAgent: 'IdeaForge/1.0 (Pain Point Discovery Bot)',
+  userAgent: 'ZeroToShip/1.0 (Pain Point Discovery Bot)',
   requestDelay: DEFAULT_REQUEST_DELAY_MS,
   postsPerSubreddit: DEFAULT_POSTS_PER_SUBREDDIT,
   signalsOnly: true,

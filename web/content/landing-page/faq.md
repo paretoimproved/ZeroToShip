@@ -60,7 +60,7 @@ Ideas are generated fresh every morning at 8 AM based on the previous 24-48 hour
 
 ### Can I suggest a source to scrape?
 
-Yes! Email us at feedback@ideaforge.dev with your suggestion. We're always looking to expand our sources.
+Yes! Email us at feedback@zerotoship.dev with your suggestion. We're always looking to expand our sources.
 
 ---
 

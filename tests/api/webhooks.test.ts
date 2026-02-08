@@ -1,5 +1,5 @@
 /**
- * Webhook Tests for IdeaForge API
+ * Webhook Tests for ZeroToShip API
  *
  * Tests for Stripe webhook event handling
  */

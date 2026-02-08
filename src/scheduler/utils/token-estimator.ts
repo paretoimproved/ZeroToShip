@@ -1,5 +1,5 @@
 /**
- * Token Estimation Utilities for IdeaForge
+ * Token Estimation Utilities for ZeroToShip
  *
  * Provides rough token count estimates for cost calculation.
  * Uses ~4 chars per token approximation for English text.

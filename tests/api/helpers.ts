@@ -1,5 +1,5 @@
 /**
- * Test Helpers for IdeaForge API Tests
+ * Test Helpers for ZeroToShip API Tests
  *
  * Provides Zod schema validation utilities for asserting response body shapes.
  */

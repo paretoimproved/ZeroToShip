@@ -1,11 +1,11 @@
 /**
- * Authentication utilities for IdeaForge
+ * Authentication utilities for ZeroToShip
  */
 
 import { api } from "./api";
 import type { User } from "./types";
 
-const TOKEN_KEY = "ideaforge_token";
+const TOKEN_KEY = "zerotoship_token";
 
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;

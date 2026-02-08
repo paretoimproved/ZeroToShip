@@ -1,6 +1,6 @@
-# Agent Instructions - Building IdeaForge
+# Agent Instructions - Building ZeroToShip
 
-> **Purpose**: Copy-paste these prompts to spin up parallel agents. Each agent builds a specific module of IdeaForge.
+> **Purpose**: Copy-paste these prompts to spin up parallel agents. Each agent builds a specific module of ZeroToShip.
 
 ---
 
@@ -156,12 +156,12 @@ interface ProblemCluster {
 ### Agent 5: Deduplicator / Clustering
 
 ~~~text
-You are building the deduplication and clustering module for IdeaForge.
+You are building the deduplication and clustering module for ZeroToShip.
 
 ## Context
-IdeaForge scrapes 300+ posts daily from Reddit, HN, Twitter, GitHub. Many posts describe the same problem in different words. Your job is to cluster similar problems together.
+ZeroToShip scrapes 300+ posts daily from Reddit, HN, Twitter, GitHub. Many posts describe the same problem in different words. Your job is to cluster similar problems together.
 
-**Project location**: c:\Users\brand\Projects\ideaforge\
+**Project location**: c:\Users\brand\Projects\zerotoship\
 
 Read the existing code first:
 - src/scrapers/types.ts (RawPost interface)
@@ -235,12 +235,12 @@ When done, update docs/Context.md with your progress.
 ### Agent 6: Scorer (Can run parallel with Agent 7)
 
 ~~~text
-You are building the scoring module for IdeaForge.
+You are building the scoring module for ZeroToShip.
 
 ## Context
 After deduplication, we have 30-50 unique problems. Your job is to score each problem on impact and effort to calculate priority.
 
-**Project location**: c:\Users\brand\Projects\ideaforge\
+**Project location**: c:\Users\brand\Projects\zerotoship\
 
 **IMPORTANT**: This agent can run in PARALLEL with Agent 7 (Gap Analyzer). You both consume ProblemCluster output from Agent 5.
 
@@ -325,12 +325,12 @@ When done, update docs/Context.md with your progress.
 ### Agent 7: Gap Analyzer (Can run parallel with Agent 6)
 
 ~~~text
-You are building the gap analysis module for IdeaForge.
+You are building the gap analysis module for ZeroToShip.
 
 ## Context
 For each problem cluster, we need to find existing solutions and identify gaps in the market.
 
-**Project location**: c:\Users\brand\Projects\ideaforge\
+**Project location**: c:\Users\brand\Projects\zerotoship\
 
 **IMPORTANT**: This agent can run in PARALLEL with Agent 6 (Scorer). You both consume ProblemCluster output from Agent 5. You do NOT need ScoredProblem - you only need the problemStatement to search for competitors.
 
@@ -403,12 +403,12 @@ When done, update docs/Context.md with your progress.
 ### Agent 8: Brief Generator
 
 ~~~text
-You are building the business brief generator for IdeaForge.
+You are building the business brief generator for ZeroToShip.
 
 ## Context
-This is the core output of IdeaForge - the daily business briefs that users receive.
+This is the core output of ZeroToShip - the daily business briefs that users receive.
 
-**Project location**: c:\Users\brand\Projects\ideaforge\
+**Project location**: c:\Users\brand\Projects\zerotoship\
 
 **Dependencies**: Requires BOTH Agent 6 (Scorer) and Agent 7 (Gap Analyzer) to be complete.
 
@@ -511,12 +511,12 @@ When done, update docs/Context.md with your progress.
 ### Agent 9: Email Delivery
 
 ~~~text
-You are building the email delivery system for IdeaForge.
+You are building the email delivery system for ZeroToShip.
 
 ## Context
 Every day at 8 AM, we send the daily brief email to all subscribers.
 
-**Project location**: c:\Users\brand\Projects\ideaforge\
+**Project location**: c:\Users\brand\Projects\zerotoship\
 
 Read the existing code first:
 - src/generation/brief-generator.ts (IdeaBrief interface)
@@ -554,16 +554,16 @@ When done, update docs/Context.md with your progress.
 ### Agent 10: Web Dashboard
 
 ~~~text
-You are building the web dashboard for IdeaForge.
+You are building the web dashboard for ZeroToShip.
 
 ## Context
 Pro users access the full dashboard to browse ideas, view historical briefs, and manage their account.
 
-**Project location**: c:\Users\brand\Projects\ideaforge-web\ (separate repo)
+**Project location**: c:\Users\brand\Projects\zerotoship-web\ (separate repo)
 
 Read the existing code first:
-- ../ideaforge/src/generation/brief-generator.ts (IdeaBrief interface)
-- ../ideaforge/docs/Feature-Plan.md (Module 3B)
+- ../zerotoship/src/generation/brief-generator.ts (IdeaBrief interface)
+- ../zerotoship/docs/Feature-Plan.md (Module 3B)
 
 ## Your Task
 Build a Next.js dashboard with:
@@ -597,7 +597,7 @@ lib/
 ├── api.ts                # Backend API client
 └── auth.ts               # Authentication
 
-When done, update ../ideaforge/docs/Context.md with your progress.
+When done, update ../zerotoship/docs/Context.md with your progress.
 ~~~
 
 ---
@@ -611,17 +611,17 @@ When done, update ../ideaforge/docs/Context.md with your progress.
 ### Agent 11: REST API
 
 ~~~text
-You are building the REST API for IdeaForge.
+You are building the REST API for ZeroToShip.
 
 ## Context
-The web dashboard (ideaforge-web) needs a backend API to serve real data instead of mocks. This API will also be available to Enterprise tier customers for programmatic access.
+The web dashboard (zerotoship-web) needs a backend API to serve real data instead of mocks. This API will also be available to Enterprise tier customers for programmatic access.
 
-**Project location**: c:\Users\brand\Projects\ideaforge\
+**Project location**: c:\Users\brand\Projects\zerotoship\
 
 Read the existing code first:
 - src/generation/brief-generator.ts (IdeaBrief interface)
 - src/delivery/email.ts (subscriber and delivery types)
-- ideaforge-web/lib/types.ts (frontend TypeScript types to match)
+- zerotoship-web/lib/types.ts (frontend TypeScript types to match)
 - docs/Feature-Plan.md (Module 3C)
 
 ## Your Task
@@ -745,12 +745,12 @@ When done, update docs/Context.md with your progress.
 ### Agent 12: Scheduler / Orchestrator
 
 ~~~text
-You are building the scheduler and orchestrator for IdeaForge.
+You are building the scheduler and orchestrator for ZeroToShip.
 
 ## Context
-IdeaForge needs to run a daily pipeline that scrapes, analyzes, generates briefs, and delivers emails. This module wires everything together and runs on a schedule.
+ZeroToShip needs to run a daily pipeline that scrapes, analyzes, generates briefs, and delivers emails. This module wires everything together and runs on a schedule.
 
-**Project location**: c:\Users\brand\Projects\ideaforge\
+**Project location**: c:\Users\brand\Projects\zerotoship\
 
 Read the existing code first:
 - src/scrapers/*.ts (all scraper exports)
@@ -965,10 +965,10 @@ When done, update docs/Context.md with your progress.
 ### Agent T: Testing Agent
 
 ~~~text
-You are the Testing Agent for IdeaForge. Your job is to write comprehensive tests for modules as they are completed.
+You are the Testing Agent for ZeroToShip. Your job is to write comprehensive tests for modules as they are completed.
 
 ## Context
-**Project location**: c:\Users\brand\Projects\ideaforge\
+**Project location**: c:\Users\brand\Projects\zerotoship\
 
 You can run in PARALLEL with any other agent. As modules are completed, you write and run tests to ensure quality.
 
@@ -1047,10 +1047,10 @@ When done with a module's tests, update docs/Context.md with test status.
 ### Agent R: Code Review Agent
 
 ~~~text
-You are the Code Review Agent for IdeaForge. Your job is to review code quality, architecture consistency, and identify issues.
+You are the Code Review Agent for ZeroToShip. Your job is to review code quality, architecture consistency, and identify issues.
 
 ## Context
-**Project location**: c:\Users\brand\Projects\ideaforge\
+**Project location**: c:\Users\brand\Projects\zerotoship\
 
 You can run in PARALLEL with any other agent. As modules are completed, you review them for quality and consistency.
 

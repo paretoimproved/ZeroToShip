@@ -1,5 +1,5 @@
 /**
- * Database Verification Script for IdeaForge
+ * Database Verification Script for ZeroToShip
  *
  * Verifies all tables, indexes, and constraints exist
  */

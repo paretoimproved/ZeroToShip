@@ -45,7 +45,7 @@ export class SettingsPage extends BasePage {
 
     // Header
     this.heading = page.locator('h1:has-text("Settings")');
-    this.description = page.locator('text="Customize your IdeaForge experience"');
+    this.description = page.locator('text="Customize your ZeroToShip experience"');
 
     // Email preferences
     this.emailSection = page.locator('section:has(h2:text("Email Notifications"))');

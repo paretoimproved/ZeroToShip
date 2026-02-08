@@ -1,5 +1,5 @@
 /**
- * Email Delivery Service for IdeaForge
+ * Email Delivery Service for ZeroToShip
  *
  * Sends daily brief emails to subscribers via Resend.
  * Handles subscriber tiers and tracks delivery status.
@@ -68,9 +68,9 @@ const DEFAULT_CONFIG: Required<Omit<EmailServiceConfig, 'builderConfig'>> & {
   builderConfig: EmailBuilderConfig;
 } = {
   resendApiKey: '',
-  fromEmail: 'briefs@ideaforge.io',
-  fromName: 'IdeaForge',
-  replyTo: 'hello@ideaforge.io',
+  fromEmail: 'briefs@zerotoship.dev',
+  fromName: 'ZeroToShip',
+  replyTo: 'hello@zerotoship.dev',
   builderConfig: {},
 };
 
@@ -181,7 +181,7 @@ export async function sendDailyBrief(
   const builderConfig: EmailBuilderConfig = {
     ...opts.builderConfig,
     unsubscribeUrl: buildUnsubscribeUrl(
-      opts.builderConfig?.baseUrl || 'https://ideaforge.io',
+      opts.builderConfig?.baseUrl || 'https://zerotoship.dev',
       subscriber
     ),
   };

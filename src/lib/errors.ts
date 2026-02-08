@@ -1,5 +1,5 @@
 /**
- * Typed Error Classes for IdeaForge
+ * Typed Error Classes for ZeroToShip
  *
  * Domain-specific error classes with fatal vs. degraded semantics.
  * - fatal: stops the pipeline
@@ -11,10 +11,10 @@ import type { PhaseName } from '../scheduler/types';
 export type ErrorSeverity = 'fatal' | 'degraded';
 
 /**
- * Base error class for all IdeaForge errors.
+ * Base error class for all ZeroToShip errors.
  * Carries severity, phase, and context metadata.
  */
-export class IdeaForgeError extends Error {
+export class ZeroToShipError extends Error {
   readonly severity: ErrorSeverity;
   readonly phase: PhaseName;
   readonly context: Record<string, unknown>;
@@ -29,7 +29,7 @@ export class IdeaForgeError extends Error {
     }
   ) {
     super(message);
-    this.name = 'IdeaForgeError';
+    this.name = 'ZeroToShipError';
     this.severity = options.severity;
     this.phase = options.phase;
     this.context = options.context ?? {};
@@ -42,7 +42,7 @@ export class IdeaForgeError extends Error {
 /**
  * Error from scraper operations (network, rate limit, parse errors).
  */
-export class ScraperError extends IdeaForgeError {
+export class ScraperError extends ZeroToShipError {
   constructor(
     message: string,
     options: {
@@ -64,7 +64,7 @@ export class ScraperError extends IdeaForgeError {
 /**
  * Error from analysis operations (clustering, scoring, gap analysis).
  */
-export class AnalysisError extends IdeaForgeError {
+export class AnalysisError extends ZeroToShipError {
   constructor(
     message: string,
     options: {
@@ -86,7 +86,7 @@ export class AnalysisError extends IdeaForgeError {
 /**
  * Error from delivery operations (email send failures).
  */
-export class DeliveryError extends IdeaForgeError {
+export class DeliveryError extends ZeroToShipError {
   constructor(
     message: string,
     options: {
@@ -108,7 +108,7 @@ export class DeliveryError extends IdeaForgeError {
 /**
  * Error from API route/service operations.
  */
-export class ApiError extends IdeaForgeError {
+export class ApiError extends ZeroToShipError {
   readonly statusCode: number;
 
   constructor(
@@ -133,29 +133,29 @@ export class ApiError extends IdeaForgeError {
 }
 
 /**
- * Type guard: check if an error is an IdeaForgeError
+ * Type guard: check if an error is an ZeroToShipError
  */
-export function isIdeaForgeError(error: unknown): error is IdeaForgeError {
-  return error instanceof IdeaForgeError;
+export function isZeroToShipError(error: unknown): error is ZeroToShipError {
+  return error instanceof ZeroToShipError;
 }
 
 /**
  * Type guard: check if an error has fatal severity
  */
 export function isFatalError(error: unknown): boolean {
-  return isIdeaForgeError(error) && error.severity === 'fatal';
+  return isZeroToShipError(error) && error.severity === 'fatal';
 }
 
 /**
- * Wrap an unknown error into the appropriate IdeaForge error type.
- * Preserves existing IdeaForge errors as-is.
+ * Wrap an unknown error into the appropriate ZeroToShip error type.
+ * Preserves existing ZeroToShip errors as-is.
  */
 export function wrapError(
   error: unknown,
   ErrorClass: typeof ScraperError | typeof AnalysisError | typeof DeliveryError,
   context?: Record<string, unknown>
-): IdeaForgeError {
-  if (error instanceof IdeaForgeError) {
+): ZeroToShipError {
+  if (error instanceof ZeroToShipError) {
     return error;
   }
 

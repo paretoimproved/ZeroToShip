@@ -1,5 +1,5 @@
 /**
- * Billing utilities for IdeaForge frontend
+ * Billing utilities for ZeroToShip frontend
  *
  * Provides easy-to-use functions for Stripe checkout and billing portal
  */

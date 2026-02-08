@@ -1,5 +1,5 @@
 /**
- * Test data constants for IdeaForge E2E tests
+ * Test data constants for ZeroToShip E2E tests
  */
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
@@ -15,9 +15,9 @@ export interface TestUser {
 
 export const TEST_USERS: Record<UserTier, TestUser> = {
   anonymous: { email: null, password: null, tier: 'anonymous' },
-  free: { email: 'free@test.ideaforge.io', password: 'testpass123', tier: 'free' },
-  pro: { email: 'pro@test.ideaforge.io', password: 'testpass123', tier: 'pro' },
-  enterprise: { email: 'enterprise@test.ideaforge.io', password: 'testpass123', tier: 'enterprise' },
+  free: { email: 'free@test.zerotoship.dev', password: 'testpass123', tier: 'free' },
+  pro: { email: 'pro@test.zerotoship.dev', password: 'testpass123', tier: 'pro' },
+  enterprise: { email: 'enterprise@test.zerotoship.dev', password: 'testpass123', tier: 'enterprise' },
 };
 
 export interface SeedIdea {

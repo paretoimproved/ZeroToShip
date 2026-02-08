@@ -15,7 +15,7 @@ export class GitHubAPI {
   constructor(token?: string) {
     this.octokit = new Octokit({
       auth: token || config.GITHUB_TOKEN,
-      userAgent: 'IdeaForge/1.0',
+      userAgent: 'ZeroToShip/1.0',
     });
   }
 

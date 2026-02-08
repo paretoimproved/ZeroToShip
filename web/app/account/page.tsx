@@ -470,7 +470,7 @@ export default function AccountPage() {
                 onClick={async () => {
                   if (!newKeyName.trim()) return;
                   try {
-                    const token = localStorage.getItem('ideaforge_token');
+                    const token = localStorage.getItem('zerotoship_token');
                     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
                     const response = await fetch(`${apiUrl}/user/api-keys`, {
                       method: 'POST',

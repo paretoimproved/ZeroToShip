@@ -19,7 +19,7 @@ const companyLinks = [
   },
   {
     label: "Contact",
-    href: "mailto:hello@ideaforge.dev",
+    href: "mailto:hello@zerotoship.dev",
     external: true,
   },
 ] as const;
@@ -153,7 +153,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand */}
           <div>
-            <p className="text-xl font-bold text-white">IdeaForge</p>
+            <p className="text-xl font-bold text-white">ZeroToShip</p>
             <p className="text-sm text-gray-400 mt-2">
               Daily startup ideas, scraped and scored by AI.
             </p>
@@ -219,7 +219,7 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="mt-12 pt-8 border-t border-gray-800 text-center text-sm">
-          <p>&copy; {new Date().getFullYear()} IdeaForge. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} ZeroToShip. All rights reserved.</p>
           <p className="text-gray-500 mt-1">
             Built for indie hackers, by indie hackers.
           </p>

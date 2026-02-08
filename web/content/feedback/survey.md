@@ -11,7 +11,7 @@
 ## NPS Question
 
 ### Question
-How likely are you to recommend IdeaForge to a friend or colleague?
+How likely are you to recommend ZeroToShip to a friend or colleague?
 
 ### Scale
 0 (Not at all likely) — 10 (Extremely likely)
@@ -25,7 +25,7 @@ How likely are you to recommend IdeaForge to a friend or colleague?
 > Thanks! What would make you rate us higher?
 
 **Promoters (9-10):**
-> Awesome! What do you love most about IdeaForge?
+> Awesome! What do you love most about ZeroToShip?
 
 ---
 
@@ -82,7 +82,7 @@ Ranking (drag to reorder) or single select
 ## Feature Request
 
 ### Question
-What feature would make IdeaForge 10x more valuable for you?
+What feature would make ZeroToShip 10x more valuable for you?
 
 ### Type
 Free text (optional)
@@ -101,7 +101,7 @@ Thanks for your feedback! It directly shapes what we build next.
 Want to help even more? [Upgrade to Pro]({{upgradeUrl}}) and get 10 full briefs daily.
 
 ### CTA (if Pro)
-Have more thoughts? Email us anytime at feedback@ideaforge.dev
+Have more thoughts? Email us anytime at feedback@zerotoship.dev
 
 ---
 

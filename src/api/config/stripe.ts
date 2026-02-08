@@ -1,5 +1,5 @@
 /**
- * Stripe Configuration for IdeaForge API
+ * Stripe Configuration for ZeroToShip API
  *
  * Handles Stripe client initialization and price ID mappings
  */

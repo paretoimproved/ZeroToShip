@@ -1,5 +1,5 @@
 /**
- * Ideas Service for IdeaForge API
+ * Ideas Service for ZeroToShip API
  *
  * Business logic for fetching, filtering, and managing ideas
  */
@@ -482,7 +482,7 @@ export async function getIdeaByIdForTier(
       idea: filtered,
       upgrade: {
         message: 'Upgrade to Pro to see the full business brief',
-        url: 'https://ideaforge.io/pricing',
+        url: 'https://zerotoship.dev/pricing',
       },
     };
   }

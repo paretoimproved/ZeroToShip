@@ -209,7 +209,7 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for multiple
 <body>
   <div class="container">
     <div class="header">
-      <h1>IdeaForge</h1>
+      <h1>ZeroToShip</h1>
       <p class="date">Sunday, February 8, 2026</p>
     </div>
 
@@ -328,17 +328,17 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for multiple
     <div class="cta-section">
       <h3>Unlock All Ideas</h3>
       <p>Get access to 10 ideas daily, full briefs, and exclusive deep-dives.</p>
-      <a href="https://test.ideaforge.io/upgrade" class="cta-button">Upgrade to Pro</a>
+      <a href="https://test.zerotoship.dev/upgrade" class="cta-button">Upgrade to Pro</a>
     </div>
   
     
     <div class="footer">
-      <p>You're receiving this because you subscribed to IdeaForge daily briefs.</p>
+      <p>You're receiving this because you subscribed to ZeroToShip daily briefs.</p>
       <p>
-        <a href="https://test.ideaforge.io/unsub">Unsubscribe</a> |
-        <a href="https://test.ideaforge.io">View in browser</a>
+        <a href="https://test.zerotoship.dev/unsub">Unsubscribe</a> |
+        <a href="https://test.zerotoship.dev">View in browser</a>
       </p>
-      <p>&copy; 2026 IdeaForge. All rights reserved.</p>
+      <p>&copy; 2026 ZeroToShip. All rights reserved.</p>
     </div>
   
   </div>
@@ -553,7 +553,7 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for multiple
 <body>
   <div class="container">
     <div class="header">
-      <h1>IdeaForge</h1>
+      <h1>ZeroToShip</h1>
       <p class="date">Sunday, February 8, 2026</p>
     </div>
 
@@ -667,12 +667,12 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for multiple
     
     
     <div class="footer">
-      <p>You're receiving this because you subscribed to IdeaForge daily briefs.</p>
+      <p>You're receiving this because you subscribed to ZeroToShip daily briefs.</p>
       <p>
-        <a href="https://test.ideaforge.io/unsub">Unsubscribe</a> |
-        <a href="https://test.ideaforge.io">View in browser</a>
+        <a href="https://test.zerotoship.dev/unsub">Unsubscribe</a> |
+        <a href="https://test.zerotoship.dev">View in browser</a>
       </p>
-      <p>&copy; 2026 IdeaForge. All rights reserved.</p>
+      <p>&copy; 2026 ZeroToShip. All rights reserved.</p>
     </div>
   
   </div>
@@ -681,7 +681,7 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for multiple
 `;
 
 exports[`Email Builder > HTML template snapshots > matches snapshot for plain text (free tier) 1`] = `
-"IDEAFORGE DAILY BRIEF
+"ZEROTOSHIP DAILY BRIEF
 ==================================================
 
 #1 TODAY'S TOP IDEA
@@ -721,14 +721,14 @@ MORE IDEAS TODAY
 
 --------------------------------------------------
 Upgrade to Pro for all 10 daily ideas:
-https://test.ideaforge.io/upgrade
+https://test.zerotoship.dev/upgrade
 
 --------------------------------------------------
-Unsubscribe: https://test.ideaforge.io/unsub"
+Unsubscribe: https://test.zerotoship.dev/unsub"
 `;
 
 exports[`Email Builder > HTML template snapshots > matches snapshot for plain text (pro tier) 1`] = `
-"IDEAFORGE DAILY BRIEF
+"ZEROTOSHIP DAILY BRIEF
 ==================================================
 
 #1 TODAY'S TOP IDEA
@@ -769,7 +769,7 @@ MORE IDEAS TODAY
    Tagline for idea 5
 
 --------------------------------------------------
-Unsubscribe: https://test.ideaforge.io/unsub"
+Unsubscribe: https://test.zerotoship.dev/unsub"
 `;
 
 exports[`Email Builder > HTML template snapshots > matches snapshot for single brief (free tier) 1`] = `
@@ -979,7 +979,7 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for single b
 <body>
   <div class="container">
     <div class="header">
-      <h1>IdeaForge</h1>
+      <h1>ZeroToShip</h1>
       <p class="date">Sunday, February 8, 2026</p>
     </div>
 
@@ -1045,17 +1045,17 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for single b
     <div class="cta-section">
       <h3>Unlock All Ideas</h3>
       <p>Get access to 10 ideas daily, full briefs, and exclusive deep-dives.</p>
-      <a href="https://test.ideaforge.io/upgrade" class="cta-button">Upgrade to Pro</a>
+      <a href="https://test.zerotoship.dev/upgrade" class="cta-button">Upgrade to Pro</a>
     </div>
   
     
     <div class="footer">
-      <p>You're receiving this because you subscribed to IdeaForge daily briefs.</p>
+      <p>You're receiving this because you subscribed to ZeroToShip daily briefs.</p>
       <p>
-        <a href="https://test.ideaforge.io/unsub">Unsubscribe</a> |
-        <a href="https://test.ideaforge.io">View in browser</a>
+        <a href="https://test.zerotoship.dev/unsub">Unsubscribe</a> |
+        <a href="https://test.zerotoship.dev">View in browser</a>
       </p>
-      <p>&copy; 2026 IdeaForge. All rights reserved.</p>
+      <p>&copy; 2026 ZeroToShip. All rights reserved.</p>
     </div>
   
   </div>

@@ -1,5 +1,5 @@
 /**
- * Admin Routes for IdeaForge API
+ * Admin Routes for ZeroToShip API
  *
  * Provides admin-only endpoints for pipeline monitoring, system health,
  * user management, and pipeline control.

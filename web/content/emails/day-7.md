@@ -1,9 +1,9 @@
 # Day 7 Email (1 week after signup)
 
 ## Subject Line Options
-- Your first week with IdeaForge (quick recap)
+- Your first week with ZeroToShip (quick recap)
 - 7 days, {{totalIdeas}} ideas — what's next?
-- Help me make IdeaForge better for you
+- Help me make ZeroToShip better for you
 
 ---
 
@@ -11,7 +11,7 @@
 
 Hey {{name}},
 
-You've been with IdeaForge for a week. Here's your recap:
+You've been with ZeroToShip for a week. Here's your recap:
 
 ---
 
@@ -28,7 +28,7 @@ You've been with IdeaForge for a week. Here's your recap:
 
 **I have a favor to ask.**
 
-What would help me improve IdeaForge for you?
+What would help me improve ZeroToShip for you?
 
 Just hit reply and answer any of these:
 
@@ -66,14 +66,14 @@ You're on the free plan. Here's what Pro unlocks:
 
 Thanks for being an early user. Seriously.
 
-— {{senderName}}, Founder of IdeaForge
+— {{senderName}}, Founder of ZeroToShip
 
 P.S. Found an idea you're excited about? Reply and tell me—I'd love to hear what you're building.
 
 ---
 
 ## Footer
-You're receiving this because you signed up for IdeaForge.
+You're receiving this because you signed up for ZeroToShip.
 [Manage preferences]({{preferencesUrl}}) · [Unsubscribe]({{unsubscribeUrl}})
 
 ---

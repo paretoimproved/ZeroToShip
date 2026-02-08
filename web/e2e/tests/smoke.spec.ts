@@ -7,13 +7,13 @@ import { test, expect } from '@playwright/test';
 test.describe('Smoke Tests', () => {
   test('homepage loads', async ({ page }) => {
     await page.goto('/');
-    await expect(page).toHaveTitle(/IdeaForge/i);
+    await expect(page).toHaveTitle(/ZeroToShip/i);
   });
 
   test('navigation bar is visible', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('nav')).toBeVisible();
-    await expect(page.locator('a:has-text("IdeaForge")')).toBeVisible();
+    await expect(page.locator('a:has-text("ZeroToShip")')).toBeVisible();
   });
 
   test('can navigate to archive page', async ({ page }) => {

@@ -2,7 +2,7 @@
  * Pro User Journey
  *
  * End-to-end journey simulating an authenticated Pro tier user exploring
- * IdeaForge: viewing up to 10 ideas on the homepage, reading a full
+ * ZeroToShip: viewing up to 10 ideas on the homepage, reading a full
  * business brief with all 9 sections, using archive search/filter/pagination,
  * configuring settings, verifying the Pro plan on the account page,
  * and logging out.

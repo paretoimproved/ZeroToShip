@@ -1,5 +1,5 @@
 /**
- * Problem Scorer for IdeaForge
+ * Problem Scorer for ZeroToShip
  *
  * Scores deduplicated problem clusters on impact and effort
  * to calculate priority for startup opportunity ranking.

@@ -2,7 +2,7 @@ type CellStatus = "yes" | "no" | "partial" | "text";
 
 interface ComparisonRow {
   feature: string;
-  ideaforge: { status: CellStatus; label: string };
+  zerotoship: { status: CellStatus; label: string };
   manual: { status: CellStatus; label: string };
   aiTools: { status: CellStatus; label: string };
 }
@@ -10,49 +10,49 @@ interface ComparisonRow {
 const COMPARISON_DATA: ComparisonRow[] = [
   {
     feature: "Daily fresh ideas",
-    ideaforge: { status: "yes", label: "Yes" },
+    zerotoship: { status: "yes", label: "Yes" },
     manual: { status: "no", label: "No" },
     aiTools: { status: "no", label: "No" },
   },
   {
     feature: "Multi-source scraping",
-    ideaforge: { status: "yes", label: "Yes (4 platforms)" },
+    zerotoship: { status: "yes", label: "Yes (4 platforms)" },
     manual: { status: "partial", label: "Partial (1-2 at a time)" },
     aiTools: { status: "no", label: "No" },
   },
   {
     feature: "AI scoring & ranking",
-    ideaforge: { status: "yes", label: "Yes" },
+    zerotoship: { status: "yes", label: "Yes" },
     manual: { status: "no", label: "No" },
     aiTools: { status: "no", label: "No" },
   },
   {
     feature: "Full business brief",
-    ideaforge: { status: "yes", label: "Yes" },
+    zerotoship: { status: "yes", label: "Yes" },
     manual: { status: "no", label: "No" },
     aiTools: { status: "partial", label: "Partial" },
   },
   {
     feature: "Technical specs",
-    ideaforge: { status: "yes", label: "Yes" },
+    zerotoship: { status: "yes", label: "Yes" },
     manual: { status: "no", label: "No" },
     aiTools: { status: "partial", label: "Partial" },
   },
   {
     feature: "Go-to-market plan",
-    ideaforge: { status: "yes", label: "Yes" },
+    zerotoship: { status: "yes", label: "Yes" },
     manual: { status: "no", label: "No" },
     aiTools: { status: "partial", label: "Partial" },
   },
   {
     feature: "Time investment",
-    ideaforge: { status: "text", label: "5 min/day" },
+    zerotoship: { status: "text", label: "5 min/day" },
     manual: { status: "text", label: "2-3 hours/day" },
     aiTools: { status: "text", label: "30+ min/day" },
   },
   {
     feature: "Price",
-    ideaforge: { status: "text", label: "Free - $19/mo" },
+    zerotoship: { status: "text", label: "Free - $19/mo" },
     manual: { status: "text", label: "Your time ($50-100/hr)" },
     aiTools: { status: "text", label: "$20+/mo" },
   },
@@ -163,7 +163,7 @@ function DesktopTable() {
       <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
         <table className="w-full border-collapse">
           <caption className="sr-only">
-            Feature comparison between IdeaForge, manual research, and AI tools
+            Feature comparison between ZeroToShip, manual research, and AI tools
           </caption>
           <thead>
             <tr className="bg-gray-100 dark:bg-gray-800">
@@ -177,7 +177,7 @@ function DesktopTable() {
                 scope="col"
                 className="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-white text-left bg-primary-50 dark:bg-primary-900/30"
               >
-                IdeaForge
+                ZeroToShip
               </th>
               <th
                 scope="col"
@@ -210,7 +210,7 @@ function DesktopTable() {
                   {row.feature}
                 </th>
                 <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300 bg-primary-50 dark:bg-primary-900/30">
-                  <StatusCell status={row.ideaforge.status} label={row.ideaforge.label} />
+                  <StatusCell status={row.zerotoship.status} label={row.zerotoship.label} />
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
                   <StatusCell status={row.manual.status} label={row.manual.label} />
@@ -240,21 +240,21 @@ function MobileCards() {
           </h3>
           <dl className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <dt className="text-gray-600 dark:text-gray-400">IdeaForge</dt>
+              <dt className="text-gray-600 dark:text-gray-400">ZeroToShip</dt>
               <dd className="text-gray-900 dark:text-white font-medium inline-flex items-center">
-                <MobileStatusIcon status={row.ideaforge.status} />
-                {row.ideaforge.status === "text" ? (
-                  <span>{row.ideaforge.label}</span>
+                <MobileStatusIcon status={row.zerotoship.status} />
+                {row.zerotoship.status === "text" ? (
+                  <span>{row.zerotoship.label}</span>
                 ) : (
                   <>
                     <span className="sr-only">
-                      {row.ideaforge.status === "yes"
+                      {row.zerotoship.status === "yes"
                         ? "Yes"
-                        : row.ideaforge.status === "no"
+                        : row.zerotoship.status === "no"
                           ? "No"
                           : "Partial"}
                     </span>
-                    <span>{row.ideaforge.label}</span>
+                    <span>{row.zerotoship.label}</span>
                   </>
                 )}
               </dd>
@@ -318,7 +318,7 @@ export default function ComparisonTable() {
             id="comparison-heading"
             className="text-3xl font-bold text-gray-900 dark:text-white sm:text-4xl"
           >
-            IdeaForge vs. Doing It Yourself
+            ZeroToShip vs. Doing It Yourself
           </h2>
           <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
             See how much time and effort you save.
