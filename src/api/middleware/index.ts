@@ -10,6 +10,7 @@ export {
   authPlugin,
   generateApiKey,
   createApiKeyForUser,
+  invalidateTierCache,
 } from './auth';
 
 export {

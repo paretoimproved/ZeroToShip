@@ -180,18 +180,18 @@ describe('Access Control Functions', () => {
       expect(canAccessArchive('anonymous')).toBe(false);
     });
 
-    it('should return true for free and above', () => {
-      expect(canAccessArchive('free')).toBe(true);
+    it('should return true for pro and above', () => {
+      expect(canAccessArchive('free')).toBe(false);
       expect(canAccessArchive('pro')).toBe(true);
       expect(canAccessArchive('enterprise')).toBe(true);
     });
   });
 
   describe('canSearch', () => {
-    it('should only be available for enterprise', () => {
+    it('should be available for pro and above', () => {
       expect(canSearch('anonymous')).toBe(false);
       expect(canSearch('free')).toBe(false);
-      expect(canSearch('pro')).toBe(false);
+      expect(canSearch('pro')).toBe(true);
       expect(canSearch('enterprise')).toBe(true);
     });
   });
@@ -219,8 +219,8 @@ describe('Upgrade Prompts', () => {
     it('should return correct prompt for search feature', () => {
       const prompt = getUpgradePrompt('ideas.search');
 
-      expect(prompt.requiredTier).toBe('enterprise');
-      expect(prompt.message).toContain('Enterprise');
+      expect(prompt.requiredTier).toBe('pro');
+      expect(prompt.message).toContain('Pro');
     });
 
     it('should return default prompt for unknown feature', () => {

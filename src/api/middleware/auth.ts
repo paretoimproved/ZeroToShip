@@ -18,6 +18,20 @@ import type { UserTier } from '../schemas';
 const supabaseUrl = config.SUPABASE_URL;
 const supabaseServiceKey = config.SUPABASE_SERVICE_ROLE_KEY;
 
+/**
+ * TTL cache for user tier lookups
+ * Tiers change ~once/month (subscription events), so 60s staleness is safe.
+ */
+const TIER_CACHE_TTL_MS = 60_000;
+const tierCache = new Map<string, { tier: UserTier; expiresAt: number }>();
+
+/**
+ * Batch `lastUsedAt` writes for API keys
+ * Instead of updating on every request, update at most once per minute per key.
+ */
+const LAST_USED_THROTTLE_MS = 60_000;
+const lastUsedTimestamps = new Map<string, number>();
+
 export const supabase =
   supabaseUrl && supabaseServiceKey
     ? createClient(supabaseUrl, supabaseServiceKey, {
@@ -99,12 +113,17 @@ async function verifyApiKey(
       return null;
     }
 
-    // Update last used timestamp (fire and forget)
-    db.update(apiKeys)
-      .set({ lastUsedAt: new Date() })
-      .where(eq(apiKeys.id, apiKey.id))
-      .execute()
-      .catch(() => {});
+    // Throttled last-used update: at most once per minute per key
+    const lastUpdated = lastUsedTimestamps.get(apiKey.id);
+    const now = Date.now();
+    if (!lastUpdated || now - lastUpdated > LAST_USED_THROTTLE_MS) {
+      lastUsedTimestamps.set(apiKey.id, now);
+      db.update(apiKeys)
+        .set({ lastUsedAt: new Date() })
+        .where(eq(apiKeys.id, apiKey.id))
+        .execute()
+        .catch(() => {});
+    }
 
     return {
       userId: apiKey.userId,
@@ -116,9 +135,19 @@ async function verifyApiKey(
 }
 
 /**
- * Get user's subscription tier
+ * Get user's subscription tier (with 60s TTL cache)
+ *
+ * Cache invalidation: Stripe webhooks (billing.ts) call updateUserTier()
+ * which is the only way tiers change. We accept up to 60s of staleness
+ * because tier changes are rare (~once/month per user).
  */
 async function getUserTier(userId: string): Promise<UserTier> {
+  // Check cache first
+  const cached = tierCache.get(userId);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.tier;
+  }
+
   try {
     const result = await db
       .select({ plan: subscriptions.plan, status: subscriptions.status })
@@ -127,14 +156,22 @@ async function getUserTier(userId: string): Promise<UserTier> {
       .limit(1);
 
     const sub = result[0];
-    if (!sub || sub.status !== 'active') {
-      return 'free';
-    }
+    const tier = (!sub || sub.status !== 'active') ? 'free' : getTierFromPlan(sub.plan);
 
-    return getTierFromPlan(sub.plan);
+    // Cache the result
+    tierCache.set(userId, { tier, expiresAt: Date.now() + TIER_CACHE_TTL_MS });
+
+    return tier;
   } catch {
     return 'free';
   }
+}
+
+/**
+ * Invalidate tier cache for a user (call from Stripe webhooks)
+ */
+export function invalidateTierCache(userId: string): void {
+  tierCache.delete(userId);
 }
 
 /**

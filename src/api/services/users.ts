@@ -22,7 +22,7 @@ import type {
   UserTier,
   EffortLevel,
 } from '../schemas';
-import { generateApiKey } from '../middleware/auth';
+import { generateApiKey, invalidateTierCache } from '../middleware/auth';
 
 /**
  * Get user by ID
@@ -301,6 +301,8 @@ export async function deactivateApiKey(userId: string, keyId: string): Promise<b
 export async function updateUserTier(userId: string, tier: UserTier): Promise<boolean> {
   try {
     await db.update(users).set({ tier, updatedAt: new Date() }).where(eq(users.id, userId));
+    // Invalidate the tier cache so the new tier takes effect immediately
+    invalidateTierCache(userId);
     return true;
   } catch {
     return false;

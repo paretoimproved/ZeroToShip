@@ -19,6 +19,7 @@ describe('Usage Limits Configuration', () => {
       expect(limits.requestsPerHour).toBe(10);
       expect(limits.freshBriefsPerDay).toBe(0); // No fresh briefs for anonymous
       expect(limits.validationRequestsPerDay).toBe(0);
+      expect(limits.weeklyBriefAllowance).toBeNull();
       expect(limits.overagePricePerBrief).toBeNull();
     });
 
@@ -27,6 +28,7 @@ describe('Usage Limits Configuration', () => {
       expect(limits.requestsPerHour).toBe(100);
       expect(limits.freshBriefsPerDay).toBe(0); // No fresh briefs for free
       expect(limits.validationRequestsPerDay).toBe(0);
+      expect(limits.weeklyBriefAllowance).toBe(1); // 1 brief/week teaser
       expect(limits.overagePricePerBrief).toBeNull();
     });
 
@@ -35,6 +37,7 @@ describe('Usage Limits Configuration', () => {
       expect(limits.requestsPerHour).toBe(1000);
       expect(limits.freshBriefsPerDay).toBe(10); // Matches daily batch
       expect(limits.validationRequestsPerDay).toBe(2);
+      expect(limits.weeklyBriefAllowance).toBeNull(); // Uses daily limit
       expect(limits.overagePricePerBrief).toBeNull(); // No overage for Pro
     });
 
@@ -43,6 +46,7 @@ describe('Usage Limits Configuration', () => {
       expect(limits.requestsPerHour).toBe(10000);
       expect(limits.freshBriefsPerDay).toBe(50); // Generous but bounded
       expect(limits.validationRequestsPerDay).toBe(10);
+      expect(limits.weeklyBriefAllowance).toBeNull(); // Uses daily limit
       expect(limits.overagePricePerBrief).toBe(0.15); // $0.15 per additional
     });
 

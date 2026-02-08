@@ -160,26 +160,39 @@ export async function getUsageStatus(
 }
 
 /**
- * Increment fresh brief usage
- * Returns whether the operation was allowed and any overage charges
+ * Increment fresh brief usage atomically
+ *
+ * Uses a single UPDATE ... WHERE ... RETURNING to atomically check the limit
+ * and increment in one query, eliminating the race condition between concurrent
+ * requests that could bypass the limit with a check-then-increment pattern.
  */
 export async function incrementBriefUsage(
   userId: string,
   tier: UserTier
 ): Promise<IncrementResult> {
   const limits = TIER_USAGE_LIMITS[tier] || TIER_USAGE_LIMITS.free;
-  const usage = await getTodayUsage(userId);
+  const today = getTodayDateString();
 
-  // Check if within limit
-  if (usage.freshBriefsUsed < limits.freshBriefsPerDay) {
-    await db
-      .update(usageTracking)
-      .set({
-        freshBriefsUsed: sql`${usageTracking.freshBriefsUsed} + 1`,
-        updatedAt: new Date(),
-      })
-      .where(eq(usageTracking.id, usage.id));
+  // Ensure today's record exists
+  await getTodayUsage(userId);
 
+  // Atomic increment: only succeeds if under the limit
+  const updated = await db
+    .update(usageTracking)
+    .set({
+      freshBriefsUsed: sql`${usageTracking.freshBriefsUsed} + 1`,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(usageTracking.userId, userId),
+        eq(usageTracking.date, today),
+        sql`${usageTracking.freshBriefsUsed} < ${limits.freshBriefsPerDay}`
+      )
+    )
+    .returning();
+
+  if (updated.length > 0) {
     return { allowed: true, isOverage: false, overageAmountCents: 0 };
   }
 
@@ -188,7 +201,7 @@ export async function incrementBriefUsage(
     return { allowed: false, isOverage: false, overageAmountCents: 0 };
   }
 
-  // Allow with overage
+  // Allow with overage (always increment, no upper bound)
   const overageCents = Math.round(limits.overagePricePerBrief * 100);
 
   await db
@@ -199,13 +212,18 @@ export async function incrementBriefUsage(
       overageAmountCents: sql`${usageTracking.overageAmountCents} + ${overageCents}`,
       updatedAt: new Date(),
     })
-    .where(eq(usageTracking.id, usage.id));
+    .where(
+      and(
+        eq(usageTracking.userId, userId),
+        eq(usageTracking.date, today)
+      )
+    );
 
   return { allowed: true, isOverage: true, overageAmountCents: overageCents };
 }
 
 /**
- * Increment validation request usage
+ * Increment validation request usage atomically
  * Validations have a hard limit (no overage option)
  */
 export async function incrementValidationUsage(
@@ -213,18 +231,28 @@ export async function incrementValidationUsage(
   tier: UserTier
 ): Promise<IncrementResult> {
   const limits = TIER_USAGE_LIMITS[tier] || TIER_USAGE_LIMITS.free;
-  const usage = await getTodayUsage(userId);
+  const today = getTodayDateString();
 
-  // Check if within limit
-  if (usage.validationRequestsUsed < limits.validationRequestsPerDay) {
-    await db
-      .update(usageTracking)
-      .set({
-        validationRequestsUsed: sql`${usageTracking.validationRequestsUsed} + 1`,
-        updatedAt: new Date(),
-      })
-      .where(eq(usageTracking.id, usage.id));
+  // Ensure today's record exists
+  await getTodayUsage(userId);
 
+  // Atomic increment: only succeeds if under the limit
+  const updated = await db
+    .update(usageTracking)
+    .set({
+      validationRequestsUsed: sql`${usageTracking.validationRequestsUsed} + 1`,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(usageTracking.userId, userId),
+        eq(usageTracking.date, today),
+        sql`${usageTracking.validationRequestsUsed} < ${limits.validationRequestsPerDay}`
+      )
+    )
+    .returning();
+
+  if (updated.length > 0) {
     return { allowed: true, isOverage: false, overageAmountCents: 0 };
   }
 
