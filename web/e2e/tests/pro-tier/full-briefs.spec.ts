@@ -16,7 +16,7 @@ test.describe('Pro Tier - Full Brief Access', () => {
   test.describe('Homepage Idea Visibility', () => {
     test('displays up to 10 ideas for Pro users', async ({ asProUser, setupMocks }) => {
       // Setup mocks for Pro tier
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const homePage = new HomePage(asProUser);
       await homePage.goto();
@@ -29,7 +29,7 @@ test.describe('Pro Tier - Full Brief Access', () => {
     });
 
     test('shows more ideas than free tier limit', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const homePage = new HomePage(asProUser);
       await homePage.goto();
@@ -44,7 +44,7 @@ test.describe('Pro Tier - Full Brief Access', () => {
     });
 
     test('does not show "limited ideas" restriction message', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const homePage = new HomePage(asProUser);
       await homePage.goto();
@@ -65,7 +65,7 @@ test.describe('Pro Tier - Full Brief Access', () => {
 
   test.describe('Full Brief Content', () => {
     test('can view full business brief on idea detail page', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const homePage = new HomePage(asProUser);
       await homePage.goto();
@@ -82,7 +82,7 @@ test.describe('Pro Tier - Full Brief Access', () => {
     });
 
     test('brief includes Problem Statement section', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const detailPage = new IdeaDetailPage(asProUser);
       await detailPage.goto('mock-1');
@@ -93,7 +93,7 @@ test.describe('Pro Tier - Full Brief Access', () => {
     });
 
     test('brief includes Existing Solutions section', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const detailPage = new IdeaDetailPage(asProUser);
       await detailPage.goto('mock-1');
@@ -104,7 +104,7 @@ test.describe('Pro Tier - Full Brief Access', () => {
     });
 
     test('brief includes Market Gaps section', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const detailPage = new IdeaDetailPage(asProUser);
       await detailPage.goto('mock-1');
@@ -115,7 +115,7 @@ test.describe('Pro Tier - Full Brief Access', () => {
     });
 
     test('brief includes Proposed Solution with features list', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const detailPage = new IdeaDetailPage(asProUser);
       await detailPage.goto('mock-1');
@@ -128,7 +128,7 @@ test.describe('Pro Tier - Full Brief Access', () => {
     });
 
     test('brief includes MVP Scope details', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const detailPage = new IdeaDetailPage(asProUser);
       await detailPage.goto('mock-1');
@@ -142,7 +142,7 @@ test.describe('Pro Tier - Full Brief Access', () => {
       asProUser,
       setupMocks,
     }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const detailPage = new IdeaDetailPage(asProUser);
       await detailPage.goto('mock-1');
@@ -158,7 +158,7 @@ test.describe('Pro Tier - Full Brief Access', () => {
       asProUser,
       setupMocks,
     }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const detailPage = new IdeaDetailPage(asProUser);
       await detailPage.goto('mock-1');
@@ -172,7 +172,7 @@ test.describe('Pro Tier - Full Brief Access', () => {
       asProUser,
       setupMocks,
     }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const detailPage = new IdeaDetailPage(asProUser);
       await detailPage.goto('mock-1');
@@ -185,7 +185,7 @@ test.describe('Pro Tier - Full Brief Access', () => {
     });
 
     test('brief includes Risks section', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const detailPage = new IdeaDetailPage(asProUser);
       await detailPage.goto('mock-1');
@@ -196,7 +196,7 @@ test.describe('Pro Tier - Full Brief Access', () => {
     });
 
     test('all brief sections are present simultaneously', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const detailPage = new IdeaDetailPage(asProUser);
       await detailPage.goto('mock-1');
@@ -208,7 +208,7 @@ test.describe('Pro Tier - Full Brief Access', () => {
 
   test.describe('No Upgrade Prompts', () => {
     test('does not show upgrade prompts on idea detail page', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const detailPage = new IdeaDetailPage(asProUser);
       await detailPage.goto('mock-1');
@@ -229,7 +229,7 @@ test.describe('Pro Tier - Full Brief Access', () => {
     });
 
     test('does not show locked content indicators', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const detailPage = new IdeaDetailPage(asProUser);
       await detailPage.goto('mock-1');

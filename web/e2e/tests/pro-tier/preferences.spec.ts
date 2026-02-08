@@ -17,7 +17,7 @@ import { TEST_USERS, TIER_LIMITS } from '../../utils';
 test.describe('Pro Tier - Preference Management', () => {
   test.describe('Email Notification Preferences', () => {
     test('can set email notification frequency to daily', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const settingsPage = new SettingsPage(asProUser);
       await settingsPage.goto();
@@ -29,7 +29,7 @@ test.describe('Pro Tier - Preference Management', () => {
     });
 
     test('can set email notification frequency to weekly', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const settingsPage = new SettingsPage(asProUser);
       await settingsPage.goto();
@@ -41,7 +41,7 @@ test.describe('Pro Tier - Preference Management', () => {
     });
 
     test('email frequency options are accessible', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const settingsPage = new SettingsPage(asProUser);
       await settingsPage.goto();
@@ -54,7 +54,7 @@ test.describe('Pro Tier - Preference Management', () => {
 
   test.describe('Category Preferences', () => {
     test('can select category preferences', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const settingsPage = new SettingsPage(asProUser);
       await settingsPage.goto();
@@ -68,7 +68,7 @@ test.describe('Pro Tier - Preference Management', () => {
     });
 
     test('can toggle category on and off', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const settingsPage = new SettingsPage(asProUser);
       await settingsPage.goto();
@@ -89,7 +89,7 @@ test.describe('Pro Tier - Preference Management', () => {
     });
 
     test('can select multiple categories', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const settingsPage = new SettingsPage(asProUser);
       await settingsPage.goto();
@@ -122,7 +122,7 @@ test.describe('Pro Tier - Preference Management', () => {
 
   test.describe('Effort Level Preferences', () => {
     test('can access effort preferences section', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const settingsPage = new SettingsPage(asProUser);
       await settingsPage.goto();
@@ -132,7 +132,7 @@ test.describe('Pro Tier - Preference Management', () => {
     });
 
     test('can toggle effort level preferences', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const settingsPage = new SettingsPage(asProUser);
       await settingsPage.goto();
@@ -154,7 +154,7 @@ test.describe('Pro Tier - Preference Management', () => {
       asProUser,
       setupMocks,
     }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const settingsPage = new SettingsPage(asProUser);
       await settingsPage.goto();
@@ -168,7 +168,7 @@ test.describe('Pro Tier - Preference Management', () => {
     });
 
     test('score slider is visible and interactive', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const settingsPage = new SettingsPage(asProUser);
       await settingsPage.goto();
@@ -178,7 +178,7 @@ test.describe('Pro Tier - Preference Management', () => {
     });
 
     test('score display updates when slider changes', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const settingsPage = new SettingsPage(asProUser);
       await settingsPage.goto();
@@ -196,7 +196,7 @@ test.describe('Pro Tier - Preference Management', () => {
 
   test.describe('Theme Preferences', () => {
     test('can toggle theme to system', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const settingsPage = new SettingsPage(asProUser);
       await settingsPage.goto();
@@ -208,7 +208,7 @@ test.describe('Pro Tier - Preference Management', () => {
     });
 
     test('can toggle theme to light', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const settingsPage = new SettingsPage(asProUser);
       await settingsPage.goto();
@@ -220,7 +220,7 @@ test.describe('Pro Tier - Preference Management', () => {
     });
 
     test('can toggle theme to dark', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const settingsPage = new SettingsPage(asProUser);
       await settingsPage.goto();
@@ -232,7 +232,7 @@ test.describe('Pro Tier - Preference Management', () => {
     });
 
     test('all theme options are accessible', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const settingsPage = new SettingsPage(asProUser);
       await settingsPage.goto();
@@ -245,7 +245,7 @@ test.describe('Pro Tier - Preference Management', () => {
 
   test.describe('Save & Persistence', () => {
     test('save button shows success feedback', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const settingsPage = new SettingsPage(asProUser);
       await settingsPage.goto();
@@ -262,7 +262,7 @@ test.describe('Pro Tier - Preference Management', () => {
     });
 
     test('preferences persist after page reload', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const settingsPage = new SettingsPage(asProUser);
       await settingsPage.goto();
@@ -291,7 +291,7 @@ test.describe('Pro Tier - Preference Management', () => {
     });
 
     test('all settings sections are present', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const settingsPage = new SettingsPage(asProUser);
       await settingsPage.goto();
@@ -302,7 +302,7 @@ test.describe('Pro Tier - Preference Management', () => {
 
   test.describe('Preferences Apply to Filtering', () => {
     test('preferences apply correctly to idea filtering', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       // First set preferences on settings page
       const settingsPage = new SettingsPage(asProUser);

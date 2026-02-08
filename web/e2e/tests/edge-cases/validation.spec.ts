@@ -85,7 +85,7 @@ test.describe('Input Validation', () => {
 
   test.describe('Settings Form Validation', () => {
     test('settings form validates required fields', async ({ page, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(page, 'free');
 
       const settingsPage = new SettingsPage(page);
       await settingsPage.goto();
@@ -107,7 +107,7 @@ test.describe('Input Validation', () => {
     });
 
     test('settings form handles very long strings (1000+ chars)', async ({ page, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(page, 'free');
 
       const settingsPage = new SettingsPage(page);
       await settingsPage.goto();
@@ -149,7 +149,7 @@ test.describe('Input Validation', () => {
     });
 
     test('settings form handles special characters', async ({ page, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(page, 'free');
 
       const settingsPage = new SettingsPage(page);
       await settingsPage.goto();
@@ -190,7 +190,7 @@ test.describe('Input Validation', () => {
     });
 
     test('XSS attempt in text fields is sanitized', async ({ page, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(page, 'free');
 
       const settingsPage = new SettingsPage(page);
       await settingsPage.goto();
@@ -249,7 +249,7 @@ test.describe('Input Validation', () => {
 
   test.describe('Search and Filter Validation', () => {
     test('search query validates properly', async ({ page, setupMocks }) => {
-      await setupMocks('anonymous');
+      await setupMocks(page, 'anonymous');
 
       await page.goto('/');
 
@@ -287,7 +287,7 @@ test.describe('Input Validation', () => {
     });
 
     test('filter values are validated (score range 0-100)', async ({ page, setupMocks }) => {
-      await setupMocks('anonymous');
+      await setupMocks(page, 'anonymous');
 
       const settingsPage = new SettingsPage(page);
       await settingsPage.goto();

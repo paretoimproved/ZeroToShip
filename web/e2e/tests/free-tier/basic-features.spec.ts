@@ -39,7 +39,7 @@ test.describe('Free Tier - Basic Features', () => {
 
   test.describe('Homepage Idea Limits', () => {
     test('homepage shows exactly 3 ideas (free tier limit)', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const homePage = new HomePage(asFreeUser);
       await homePage.goto();
 
@@ -49,7 +49,7 @@ test.describe('Free Tier - Basic Features', () => {
     });
 
     test('idea cards display correctly', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const homePage = new HomePage(asFreeUser);
       await homePage.goto();
 
@@ -68,7 +68,7 @@ test.describe('Free Tier - Basic Features', () => {
 
   test.describe('Idea Detail Access', () => {
     test('can view idea detail page', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const homePage = new HomePage(asFreeUser);
       await homePage.goto();
 
@@ -84,7 +84,7 @@ test.describe('Free Tier - Basic Features', () => {
     });
 
     test('cannot see full business brief (upgrade prompt shown)', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const homePage = new HomePage(asFreeUser);
       await homePage.goto();
       await homePage.clickIdeaCard(0);
@@ -176,7 +176,7 @@ test.describe('Free Tier - Basic Features', () => {
     });
 
     test('account page shows "Free" as current plan', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const accountPage = new AccountPage(asFreeUser);
       await accountPage.goto();
 

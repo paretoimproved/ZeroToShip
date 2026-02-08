@@ -15,7 +15,7 @@ import { TEST_USERS, TIER_LIMITS, SEED_IDEAS } from '../../utils';
 test.describe('Pro Tier - Archive & Pagination', () => {
   test.describe('Unlimited Archive Access', () => {
     test('can access archive page without restrictions', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const archivePage = new ArchivePage(asProUser);
       await archivePage.goto();
@@ -26,7 +26,7 @@ test.describe('Pro Tier - Archive & Pagination', () => {
     });
 
     test('does not show time restriction message', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const archivePage = new ArchivePage(asProUser);
       await archivePage.goto();
@@ -46,7 +46,7 @@ test.describe('Pro Tier - Archive & Pagination', () => {
     });
 
     test('can browse ideas older than 7 days', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const archivePage = new ArchivePage(asProUser);
       await archivePage.goto();
@@ -63,7 +63,7 @@ test.describe('Pro Tier - Archive & Pagination', () => {
 
   test.describe('Pagination', () => {
     test('pagination controls are visible', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const archivePage = new ArchivePage(asProUser);
       await archivePage.goto();
@@ -95,7 +95,7 @@ test.describe('Pro Tier - Archive & Pagination', () => {
     });
 
     test('can navigate between pages', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const archivePage = new ArchivePage(asProUser);
       await archivePage.goto();
@@ -124,7 +124,7 @@ test.describe('Pro Tier - Archive & Pagination', () => {
     });
 
     test('results count updates correctly', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const archivePage = new ArchivePage(asProUser);
       await archivePage.goto();
@@ -142,7 +142,7 @@ test.describe('Pro Tier - Archive & Pagination', () => {
 
   test.describe('Filter Combinations', () => {
     test('can apply effort filter', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const archivePage = new ArchivePage(asProUser);
       await archivePage.goto();
@@ -160,7 +160,7 @@ test.describe('Pro Tier - Archive & Pagination', () => {
     });
 
     test('can apply score filter', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const archivePage = new ArchivePage(asProUser);
       await archivePage.goto();
@@ -181,7 +181,7 @@ test.describe('Pro Tier - Archive & Pagination', () => {
       asProUser,
       setupMocks,
     }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const archivePage = new ArchivePage(asProUser);
       await archivePage.goto();
@@ -204,7 +204,7 @@ test.describe('Pro Tier - Archive & Pagination', () => {
     });
 
     test('results update when filters change', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const archivePage = new ArchivePage(asProUser);
       await archivePage.goto();
@@ -232,7 +232,7 @@ test.describe('Pro Tier - Archive & Pagination', () => {
 
   test.describe('Search Functionality', () => {
     test('can search within archive', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const archivePage = new ArchivePage(asProUser);
       await archivePage.goto();
@@ -250,7 +250,7 @@ test.describe('Pro Tier - Archive & Pagination', () => {
     });
 
     test('search updates results dynamically', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const archivePage = new ArchivePage(asProUser);
       await archivePage.goto();
@@ -275,7 +275,7 @@ test.describe('Pro Tier - Archive & Pagination', () => {
     });
 
     test('search input is accessible', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const archivePage = new ArchivePage(asProUser);
       await archivePage.goto();
@@ -289,7 +289,7 @@ test.describe('Pro Tier - Archive & Pagination', () => {
     });
 
     test('filter controls are all present', async ({ asProUser, setupMocks }) => {
-      await setupMocks('pro');
+      await setupMocks(asProUser, 'pro');
 
       const archivePage = new ArchivePage(asProUser);
       await archivePage.goto();

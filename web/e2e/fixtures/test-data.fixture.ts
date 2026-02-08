@@ -2,7 +2,7 @@
  * Test data fixtures for seeding and cleanup
  */
 
-import { test as base } from '@playwright/test';
+import { test as base, Page } from '@playwright/test';
 import {
   SEED_IDEAS,
   TIER_LIMITS,
@@ -29,9 +29,9 @@ export interface TestDataFixtures {
   generateIdeas: (count?: number) => MockIdea[];
 
   /**
-   * Setup API mocks for a given tier
+   * Setup API mocks for a given tier on a specific page
    */
-  setupMocks: (tier?: UserTier) => Promise<void>;
+  setupMocks: (page: Page, tier?: UserTier) => Promise<void>;
 }
 
 /**
@@ -50,12 +50,12 @@ export const test = base.extend<TestDataFixtures>({
     await use(generateMockIdeas);
   },
 
-  setupMocks: async ({ page }, use) => {
-    const setupMocksForTier = async (tier: UserTier = 'anonymous') => {
+  setupMocks: async ({}, use) => {
+    const setup = async (page: Page, tier: UserTier = 'anonymous') => {
       await setupAllApiMocks(page, tier);
     };
 
-    await use(setupMocksForTier);
+    await use(setup);
   },
 });
 

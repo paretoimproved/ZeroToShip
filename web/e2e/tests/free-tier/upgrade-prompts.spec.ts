@@ -15,7 +15,7 @@ import { TIER_LIMITS } from '../../utils';
 test.describe('Free Tier - Upgrade Prompts', () => {
   test.describe('Idea Detail Page', () => {
     test('idea detail page shows "Upgrade to Pro" CTA', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const homePage = new HomePage(asFreeUser);
       await homePage.goto();
 
@@ -36,7 +36,7 @@ test.describe('Free Tier - Upgrade Prompts', () => {
 
   test.describe('Account Page - Plan Options', () => {
     test('account page shows upgrade options (Pro and Enterprise)', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const accountPage = new AccountPage(asFreeUser);
       await accountPage.goto();
 
@@ -51,7 +51,7 @@ test.describe('Free Tier - Upgrade Prompts', () => {
     });
 
     test('Pro plan shows $19/month price', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const accountPage = new AccountPage(asFreeUser);
       await accountPage.goto();
 
@@ -63,7 +63,7 @@ test.describe('Free Tier - Upgrade Prompts', () => {
     });
 
     test('Enterprise plan shows $99/month price', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const accountPage = new AccountPage(asFreeUser);
       await accountPage.goto();
 
@@ -75,7 +75,7 @@ test.describe('Free Tier - Upgrade Prompts', () => {
     });
 
     test('clicking upgrade button initiates checkout flow (or shows modal)', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const accountPage = new AccountPage(asFreeUser);
       await accountPage.goto();
 
@@ -121,7 +121,7 @@ test.describe('Free Tier - Upgrade Prompts', () => {
     });
 
     test('Free plan upgrade button is disabled (current plan)', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const accountPage = new AccountPage(asFreeUser);
       await accountPage.goto();
 
@@ -135,7 +135,7 @@ test.describe('Free Tier - Upgrade Prompts', () => {
 
   test.describe('Homepage Limitations', () => {
     test('"Limited to 3 ideas" message visible on homepage', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const homePage = new HomePage(asFreeUser);
       await homePage.goto();
 
@@ -165,7 +165,7 @@ test.describe('Free Tier - Upgrade Prompts', () => {
     });
 
     test('upgrade prompt exists to see more ideas', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const homePage = new HomePage(asFreeUser);
       await homePage.goto();
 
@@ -188,7 +188,7 @@ test.describe('Free Tier - Upgrade Prompts', () => {
 
   test.describe('Plan Comparison', () => {
     test('Pro plan shows more features than Free', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const accountPage = new AccountPage(asFreeUser);
       await accountPage.goto();
 
@@ -209,7 +209,7 @@ test.describe('Free Tier - Upgrade Prompts', () => {
     });
 
     test('Enterprise plan shows most features', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const accountPage = new AccountPage(asFreeUser);
       await accountPage.goto();
 

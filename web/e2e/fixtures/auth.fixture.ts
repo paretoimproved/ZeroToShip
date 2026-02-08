@@ -68,6 +68,13 @@ export const test = base.extend<AuthFixtures>({
     }
 
     const page = await context.newPage();
+
+    // Inject fake auth token so isAuthenticated() returns true
+    await page.goto('/');
+    await page.evaluate((tier) => {
+      localStorage.setItem('ideaforge_token', `fake-${tier}-token`);
+    }, 'free');
+
     await use(page);
 
     await context.close();
@@ -90,6 +97,13 @@ export const test = base.extend<AuthFixtures>({
     }
 
     const page = await context.newPage();
+
+    // Inject fake auth token so isAuthenticated() returns true
+    await page.goto('/');
+    await page.evaluate((tier) => {
+      localStorage.setItem('ideaforge_token', `fake-${tier}-token`);
+    }, 'pro');
+
     await use(page);
 
     await context.close();
@@ -112,6 +126,13 @@ export const test = base.extend<AuthFixtures>({
     }
 
     const page = await context.newPage();
+
+    // Inject fake auth token so isAuthenticated() returns true
+    await page.goto('/');
+    await page.evaluate((tier) => {
+      localStorage.setItem('ideaforge_token', `fake-${tier}-token`);
+    }, 'enterprise');
+
     await use(page);
 
     await context.close();

@@ -16,7 +16,7 @@ import { ArchivePage } from '../../pages';
 test.describe('Free Tier - Archive Access', () => {
   test.describe('Archive Page Access', () => {
     test('can access archive page', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const archivePage = new ArchivePage(asFreeUser);
       await archivePage.goto();
 
@@ -25,7 +25,7 @@ test.describe('Free Tier - Archive Access', () => {
     });
 
     test('archive shows historical ideas', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const archivePage = new ArchivePage(asFreeUser);
       await archivePage.goto();
 
@@ -42,7 +42,7 @@ test.describe('Free Tier - Archive Access', () => {
 
   test.describe('Effort Level Filtering', () => {
     test('can filter by effort level (weekend)', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const archivePage = new ArchivePage(asFreeUser);
       await archivePage.goto();
 
@@ -57,7 +57,7 @@ test.describe('Free Tier - Archive Access', () => {
     });
 
     test('can filter by effort level (week)', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const archivePage = new ArchivePage(asFreeUser);
       await archivePage.goto();
 
@@ -71,7 +71,7 @@ test.describe('Free Tier - Archive Access', () => {
     });
 
     test('can filter by effort level (month)', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const archivePage = new ArchivePage(asFreeUser);
       await archivePage.goto();
 
@@ -85,7 +85,7 @@ test.describe('Free Tier - Archive Access', () => {
     });
 
     test('can filter by effort level (quarter)', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const archivePage = new ArchivePage(asFreeUser);
       await archivePage.goto();
 
@@ -101,7 +101,7 @@ test.describe('Free Tier - Archive Access', () => {
 
   test.describe('Minimum Score Filtering', () => {
     test('can filter by minimum score (slider or dropdown)', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const archivePage = new ArchivePage(asFreeUser);
       await archivePage.goto();
 
@@ -123,7 +123,7 @@ test.describe('Free Tier - Archive Access', () => {
     });
 
     test('setting minimum score to 0 shows all ideas', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const archivePage = new ArchivePage(asFreeUser);
       await archivePage.goto();
 
@@ -144,7 +144,7 @@ test.describe('Free Tier - Archive Access', () => {
 
   test.describe('Combined Filters', () => {
     test('filters combine correctly', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const archivePage = new ArchivePage(asFreeUser);
       await archivePage.goto();
 
@@ -166,7 +166,7 @@ test.describe('Free Tier - Archive Access', () => {
     });
 
     test('reset filters shows all results', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const archivePage = new ArchivePage(asFreeUser);
       await archivePage.goto();
 
@@ -190,7 +190,7 @@ test.describe('Free Tier - Archive Access', () => {
 
   test.describe('Pagination', () => {
     test('pagination works if there are many ideas', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const archivePage = new ArchivePage(asFreeUser);
       await archivePage.goto();
 
@@ -225,7 +225,7 @@ test.describe('Free Tier - Archive Access', () => {
     });
 
     test('can navigate between pages if pagination exists', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const archivePage = new ArchivePage(asFreeUser);
       await archivePage.goto();
 
@@ -257,7 +257,7 @@ test.describe('Free Tier - Archive Access', () => {
 
   test.describe('Upgrade Messaging', () => {
     test('"Upgrade for unlimited archive" message may appear', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const archivePage = new ArchivePage(asFreeUser);
       await archivePage.goto();
 
@@ -285,7 +285,7 @@ test.describe('Free Tier - Archive Access', () => {
     });
 
     test('archive is accessible even with limitations', async ({ asFreeUser, setupMocks }) => {
-      await setupMocks('free');
+      await setupMocks(asFreeUser, 'free');
       const archivePage = new ArchivePage(asFreeUser);
       await archivePage.goto();
 

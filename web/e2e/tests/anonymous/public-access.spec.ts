@@ -12,7 +12,7 @@ import { TIER_LIMITS } from '../../utils';
 test.describe('Anonymous User - Public Access', () => {
   test.describe('Homepage', () => {
     test('homepage loads without authentication', async ({ asAnonymous, setupMocks }) => {
-      await setupMocks('anonymous');
+      await setupMocks(asAnonymous, 'anonymous');
       const homePage = new HomePage(asAnonymous);
 
       await homePage.goto();
@@ -26,7 +26,7 @@ test.describe('Anonymous User - Public Access', () => {
       setupMocks,
       tierLimits,
     }) => {
-      await setupMocks('anonymous');
+      await setupMocks(asAnonymous, 'anonymous');
       const homePage = new HomePage(asAnonymous);
 
       await homePage.goto();
@@ -40,7 +40,7 @@ test.describe('Anonymous User - Public Access', () => {
       asAnonymous,
       setupMocks,
     }) => {
-      await setupMocks('anonymous');
+      await setupMocks(asAnonymous, 'anonymous');
       const homePage = new HomePage(asAnonymous);
 
       await homePage.goto();
@@ -78,7 +78,7 @@ test.describe('Anonymous User - Public Access', () => {
       asAnonymous,
       setupMocks,
     }) => {
-      await setupMocks('anonymous');
+      await setupMocks(asAnonymous, 'anonymous');
       const homePage = new HomePage(asAnonymous);
 
       await homePage.goto();
@@ -104,7 +104,7 @@ test.describe('Anonymous User - Public Access', () => {
       asAnonymous,
       setupMocks,
     }) => {
-      await setupMocks('anonymous');
+      await setupMocks(asAnonymous, 'anonymous');
 
       // Navigate to detail page via homepage click
       const homePage = new HomePage(asAnonymous);
@@ -136,7 +136,7 @@ test.describe('Anonymous User - Public Access', () => {
       asAnonymous,
       setupMocks,
     }) => {
-      await setupMocks('anonymous');
+      await setupMocks(asAnonymous, 'anonymous');
 
       // Navigate to detail page
       const homePage = new HomePage(asAnonymous);

@@ -58,7 +58,7 @@ test.describe('Anonymous User - Tier Gates', () => {
       asAnonymous,
       setupMocks,
     }) => {
-      await setupMocks('anonymous');
+      await setupMocks(asAnonymous, 'anonymous');
 
       // Navigate to detail page via homepage
       const homePage = new HomePage(asAnonymous);
@@ -103,7 +103,7 @@ test.describe('Anonymous User - Tier Gates', () => {
       asAnonymous,
       setupMocks,
     }) => {
-      await setupMocks('anonymous');
+      await setupMocks(asAnonymous, 'anonymous');
 
       // Navigate to detail page
       const homePage = new HomePage(asAnonymous);
@@ -133,7 +133,7 @@ test.describe('Anonymous User - Tier Gates', () => {
 
   test.describe('Feature Gates', () => {
     test('search feature is not accessible', async ({ asAnonymous, setupMocks }) => {
-      await setupMocks('anonymous');
+      await setupMocks(asAnonymous, 'anonymous');
 
       const homePage = new HomePage(asAnonymous);
       await homePage.goto();
@@ -189,7 +189,7 @@ test.describe('Anonymous User - Tier Gates', () => {
     });
 
     test('export feature is not accessible', async ({ asAnonymous, setupMocks }) => {
-      await setupMocks('anonymous');
+      await setupMocks(asAnonymous, 'anonymous');
 
       // Navigate to detail page where export might be available
       const homePage = new HomePage(asAnonymous);
@@ -242,7 +242,7 @@ test.describe('Anonymous User - Tier Gates', () => {
       asAnonymous,
       setupMocks,
     }) => {
-      await setupMocks('anonymous');
+      await setupMocks(asAnonymous, 'anonymous');
 
       await asAnonymous.goto('/archive');
 
@@ -271,7 +271,7 @@ test.describe('Anonymous User - Tier Gates', () => {
       asAnonymous,
       setupMocks,
     }) => {
-      await setupMocks('anonymous');
+      await setupMocks(asAnonymous, 'anonymous');
 
       const homePage = new HomePage(asAnonymous);
       await homePage.goto();
@@ -309,7 +309,7 @@ test.describe('Anonymous User - Tier Gates', () => {
       asAnonymous,
       setupMocks,
     }) => {
-      await setupMocks('anonymous');
+      await setupMocks(asAnonymous, 'anonymous');
 
       const homePage = new HomePage(asAnonymous);
       await homePage.goto();

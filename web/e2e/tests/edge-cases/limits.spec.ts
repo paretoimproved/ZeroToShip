@@ -134,7 +134,7 @@ test.describe('Boundary Conditions', () => {
 
   test.describe('Navigation Edge Cases', () => {
     test('back button behavior works across pages', async ({ page, setupMocks }) => {
-      await setupMocks('anonymous');
+      await setupMocks(page, 'anonymous');
 
       const homePage = new HomePage(page);
       await homePage.goto();
@@ -199,7 +199,7 @@ test.describe('Boundary Conditions', () => {
       page,
       setupMocks,
     }) => {
-      await setupMocks('anonymous');
+      await setupMocks(page, 'anonymous');
 
       const homePage = new HomePage(page);
       await homePage.goto();
@@ -237,7 +237,7 @@ test.describe('Boundary Conditions', () => {
     });
 
     test('browser refresh maintains state where appropriate', async ({ page, setupMocks }) => {
-      await setupMocks('anonymous');
+      await setupMocks(page, 'anonymous');
 
       const settingsPage = new SettingsPage(page);
       await settingsPage.goto();

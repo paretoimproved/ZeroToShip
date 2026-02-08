@@ -63,6 +63,12 @@ export default function SettingsPage() {
         >
           Sign Up
         </Link>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
+          Already have an account?{" "}
+          <Link href="/login" className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
+            Sign In
+          </Link>
+        </p>
       </div>
     );
   }

@@ -1,26 +1,39 @@
 # E2E Test Notes
 
-## Bugs to Fix
+## Bugs — Fixed
 
-### 1. Settings/Account pages missing "Sign In" option
+### 1. Settings/Account pages missing "Sign In" option — FIXED
 - **Pages**: `/settings`, `/account`
-- **Issue**: Auth gate only shows "Sign Up" button linking to `/landing`. No "Sign In" option for returning users who already have an account.
-- **Fix**: Add a "Sign In" link alongside the "Sign Up" CTA.
+- **Fix**: Added "Already have an account? Sign In" link below the Sign Up CTA.
 
-### 2. Idea detail page gates ALL content for anonymous users
-- **Page**: `/idea/[id]`
-- **Issue**: The `gated` prop on `BriefView` hides all 9 detail sections. Anonymous users see only the header + quick stats + gate card — no teaser content to motivate signup.
-- **Fix**: Show some sections as teasers (e.g., Problem Statement, Existing Solutions) and gate the deeper analysis (Technical Spec, Business Model, Go-to-Market).
+### 2. Idea detail page gates ALL content for anonymous users — FIXED
+- **Page**: `/idea/[id]` (`BriefView.tsx`)
+- **Fix**: First 3 sections (Problem Statement, Existing Solutions, Market Gaps) now show as teasers. Gate card appears after them. Remaining 6 sections hidden when gated.
 
-### 3. `setupMocks` uses wrong page for authenticated user fixtures
-- **File**: `e2e/fixtures/test-data.fixture.ts:53`
-- **Issue**: `setupMocks` binds `page.route()` calls to the default `page` fixture, but `asFreeUser`/`asProUser`/`asEnterpriseUser` create their own browser context with a separate page. Mocks are set up on the wrong page, so the homepage falls back to hardcoded mock data (1 idea) instead of the tier-appropriate mock response (3 ideas for free).
-- **Fix**: `setupMocks` should accept a `page` parameter, or the authenticated fixtures should pass their page to `setupAllApiMocks` directly.
+### 3. `setupMocks` uses wrong page for authenticated user fixtures — FIXED
+- **File**: `e2e/fixtures/test-data.fixture.ts`
+- **Fix**: `setupMocks` now accepts a `Page` parameter. All test call sites updated.
 
-### 4. Auth gates block authenticated users under `SKIP_AUTH=true`
-- **Pages**: `/settings`, `/account`, `/idea/[id]`
-- **Issue**: With `SKIP_AUTH=true`, the global setup creates empty storage states (no `ideaforge_token` in localStorage). The new auth gates check `isAuthenticated()` which reads from localStorage, so even free/pro/enterprise users see the auth gate instead of full content.
-- **Fix**: Either inject a fake auth token into storage state files for non-anonymous tiers, or have the auth fixtures set `ideaforge_token` in localStorage after creating the context.
+### 4. Auth gates block authenticated users under `SKIP_AUTH=true` — FIXED
+- **File**: `e2e/fixtures/auth.fixture.ts`
+- **Fix**: Authenticated fixtures now inject fake `ideaforge_token` into localStorage.
+
+## Bugs — Open
+
+### 5. Free User: Checkout triggers error (Step 6)
+- **Test**: `free-user.journey.spec.ts` Step 6
+- **Error**: `accountPage.hasError()` returns `true` — clicking "Upgrade to Pro" triggers `createCheckoutSession()` which calls a real API endpoint that isn't mocked, resulting in a network error.
+- **Fix**: Add a mock for the checkout/billing API endpoint in `setupAllApiMocks`, or mock it in the test directly.
+
+### 6. Pro User: Range slider `setMinScore(75)` reads back 50 (Step 4)
+- **Test**: `pro-user.journey.spec.ts` Step 4
+- **Error**: `settingsPage.setMinScore(75)` sets the range input but `getMinScore()` returns 50 (the default). Likely a Playwright interaction issue with `<input type="range">` — the `fill()` or `inputValue` method may not trigger React's `onChange`.
+- **Fix**: Check `SettingsPage.setMinScore()` implementation. May need to use `page.evaluate()` to set value and dispatch an input event, or use `locator.fill()` with proper event triggering.
+
+### 7. Enterprise User: "API Keys" section missing (Step 5)
+- **Test**: `enterprise-user.journey.spec.ts` Step 5
+- **Error**: Test expects `section:has(h2:text("API Keys"))` on the settings page, but this feature hasn't been built yet.
+- **Fix**: Add an "API Keys" section to the settings page for enterprise users, or adjust the test to skip this check if the feature isn't implemented.
 
 ## Test Run Results
 
@@ -29,26 +42,23 @@
 - **Date**: 2026-02-07
 
 ### Free User Journey
-- **Status**: FAIL at Step 1
-- **Error**: Expected 3 ideas, got 1 (mock fallback due to bug #3)
-- **Blocked by**: Bug #3 (setupMocks on wrong page), Bug #4 (auth gates block SKIP_AUTH users)
+- **Status**: FAIL at Step 6 (Steps 1-5 pass)
+- **Error**: Checkout triggers error — billing API not mocked
 - **Date**: 2026-02-07
 
 ### Pro User Journey
-- **Status**: FAIL at Step 1
-- **Error**: Expected >3 ideas (up to 10 for pro), got 1 (mock fallback due to bug #3)
-- **Blocked by**: Bug #3, Bug #4 (same as free user)
+- **Status**: FAIL at Step 4 (Steps 1-3 pass)
+- **Error**: Range slider value not updating correctly
 - **Date**: 2026-02-07
 
 ### Enterprise User Journey
-- **Status**: FAIL at Step 1
-- **Error**: Expected 6 ideas (all SEED_IDEAS), got 1 (mock fallback due to bug #3)
-- **Blocked by**: Bug #3, Bug #4 (same as free user)
+- **Status**: FAIL at Step 5 (Steps 1-4 pass)
+- **Error**: "API Keys" section not built
 - **Date**: 2026-02-07
 
 ## Summary
 
-- **Anonymous**: PASS — all client-side fetching + gating works with `page.route()` mocks
-- **Free/Pro/Enterprise**: All FAIL at Step 1 with the same two root causes:
-  1. **Bug #3**: `setupMocks` sets up `page.route()` on the default `page` fixture, not on the `asFreeUser`/`asProUser`/`asEnterpriseUser` page (different browser context)
-  2. **Bug #4**: `SKIP_AUTH=true` creates empty storage states with no `ideaforge_token`, so the auth gates on settings/account/idea-detail block access for all non-anonymous tiers
+Anonymous passes fully. All authenticated tests now get deep into their journeys after fixing the mock page binding and auth token injection. Remaining failures are:
+- **Free**: Missing billing/checkout mock (infrastructure)
+- **Pro**: Range slider interaction bug (test utility)
+- **Enterprise**: Missing "API Keys" feature (app code)
