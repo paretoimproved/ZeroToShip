@@ -164,7 +164,7 @@ export async function mockSubscriptionApi(
   page: Page,
   plan: 'free' | 'pro' | 'enterprise' = 'free'
 ): Promise<void> {
-  await page.route(`${API_URL}/subscription`, async (route: Route) => {
+  await page.route(`${API_URL}/user/subscription`, async (route: Route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -175,6 +175,93 @@ export async function mockSubscriptionApi(
         status: 'active',
         currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         cancelAtPeriodEnd: false,
+      }),
+    });
+  });
+}
+
+/**
+ * Setup API mocking for the billing checkout endpoint
+ */
+export async function mockBillingCheckoutApi(page: Page): Promise<void> {
+  await page.route(`${API_URL}/billing/checkout`, async (route: Route) => {
+    if (route.request().method() === 'POST') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          url: 'https://checkout.example.com/mock-session',
+          sessionId: 'cs_mock_session_123',
+        }),
+      });
+    } else {
+      await route.fallback();
+    }
+  });
+}
+
+/**
+ * Setup API mocking for the billing portal endpoint
+ */
+export async function mockBillingPortalApi(page: Page): Promise<void> {
+  await page.route(`${API_URL}/billing/portal`, async (route: Route) => {
+    if (route.request().method() === 'POST') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          url: 'https://billing.example.com/mock-portal',
+        }),
+      });
+    } else {
+      await route.fallback();
+    }
+  });
+}
+
+/**
+ * Setup API mocking for the billing prices endpoint
+ */
+export async function mockBillingPricesApi(page: Page): Promise<void> {
+  await page.route(`${API_URL}/billing/prices`, async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        prices: [
+          {
+            key: 'pro_monthly',
+            priceId: 'price_mock_pro_monthly',
+            amount: 1900,
+            currency: 'usd',
+            interval: 'month',
+            tier: 'pro',
+          },
+          {
+            key: 'pro_yearly',
+            priceId: 'price_mock_pro_yearly',
+            amount: 19000,
+            currency: 'usd',
+            interval: 'year',
+            tier: 'pro',
+          },
+          {
+            key: 'enterprise_monthly',
+            priceId: 'price_mock_enterprise_monthly',
+            amount: 9900,
+            currency: 'usd',
+            interval: 'month',
+            tier: 'enterprise',
+          },
+          {
+            key: 'enterprise_yearly',
+            priceId: 'price_mock_enterprise_yearly',
+            amount: 99000,
+            currency: 'usd',
+            interval: 'year',
+            tier: 'enterprise',
+          },
+        ],
       }),
     });
   });
@@ -194,5 +281,8 @@ export async function setupAllApiMocks(
   if (tier !== 'anonymous') {
     const plan = tier === 'free' ? 'free' : tier === 'pro' ? 'pro' : 'enterprise';
     await mockSubscriptionApi(page, plan);
+    await mockBillingCheckoutApi(page);
+    await mockBillingPortalApi(page);
+    await mockBillingPricesApi(page);
   }
 }

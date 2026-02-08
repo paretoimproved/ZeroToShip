@@ -175,7 +175,13 @@ export class SettingsPage extends BasePage {
    */
   async setMinScore(score: number): Promise<void> {
     await this.minScoreSlider.evaluate((el: HTMLInputElement, value: number) => {
-      el.value = String(value);
+      const nativeSetter = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        'value'
+      )?.set;
+      if (nativeSetter) {
+        nativeSetter.call(el, String(value));
+      }
       el.dispatchEvent(new Event('input', { bubbles: true }));
       el.dispatchEvent(new Event('change', { bubbles: true }));
     }, score);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { isAuthenticated } from "@/lib/auth";
@@ -79,6 +79,9 @@ export default function AccountPage() {
   const [upgradeLoading, setUpgradeLoading] = useState<string | null>(null);
   const [billingYearly, setBillingYearly] = useState(false);
   const [isAuth, setIsAuth] = useState(false);
+  const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
+  const [newKeyName, setNewKeyName] = useState("");
+  const apiKeyDialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
     setIsAuth(isAuthenticated());
@@ -400,6 +403,84 @@ export default function AccountPage() {
           </button>
         </section>
       )}
+
+      {/* API Keys */}
+      <section
+        data-testid="api-keys-section"
+        className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 mt-8"
+      >
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          API Keys
+        </h2>
+
+        <div data-testid="api-key-list">
+          <p className="text-gray-500 dark:text-gray-400 text-sm">
+            No API keys yet. Create your first API key to get started.
+          </p>
+        </div>
+
+        <button
+          onClick={() => {
+            setShowApiKeyDialog(true);
+            setTimeout(() => apiKeyDialogRef.current?.showModal(), 0);
+          }}
+          className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+        >
+          Create API Key
+        </button>
+
+        {showApiKeyDialog && (
+          <dialog
+            ref={apiKeyDialogRef}
+            data-testid="api-key-dialog"
+            className="rounded-xl p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 backdrop:bg-black/50 max-w-md w-full"
+            onClose={() => {
+              setShowApiKeyDialog(false);
+              setNewKeyName("");
+            }}
+          >
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Create New API Key
+            </h3>
+
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Key Name
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={newKeyName}
+              onChange={(e) => setNewKeyName(e.target.value)}
+              placeholder="e.g. Production Key"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white mb-4"
+            />
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  apiKeyDialogRef.current?.close();
+                  setShowApiKeyDialog(false);
+                  setNewKeyName("");
+                }}
+                className="px-4 py-2 text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  // Placeholder: would call API to create key
+                  apiKeyDialogRef.current?.close();
+                  setShowApiKeyDialog(false);
+                  setNewKeyName("");
+                }}
+                className="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+              >
+                Create
+              </button>
+            </div>
+          </dialog>
+        )}
+      </section>
     </div>
   );
 }
