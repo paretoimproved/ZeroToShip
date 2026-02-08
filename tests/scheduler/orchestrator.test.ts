@@ -61,6 +61,43 @@ vi.mock('../../src/delivery/email', () => ({
   sendDailyBriefsBatch: vi.fn(),
 }));
 
+// Mock database client (used by generate.ts and deliver.ts for persistence)
+vi.mock('../../src/api/db/client', () => ({
+  db: {
+    select: vi.fn().mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        innerJoin: vi.fn().mockReturnValue({
+          leftJoin: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+        where: vi.fn().mockResolvedValue([]),
+      }),
+    }),
+    insert: vi.fn().mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        onConflictDoNothing: vi.fn().mockResolvedValue(undefined),
+      }),
+    }),
+  },
+  users: {},
+  subscriptions: {},
+  userPreferences: {},
+  ideas: {},
+}));
+
+// Mock monitoring (used by orchestrator)
+vi.mock('../../src/lib/monitoring', () => ({
+  initMonitoring: vi.fn(),
+  captureException: vi.fn(),
+  captureMessage: vi.fn(),
+}));
+
+// Mock alerts (used by orchestrator)
+vi.mock('../../src/lib/alerts', () => ({
+  sendPipelineFailureAlert: vi.fn(),
+}));
+
 // Helper factories
 function createMockPost(overrides: Partial<RawPost> = {}): RawPost {
   return {

@@ -25,6 +25,8 @@ import { userRoutes } from './routes/user';
 import { enterpriseRoutes } from './routes/enterprise';
 import { billingRoutes } from './routes/billing';
 import { webhookRoutes } from './routes/webhooks';
+import { authRoutes } from './routes/auth';
+import { adminRoutes } from './routes/admin';
 import type { UserTier } from './schemas';
 
 // Extend FastifyRequest to include user info
@@ -126,6 +128,8 @@ export async function createServer(config: ServerConfig = {}): Promise<FastifyIn
   await server.register(ideasRoutes, { prefix: '/api/v1/ideas' });
   await server.register(userRoutes, { prefix: '/api/v1/user' });
   await server.register(billingRoutes, { prefix: '/api/v1/billing' });
+  await server.register(authRoutes, { prefix: '/api/v1/auth' });
+  await server.register(adminRoutes, { prefix: '/api/v1/admin' });
   await server.register(enterpriseRoutes, { prefix: '/api/v1' });
 
   // Webhooks need separate registration to avoid global JSON parsing

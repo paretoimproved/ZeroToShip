@@ -18,7 +18,7 @@ import type { UserTier } from '../schemas';
 const supabaseUrl = config.SUPABASE_URL;
 const supabaseServiceKey = config.SUPABASE_SERVICE_ROLE_KEY;
 
-const supabase =
+export const supabase =
   supabaseUrl && supabaseServiceKey
     ? createClient(supabaseUrl, supabaseServiceKey, {
         auth: { autoRefreshToken: false, persistSession: false },

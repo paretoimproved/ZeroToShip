@@ -142,7 +142,7 @@ export default function AccountPage() {
           Sign in to manage your account and subscription.
         </p>
         <Link
-          href="/landing"
+          href="/signup"
           className="inline-block px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
         >
           Sign Up
@@ -467,11 +467,34 @@ export default function AccountPage() {
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  // Placeholder: would call API to create key
-                  apiKeyDialogRef.current?.close();
-                  setShowApiKeyDialog(false);
-                  setNewKeyName("");
+                onClick={async () => {
+                  if (!newKeyName.trim()) return;
+                  try {
+                    const token = localStorage.getItem('ideaforge_token');
+                    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+                    const response = await fetch(`${apiUrl}/user/api-keys`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                      },
+                      body: JSON.stringify({ name: newKeyName.trim() }),
+                    });
+                    if (!response.ok) {
+                      const err = await response.json().catch(() => ({ message: 'Failed to create API key' }));
+                      throw new Error(err.message);
+                    }
+                    const result = await response.json();
+                    alert(`API Key created! Save this key - you won't see it again:\n\n${result.key}`);
+                    apiKeyDialogRef.current?.close();
+                    setShowApiKeyDialog(false);
+                    setNewKeyName("");
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : 'Failed to create API key');
+                    apiKeyDialogRef.current?.close();
+                    setShowApiKeyDialog(false);
+                    setNewKeyName("");
+                  }
                 }}
                 className="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
               >

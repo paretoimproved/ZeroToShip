@@ -16,15 +16,32 @@ import type {
   DeliverPhaseOutput,
   PipelineConfig,
 } from '../types';
+import { db, users, subscriptions, userPreferences } from '../../api/db/client';
+import { eq } from 'drizzle-orm';
 
 /**
  * Get active subscribers from database
- * TODO: Implement with actual database query
  */
 async function getActiveSubscribers(): Promise<Subscriber[]> {
-  // Placeholder - return empty array for now
-  // Real implementation would query the database
-  return [];
+  const rows = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      tier: subscriptions.plan,
+      emailFrequency: userPreferences.emailFrequency,
+    })
+    .from(users)
+    .innerJoin(subscriptions, eq(subscriptions.userId, users.id))
+    .leftJoin(userPreferences, eq(userPreferences.userId, users.id))
+    .where(eq(subscriptions.status, 'active'));
+
+  return rows
+    .filter((row) => row.emailFrequency !== 'never')
+    .map((row) => ({
+      id: row.id,
+      email: row.email,
+      tier: row.tier as Subscriber['tier'],
+    }));
 }
 
 /**

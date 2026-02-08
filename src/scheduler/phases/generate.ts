@@ -15,6 +15,7 @@ import type {
   PipelineConfig,
 } from '../types';
 import type { UserTier } from '../../config/models';
+import { db, ideas } from '../../api/db/client';
 
 /**
  * Run the generate phase
@@ -61,6 +62,47 @@ export async function runGeneratePhase(
     const briefs = await generateAllBriefs(filteredProblems, gapAnalyses, {
       userTier,
     });
+
+    // Persist generated briefs to database
+    try {
+      if (briefs.length > 0) {
+        await db
+          .insert(ideas)
+          .values(
+            briefs.map((brief) => ({
+              name: brief.name,
+              tagline: brief.tagline,
+              priorityScore: String(brief.priorityScore),
+              effortEstimate: brief.effortEstimate,
+              revenueEstimate: brief.revenueEstimate,
+              category: brief.keyFeatures?.[0] || null,
+              problemStatement: brief.problemStatement,
+              targetAudience: brief.targetAudience,
+              marketSize: brief.marketSize,
+              existingSolutions: brief.existingSolutions,
+              gaps: brief.gaps,
+              proposedSolution: brief.proposedSolution,
+              keyFeatures: brief.keyFeatures,
+              mvpScope: brief.mvpScope,
+              technicalSpec: brief.technicalSpec,
+              businessModel: brief.businessModel,
+              goToMarket: brief.goToMarket,
+              risks: brief.risks,
+              generatedAt: brief.generatedAt,
+              isPublished: true,
+              publishedAt: new Date(),
+            }))
+          )
+          .onConflictDoNothing();
+
+        logger.info({ count: briefs.length }, 'Persisted briefs to database');
+      }
+    } catch (dbError) {
+      logger.warn(
+        { error: dbError instanceof Error ? dbError.message : String(dbError) },
+        'Failed to persist briefs to database (non-fatal)'
+      );
+    }
 
     const duration = Date.now() - startTime;
 

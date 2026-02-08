@@ -51,6 +51,7 @@
     "@fastify/rate-limit": "^9.1.0",
     "@octokit/rest": "^20.0.2",
     "@octokit/types": "^12.4.0",
+    "@sentry/node": "^8.0.0",
     "@supabase/supabase-js": "^2.39.3",
     "cheerio": "^1.0.0-rc.12",
     "dotenv": "^16.3.1",

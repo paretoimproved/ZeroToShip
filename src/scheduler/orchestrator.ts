@@ -13,6 +13,8 @@ import { runAnalyzePhase } from './phases/analyze';
 import { runGeneratePhase } from './phases/generate';
 import { runDeliverPhase } from './phases/deliver';
 import { isIdeaForgeError, isFatalError } from '../lib/errors';
+import { initMonitoring, captureException } from '../lib/monitoring';
+import { sendPipelineFailureAlert } from '../lib/alerts';
 import {
   initRunStatus,
   savePhaseResult,
@@ -184,6 +186,9 @@ export async function runPipeline(
 
   const startedAt = new Date();
 
+  // Initialize monitoring
+  initMonitoring();
+
   if (resumePhase) {
     logger.info(
       { config: fullConfig, resumePhase },
@@ -233,6 +238,11 @@ export async function runPipeline(
       recoverable: !isFatal,
       severity: scrapeResult.severity,
     });
+    captureException(
+      new Error(scrapeResult.error || 'Scrape phase failed'),
+      { runId, phase: 'scrape', severity: scrapeResult.severity }
+    );
+    sendPipelineFailureAlert(runId, 'scrape', scrapeResult.error || 'Unknown error', scrapeResult.severity ?? 'fatal');
     if (isFatal) {
       return buildResult(runId, startedAt, fullConfig, { scrape: scrapeResult }, errors);
     }
@@ -279,6 +289,11 @@ export async function runPipeline(
       recoverable: !isFatal,
       severity: analyzeResult.severity,
     });
+    captureException(
+      new Error(analyzeResult.error || 'Analyze phase failed'),
+      { runId, phase: 'analyze', severity: analyzeResult.severity }
+    );
+    sendPipelineFailureAlert(runId, 'analyze', analyzeResult.error || 'Unknown error', analyzeResult.severity ?? 'fatal');
     if (isFatal) {
       return buildResult(
         runId,
@@ -336,6 +351,11 @@ export async function runPipeline(
       recoverable: !isFatal,
       severity: generateResult.severity,
     });
+    captureException(
+      new Error(generateResult.error || 'Generate phase failed'),
+      { runId, phase: 'generate', severity: generateResult.severity }
+    );
+    sendPipelineFailureAlert(runId, 'generate', generateResult.error || 'Unknown error', generateResult.severity ?? 'fatal');
     if (isFatal) {
       return buildResult(
         runId,
@@ -370,6 +390,11 @@ export async function runPipeline(
       recoverable: true,
       severity: deliverResult.severity ?? 'degraded',
     });
+    captureException(
+      new Error(deliverResult.error || 'Deliver phase failed'),
+      { runId, phase: 'deliver', severity: deliverResult.severity ?? 'degraded' }
+    );
+    sendPipelineFailureAlert(runId, 'deliver', deliverResult.error || 'Unknown error', deliverResult.severity ?? 'degraded');
   }
 
   const result = buildResult(
