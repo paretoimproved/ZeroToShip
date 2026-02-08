@@ -56,6 +56,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
         response: {
           200: AuthResponseSchema,
           400: ErrorResponseSchema,
+          500: ErrorResponseSchema,
         },
       },
     },
@@ -108,6 +109,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
         response: {
           200: AuthResponseSchema,
           401: ErrorResponseSchema,
+          500: ErrorResponseSchema,
         },
       },
     },
