@@ -10,6 +10,7 @@
  * - Error wrapping with ScraperError
  */
 
+import * as crypto from 'crypto';
 import type { RawPost } from './types';
 import { ScraperError } from '../lib/errors';
 import logger from '../lib/logger';
@@ -46,11 +47,7 @@ export function truncateResults<T extends RawPost>(
  * Generate a UUID v4 for post IDs
  */
 export function generateId(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
+  return crypto.randomUUID();
 }
 
 /**

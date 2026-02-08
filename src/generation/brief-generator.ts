@@ -5,6 +5,7 @@
  * from scored problems and gap analyses.
  */
 
+import * as crypto from 'crypto';
 import type { ScoredProblem } from '../analysis/scorer';
 import type { GapAnalysis } from '../analysis/gap-analyzer';
 import { config as envConfig } from '../config/env';
@@ -139,7 +140,7 @@ function sleep(ms: number): Promise<void> {
  * Generate unique brief ID
  */
 function generateBriefId(): string {
-  return `brief_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  return `brief_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
 }
 
 /**

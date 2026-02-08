@@ -4,6 +4,7 @@
  * Coordinates the execution of all pipeline phases in sequence.
  */
 
+import * as crypto from 'crypto';
 import { createRunLogger } from './utils/logger';
 import { MetricsCollector } from './utils/metrics';
 import { getGlobalMetrics, resetGlobalMetrics } from './utils/api-metrics';
@@ -70,7 +71,7 @@ export const DEFAULT_PIPELINE_CONFIG: PipelineConfig = {
  */
 function generateRunId(): string {
   const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
-  const rand = Math.random().toString(36).slice(2, 8);
+  const rand = crypto.randomBytes(4).toString('hex');
   return `run_${date}_${rand}`;
 }
 

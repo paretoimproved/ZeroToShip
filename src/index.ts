@@ -18,9 +18,8 @@ import type { RawPost } from './scrapers/types';
 // Re-export everything for library usage
 export * from './scrapers/reddit';
 export * from './scrapers/signals';
-// Export types but exclude detectSignals (already exported from signals.ts)
+// Export types (PAIN_POINT_SIGNALS is now exported from signals.ts via the wildcard re-export above)
 export type { RawPost, HNPost, Tweet, GitHubIssue, TwitterConfig, GitHubSearchQuery, TwitterSearchQuery, RateLimitInfo, ScrapeResult } from './scrapers/types';
-export { PAIN_POINT_SIGNALS } from './scrapers/types';
 
 /**
  * CLI entry point

@@ -105,6 +105,13 @@ export const SIGNAL_PATTERNS = {
 export const ALL_SIGNALS: readonly string[] = Object.values(SIGNAL_PATTERNS).flat();
 
 /**
+ * Backward-compatible alias for ALL_SIGNALS.
+ * Previously defined separately in types.ts as a smaller subset.
+ * Now unified to use the full categorized signal set.
+ */
+export const PAIN_POINT_SIGNALS: readonly string[] = ALL_SIGNALS;
+
+/**
  * Signal match result with category information
  */
 export interface SignalMatch {

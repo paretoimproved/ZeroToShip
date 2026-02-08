@@ -97,39 +97,3 @@ export interface ScrapeResult<T extends RawPost> {
   queryUsed: string;
   rateLimitRemaining: number;
 }
-
-/**
- * Pain point signal patterns to look for
- */
-export const PAIN_POINT_SIGNALS = [
-  // Wishful/request patterns
-  'wish there was',
-  'would be nice if',
-  'wish this had',
-  "i'd pay for",
-  'looking for',
-  'anyone know of',
-  'need a tool',
-  'need a way to',
-  'looking for a way',
-  'looking for a tool',
-  'anyone know how to',
-  'is there a tool',
-  'better alternative',
-  // Frustration patterns
-  'frustrated with',
-  'annoying that',
-  'hate having to',
-  'struggling with',
-  'sick of',
-  'tired of',
-  'pain point',
-  // Question patterns
-  'why isn\'t there',
-  'why doesn\'t',
-  // Issue labels
-  'feature request',
-  'help wanted',
-  'enhancement',
-] as const;
-

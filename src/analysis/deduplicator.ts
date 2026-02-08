@@ -5,6 +5,7 @@
  * clusters similar posts together, and outputs deduplicated problem statements.
  */
 
+import * as crypto from 'crypto';
 import type { RawPost } from '../scrapers/types';
 import { EmbeddingClient, prepareTextForEmbedding } from './embeddings';
 import { config } from '../config/env';
@@ -90,7 +91,7 @@ const TOP_PROBLEMS_DISPLAY_LIMIT = 10;
  * Generate a unique cluster ID
  */
 function generateClusterId(): string {
-  return `cluster_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  return `cluster_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
 }
 
 /**

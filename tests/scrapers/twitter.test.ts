@@ -5,7 +5,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Tweet, PAIN_POINT_SIGNALS } from '../../src/scrapers/types.js';
+import { Tweet } from '../../src/scrapers/types.js';
+import { PAIN_POINT_SIGNALS } from '../../src/scrapers/signals';
 import { _resetConfigForTesting } from '../../src/config/env';
 
 // Mock the fetch function for API tests
@@ -84,7 +85,7 @@ describe('Twitter Scraper Types', () => {
   it('should have pain point signals defined', () => {
     expect(PAIN_POINT_SIGNALS.length).toBeGreaterThan(0);
     expect(PAIN_POINT_SIGNALS).toContain('wish there was');
-    expect(PAIN_POINT_SIGNALS).toContain('frustrated with');
+    expect(PAIN_POINT_SIGNALS).toContain('frustrated');
   });
 });
 

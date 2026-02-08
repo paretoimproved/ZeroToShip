@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GitHubScraper, DEFAULT_GITHUB_QUERIES, scrapeGitHub } from '../../src/scrapers/github';
-import { PAIN_POINT_SIGNALS } from '../../src/scrapers/types';
-import { detectSignals } from '../../src/scrapers/signals';
+import { detectSignals, PAIN_POINT_SIGNALS } from '../../src/scrapers/signals';
 
 describe('GitHub Scraper', () => {
   describe('detectSignals', () => {
