@@ -77,10 +77,18 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
         });
       }
 
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
+      let data;
+      let error;
+      try {
+        const result = await supabase.auth.signUp({ email, password });
+        data = result.data;
+        error = result.error;
+      } catch (err) {
+        return reply.status(500).send({
+          code: 'AUTH_SERVICE_ERROR',
+          message: sanitizeMessage(err instanceof Error ? err.message : 'Authentication service error'),
+        });
+      }
 
       if (error) {
         return reply.status(400).send({
@@ -130,10 +138,18 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
         });
       }
 
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      let data;
+      let error;
+      try {
+        const result = await supabase.auth.signInWithPassword({ email, password });
+        data = result.data;
+        error = result.error;
+      } catch (err) {
+        return reply.status(500).send({
+          code: 'AUTH_SERVICE_ERROR',
+          message: sanitizeMessage(err instanceof Error ? err.message : 'Authentication service error'),
+        });
+      }
 
       if (error) {
         return reply.status(401).send({
