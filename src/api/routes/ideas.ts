@@ -19,10 +19,12 @@ import {
   getCategories,
   getTodaysIdeasForTier,
   getArchivedIdeasForTier,
+  getIdeaById,
   getIdeaByIdForTier,
   saveIdeaForUser,
 } from '../services/ideas';
 import {
+  IdeaBriefSchema,
   IdeaListResponseSchema,
   IdeaSummarySchema,
   ArchiveQuerySchema,
@@ -160,7 +162,7 @@ export const ideasRoutes: FastifyPluginAsync = async (fastify) => {
           id: z.string().uuid(),
         }),
         response: {
-          200: IdeaSummarySchema,
+          200: IdeaBriefSchema,
           404: z.object({
             code: z.string(),
             message: z.string(),
@@ -170,23 +172,18 @@ export const ideasRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, reply) => {
       const { id } = request.params;
-      const result = await getIdeaByIdForTier(id, request.userTier, request.userId);
 
-      if (!result) {
+      // Fetch the full idea directly from DB (not the tier-filtered summary)
+      const idea = await getIdeaById(id);
+
+      if (!idea) {
         return reply.status(404).send({
           code: 'NOT_FOUND',
           message: 'Idea not found',
         });
       }
 
-      if (result.upgrade) {
-        return reply.send({
-          ...result.idea,
-          _upgrade: result.upgrade,
-        } as typeof result.idea & { _upgrade: { message: string; url: string } });
-      }
-
-      return reply.send(result.idea);
+      return reply.send(idea);
     }
   );
 
