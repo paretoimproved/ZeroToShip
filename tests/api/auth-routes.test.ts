@@ -783,6 +783,36 @@ describe('Auth Routes E2E', () => {
       expect(body.email).toBe(TEST_USER.email);
       expect(body.name).toBe(TEST_USER.name);
       expect(body.tier).toBe('free');
+      expect(body.isAdmin).toBe(false);
+    });
+
+    it('should return isAdmin true for admin users', async () => {
+      // Set admin email
+      process.env.ADMIN_EMAILS = TEST_USER.email;
+      const { _resetConfigForTesting } = await import('../../src/config/env');
+      _resetConfigForTesting();
+
+      mockGetUser.mockResolvedValue({
+        data: { user: supabaseUser() },
+        error: null,
+      });
+      mockGetUserById.mockResolvedValue(TEST_USER);
+
+      const response = await server.inject({
+        method: 'GET',
+        url: '/api/v1/auth/me',
+        headers: {
+          authorization: `Bearer ${TEST_SESSION.access_token}`,
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.payload);
+      expect(body.isAdmin).toBe(true);
+
+      // Clean up
+      delete process.env.ADMIN_EMAILS;
+      _resetConfigForTesting();
     });
 
     it('should call Supabase getUser with the Bearer token', async () => {

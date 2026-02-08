@@ -33,6 +33,7 @@ import type { UserTier } from './schemas';
 declare module 'fastify' {
   interface FastifyRequest {
     userId?: string;
+    userEmail?: string;
     userTier: UserTier;
     apiKeyId?: string;
   }
@@ -89,7 +90,7 @@ export async function createServer(config: ServerConfig = {}): Promise<FastifyIn
     origin: envConfig.corsOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Tier-Override'],
   });
 
   // Global rate limiting (per IP)

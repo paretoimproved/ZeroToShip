@@ -167,7 +167,18 @@ export async function optionalAuth(
     const userData = await verifyJWT(token);
     if (userData) {
       request.userId = userData.userId;
+      request.userEmail = userData.email;
       request.userTier = await getUserTier(userData.userId);
+
+      // Admin tier override: if admin sends X-Tier-Override, apply it
+      const tierOverride = request.headers['x-tier-override'] as string | undefined;
+      if (tierOverride && isAdminEmail(userData.email)) {
+        const validTiers: UserTier[] = ['anonymous', 'free', 'pro', 'enterprise'];
+        if (validTiers.includes(tierOverride as UserTier)) {
+          request.userTier = tierOverride as UserTier;
+        }
+      }
+
       return;
     }
   }
@@ -229,11 +240,39 @@ export async function requirePro(
 }
 
 /**
+ * Check if an email address belongs to an admin
+ */
+export function isAdminEmail(email: string | undefined): boolean {
+  if (!email) return false;
+  return config.adminEmails.has(email.toLowerCase());
+}
+
+/**
+ * Require admin access - returns 403 if not an admin
+ */
+export async function requireAdmin(
+  request: FastifyRequest,
+  reply: FastifyReply
+): Promise<void> {
+  await requireAuth(request, reply);
+
+  if (reply.sent) return;
+
+  if (!isAdminEmail(request.userEmail)) {
+    reply.status(403).send({
+      code: 'ADMIN_REQUIRED',
+      message: 'Admin access required',
+    });
+  }
+}
+
+/**
  * Auth plugin for route registration
  */
 export const authPlugin: FastifyPluginAsync = async (fastify) => {
   // Decorate request with auth properties
   fastify.decorateRequest('userId', undefined);
+  fastify.decorateRequest('userEmail', undefined);
   fastify.decorateRequest('userTier', 'anonymous' as UserTier);
   fastify.decorateRequest('apiKeyId', undefined);
 };

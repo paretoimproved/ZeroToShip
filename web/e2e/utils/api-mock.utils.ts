@@ -268,6 +268,173 @@ export async function mockBillingPricesApi(page: Page): Promise<void> {
 }
 
 /**
+ * Setup API mocking for the admin auth/me endpoint (returns isAdmin: true)
+ */
+export async function mockAdminAuthMe(
+  page: Page,
+  tier: 'free' | 'pro' | 'enterprise' = 'enterprise'
+): Promise<void> {
+  await page.route(`${API_URL}/auth/me`, async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'admin-user-123',
+        email: 'admin@ideaforge.io',
+        name: 'Admin User',
+        tier,
+        isAdmin: true,
+      }),
+    });
+  });
+}
+
+/**
+ * Setup API mocking for admin stats overview
+ */
+export async function mockAdminStatsApi(page: Page): Promise<void> {
+  await page.route(`${API_URL}/admin/stats/overview`, async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        totalUsers: 142,
+        activeSubscribers: 38,
+        totalIdeas: 1250,
+        ideasToday: 7,
+        pipeline: {
+          lastRunId: 'run_20260208_abc123',
+          lastRunAt: new Date().toISOString(),
+        },
+      }),
+    });
+  });
+}
+
+/**
+ * Setup API mocking for admin system health
+ */
+export async function mockAdminSystemHealthApi(page: Page): Promise<void> {
+  await page.route(`${API_URL}/admin/system-health`, async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        status: 'ok',
+        pipeline: {
+          lastRunId: 'run_20260208_abc123',
+          lastRunAt: new Date().toISOString(),
+          lastRunPhases: {
+            scrape: 'completed',
+            analyze: 'completed',
+            generate: 'completed',
+            deliver: 'completed',
+          },
+        },
+        counts: { activeSubscribers: 38, totalIdeas: 1250 },
+        uptime: 86400,
+        timestamp: new Date().toISOString(),
+      }),
+    });
+  });
+}
+
+/**
+ * Setup API mocking for admin pipeline status
+ */
+export async function mockAdminPipelineStatusApi(page: Page): Promise<void> {
+  await page.route(`${API_URL}/admin/pipeline-status`, async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        status: 'ok',
+        runId: 'run_20260208_abc123',
+        startedAt: new Date(Date.now() - 3600000).toISOString(),
+        phases: {
+          scrape: 'completed',
+          analyze: 'completed',
+          generate: 'completed',
+          deliver: 'completed',
+        },
+        lastCompletedPhase: 'deliver',
+        updatedAt: new Date().toISOString(),
+      }),
+    });
+  });
+}
+
+/**
+ * Setup API mocking for admin pipeline trigger
+ */
+export async function mockAdminPipelineRunApi(page: Page): Promise<void> {
+  await page.route(`${API_URL}/admin/pipeline/run`, async (route: Route) => {
+    if (route.request().method() === 'POST') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          status: 'started',
+          message: 'Pipeline run started',
+          config: { hoursBack: 24, maxBriefs: 10, dryRun: false },
+        }),
+      });
+    } else {
+      await route.fallback();
+    }
+  });
+}
+
+/**
+ * Setup API mocking for admin users list
+ */
+export async function mockAdminUsersApi(page: Page): Promise<void> {
+  await page.route(`${API_URL}/admin/users`, async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        users: [
+          {
+            id: 'user-1',
+            email: 'admin@ideaforge.io',
+            name: 'Admin User',
+            tier: 'enterprise',
+            createdAt: '2026-01-15T00:00:00Z',
+          },
+          {
+            id: 'user-2',
+            email: 'pro@example.com',
+            name: 'Pro User',
+            tier: 'pro',
+            createdAt: '2026-01-20T00:00:00Z',
+          },
+          {
+            id: 'user-3',
+            email: 'free@example.com',
+            name: 'Free User',
+            tier: 'free',
+            createdAt: '2026-02-01T00:00:00Z',
+          },
+        ],
+      }),
+    });
+  });
+}
+
+/**
+ * Setup all admin API mocks
+ */
+export async function setupAdminApiMocks(page: Page): Promise<void> {
+  await mockAdminAuthMe(page);
+  await mockAdminStatsApi(page);
+  await mockAdminSystemHealthApi(page);
+  await mockAdminPipelineStatusApi(page);
+  await mockAdminPipelineRunApi(page);
+  await mockAdminUsersApi(page);
+}
+
+/**
  * Setup all common API mocks
  */
 export async function setupAllApiMocks(

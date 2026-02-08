@@ -10,6 +10,10 @@ import type {
   PaginatedResponse,
   ApiError,
   EffortLevel,
+  AdminStatsOverview,
+  AdminUser,
+  PipelineRunResponse,
+  PipelineStatus,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
@@ -37,6 +41,14 @@ class ApiClient {
 
     if (this.token) {
       (headers as Record<string, string>)["Authorization"] = `Bearer ${this.token}`;
+    }
+
+    // Admin tier override from sessionStorage
+    if (typeof window !== "undefined") {
+      const tierOverride = sessionStorage.getItem("ideaforge_tier_override");
+      if (tierOverride) {
+        (headers as Record<string, string>)["X-Tier-Override"] = tierOverride;
+      }
     }
 
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
@@ -144,6 +156,35 @@ class ApiClient {
     }>;
   }> {
     return this.request("/billing/prices");
+  }
+
+  // Admin endpoints
+  async getAdminStats(): Promise<AdminStatsOverview> {
+    return this.request<AdminStatsOverview>("/admin/stats/overview");
+  }
+
+  async getAdminUsers(): Promise<{ users: AdminUser[] }> {
+    return this.request<{ users: AdminUser[] }>("/admin/users");
+  }
+
+  async getPipelineStatus(): Promise<PipelineStatus> {
+    return this.request<PipelineStatus>("/admin/pipeline-status");
+  }
+
+  async getSystemHealth(): Promise<Record<string, unknown>> {
+    return this.request<Record<string, unknown>>("/admin/system-health");
+  }
+
+  async triggerPipeline(options?: {
+    dryRun?: boolean;
+    skipDelivery?: boolean;
+    hoursBack?: number;
+    maxBriefs?: number;
+  }): Promise<PipelineRunResponse> {
+    return this.request<PipelineRunResponse>("/admin/pipeline/run", {
+      method: "POST",
+      body: JSON.stringify(options || {}),
+    });
   }
 }
 

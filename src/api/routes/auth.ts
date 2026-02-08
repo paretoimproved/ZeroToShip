@@ -5,7 +5,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { requireAuth } from '../middleware/auth';
+import { requireAuth, isAdminEmail } from '../middleware/auth';
 import { supabase } from '../middleware/auth';
 import { getOrCreateUser, getUserById } from '../services/users';
 
@@ -35,6 +35,7 @@ const UserResponseSchema = z.object({
   email: z.string(),
   name: z.string().nullable(),
   tier: z.string(),
+  isAdmin: z.boolean(),
 });
 
 const ErrorResponseSchema = z.object({
@@ -214,7 +215,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
         });
       }
 
-      return reply.send(user);
+      return reply.send({ ...user, isAdmin: isAdminEmail(user.email) });
     }
   );
 };

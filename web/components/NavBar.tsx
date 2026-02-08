@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAdmin } from "./AdminProvider";
 
 const navItems = [
   { href: "/dashboard", label: "Today" },
@@ -12,6 +13,7 @@ const navItems = [
 
 export default function NavBar() {
   const pathname = usePathname();
+  const { isAdmin, tierOverride } = useAdmin();
 
   // Hide NavBar on the landing page
   if (pathname === "/") return null;
@@ -47,6 +49,25 @@ export default function NavBar() {
                 </Link>
               );
             })}
+
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  pathname.startsWith("/admin")
+                    ? "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                    : "text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/50"
+                }`}
+              >
+                Admin
+              </Link>
+            )}
+
+            {tierOverride && (
+              <span className="ml-2 px-2 py-1 bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300 rounded text-xs font-medium">
+                {tierOverride}
+              </span>
+            )}
           </div>
         </div>
       </div>

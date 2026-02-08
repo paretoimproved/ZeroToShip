@@ -1,16 +1,18 @@
 /**
  * Admin Routes for IdeaForge API
  *
- * Provides admin-only endpoints for pipeline monitoring and system health.
+ * Provides admin-only endpoints for pipeline monitoring, system health,
+ * user management, and pipeline control.
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
 import type { FastifyPluginAsync } from 'fastify';
-import { requireAuth } from '../middleware/auth';
+import { requireAdmin } from '../middleware/auth';
 import { loadRunStatus } from '../../scheduler/utils/persistence';
-import { db, ideas, subscriptions } from '../db/client';
-import { eq, count } from 'drizzle-orm';
+import { runPipeline, DEFAULT_PIPELINE_CONFIG } from '../../scheduler';
+import { db, ideas, subscriptions, users } from '../db/client';
+import { eq, count, sql } from 'drizzle-orm';
 
 const DATA_DIR = path.join(process.cwd(), 'data', 'runs');
 
@@ -36,7 +38,7 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
    */
   server.get(
     '/pipeline-status',
-    { preHandler: [requireAuth] },
+    { preHandler: [requireAdmin] },
     async (request, reply) => {
       const latestRunId = getLatestRunId();
       if (!latestRunId) {
@@ -71,7 +73,7 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
    */
   server.get(
     '/system-health',
-    { preHandler: [requireAuth] },
+    { preHandler: [requireAdmin] },
     async (request, reply) => {
       const latestRunId = getLatestRunId();
       const runStatus = latestRunId ? loadRunStatus(latestRunId) : null;
@@ -112,6 +114,138 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
         },
         uptime: process.uptime(),
         timestamp: new Date().toISOString(),
+      });
+    }
+  );
+
+  /**
+   * POST /api/v1/admin/pipeline/run
+   * Trigger a pipeline run. Returns immediately; admin polls /pipeline-status.
+   */
+  server.post(
+    '/pipeline/run',
+    { preHandler: [requireAdmin] },
+    async (request, reply) => {
+      const body = request.body as {
+        dryRun?: boolean;
+        skipDelivery?: boolean;
+        hoursBack?: number;
+        maxBriefs?: number;
+      } | undefined;
+
+      const pipelineConfig = {
+        ...DEFAULT_PIPELINE_CONFIG,
+        hoursBack: body?.hoursBack ?? DEFAULT_PIPELINE_CONFIG.hoursBack,
+        maxBriefs: body?.maxBriefs ?? DEFAULT_PIPELINE_CONFIG.maxBriefs,
+        dryRun: body?.dryRun ?? body?.skipDelivery ?? false,
+      };
+
+      // Fire and forget — run pipeline in background
+      runPipeline(pipelineConfig).catch((err) => {
+        request.log.error({ err }, 'Admin-triggered pipeline run failed');
+      });
+
+      return reply.send({
+        status: 'started',
+        message: 'Pipeline run started',
+        config: {
+          hoursBack: pipelineConfig.hoursBack,
+          maxBriefs: pipelineConfig.maxBriefs,
+          dryRun: pipelineConfig.dryRun,
+        },
+      });
+    }
+  );
+
+  /**
+   * GET /api/v1/admin/users
+   * List all users with tier info
+   */
+  server.get(
+    '/users',
+    { preHandler: [requireAdmin] },
+    async (request, reply) => {
+      try {
+        const userList = await db
+          .select({
+            id: users.id,
+            email: users.email,
+            name: users.name,
+            tier: users.tier,
+            createdAt: users.createdAt,
+          })
+          .from(users)
+          .orderBy(users.createdAt);
+
+        return reply.send({ users: userList });
+      } catch {
+        return reply.status(500).send({
+          code: 'INTERNAL_ERROR',
+          message: 'Failed to fetch users',
+        });
+      }
+    }
+  );
+
+  /**
+   * GET /api/v1/admin/stats/overview
+   * Overview stats for admin dashboard
+   */
+  server.get(
+    '/stats/overview',
+    { preHandler: [requireAdmin] },
+    async (request, reply) => {
+      let totalUsers = 0;
+      let activeSubscribers = 0;
+      let totalIdeas = 0;
+      let ideasToday = 0;
+
+      try {
+        const userResult = await db.select({ count: count() }).from(users);
+        totalUsers = userResult[0]?.count || 0;
+      } catch {
+        // DB query failed
+      }
+
+      try {
+        const subResult = await db
+          .select({ count: count() })
+          .from(subscriptions)
+          .where(eq(subscriptions.status, 'active'));
+        activeSubscribers = subResult[0]?.count || 0;
+      } catch {
+        // DB query failed
+      }
+
+      try {
+        const ideaResult = await db.select({ count: count() }).from(ideas);
+        totalIdeas = ideaResult[0]?.count || 0;
+      } catch {
+        // DB query failed
+      }
+
+      try {
+        const todayResult = await db
+          .select({ count: count() })
+          .from(ideas)
+          .where(sql`DATE(${ideas.generatedAt}) = CURRENT_DATE`);
+        ideasToday = todayResult[0]?.count || 0;
+      } catch {
+        // DB query failed
+      }
+
+      const latestRunId = getLatestRunId();
+      const runStatus = latestRunId ? loadRunStatus(latestRunId) : null;
+
+      return reply.send({
+        totalUsers,
+        activeSubscribers,
+        totalIdeas,
+        ideasToday,
+        pipeline: {
+          lastRunId: runStatus?.runId || null,
+          lastRunAt: runStatus?.startedAt || null,
+        },
       });
     }
   );

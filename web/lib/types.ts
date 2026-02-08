@@ -75,8 +75,48 @@ export interface User {
   email: string;
   name: string;
   tier: "free" | "pro" | "enterprise";
+  isAdmin?: boolean;
   preferences: UserPreferences;
   createdAt: string;
+}
+
+export interface AdminStatsOverview {
+  totalUsers: number;
+  activeSubscribers: number;
+  totalIdeas: number;
+  ideasToday: number;
+  pipeline: {
+    lastRunId: string | null;
+    lastRunAt: string | null;
+  };
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  name: string | null;
+  tier: string;
+  createdAt: string;
+}
+
+export interface PipelineRunResponse {
+  status: string;
+  message: string;
+  config: {
+    hoursBack: number;
+    maxBriefs: number;
+    dryRun: boolean;
+  };
+}
+
+export interface PipelineStatus {
+  status: 'ok' | 'error' | 'no_runs';
+  runId?: string;
+  startedAt?: string;
+  phases?: Record<string, string>;
+  lastCompletedPhase?: string | null;
+  updatedAt?: string;
+  message?: string;
 }
 
 export interface UserPreferences {

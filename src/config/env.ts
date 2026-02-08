@@ -74,6 +74,9 @@ const envSchema = z.object({
     .string()
     .default('http://localhost:3000/account'),
 
+  // Admin
+  ADMIN_EMAILS: z.string().default(''),
+
   // Scheduler
   SCHEDULER_CRON: z.string().default('0 6 * * *'),
   SCHEDULER_TIMEZONE: z.string().default('America/New_York'),
@@ -106,6 +109,8 @@ export interface AppConfig extends Env {
   corsOrigins: string[];
   /** NITTER_INSTANCES split into an array (if set) */
   nitterInstances: string[] | undefined;
+  /** Set of lowercase admin email addresses */
+  adminEmails: Set<string>;
 }
 
 // --- Validation ---
@@ -143,6 +148,11 @@ export function validateEnv(): AppConfig {
     nitterInstances: env.NITTER_INSTANCES
       ? env.NITTER_INSTANCES.split(',').map((s) => s.trim())
       : undefined,
+    adminEmails: new Set(
+      env.ADMIN_EMAILS
+        ? env.ADMIN_EMAILS.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
+        : []
+    ),
   };
 }
 
