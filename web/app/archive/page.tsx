@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from "react";
 import IdeaCard from "@/components/IdeaCard";
+import { api } from "@/lib/api";
 import type { IdeaBrief, EffortLevel } from "@/lib/types";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
 
 const effortOptions: { value: EffortLevel | "all"; label: string }[] = [
   { value: "all", label: "All Efforts" },
@@ -34,48 +33,27 @@ export default function ArchivePage() {
         if (minScore > 0) params.set("minScore", minScore.toString());
         params.set("pageSize", "50");
 
-        const res = await fetch(`${API_URL}/ideas/archive?${params.toString()}`);
-        if (!res.ok) throw new Error(`API returned ${res.status}`);
-        const data = await res.json();
+        const data = await api.getArchive({ pageSize: 50 });
 
-        const mapped: IdeaBrief[] = (data.data || data.ideas || []).map(
-          (idea: Record<string, unknown>) => ({
-            id: idea.id,
-            name: idea.name,
-            tagline: idea.tagline,
-            priorityScore: idea.priorityScore,
-            effortEstimate: idea.effortEstimate || "week",
-            revenueEstimate: idea.revenueEstimate || "TBD",
-            problemStatement: idea.problemStatement || idea.tagline,
-            targetAudience: idea.targetAudience || "TBD",
-            marketSize: idea.marketSize || "TBD",
-            existingSolutions: idea.existingSolutions || "TBD",
-            gaps: idea.gaps || "TBD",
-            proposedSolution: idea.proposedSolution || idea.tagline,
-            keyFeatures: idea.keyFeatures || [],
-            mvpScope: idea.mvpScope || "TBD",
-            technicalSpec: idea.technicalSpec || {
-              stack: [],
-              architecture: "TBD",
-              estimatedEffort: "TBD",
-            },
-            businessModel: idea.businessModel || {
-              pricing: "TBD",
-              revenueProjection: "TBD",
-              monetizationPath: "TBD",
-            },
-            goToMarket: idea.goToMarket || {
-              launchStrategy: "TBD",
-              channels: [],
-              firstCustomers: "TBD",
-            },
-            risks: idea.risks || [],
-            generatedAt: idea.generatedAt,
-          })
-        );
+        let results = data.data;
+        // Client-side filtering (archive endpoint returns all ideas)
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase();
+          results = results.filter(
+            (idea) =>
+              idea.name.toLowerCase().includes(q) ||
+              idea.tagline.toLowerCase().includes(q)
+          );
+        }
+        if (effortFilter !== "all") {
+          results = results.filter((idea) => idea.effortEstimate === effortFilter);
+        }
+        if (minScore > 0) {
+          results = results.filter((idea) => idea.priorityScore >= minScore);
+        }
 
-        setIdeas(mapped);
-        setTotal(data.total ?? mapped.length);
+        setIdeas(results);
+        setTotal(data.total ?? results.length);
       } catch (err) {
         console.error("Failed to fetch archive:", err);
         setError("Failed to load archive. Please try again later.");

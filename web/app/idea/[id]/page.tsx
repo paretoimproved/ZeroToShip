@@ -4,10 +4,9 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import BriefView from "@/components/BriefView";
+import { api } from "@/lib/api";
 import { isAuthenticated } from "@/lib/auth";
 import type { IdeaBrief } from "@/lib/types";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
 
 // Mock data for fallback when API is unavailable
 const mockBrief: IdeaBrief = {
@@ -82,33 +81,8 @@ export default function IdeaPage() {
   useEffect(() => {
     async function fetchIdea() {
       try {
-        const res = await fetch(`${API_URL}/ideas/${id}`);
-        if (!res.ok) throw new Error(`API returned ${res.status}`);
-        const data = await res.json();
-
-        const idea: IdeaBrief = {
-          id: data.id,
-          name: data.name,
-          tagline: data.tagline,
-          priorityScore: data.priorityScore,
-          effortEstimate: data.effortEstimate || "week",
-          revenueEstimate: data.revenueEstimate || "TBD",
-          problemStatement: data.problemStatement || data.tagline,
-          targetAudience: data.targetAudience || "TBD",
-          marketSize: data.marketSize || "TBD",
-          existingSolutions: data.existingSolutions || "TBD",
-          gaps: data.gaps || "TBD",
-          proposedSolution: data.proposedSolution || data.tagline,
-          keyFeatures: data.keyFeatures || [],
-          mvpScope: data.mvpScope || "TBD",
-          technicalSpec: data.technicalSpec || { stack: [], architecture: "TBD", estimatedEffort: "TBD" },
-          businessModel: data.businessModel || { pricing: "TBD", revenueProjection: "TBD", monetizationPath: "TBD" },
-          goToMarket: data.goToMarket || { launchStrategy: "TBD", channels: [], firstCustomers: "TBD" },
-          risks: data.risks || [],
-          generatedAt: data.generatedAt,
-        };
-
-        setBrief(idea);
+        const data = await api.getIdea(id);
+        setBrief(data);
       } catch (error) {
         console.log("API unavailable, using mock data:", error);
         setBrief({ ...mockBrief, id });

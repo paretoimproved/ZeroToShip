@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from "react";
 import IdeaCard from "@/components/IdeaCard";
+import { api } from "@/lib/api";
 import type { IdeaBrief } from "@/lib/types";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
 
 // Mock data for fallback when API is unavailable
 const mockIdeas: IdeaBrief[] = [
@@ -52,34 +51,12 @@ export default function HomePage() {
   useEffect(() => {
     async function fetchIdeas() {
       try {
-        const res = await fetch(`${API_URL}/ideas/today`);
-        if (!res.ok) throw new Error(`API returned ${res.status}`);
-        const data = await res.json();
+        const data = await api.getTodayIdeas();
 
-        // Map API response to full IdeaBrief format
-        const mapped: IdeaBrief[] = data.ideas.map((idea: Record<string, unknown>) => ({
-          id: idea.id,
-          name: idea.name,
-          tagline: idea.tagline,
-          priorityScore: idea.priorityScore,
-          effortEstimate: idea.effortEstimate || "week",
-          revenueEstimate: idea.revenueEstimate || "TBD",
-          problemStatement: idea.problemStatement || idea.tagline,
-          targetAudience: idea.targetAudience || "TBD",
-          marketSize: idea.marketSize || `${idea.category} market`,
-          existingSolutions: idea.existingSolutions || "TBD",
-          gaps: idea.gaps || "TBD",
-          proposedSolution: idea.proposedSolution || idea.tagline,
-          keyFeatures: idea.keyFeatures || [],
-          mvpScope: idea.mvpScope || "TBD",
-          technicalSpec: idea.technicalSpec || { stack: [], architecture: "TBD", estimatedEffort: "TBD" },
-          businessModel: idea.businessModel || { pricing: "TBD", revenueProjection: "TBD", monetizationPath: "TBD" },
-          goToMarket: idea.goToMarket || { launchStrategy: "TBD", channels: [], firstCustomers: "TBD" },
-          risks: idea.risks || [],
-          generatedAt: idea.generatedAt,
-        }));
+        // getTodayIdeas returns the full response; extract ideas array
+        const ideas = Array.isArray(data) ? data : (data as unknown as { ideas: IdeaBrief[] }).ideas ?? [];
 
-        setIdeas(mapped);
+        setIdeas(ideas);
         setSource("api");
       } catch (error) {
         console.log("API unavailable, using mock data:", error);
