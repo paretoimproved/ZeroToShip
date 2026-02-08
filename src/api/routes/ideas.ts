@@ -139,8 +139,8 @@ export const ideasRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.send({
         ideas,
         total,
-        page: query.page,
-        pageSize: query.pageSize,
+        page: Number(query.page) || 1,
+        pageSize: Number(query.pageSize) || 10,
         hasMore,
         tier: request.userTier,
       });

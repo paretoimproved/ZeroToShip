@@ -146,25 +146,25 @@ export async function getArchivedIdeas(
 
   // Category filter
   if (query.category) {
-    conditions.push(eq(ideas.category, query.category));
+    conditions.push(eq(ideas.category, query.category as string));
   }
 
   // Effort filter
   if (query.effort) {
-    conditions.push(eq(ideas.effortEstimate, query.effort));
+    conditions.push(eq(ideas.effortEstimate, query.effort as string));
   }
 
   // Score filter
-  if (query.minScore !== undefined) {
-    conditions.push(gte(ideas.priorityScore, query.minScore.toString()));
+  if (query.minScore != null) {
+    conditions.push(gte(ideas.priorityScore, String(query.minScore)));
   }
 
   // Date filters
   if (query.from) {
-    conditions.push(gte(ideas.publishedAt, new Date(query.from)));
+    conditions.push(gte(ideas.publishedAt, new Date(query.from as string)));
   }
   if (query.to) {
-    conditions.push(lte(ideas.publishedAt, new Date(query.to)));
+    conditions.push(lte(ideas.publishedAt, new Date(query.to as string)));
   }
 
   const whereClause = and(...conditions);
@@ -178,13 +178,15 @@ export async function getArchivedIdeas(
   const total = countResult[0]?.count || 0;
 
   // Get paginated results
-  const offset = (query.page - 1) * query.pageSize;
+  const page = Number(query.page) || 1;
+  const pageSize = Number(query.pageSize) || 10;
+  const offset = (page - 1) * pageSize;
   const rows = await db
     .select()
     .from(ideas)
     .where(whereClause)
     .orderBy(desc(ideas.publishedAt), desc(ideas.priorityScore))
-    .limit(query.pageSize)
+    .limit(pageSize)
     .offset(offset);
 
   return {
@@ -213,12 +215,12 @@ export async function searchIdeas(
 
   // Category filter
   if (query.category) {
-    conditions.push(eq(ideas.category, query.category));
+    conditions.push(eq(ideas.category, query.category as string));
   }
 
   // Effort filter
   if (query.effort) {
-    conditions.push(eq(ideas.effortEstimate, query.effort));
+    conditions.push(eq(ideas.effortEstimate, query.effort as string));
   }
 
   const whereClause = and(...conditions);
@@ -232,13 +234,15 @@ export async function searchIdeas(
   const total = countResult[0]?.count || 0;
 
   // Get paginated results
-  const offset = (query.page - 1) * query.pageSize;
+  const page = Number(query.page) || 1;
+  const pageSize = Number(query.pageSize) || 10;
+  const offset = (page - 1) * pageSize;
   const rows = await db
     .select()
     .from(ideas)
     .where(whereClause)
     .orderBy(desc(ideas.priorityScore))
-    .limit(query.pageSize)
+    .limit(pageSize)
     .offset(offset);
 
   return {
@@ -444,7 +448,7 @@ export async function getArchivedIdeasForTier(
 ): Promise<{ ideas: IdeaSummary[]; total: number; hasMore: boolean }> {
   const { ideas: allIdeas, total } = await getArchivedIdeas(query);
   const { ideas: filtered } = filterIdeasForTier(allIdeas, tier);
-  const hasMore = query.page * query.pageSize < total;
+  const hasMore = (Number(query.page) || 1) * (Number(query.pageSize) || 10) < total;
 
   return { ideas: filtered, total, hasMore };
 }

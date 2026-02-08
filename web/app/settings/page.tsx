@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { isAuthenticated } from "@/lib/auth";
+import { api } from "@/lib/api";
 import type { EffortLevel } from "@/lib/types";
 
 interface Settings {
@@ -94,10 +95,18 @@ export default function SettingsPage() {
   };
 
   const handleSave = async () => {
-    // In production: await api.updatePreferences(settings);
-    console.log("Saving settings:", settings);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    try {
+      await api.updatePreferences({
+        categories: settings.categories,
+        effortFilter: settings.effortFilter,
+        emailFrequency: settings.emailFrequency,
+        minPriorityScore: settings.minPriorityScore,
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      console.error("Failed to save settings:", err);
+    }
   };
 
   return (

@@ -1,111 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import IdeaCard from "@/components/IdeaCard";
 import type { IdeaBrief, EffortLevel } from "@/lib/types";
 
-// Mock archive data
-const mockArchive: IdeaBrief[] = [
-  {
-    id: "arch-1",
-    name: "API Playground",
-    tagline: "Test any API without writing code",
-    priorityScore: 82,
-    effortEstimate: "week",
-    revenueEstimate: "$8K-20K MRR",
-    problemStatement: "Developers waste time writing test scripts to explore APIs.",
-    targetAudience: "Backend developers",
-    marketSize: "$1B API tools market",
-    existingSolutions: "Postman, Insomnia",
-    gaps: "Complex UI, steep learning curve",
-    proposedSolution: "Visual API explorer",
-    keyFeatures: ["Visual request builder", "Auto-documentation", "Team sharing"],
-    mvpScope: "REST APIs only",
-    technicalSpec: {
-      stack: ["React", "Electron"],
-      architecture: "Desktop app",
-      estimatedEffort: "1 week",
-    },
-    businessModel: {
-      pricing: "$12/mo",
-      revenueProjection: "$15K MRR",
-      monetizationPath: "Freemium",
-    },
-    goToMarket: {
-      launchStrategy: "Developer communities",
-      channels: ["GitHub", "Dev.to"],
-      firstCustomers: "Open source contributors",
-    },
-    risks: ["Postman dominance"],
-    generatedAt: "2025-01-29T08:00:00Z",
-  },
-  {
-    id: "arch-2",
-    name: "MeetingLess",
-    tagline: "Async video updates for remote teams",
-    priorityScore: 75,
-    effortEstimate: "month",
-    revenueEstimate: "$10K-30K MRR",
-    problemStatement: "Remote teams have too many synchronous meetings.",
-    targetAudience: "Remote-first companies",
-    marketSize: "$5B remote work tools",
-    existingSolutions: "Loom, Zoom",
-    gaps: "Not designed for team updates",
-    proposedSolution: "Async standup videos with AI summaries",
-    keyFeatures: ["Quick recording", "AI summaries", "Thread discussions"],
-    mvpScope: "Recording and playback",
-    technicalSpec: {
-      stack: ["Next.js", "AWS"],
-      architecture: "Cloud-native",
-      estimatedEffort: "1 month",
-    },
-    businessModel: {
-      pricing: "$8/user/mo",
-      revenueProjection: "$25K MRR",
-      monetizationPath: "Team plans",
-    },
-    goToMarket: {
-      launchStrategy: "Remote work communities",
-      channels: ["Twitter", "LinkedIn"],
-      firstCustomers: "Startup founders",
-    },
-    risks: ["Zoom competition", "Enterprise sales cycle"],
-    generatedAt: "2025-01-28T08:00:00Z",
-  },
-  {
-    id: "arch-3",
-    name: "BugBuddy",
-    tagline: "AI pair programmer for debugging",
-    priorityScore: 68,
-    effortEstimate: "quarter",
-    revenueEstimate: "$20K-50K MRR",
-    problemStatement: "Debugging takes 50% of developer time.",
-    targetAudience: "Software developers",
-    marketSize: "$3B developer productivity",
-    existingSolutions: "GitHub Copilot, ChatGPT",
-    gaps: "Not specialized for debugging",
-    proposedSolution: "IDE extension focused on debugging",
-    keyFeatures: ["Error analysis", "Fix suggestions", "Code context"],
-    mvpScope: "VS Code extension",
-    technicalSpec: {
-      stack: ["TypeScript", "OpenAI API"],
-      architecture: "IDE extension + cloud API",
-      estimatedEffort: "3 months",
-    },
-    businessModel: {
-      pricing: "$19/mo",
-      revenueProjection: "$40K MRR",
-      monetizationPath: "Individual subscriptions",
-    },
-    goToMarket: {
-      launchStrategy: "VS Code marketplace",
-      channels: ["Reddit", "Hacker News"],
-      firstCustomers: "Early adopters on Twitter",
-    },
-    risks: ["AI model costs", "GitHub Copilot improvements"],
-    generatedAt: "2025-01-27T08:00:00Z",
-  },
-];
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
 
 const effortOptions: { value: EffortLevel | "all"; label: string }[] = [
   { value: "all", label: "All Efforts" },
@@ -119,22 +18,76 @@ export default function ArchivePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [effortFilter, setEffortFilter] = useState<EffortLevel | "all">("all");
   const [minScore, setMinScore] = useState(0);
+  const [ideas, setIdeas] = useState<IdeaBrief[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [total, setTotal] = useState(0);
 
-  // In production: fetch from API with filters
-  const filteredIdeas = mockArchive.filter((idea) => {
-    const matchesSearch =
-      searchQuery === "" ||
-      idea.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      idea.tagline.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      idea.problemStatement.toLowerCase().includes(searchQuery.toLowerCase());
+  useEffect(() => {
+    async function fetchArchive() {
+      setLoading(true);
+      setError(null);
+      try {
+        const params = new URLSearchParams();
+        if (searchQuery) params.set("q", searchQuery);
+        if (effortFilter !== "all") params.set("effort", effortFilter);
+        if (minScore > 0) params.set("minScore", minScore.toString());
+        params.set("pageSize", "50");
 
-    const matchesEffort =
-      effortFilter === "all" || idea.effortEstimate === effortFilter;
+        const res = await fetch(`${API_URL}/ideas/archive?${params.toString()}`);
+        if (!res.ok) throw new Error(`API returned ${res.status}`);
+        const data = await res.json();
 
-    const matchesScore = idea.priorityScore >= minScore;
+        const mapped: IdeaBrief[] = (data.data || data.ideas || []).map(
+          (idea: Record<string, unknown>) => ({
+            id: idea.id,
+            name: idea.name,
+            tagline: idea.tagline,
+            priorityScore: idea.priorityScore,
+            effortEstimate: idea.effortEstimate || "week",
+            revenueEstimate: idea.revenueEstimate || "TBD",
+            problemStatement: idea.problemStatement || idea.tagline,
+            targetAudience: idea.targetAudience || "TBD",
+            marketSize: idea.marketSize || "TBD",
+            existingSolutions: idea.existingSolutions || "TBD",
+            gaps: idea.gaps || "TBD",
+            proposedSolution: idea.proposedSolution || idea.tagline,
+            keyFeatures: idea.keyFeatures || [],
+            mvpScope: idea.mvpScope || "TBD",
+            technicalSpec: idea.technicalSpec || {
+              stack: [],
+              architecture: "TBD",
+              estimatedEffort: "TBD",
+            },
+            businessModel: idea.businessModel || {
+              pricing: "TBD",
+              revenueProjection: "TBD",
+              monetizationPath: "TBD",
+            },
+            goToMarket: idea.goToMarket || {
+              launchStrategy: "TBD",
+              channels: [],
+              firstCustomers: "TBD",
+            },
+            risks: idea.risks || [],
+            generatedAt: idea.generatedAt,
+          })
+        );
 
-    return matchesSearch && matchesEffort && matchesScore;
-  });
+        setIdeas(mapped);
+        setTotal(data.total ?? mapped.length);
+      } catch (err) {
+        console.error("Failed to fetch archive:", err);
+        setError("Failed to load archive. Please try again later.");
+        setIdeas([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    const debounce = setTimeout(fetchArchive, 300);
+    return () => clearTimeout(debounce);
+  }, [searchQuery, effortFilter, minScore]);
 
   return (
     <div>
@@ -209,27 +162,53 @@ export default function ArchivePage() {
       </div>
 
       {/* Results */}
-      <div className="space-y-4">
-        {filteredIdeas.map((idea) => (
-          <IdeaCard key={idea.id} idea={idea} />
-        ))}
-      </div>
-
-      {filteredIdeas.length === 0 && (
+      {loading ? (
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 animate-pulse"
+            >
+              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-3" />
+              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3 mb-2" />
+              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+            </div>
+          ))}
+        </div>
+      ) : error ? (
         <div className="text-center py-12">
-          <p className="text-gray-500 dark:text-gray-400">
-            No ideas match your filters. Try adjusting your search criteria.
-          </p>
+          <p className="text-red-500 dark:text-red-400 mb-4">{error}</p>
+          <button
+            onClick={() => setMinScore((s) => s)}
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+          >
+            Try Again
+          </button>
         </div>
-      )}
+      ) : (
+        <>
+          <div className="space-y-4">
+            {ideas.map((idea) => (
+              <IdeaCard key={idea.id} idea={idea} />
+            ))}
+          </div>
 
-      {/* Pagination placeholder */}
-      {filteredIdeas.length > 0 && (
-        <div className="mt-8 flex justify-center">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Showing {filteredIdeas.length} of {mockArchive.length} ideas
-          </p>
-        </div>
+          {ideas.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-500 dark:text-gray-400">
+                No ideas match your filters. Try adjusting your search criteria.
+              </p>
+            </div>
+          )}
+
+          {ideas.length > 0 && (
+            <div className="mt-8 flex justify-center">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Showing {ideas.length} of {total} ideas
+              </p>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

@@ -109,8 +109,8 @@ export async function updateUserPreferences(
   if (updates.emailFrequency !== undefined) {
     updateData.emailFrequency = updates.emailFrequency;
   }
-  if (updates.minPriorityScore !== undefined) {
-    updateData.minPriorityScore = updates.minPriorityScore.toString();
+  if (updates.minPriorityScore != null) {
+    updateData.minPriorityScore = String(updates.minPriorityScore);
   }
 
   // Upsert preferences

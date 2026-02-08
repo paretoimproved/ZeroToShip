@@ -434,18 +434,10 @@ export default function LandingPage() {
             </ul>
           </div>
           <div>
-            <div className="font-semibold text-white mb-4">Company</div>
+            <div className="font-semibold text-white mb-4">Resources</div>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/about" className="hover:text-white">About</Link></li>
-              <li><Link href="/blog" className="hover:text-white">Blog</Link></li>
-              <li><Link href="/contact" className="hover:text-white">Contact</Link></li>
-            </ul>
-          </div>
-          <div>
-            <div className="font-semibold text-white mb-4">Legal</div>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="/privacy" className="hover:text-white">Privacy</Link></li>
-              <li><Link href="/terms" className="hover:text-white">Terms</Link></li>
+              <li><Link href="/" className="hover:text-white">Dashboard</Link></li>
+              <li><Link href="/archive" className="hover:text-white">Archive</Link></li>
             </ul>
           </div>
         </div>

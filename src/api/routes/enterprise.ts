@@ -60,7 +60,9 @@ export const enterpriseRoutes: FastifyPluginAsync = async (fastify) => {
       const query = request.query;
       const { ideas, total } = await searchIdeas(query);
 
-      const hasMore = query.page * query.pageSize < total;
+      const page = Number(query.page) || 1;
+      const pageSize = Number(query.pageSize) || 10;
+      const hasMore = page * pageSize < total;
 
       // Enterprise users get full briefs
       const ideasWithBriefs = ideas.map((idea) => ({
@@ -77,10 +79,10 @@ export const enterpriseRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.send({
         ideas: ideasWithBriefs,
         total,
-        page: query.page,
-        pageSize: query.pageSize,
+        page,
+        pageSize,
         hasMore,
-        query: query.q,
+        query: String(query.q),
       });
     }
   );

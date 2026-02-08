@@ -10,6 +10,8 @@
     "test:e2e": "playwright test --config=e2e/playwright.config.ts",
     "test:e2e:ui": "playwright test --config=e2e/playwright.config.ts --ui",
     "test:e2e:headed": "playwright test --config=e2e/playwright.config.ts --headed",
+    "test:e2e:personas": "JOURNEY_HEADED=true JOURNEY_PAUSE_MS=1500 playwright test --config=e2e/playwright.config.ts --headed tests/journeys/",
+    "test:e2e:personas:slow": "JOURNEY_HEADED=true JOURNEY_PAUSE_MS=3000 playwright test --config=e2e/playwright.config.ts --headed --workers=1 tests/journeys/",
     "test": "vitest run",
     "test:watch": "vitest"
   },
