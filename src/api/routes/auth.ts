@@ -97,17 +97,33 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
         });
       }
 
-      if (!data.user || !data.session) {
+      if (!data.user) {
         return reply.status(400).send({
           code: 'SIGNUP_FAILED',
           message: 'Failed to create user account',
         });
       }
 
+      // If email confirmation is required, session may be null.
+      // Auto-confirm by signing in immediately with the service role client.
+      let token = data.session?.access_token;
+      if (!token) {
+        const signIn = await supabase.auth.signInWithPassword({ email, password });
+        if (signIn.error || !signIn.data.session) {
+          // User created but can't sign in yet — return with a placeholder token
+          const user = await getOrCreateUser(data.user.id, email, name);
+          return reply.send({
+            token: '',
+            user,
+          });
+        }
+        token = signIn.data.session.access_token;
+      }
+
       const user = await getOrCreateUser(data.user.id, email, name);
 
       return reply.send({
-        token: data.session.access_token,
+        token,
         user,
       });
     }

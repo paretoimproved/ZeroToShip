@@ -182,6 +182,14 @@ export async function createServer(config: ServerConfig = {}): Promise<FastifyIn
       });
     }
 
+    // Handle JSON parse errors (malformed request body)
+    if (error instanceof SyntaxError && statusCode === 400) {
+      return reply.status(400).send({
+        code: 'INVALID_JSON',
+        message: 'Invalid JSON in request body',
+      });
+    }
+
     // Generic error response
     return reply.status(statusCode).send({
       code: error.code || 'INTERNAL_ERROR',
