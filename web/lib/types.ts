@@ -1,20 +1,28 @@
 /**
  * TypeScript types for IdeaForge Web Dashboard
  *
- * Shared API contract types (enums, generic responses, error shapes)
- * are imported from @ideaforge/shared. Frontend-specific types that
- * differ from the backend (User, UserPreferences, Subscription, and
- * IdeaBrief with all fields required) are defined locally.
+ * Shared API contract types are inlined here to allow independent
+ * Vercel deployment without the workspace dependency.
+ * Canonical source: packages/shared/src/index.ts
  */
 
-import type { EffortLevel } from '@ideaforge/shared';
+// ─── Shared types (inlined from @ideaforge/shared) ──────────────────────────
 
-// Re-export shared types so existing imports from "@/lib/types" keep working
-export type {
-  EffortLevel,
-  PaginatedResponse,
-  ApiError,
-} from '@ideaforge/shared';
+export type EffortLevel = 'weekend' | 'week' | 'month' | 'quarter';
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
+
+export interface ApiError {
+  code: string;
+  message: string;
+  details?: Record<string, unknown>;
+}
 
 // ─── Frontend-specific types ─────────────────────────────────────────────────
 // IdeaBrief: The frontend assumes all fields are populated (fully-loaded brief).

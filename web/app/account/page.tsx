@@ -134,7 +134,7 @@ export default function AccountPage() {
 
   if (!isAuth) {
     return (
-      <div className="max-w-4xl mx-auto text-center py-16">
+      <div className="container mx-auto px-4 py-8 max-w-4xl text-center">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
           Account
         </h1>
@@ -159,7 +159,7 @@ export default function AccountPage() {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto">
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-4"></div>
           <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-64 mb-8"></div>
@@ -172,7 +172,7 @@ export default function AccountPage() {
   const currentPlan = subscription?.plan || "free";
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
       <header className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
           Account

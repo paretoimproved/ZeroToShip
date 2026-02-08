@@ -90,7 +90,7 @@ export default function ArchivePage() {
   }, [searchQuery, effortFilter, minScore]);
 
   return (
-    <div>
+    <div className="container mx-auto px-4 py-8">
       <header className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
           Idea Archive

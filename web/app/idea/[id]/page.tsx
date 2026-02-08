@@ -122,7 +122,7 @@ export default function IdeaPage() {
 
   if (loading) {
     return (
-      <div>
+      <div className="container mx-auto px-4 py-8">
         <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-40 mb-6 animate-pulse" />
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="animate-pulse">
@@ -152,7 +152,7 @@ export default function IdeaPage() {
   if (!brief) return null;
 
   return (
-    <div>
+    <div className="container mx-auto px-4 py-8">
       <Link
         href="/"
         className="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 mb-6"

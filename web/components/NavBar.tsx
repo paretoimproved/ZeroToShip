@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
-  { href: "/", label: "Today" },
+  { href: "/dashboard", label: "Today" },
   { href: "/archive", label: "Archive" },
   { href: "/settings", label: "Settings" },
   { href: "/account", label: "Account" },
@@ -12,6 +12,9 @@ const navItems = [
 
 export default function NavBar() {
   const pathname = usePathname();
+
+  // Hide NavBar on the landing page
+  if (pathname === "/") return null;
 
   return (
     <nav className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
@@ -28,7 +31,7 @@ export default function NavBar() {
             {navItems.map((item) => {
               const isActive =
                 pathname === item.href ||
-                (item.href !== "/" && pathname.startsWith(item.href));
+                (item.href !== "/dashboard" && pathname.startsWith(item.href));
 
               return (
                 <Link

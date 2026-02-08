@@ -51,7 +51,7 @@ export default function SettingsPage() {
 
   if (!isAuth) {
     return (
-      <div className="max-w-2xl mx-auto text-center py-16">
+      <div className="container mx-auto px-4 py-8 max-w-2xl text-center">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
           Settings
         </h1>
@@ -110,7 +110,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="container mx-auto px-4 py-8 max-w-2xl">
       <header className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
           Settings
