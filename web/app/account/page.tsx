@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { isAuthenticated } from "@/lib/auth";
+import { useAdmin } from "@/components/AdminProvider";
 import {
   createCheckoutSession,
   openBillingPortal,
@@ -73,6 +74,7 @@ const plans = [
 ];
 
 export default function AccountPage() {
+  const { effectiveTier } = useAdmin();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -192,7 +194,7 @@ export default function AccountPage() {
     );
   }
 
-  const currentPlan = subscription?.plan || "free";
+  const currentPlan = effectiveTier as "free" | "pro" | "enterprise";
 
   return (
     <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8">
