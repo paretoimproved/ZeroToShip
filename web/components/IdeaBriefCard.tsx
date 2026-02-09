@@ -89,10 +89,13 @@ export default function IdeaBriefCard({
               <p className="text-gray-600 dark:text-gray-400 mt-1">{brief.tagline}</p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+          <div className="flex flex-wrap items-center gap-2 sm:flex-shrink-0 sm:max-w-[50%]">
             <ScoreBadge score={brief.priorityScore} size="sm" />
             <EffortBadge effort={brief.effortEstimate} size="sm" />
-            <span className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
+            <span
+              title={brief.revenueEstimate}
+              className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 max-w-[180px] truncate"
+            >
               {brief.revenueEstimate}
             </span>
           </div>
