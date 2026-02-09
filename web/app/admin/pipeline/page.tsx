@@ -32,18 +32,21 @@ function formatPhaseStat(phase: string, stats: PipelineStatus["phaseStats"]): st
 
 function getPhaseState(
   phase: string,
-  phases: Record<string, string> | undefined
+  phases: Record<string, string> | undefined,
+  isRunning: boolean
 ): "pending" | "running" | "completed" | "failed" {
   if (!phases) return "pending";
   const s = phases[phase];
   if (s === "completed") return "completed";
   if (s === "failed") return "failed";
 
+  // Only show "running" spinner if we know a pipeline is actively running
+  if (!isRunning) return "pending";
+
   // Determine if this is the running phase: it's pending but the previous phase is completed
   const idx = PHASE_ORDER.indexOf(phase as (typeof PHASE_ORDER)[number]);
   if (idx === 0) {
-    // First phase: running if pending and run has started
-    return s === "pending" ? "running" : "pending";
+    return "running";
   }
   const prevPhase = PHASE_ORDER[idx - 1];
   if (phases[prevPhase] === "completed" && s === "pending") return "running";
@@ -99,6 +102,9 @@ export default function PipelinePage() {
     const interval = setInterval(async () => {
       const data = await fetchStatus();
       if (!data?.phases) return;
+
+      // Only evaluate completion for the run we triggered, not a stale previous run
+      if (currentRunId && data.runId !== currentRunId) return;
 
       const allCompleted = PHASE_ORDER.every((p) => data.phases?.[p] === "completed");
       const anyFailed = PHASE_ORDER.some((p) => data.phases?.[p] === "failed");
@@ -418,7 +424,7 @@ export default function PipelinePage() {
 
               <div className="relative flex justify-between">
                 {PHASE_ORDER.map((phase) => {
-                  const state = getPhaseState(phase, status.phases);
+                  const state = getPhaseState(phase, status.phases, running);
                   const stat = formatPhaseStat(phase, status.phaseStats);
                   const meta = PHASE_META[phase];
 
