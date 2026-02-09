@@ -62,7 +62,7 @@ const DEFAULT_MAX_COMPETITORS = 10;
 const DEFAULT_GAP_CONCURRENCY = 2;
 
 /** Default minimum post frequency to trigger web search analysis */
-const DEFAULT_MIN_FREQUENCY_FOR_SEARCH = 2;
+const DEFAULT_MIN_FREQUENCY_FOR_SEARCH = 1;
 
 /** Batch size for competitor analysis API calls */
 const COMPETITOR_BATCH_SIZE = 20;

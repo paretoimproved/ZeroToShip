@@ -337,7 +337,7 @@ export function createDefaultScores(cluster: ProblemCluster): ScoreResponse {
 
   // Dampen severity when avg engagement is very low (< 3 per post)
   const avgEngagement = cluster.frequency > 0 ? cluster.totalScore / cluster.frequency : 0;
-  const engagementDamper = avgEngagement < 3 ? 0.6 : 1.0;
+  const engagementDamper = avgEngagement < 3 ? 0.8 : 1.0;
 
   const rawSeverity = Math.min(10, frequencyScore + sourceBonus);
   const dampenedSeverity = Math.max(1, Math.round(rawSeverity * engagementDamper));

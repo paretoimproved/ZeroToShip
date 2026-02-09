@@ -312,7 +312,7 @@ describe('Pipeline Orchestrator', () => {
 
   it('should have correct default config', () => {
     expect(DEFAULT_PIPELINE_CONFIG).toMatchObject({
-      hoursBack: 24,
+      hoursBack: 48,
       scrapers: {
         reddit: true,
         hn: true,
@@ -548,7 +548,7 @@ describe('Pipeline Orchestrator', () => {
     it('should handle scored problems below minimum priority threshold', async () => {
       const { mocks } = await setupFullPipelineMocks();
 
-      // All problems have low priority (below default threshold of 15)
+      // All problems have low priority (below default threshold of 8)
       const lowPriorityProblem = createMockScoredProblem({
         scores: {
           frequency: 1,

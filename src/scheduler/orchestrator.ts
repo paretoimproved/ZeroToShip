@@ -38,7 +38,7 @@ import type {
 } from './types';
 
 /** Default scrape lookback window (hours) */
-const DEFAULT_HOURS_BACK = 24;
+const DEFAULT_HOURS_BACK = 48;
 
 /** Minimum post frequency for gap analysis to be worth running */
 const DEFAULT_MIN_FREQUENCY_FOR_GAP = 2;
@@ -47,7 +47,7 @@ const DEFAULT_MIN_FREQUENCY_FOR_GAP = 2;
 const DEFAULT_MAX_BRIEFS = 10;
 
 /** Minimum priority score for a problem to be included in brief generation */
-const DEFAULT_MIN_PRIORITY_SCORE = 15;
+const DEFAULT_MIN_PRIORITY_SCORE = 8;
 
 /**
  * Default pipeline configuration

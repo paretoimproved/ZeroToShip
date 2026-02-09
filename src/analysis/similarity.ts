@@ -6,7 +6,7 @@
  */
 
 /** Default similarity threshold for clustering related posts */
-export const DEFAULT_SIMILARITY_THRESHOLD = 0.85;
+export const DEFAULT_SIMILARITY_THRESHOLD = 0.75;
 
 /** Default minimum points for DBSCAN core point classification */
 export const DEFAULT_DBSCAN_MIN_POINTS = 1;
