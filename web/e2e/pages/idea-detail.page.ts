@@ -1,5 +1,8 @@
 /**
  * Idea detail page object
+ *
+ * Updated for IdeaBriefCard with tabbed interface.
+ * Content is now organized in tabs instead of collapsible sections.
  */
 
 import { Page, Locator, expect } from '@playwright/test';
@@ -9,37 +12,21 @@ export class IdeaDetailPage extends BasePage {
   // Navigation
   readonly backLink: Locator;
 
-  // Header section
+  // Card (the single IdeaBriefCard on the detail page)
+  readonly ideaCard: Locator;
+
+  // Header section (inside the card)
   readonly ideaName: Locator;
   readonly tagline: Locator;
   readonly scoreBadge: Locator;
   readonly effortBadge: Locator;
-  readonly generatedDate: Locator;
 
-  // Quick stats
-  readonly revenuePotential: Locator;
-  readonly marketSize: Locator;
-  readonly targetAudience: Locator;
+  // Tab bar
+  readonly tabBar: Locator;
+  readonly tabs: Locator;
 
-  // Content sections (based on BriefView.tsx)
-  readonly problemSection: Locator;
-  readonly existingSolutionsSection: Locator;
-  readonly marketGapsSection: Locator;
-  readonly proposedSolutionSection: Locator;
-  readonly mvpScopeSection: Locator;
-  readonly technicalSpecSection: Locator;
-  readonly businessModelSection: Locator;
-  readonly goToMarketSection: Locator;
-  readonly risksSection: Locator;
-
-  // Features list
-  readonly keyFeatures: Locator;
-
-  // Tech stack
-  readonly techStackTags: Locator;
-
-  // Channels
-  readonly channelTags: Locator;
+  // Gated content
+  readonly gatedContent: Locator;
 
   constructor(page: Page) {
     super(page);
@@ -47,37 +34,21 @@ export class IdeaDetailPage extends BasePage {
     // Navigation
     this.backLink = page.locator('a:has-text("Back to Today\'s Ideas")');
 
-    // Header (from BriefView.tsx)
-    this.ideaName = page.locator('article header h1');
-    this.tagline = page.locator('article header p.italic');
-    this.scoreBadge = page.locator('article header [class*="bg-green-"], article header [class*="bg-yellow-"], article header [class*="bg-red-"]').first();
-    this.effortBadge = page.locator('article header').locator('text=/weekend|week|month|quarter/i').first();
-    this.generatedDate = page.locator('article header span.text-gray-500').first();
+    // Card
+    this.ideaCard = page.locator('article');
 
-    // Quick stats grid
-    this.revenuePotential = page.locator('text="Revenue Potential"').locator('..').locator('div.font-semibold');
-    this.marketSize = page.locator('text="Market Size"').locator('..').locator('div.font-semibold');
-    this.targetAudience = page.locator('text="Target Audience"').locator('..').locator('div.font-semibold');
+    // Header (inside card)
+    this.ideaName = page.locator('article h3.font-mono');
+    this.tagline = page.locator('article h3.font-mono + p');
+    this.scoreBadge = page.locator('article [class*="bg-green-"], article [class*="bg-yellow-"], article [class*="bg-red-"]').first();
+    this.effortBadge = page.locator('article').locator('text=/weekend|week|month|quarter/i').first();
 
-    // Content sections
-    this.problemSection = page.locator('section:has(h3:text("Problem Statement"))');
-    this.existingSolutionsSection = page.locator('section:has(h3:text("Existing Solutions"))');
-    this.marketGapsSection = page.locator('section:has(h3:text("Market Gaps"))');
-    this.proposedSolutionSection = page.locator('section:has(h3:text("Proposed Solution"))');
-    this.mvpScopeSection = page.locator('section:has(h3:text("MVP Scope"))');
-    this.technicalSpecSection = page.locator('section:has(h3:text("Technical Specification"))');
-    this.businessModelSection = page.locator('section:has(h3:text("Business Model"))');
-    this.goToMarketSection = page.locator('section:has(h3:text("Go-to-Market Strategy"))');
-    this.risksSection = page.locator('section:has(h3:text("Risks & Challenges"))');
+    // Tabs
+    this.tabBar = page.locator('[role="tablist"]');
+    this.tabs = page.locator('[role="tab"]');
 
-    // Features list
-    this.keyFeatures = page.locator('section:has(h3:text("Proposed Solution")) li');
-
-    // Tech stack tags
-    this.techStackTags = page.locator('section:has(h3:text("Technical Specification")) .bg-gray-100, section:has(h3:text("Technical Specification")) .bg-gray-700');
-
-    // Channel tags
-    this.channelTags = page.locator('section:has(h3:text("Go-to-Market Strategy")) .bg-primary-100, section:has(h3:text("Go-to-Market Strategy")) .bg-primary-900');
+    // Gated content
+    this.gatedContent = page.locator('[data-testid="gated-content"]');
   }
 
   /**
@@ -93,7 +64,7 @@ export class IdeaDetailPage extends BasePage {
    */
   async waitForLoad(): Promise<void> {
     await this.page.waitForLoadState('domcontentloaded');
-    await expect(this.ideaName).toBeVisible({ timeout: 10000 });
+    await expect(this.tabBar).toBeVisible({ timeout: 10000 });
   }
 
   /**
@@ -133,83 +104,96 @@ export class IdeaDetailPage extends BasePage {
   }
 
   /**
-   * Get the revenue potential
+   * Switch to a specific tab by label
    */
-  async getRevenuePotential(): Promise<string> {
-    return await this.revenuePotential.textContent() || '';
+  async switchTab(tabName: string): Promise<void> {
+    const tab = this.page.locator(`[role="tab"]:has-text("${tabName}")`);
+    await tab.click();
   }
 
   /**
-   * Get the market size
+   * Get the active tab name
    */
-  async getMarketSize(): Promise<string> {
-    return await this.marketSize.textContent() || '';
+  async getActiveTabName(): Promise<string> {
+    const activeTab = this.page.locator('[role="tab"][aria-selected="true"]');
+    return await activeTab.textContent() || '';
   }
 
   /**
-   * Get all key features
+   * Get the current tab panel content
+   */
+  async getTabPanelContent(): Promise<string> {
+    const panel = this.page.locator('[role="tabpanel"]');
+    return await panel.textContent() || '';
+  }
+
+  /**
+   * Check if gated content overlay is visible
+   */
+  async hasGatedContent(): Promise<boolean> {
+    return await this.gatedContent.isVisible();
+  }
+
+  /**
+   * Get all key features (from Solution tab)
    */
   async getKeyFeatures(): Promise<string[]> {
+    await this.switchTab('Solution');
+    const panel = this.page.locator('[role="tabpanel"]');
+    const pills = panel.locator('.bg-primary-100, .bg-primary-900\\/50');
+    const count = await pills.count();
     const features: string[] = [];
-    const count = await this.keyFeatures.count();
-
     for (let i = 0; i < count; i++) {
-      const text = await this.keyFeatures.nth(i).textContent();
+      const text = await pills.nth(i).textContent();
       if (text) features.push(text.trim());
     }
-
     return features;
   }
 
   /**
-   * Get all tech stack items
+   * Get all tech stack items (from Tech Spec tab)
    */
   async getTechStack(): Promise<string[]> {
+    await this.switchTab('Tech Spec');
+    const panel = this.page.locator('[role="tabpanel"]');
+    const pills = panel.locator('.font-mono.bg-gray-100, .font-mono.bg-gray-800');
+    const count = await pills.count();
     const stack: string[] = [];
-    const count = await this.techStackTags.count();
-
     for (let i = 0; i < count; i++) {
-      const text = await this.techStackTags.nth(i).textContent();
+      const text = await pills.nth(i).textContent();
       if (text) stack.push(text.trim());
     }
-
     return stack;
   }
 
   /**
-   * Get all go-to-market channels
+   * Get all go-to-market channels (from Business tab)
    */
   async getChannels(): Promise<string[]> {
+    await this.switchTab('Business');
+    const panel = this.page.locator('[role="tabpanel"]');
+    const pills = panel.locator('.bg-primary-100, .bg-primary-900\\/50');
+    const count = await pills.count();
     const channels: string[] = [];
-    const count = await this.channelTags.count();
-
     for (let i = 0; i < count; i++) {
-      const text = await this.channelTags.nth(i).textContent();
+      const text = await pills.nth(i).textContent();
       if (text) channels.push(text.trim());
     }
-
     return channels;
   }
 
   /**
-   * Check if a section is visible
+   * Verify all tab sections are accessible (for authenticated users)
    */
-  async isSectionVisible(section: Locator): Promise<boolean> {
-    return await section.isVisible();
-  }
-
-  /**
-   * Verify all required sections are present
-   */
-  async verifyAllSectionsPresent(): Promise<void> {
-    await expect(this.problemSection).toBeVisible();
-    await expect(this.existingSolutionsSection).toBeVisible();
-    await expect(this.marketGapsSection).toBeVisible();
-    await expect(this.proposedSolutionSection).toBeVisible();
-    await expect(this.mvpScopeSection).toBeVisible();
-    await expect(this.technicalSpecSection).toBeVisible();
-    await expect(this.businessModelSection).toBeVisible();
-    await expect(this.goToMarketSection).toBeVisible();
-    await expect(this.risksSection).toBeVisible();
+  async verifyAllTabsAccessible(): Promise<void> {
+    const tabNames = ['Problem', 'Solution', 'Tech Spec', 'Business'];
+    for (const tabName of tabNames) {
+      await this.switchTab(tabName);
+      const activeTab = await this.getActiveTabName();
+      expect(activeTab).toBe(tabName);
+      // Verify no gated content
+      const isGated = await this.hasGatedContent();
+      expect(isGated).toBe(false);
+    }
   }
 }

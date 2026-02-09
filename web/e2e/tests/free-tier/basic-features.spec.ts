@@ -4,7 +4,8 @@
  * Tests core free tier functionality including:
  * - Login flow
  * - Homepage idea limits
- * - Idea detail access restrictions
+ * - Inline tabbed card interaction
+ * - Gated tab content for free users
  * - Settings preferences
  * - Account page display
  */
@@ -48,7 +49,7 @@ test.describe('Free Tier - Basic Features', () => {
       expect(ideaCount).toBe(TIER_LIMITS.free.ideasVisible);
     });
 
-    test('idea cards display correctly', async ({ asFreeUser, setupMocks }) => {
+    test('idea cards display correctly with tabs', async ({ asFreeUser, setupMocks }) => {
       await setupMocks(asFreeUser, 'free');
       const homePage = new HomePage(asFreeUser);
       await homePage.goto();
@@ -63,43 +64,45 @@ test.describe('Free Tier - Basic Features', () => {
 
       const score = await homePage.getIdeaScore(0);
       expect(score).toBeTruthy();
+
+      // Verify tab bar is present
+      const activeTab = await homePage.getActiveTabName(0);
+      expect(activeTab).toBe('Problem');
     });
   });
 
-  test.describe('Idea Detail Access', () => {
-    test('can view idea detail page', async ({ asFreeUser, setupMocks }) => {
+  test.describe('Inline Card Tab Interaction', () => {
+    test('can switch tabs within a card', async ({ asFreeUser, setupMocks }) => {
       await setupMocks(asFreeUser, 'free');
       const homePage = new HomePage(asFreeUser);
       await homePage.goto();
 
-      // Click on the first idea
-      await homePage.clickIdeaCard(0);
+      // Default tab should be Problem
+      const defaultTab = await homePage.getActiveTabName(0);
+      expect(defaultTab).toBe('Problem');
 
-      // Verify we're on the detail page
-      await expect(asFreeUser).toHaveURL(/\/idea\//);
-
-      const ideaDetailPage = new IdeaDetailPage(asFreeUser);
-      const name = await ideaDetailPage.getName();
-      expect(name).toBeTruthy();
+      // Switch to Solution tab — should show gated content for free tier
+      await homePage.switchTab(0, 'Solution');
+      const hasGated = await homePage.hasGatedContent(0);
+      expect(hasGated).toBeTruthy();
     });
 
-    test('cannot see full business brief (upgrade prompt shown)', async ({ asFreeUser, setupMocks }) => {
+    test('gated tabs show lock + sign up CTA for free users', async ({ asFreeUser, setupMocks }) => {
       await setupMocks(asFreeUser, 'free');
       const homePage = new HomePage(asFreeUser);
       await homePage.goto();
-      await homePage.clickIdeaCard(0);
+      await homePage.verifyIdeaCardsDisplayed(1);
 
-      // Look for upgrade prompt or locked content indicator
-      const upgradePrompt = asFreeUser.locator('text=/Upgrade|Pro|unlock/i');
-      const lockedSection = asFreeUser.locator('[data-locked="true"], .locked-content');
-      const upgradeCta = asFreeUser.locator('button:has-text("Upgrade"), a:has-text("Upgrade")');
+      // Switch to a gated tab
+      await homePage.switchTab(0, 'Solution');
 
-      // At least one of these indicators should be present
-      const hasUpgradePrompt = await upgradePrompt.count() > 0;
-      const hasLockedSection = await lockedSection.count() > 0;
-      const hasUpgradeCta = await upgradeCta.count() > 0;
+      // Gated content should be visible
+      const gatedContent = homePage.getIdeaCard(0).locator('[data-testid="gated-content"]');
+      await expect(gatedContent).toBeVisible();
 
-      expect(hasUpgradePrompt || hasLockedSection || hasUpgradeCta).toBeTruthy();
+      // Look for sign up CTA
+      const signUpCta = gatedContent.locator('a:has-text("Sign Up")');
+      await expect(signUpCta).toBeVisible();
     });
   });
 

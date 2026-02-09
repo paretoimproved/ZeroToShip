@@ -3,10 +3,13 @@
  *
  * Tests that anonymous users are blocked from accessing tier-gated features
  * and receive appropriate prompts to upgrade or sign up.
+ *
+ * Updated for inline tabbed IdeaBriefCard components.
+ * Gating is now tested within card tab panels instead of on detail pages.
  */
 
 import { test, expect } from '../../fixtures';
-import { HomePage, IdeaDetailPage } from '../../pages';
+import { HomePage } from '../../pages';
 
 test.describe('Anonymous User - Tier Gates', () => {
   test.describe('Protected Routes', () => {
@@ -53,81 +56,80 @@ test.describe('Anonymous User - Tier Gates', () => {
     });
   });
 
-  test.describe('Idea Detail Page Gates', () => {
-    test('full brief sections are hidden on idea detail page', async ({
+  test.describe('Inline Card Tab Gating', () => {
+    test('gated tabs show locked content for anonymous users', async ({
       asAnonymous,
       setupMocks,
     }) => {
       await setupMocks(asAnonymous, 'anonymous');
 
-      // Navigate to detail page via homepage
       const homePage = new HomePage(asAnonymous);
       await homePage.goto();
       await homePage.verifyIdeaCardsDisplayed(1);
-      await homePage.clickIdeaCard(0);
 
-      const detailPage = new IdeaDetailPage(asAnonymous);
+      // Problem tab should be visible and accessible
+      const activeTab = await homePage.getActiveTabName(0);
+      expect(activeTab).toBe('Problem');
 
-      // Basic info should be visible
-      await expect(detailPage.ideaName).toBeVisible();
-      await expect(detailPage.scoreBadge).toBeVisible();
+      // Switch to Solution tab — should show gated content
+      await homePage.switchTab(0, 'Solution');
+      const hasGated = await homePage.hasGatedContent(0);
+      expect(hasGated).toBeTruthy();
 
-      // Full brief sections should be hidden, locked, or show upgrade prompt
-      // Check for common gating patterns
-      const technicalSpec = detailPage.technicalSpecSection;
-      const businessModel = detailPage.businessModelSection;
-      const goToMarket = detailPage.goToMarketSection;
-
-      // These sections should either be hidden or show locked/upgrade state
-      const techVisible = await technicalSpec.isVisible().catch(() => false);
-      const businessVisible = await businessModel.isVisible().catch(() => false);
-      const goToMarketVisible = await goToMarket.isVisible().catch(() => false);
-
-      // If sections are visible, they should show upgrade prompt or be blurred/locked
-      if (techVisible || businessVisible || goToMarketVisible) {
-        const upgradePrompt = asAnonymous.locator(
-          'text=/upgrade|unlock|premium|pro|sign up/i'
-        );
-        const lockedContent = asAnonymous.locator(
-          '[data-testid="locked-content"], [class*="blur"], [class*="locked"]'
-        );
-
-        const hasUpgradePrompt = await upgradePrompt.count() > 0;
-        const hasLockedContent = await lockedContent.count() > 0;
-
-        expect(hasUpgradePrompt || hasLockedContent).toBeTruthy();
-      }
+      // Verify gated content has sign-up CTA
+      const gatedContent = homePage.getIdeaCard(0).locator('[data-testid="gated-content"]');
+      const signUpLink = gatedContent.locator('a:has-text("Sign Up")');
+      await expect(signUpLink).toBeVisible();
     });
 
-    test('"Upgrade to Pro" or "Sign up" CTA is visible on idea detail', async ({
+    test('Tech Spec tab is gated for anonymous users', async ({
       asAnonymous,
       setupMocks,
     }) => {
       await setupMocks(asAnonymous, 'anonymous');
 
-      // Navigate to detail page
       const homePage = new HomePage(asAnonymous);
       await homePage.goto();
       await homePage.verifyIdeaCardsDisplayed(1);
-      await homePage.clickIdeaCard(0);
 
-      // Look for upgrade/sign up CTA
-      const upgradeCta = asAnonymous.locator(
-        'a:has-text("Upgrade"), a:has-text("Pro"), button:has-text("Upgrade"), button:has-text("Pro")'
-      );
+      await homePage.switchTab(0, 'Tech Spec');
+      const hasGated = await homePage.hasGatedContent(0);
+      expect(hasGated).toBeTruthy();
+    });
+
+    test('Business tab is gated for anonymous users', async ({
+      asAnonymous,
+      setupMocks,
+    }) => {
+      await setupMocks(asAnonymous, 'anonymous');
+
+      const homePage = new HomePage(asAnonymous);
+      await homePage.goto();
+      await homePage.verifyIdeaCardsDisplayed(1);
+
+      await homePage.switchTab(0, 'Business');
+      const hasGated = await homePage.hasGatedContent(0);
+      expect(hasGated).toBeTruthy();
+    });
+
+    test('"Sign Up" CTA is visible in gated tab panels', async ({
+      asAnonymous,
+      setupMocks,
+    }) => {
+      await setupMocks(asAnonymous, 'anonymous');
+
+      const homePage = new HomePage(asAnonymous);
+      await homePage.goto();
+      await homePage.verifyIdeaCardsDisplayed(1);
+
+      // Switch to a gated tab
+      await homePage.switchTab(0, 'Solution');
+
+      // Look for sign up CTA within the gated content
       const signUpCta = asAnonymous.locator(
-        'a:has-text("Sign Up"), a:has-text("Create Account"), button:has-text("Sign Up"), button:has-text("Create Account")'
+        '[data-testid="gated-content"] a:has-text("Sign Up")'
       );
-      const loginCta = asAnonymous.locator(
-        'a:has-text("Log In"), a:has-text("Sign In"), button:has-text("Log In"), button:has-text("Sign In")'
-      );
-
-      const hasUpgradeCta = await upgradeCta.count() > 0;
-      const hasSignUpCta = await signUpCta.count() > 0;
-      const hasLoginCta = await loginCta.count() > 0;
-
-      // At least one CTA for upgrading or signing up should be visible
-      expect(hasUpgradeCta || hasSignUpCta || hasLoginCta).toBeTruthy();
+      await expect(signUpCta).toBeVisible();
     });
   });
 
@@ -185,56 +187,6 @@ test.describe('Anonymous User - Tier Gates', () => {
       }
 
       // If no search UI exists, the feature is effectively gated (pass)
-      expect(true).toBeTruthy();
-    });
-
-    test('export feature is not accessible', async ({ asAnonymous, setupMocks }) => {
-      await setupMocks(asAnonymous, 'anonymous');
-
-      // Navigate to detail page where export might be available
-      const homePage = new HomePage(asAnonymous);
-      await homePage.goto();
-      await homePage.verifyIdeaCardsDisplayed(1);
-      await homePage.clickIdeaCard(0);
-
-      // Look for export button/link
-      const exportButton = asAnonymous.locator(
-        'button:has-text("Export"), button:has-text("Download"), ' +
-        'a:has-text("Export"), a:has-text("Download"), ' +
-        '[data-testid="export-button"], [aria-label*="export" i]'
-      );
-
-      const hasExportButton = await exportButton.count() > 0;
-
-      if (hasExportButton) {
-        // Export button should be disabled or show upgrade prompt when clicked
-        const firstButton = exportButton.first();
-        const isDisabled = await firstButton.isDisabled();
-
-        if (!isDisabled) {
-          await firstButton.click().catch(() => {});
-
-          // Should show upgrade prompt
-          const upgradePrompt = asAnonymous.locator(
-            'text=/upgrade|sign up|login to export|pro feature|premium/i'
-          );
-          const hasUpgradePrompt = await upgradePrompt.count() > 0;
-
-          // If no upgrade prompt, button might be hidden or not functional for anon users
-          if (!hasUpgradePrompt) {
-            // Check if a modal or dialog appeared requiring auth
-            const authModal = asAnonymous.locator(
-              '[role="dialog"]:has-text("sign"), [role="dialog"]:has-text("login")'
-            );
-            const hasAuthModal = await authModal.count() > 0;
-
-            // Export should be gated somehow
-            expect(hasUpgradePrompt || hasAuthModal || isDisabled).toBeTruthy();
-          }
-        }
-      }
-
-      // If no export button exists for anonymous users, the feature is gated (pass)
       expect(true).toBeTruthy();
     });
 

@@ -52,8 +52,8 @@ test.describe('Anonymous User - Public Access', () => {
       for (let i = 0; i < ideaCount; i++) {
         const card = homePage.getIdeaCard(i);
 
-        // Name (h2 element)
-        const nameElement = card.locator('h2');
+        // Name (h3.font-mono element in tabbed card)
+        const nameElement = card.locator('h3.font-mono');
         await expect(nameElement).toBeVisible();
         const name = await nameElement.textContent();
         expect(name).toBeTruthy();
@@ -74,7 +74,7 @@ test.describe('Anonymous User - Public Access', () => {
       }
     });
 
-    test('can click on idea card to navigate to detail page', async ({
+    test('idea cards have tabbed interface for inline browsing', async ({
       asAnonymous,
       setupMocks,
     }) => {
@@ -84,18 +84,14 @@ test.describe('Anonymous User - Public Access', () => {
       await homePage.goto();
       await homePage.verifyIdeaCardsDisplayed(1);
 
-      // Get the first idea name before clicking
-      const ideaName = await homePage.getIdeaName(0);
+      // Default tab should be Problem
+      const activeTab = await homePage.getActiveTabName(0);
+      expect(activeTab).toBe('Problem');
 
-      // Click the first idea card
-      await homePage.clickIdeaCard(0);
-
-      // Should navigate to idea detail page
-      await expect(asAnonymous).toHaveURL(/\/idea\//);
-
-      // Detail page should show the same idea name
-      const ideaDetailPage = new IdeaDetailPage(asAnonymous);
-      await expect(ideaDetailPage.ideaName).toContainText(ideaName.trim());
+      // Can switch tabs
+      await homePage.switchTab(0, 'Solution');
+      const newTab = await homePage.getActiveTabName(0);
+      expect(newTab).toBe('Solution');
     });
   });
 
@@ -106,13 +102,9 @@ test.describe('Anonymous User - Public Access', () => {
     }) => {
       await setupMocks(asAnonymous, 'anonymous');
 
-      // Navigate to detail page via homepage click
-      const homePage = new HomePage(asAnonymous);
-      await homePage.goto();
-      await homePage.verifyIdeaCardsDisplayed(1);
-      await homePage.clickIdeaCard(0);
-
+      // Navigate directly to detail page
       const detailPage = new IdeaDetailPage(asAnonymous);
+      await detailPage.goto('mock-1');
 
       // Verify basic info is visible
       await expect(detailPage.ideaName).toBeVisible();
@@ -132,43 +124,26 @@ test.describe('Anonymous User - Public Access', () => {
       expect(effort).toMatch(/weekend|week|month|quarter/i);
     });
 
-    test('cannot see full brief sections (should show upgrade prompt)', async ({
+    test('gated tabs show locked content for anonymous users', async ({
       asAnonymous,
       setupMocks,
     }) => {
       await setupMocks(asAnonymous, 'anonymous');
 
-      // Navigate to detail page
       const homePage = new HomePage(asAnonymous);
       await homePage.goto();
       await homePage.verifyIdeaCardsDisplayed(1);
-      await homePage.clickIdeaCard(0);
 
-      // Check for upgrade prompt or gated content indicator
-      const upgradePrompt = asAnonymous.locator(
-        'text=/upgrade|sign up|login to view|unlock|premium/i'
-      );
+      // Switch to a gated tab
+      await homePage.switchTab(0, 'Solution');
+
+      // Check for gated content indicator
       const gatedSection = asAnonymous.locator('[data-testid="gated-content"]');
-      const lockedIcon = asAnonymous.locator('[data-testid="locked-icon"], .lock-icon, svg[class*="lock"]');
+      await expect(gatedSection).toBeVisible();
 
-      // At least one indicator of gated content should be present
-      const hasUpgradePrompt = await upgradePrompt.count() > 0;
-      const hasGatedSection = await gatedSection.count() > 0;
-      const hasLockedIcon = await lockedIcon.count() > 0;
-
-      // Full brief sections should be hidden or show upgrade prompt
-      const briefSections = asAnonymous.locator(
-        'section:has(h3:text("Technical Specification")), ' +
-        'section:has(h3:text("Business Model")), ' +
-        'section:has(h3:text("Go-to-Market Strategy"))'
-      );
-
-      const visibleBriefSections = await briefSections.count();
-
-      // Either sections are hidden/gated OR upgrade prompt is shown
-      expect(
-        hasUpgradePrompt || hasGatedSection || hasLockedIcon || visibleBriefSections === 0
-      ).toBeTruthy();
+      // Sign up CTA should be visible
+      const signUpCta = gatedSection.locator('a:has-text("Sign Up")');
+      await expect(signUpCta).toBeVisible();
     });
   });
 

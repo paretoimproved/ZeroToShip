@@ -10,7 +10,6 @@
 
 import { test, expect } from '../../fixtures';
 import { HomePage } from '../../pages/home.page';
-import { IdeaDetailPage } from '../../pages/idea-detail.page';
 import { ArchivePage } from '../../pages/archive.page';
 import { SettingsPage } from '../../pages/settings.page';
 import { AccountPage } from '../../pages/account.page';
@@ -48,32 +47,26 @@ test.describe('Journey: Pro User', () => {
     });
 
     // ---------------------------------------------------------------
-    // Step 2: Full business brief (all 9 sections)
+    // Step 2: Full business brief (all tabs accessible)
     // ---------------------------------------------------------------
-    await test.step('Step 2: Full business brief (all 9 sections)', async () => {
-      await annotate(page, 'Step 2: Full business brief (all 9 sections)');
+    await test.step('Step 2: Full business brief via tabs', async () => {
+      await annotate(page, 'Step 2: Full business brief via tabs');
 
-      await homePage.clickIdeaCard(0);
+      // Verify all tabs are accessible inline — no gating for Pro
+      const tabNames = ['Problem', 'Solution', 'Tech Spec', 'Business'];
+      for (const tabName of tabNames) {
+        await homePage.switchTab(0, tabName);
+        const activeTab = await homePage.getActiveTabName(0);
+        expect(activeTab).toBe(tabName);
 
-      const detailPage = new IdeaDetailPage(page);
-      await detailPage.waitForLoad();
-
-      await detailPage.verifyAllSectionsPresent();
-
-      const keyFeatures = await detailPage.getKeyFeatures();
-      expect(keyFeatures.length).toBeGreaterThan(0);
-
-      const techStack = await detailPage.getTechStack();
-      expect(techStack.length).toBeGreaterThan(0);
-
-      const channels = await detailPage.getChannels();
-      expect(channels.length).toBeGreaterThan(0);
+        // Pro users should never see gated content
+        const hasGated = await homePage.hasGatedContent(0);
+        expect(hasGated).toBe(false);
+      }
 
       // No upgrade prompts should be visible for pro users
       const upgradePrompt = page.locator('text=/upgrade to pro|unlock full brief/i');
       await expect(upgradePrompt).not.toBeVisible();
-
-      await detailPage.goBack();
 
       await journeyPause(page);
     });

@@ -7,7 +7,6 @@
 
 import { test, expect } from '../../fixtures';
 import { HomePage } from '../../pages/home.page';
-import { IdeaDetailPage } from '../../pages/idea-detail.page';
 import { ArchivePage } from '../../pages/archive.page';
 import { SettingsPage } from '../../pages/settings.page';
 import { AccountPage } from '../../pages/account.page';
@@ -41,34 +40,32 @@ test.describe('Free User Journey', () => {
     });
 
     // ---------------------------------------------------------------
-    // Step 2: View idea detail (limited, upgrade prompt)
+    // Step 2: Test gated tab content (inline, upgrade prompt)
     // ---------------------------------------------------------------
-    await test.step('Step 2: View idea detail with upgrade prompt', async () => {
+    await test.step('Step 2: Test gated tabs with upgrade prompt', async () => {
       const page = asFreeUser;
 
-      await annotate(page, 'Step 2: Idea Detail + Upgrade Prompt');
+      await annotate(page, 'Step 2: Gated Tabs + Sign Up Prompt');
 
       const homePage = new HomePage(page);
-      const ideaName = await homePage.getIdeaName(0);
-      await homePage.clickIdeaCard(0);
 
-      const detailPage = new IdeaDetailPage(page);
-      await expect(detailPage.ideaName).toBeVisible();
+      // Switch to a gated tab
+      await homePage.switchTab(0, 'Solution');
 
-      // Look for an upgrade CTA — may be a button, link, or data-testid element
-      const upgradeCta = page.locator(
-        'button:text-matches("Upgrade|Upgrade to Pro", "i"), ' +
-        'a:text-matches("Upgrade|Upgrade to Pro", "i"), ' +
-        '[data-testid="upgrade-cta"]'
-      );
+      // Gated content should be visible for free users
+      const gatedContent = page.locator('[data-testid="gated-content"]');
 
       try {
-        await expect(upgradeCta.first()).toBeVisible({ timeout: 5000 });
+        await expect(gatedContent).toBeVisible({ timeout: 5000 });
+        // Sign Up CTA should be visible
+        const signUpCta = gatedContent.locator('a:has-text("Sign Up")');
+        await expect(signUpCta).toBeVisible();
       } catch {
-        // Upgrade CTA may not exist for all free-tier detail views; continue
+        // Gated content may not exist for all free-tier views; continue
       }
 
-      await detailPage.goBack();
+      // Switch back to Problem tab (always accessible)
+      await homePage.switchTab(0, 'Problem');
 
       await journeyPause(page);
     });

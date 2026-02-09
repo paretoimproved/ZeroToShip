@@ -1,5 +1,8 @@
 /**
  * Home page (Today's Ideas) page object
+ *
+ * Updated for inline tabbed IdeaBriefCard components.
+ * Cards no longer navigate away — content is browsable via tabs.
  */
 
 import { Page, Locator, expect } from '@playwright/test';
@@ -16,12 +19,12 @@ export class HomePage extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    // Home page specific locators (based on app/page.tsx)
+    // Home page specific locators (based on IdeaBriefCard)
     this.heading = page.locator('h1:has-text("Today\'s Top Ideas")');
     this.dateDisplay = page.locator('header p').first();
     this.dataSourceBadge = page.locator('header span.bg-yellow-100, header span.bg-green-100');
     this.ideaCards = page.locator('article');
-    this.emptyState = page.locator('text="No ideas generated yet"');
+    this.emptyState = page.locator('text="No ideas yet"');
   }
 
   /**
@@ -66,19 +69,21 @@ export class HomePage extends BasePage {
   }
 
   /**
-   * Click on an idea card to view details
+   * Switch to a specific tab within a card
    */
-  async clickIdeaCard(index: number): Promise<void> {
-    await this.ideaCards.nth(index).click();
-    await this.page.waitForURL(/\/idea\//);
+  async switchTab(cardIndex: number, tabName: string): Promise<void> {
+    const card = this.ideaCards.nth(cardIndex);
+    const tab = card.locator(`[role="tab"]:has-text("${tabName}")`);
+    await tab.click();
   }
 
   /**
-   * Click on an idea card by name
+   * Get the active tab name for a card
    */
-  async clickIdeaByName(name: string): Promise<void> {
-    await this.getIdeaCardByName(name).click();
-    await this.page.waitForURL(/\/idea\//);
+  async getActiveTabName(cardIndex: number): Promise<string> {
+    const card = this.ideaCards.nth(cardIndex);
+    const activeTab = card.locator('[role="tab"][aria-selected="true"]');
+    return await activeTab.textContent() || '';
   }
 
   /**
@@ -95,7 +100,7 @@ export class HomePage extends BasePage {
    */
   async getIdeaName(index: number): Promise<string> {
     const card = this.ideaCards.nth(index);
-    const nameElement = card.locator('h2');
+    const nameElement = card.locator('h3.font-mono');
     return await nameElement.textContent() || '';
   }
 
@@ -163,5 +168,14 @@ export class HomePage extends BasePage {
     await expect(this.ideaCards.first()).toBeVisible();
     const count = await this.getIdeaCount();
     expect(count).toBeGreaterThanOrEqual(minCount);
+  }
+
+  /**
+   * Check if gated content is shown for a specific tab
+   */
+  async hasGatedContent(cardIndex: number): Promise<boolean> {
+    const card = this.ideaCards.nth(cardIndex);
+    const gated = card.locator('[data-testid="gated-content"]');
+    return await gated.isVisible();
   }
 }

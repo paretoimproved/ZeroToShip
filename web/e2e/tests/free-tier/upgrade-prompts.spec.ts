@@ -14,23 +14,20 @@ import { TIER_LIMITS } from '../../utils';
 
 test.describe('Free Tier - Upgrade Prompts', () => {
   test.describe('Idea Detail Page', () => {
-    test('idea detail page shows "Upgrade to Pro" CTA', async ({ asFreeUser, setupMocks }) => {
+    test('gated tabs show "Sign Up" CTA for free users', async ({ asFreeUser, setupMocks }) => {
       await setupMocks(asFreeUser, 'free');
       const homePage = new HomePage(asFreeUser);
       await homePage.goto();
 
-      // Navigate to idea detail
-      await homePage.clickIdeaCard(0);
+      // Switch to a gated tab
+      await homePage.switchTab(0, 'Solution');
 
-      // Look for upgrade CTA on the detail page
-      const upgradeCta = asFreeUser.locator(
-        'button:has-text("Upgrade"), ' +
-        'a:has-text("Upgrade to Pro"), ' +
-        'button:has-text("Upgrade to Pro"), ' +
-        '[data-testid="upgrade-cta"]'
-      );
+      // Look for sign up CTA in gated content
+      const gatedContent = asFreeUser.locator('[data-testid="gated-content"]');
+      await expect(gatedContent).toBeVisible();
 
-      await expect(upgradeCta.first()).toBeVisible();
+      const signUpCta = gatedContent.locator('a:has-text("Sign Up")');
+      await expect(signUpCta).toBeVisible();
     });
   });
 

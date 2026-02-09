@@ -9,7 +9,6 @@
 
 import { test, expect } from '../../fixtures';
 import { HomePage } from '../../pages/home.page';
-import { IdeaDetailPage } from '../../pages/idea-detail.page';
 import { TIER_LIMITS } from '../../utils/test-data';
 import { annotate, journeyPause } from '../../utils/journey-helpers';
 
@@ -57,31 +56,27 @@ test.describe('Journey: Anonymous Visitor', () => {
     });
 
     // ---------------------------------------------------------------
-    // Step 3: Click idea detail (gated content)
+    // Step 3: Test gated tab content inline
     // ---------------------------------------------------------------
-    await test.step('Step 3: Click idea detail (gated content)', async () => {
-      await annotate(page, 'Step 3: Click idea detail (gated content)');
+    await test.step('Step 3: Test gated tab content inline', async () => {
+      await annotate(page, 'Step 3: Test gated tab content inline');
 
-      await homePage.clickIdeaCard(0);
+      // Problem tab should be visible (not gated)
+      const activeTab = await homePage.getActiveTabName(0);
+      expect(activeTab).toBe('Problem');
 
-      const detailPage = new IdeaDetailPage(page);
+      // Switch to Solution tab — should show gated content
+      await homePage.switchTab(0, 'Solution');
 
-      await expect(detailPage.ideaName).toBeVisible();
-      await expect(detailPage.scoreBadge).toBeVisible();
-
-      // Check for upgrade/login prompts or gated content indicators
-      const upgradePrompt = page.locator(
-        'text=/upgrade|sign up|login to view|unlock|premium/i',
-      );
       const gatedContent = page.locator('[data-testid="gated-content"]');
+      await expect(gatedContent).toBeVisible();
 
-      const hasUpgradePrompt = (await upgradePrompt.count()) > 0;
-      const hasGatedContent = (await gatedContent.count()) > 0;
+      // Sign up CTA should be visible
+      const signUpCta = gatedContent.locator('a:has-text("Sign Up")');
+      await expect(signUpCta).toBeVisible();
 
-      // At least one gating mechanism should be present for anonymous users
-      expect(hasUpgradePrompt || hasGatedContent).toBeTruthy();
-
-      await detailPage.goBack();
+      // Switch back to Problem tab
+      await homePage.switchTab(0, 'Problem');
 
       await journeyPause(page);
     });

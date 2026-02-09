@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { sampleBrief } from "@/lib/sampleData";
 import { ScoreBadge, EffortBadge } from "@/components/ScoreBadge";
+import { SectionLabel, SectionValue, PillBadge, MonoPill } from "@/components/ui";
 
 const tabs = ["problem", "solution", "tech", "business"] as const;
 type TabId = (typeof tabs)[number];
@@ -13,34 +14,6 @@ const tabLabels: Record<TabId, string> = {
   tech: "Tech Spec",
   business: "Business",
 };
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <dt className="text-xs uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400 mb-1">
-      {children}
-    </dt>
-  );
-}
-
-function SectionValue({ children }: { children: React.ReactNode }) {
-  return <dd className="text-gray-700 dark:text-gray-300 text-sm mb-6 last:mb-0">{children}</dd>;
-}
-
-function PillBadge({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="inline-flex bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 text-xs px-2 py-1 rounded-full">
-      {children}
-    </span>
-  );
-}
-
-function MonoPill({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="font-mono bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs px-2 py-1 rounded">
-      {children}
-    </span>
-  );
-}
 
 function ProblemPanel() {
   return (

@@ -10,7 +10,6 @@
 
 import { test, expect } from '../../fixtures';
 import { HomePage } from '../../pages/home.page';
-import { IdeaDetailPage } from '../../pages/idea-detail.page';
 import { ArchivePage } from '../../pages/archive.page';
 import { SettingsPage } from '../../pages/settings.page';
 import { AccountPage } from '../../pages/account.page';
@@ -48,24 +47,26 @@ test.describe('Journey: Enterprise User', () => {
     });
 
     // ---------------------------------------------------------------
-    // Step 2: Full business brief
+    // Step 2: Full business brief (inline tabs)
     // ---------------------------------------------------------------
-    await test.step('Step 2: Full business brief', async () => {
-      await annotate(page, 'Step 2: Full business brief');
+    await test.step('Step 2: Full business brief via tabs', async () => {
+      await annotate(page, 'Step 2: Full business brief via tabs');
 
-      await homePage.clickIdeaCard(0);
+      // Verify all tabs are accessible inline on homepage
+      const tabNames = ['Problem', 'Solution', 'Tech Spec', 'Business'];
+      for (const tabName of tabNames) {
+        await homePage.switchTab(0, tabName);
+        const activeTab = await homePage.getActiveTabName(0);
+        expect(activeTab).toBe(tabName);
 
-      const detailPage = new IdeaDetailPage(page);
-      await detailPage.waitForLoad();
-      await detailPage.verifyAllSectionsPresent();
+        // Enterprise users should never see gated content
+        const hasGated = await homePage.hasGatedContent(0);
+        expect(hasGated).toBe(false);
+      }
 
-      const name = await detailPage.getName();
+      // Verify idea name is visible
+      const name = await homePage.getIdeaName(0);
       expect(name).toBeTruthy();
-
-      const revenuePotential = await detailPage.getRevenuePotential();
-      expect(revenuePotential).toBeTruthy();
-
-      await detailPage.goBack();
 
       await journeyPause(page);
     });

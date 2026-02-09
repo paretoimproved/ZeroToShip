@@ -139,23 +139,21 @@ test.describe('Boundary Conditions', () => {
       const homePage = new HomePage(page);
       await homePage.goto();
 
-      // Navigate to idea detail
-      const ideaCount = await homePage.getIdeaCount();
-      if (ideaCount > 0) {
-        await homePage.clickIdeaCard(0);
+      // Navigate to idea detail page directly
+      await page.goto('/idea/mock-1');
+      await page.waitForLoadState('domcontentloaded');
 
-        // Verify we're on detail page
-        await expect(page).toHaveURL(/\/idea\//);
+      // Verify we're on detail page
+      await expect(page).toHaveURL(/\/idea\//);
 
-        // Use browser back button
-        await page.goBack();
+      // Use browser back button
+      await page.goBack();
 
-        // Should be back on home page
-        await expect(page).toHaveURL('/');
+      // Should be back on home page
+      await expect(page).toHaveURL('/');
 
-        // Home page should still be functional
-        await expect(homePage.heading).toBeVisible();
-      }
+      // Home page should still be functional
+      await expect(homePage.heading).toBeVisible();
 
       // Navigate to settings
       await homePage.goToSettings();

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import IdeaCard from "@/components/IdeaCard";
+import IdeaBriefCard from "@/components/IdeaBriefCard";
+import { useAuth } from "@/components/AuthProvider";
 import { api } from "@/lib/api";
 import type { IdeaBrief, EffortLevel } from "@/lib/types";
 
@@ -21,6 +22,7 @@ export default function ArchivePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     async function fetchArchive() {
@@ -160,32 +162,39 @@ export default function ArchivePage() {
 
       {/* Results */}
       {loading ? (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 animate-pulse"
+              className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden animate-pulse"
             >
-              <div className="flex items-start gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-2">
-                    {/* Title skeleton */}
-                    <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
-                    {/* Score badge skeleton */}
-                    <div className="h-6 w-12 bg-gray-200 dark:bg-gray-700 rounded-full" />
+              {/* Header skeleton */}
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-2" />
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
                   </div>
-                  {/* Tagline skeleton */}
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3 mb-3" />
-                  {/* Problem statement skeleton */}
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-2" />
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-4" />
-                  {/* Meta row skeleton */}
-                  <div className="flex items-center gap-3">
-                    <div className="h-5 w-20 bg-gray-200 dark:bg-gray-700 rounded-full" />
-                    <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
-                    <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
+                  <div className="flex gap-2">
+                    <div className="h-6 w-12 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                    <div className="h-6 w-16 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                    <div className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded-full" />
                   </div>
                 </div>
+              </div>
+              {/* Tab bar skeleton */}
+              <div className="flex border-b border-gray-200 dark:border-gray-700 px-4 gap-4">
+                {[1, 2, 3, 4].map((j) => (
+                  <div key={j} className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded my-3" />
+                ))}
+              </div>
+              {/* Panel skeleton */}
+              <div className="p-6 space-y-4">
+                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-24" />
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6" />
+                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-24 mt-6" />
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full" />
               </div>
             </div>
           ))}
@@ -221,9 +230,14 @@ export default function ArchivePage() {
         </div>
       ) : (
         <>
-          <div className="space-y-4">
+          <div className="space-y-6">
             {ideas.map((idea, index) => (
-              <IdeaCard key={idea.id} idea={idea} index={index} />
+              <IdeaBriefCard
+                key={idea.id}
+                brief={idea}
+                index={index}
+                gated={!isAuthenticated}
+              />
             ))}
           </div>
 

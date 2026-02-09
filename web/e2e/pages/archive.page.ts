@@ -1,5 +1,7 @@
 /**
  * Archive page object
+ *
+ * Updated for inline tabbed IdeaBriefCard components.
  */
 
 import { Page, Locator, expect } from '@playwright/test';
@@ -36,7 +38,7 @@ export class ArchivePage extends BasePage {
 
     // Results
     this.ideaCards = page.locator('article');
-    this.emptyState = page.locator('text="No ideas match your filters"');
+    this.emptyState = page.locator('text="No matching ideas"');
     this.resultsCount = page.locator('text=/Showing \\d+ of \\d+ ideas/');
   }
 
@@ -124,11 +126,21 @@ export class ArchivePage extends BasePage {
   }
 
   /**
-   * Click on an idea card
+   * Switch to a specific tab within a card
    */
-  async clickIdeaCard(index: number): Promise<void> {
-    await this.ideaCards.nth(index).click();
-    await this.page.waitForURL(/\/idea\//);
+  async switchTab(cardIndex: number, tabName: string): Promise<void> {
+    const card = this.ideaCards.nth(cardIndex);
+    const tab = card.locator(`[role="tab"]:has-text("${tabName}")`);
+    await tab.click();
+  }
+
+  /**
+   * Get the active tab name for a card
+   */
+  async getActiveTabName(cardIndex: number): Promise<string> {
+    const card = this.ideaCards.nth(cardIndex);
+    const activeTab = card.locator('[role="tab"][aria-selected="true"]');
+    return await activeTab.textContent() || '';
   }
 
   /**
@@ -181,7 +193,7 @@ export class ArchivePage extends BasePage {
 
     for (let i = 0; i < count; i++) {
       const card = this.ideaCards.nth(i);
-      const name = await card.locator('h2').textContent();
+      const name = await card.locator('h3.font-mono').textContent();
       if (name) names.push(name.trim());
     }
 
@@ -203,5 +215,14 @@ export class ArchivePage extends BasePage {
     await expect(this.searchInput).toBeVisible();
     await expect(this.effortDropdown).toBeVisible();
     await expect(this.minScoreSlider).toBeVisible();
+  }
+
+  /**
+   * Check if gated content is shown for a specific tab
+   */
+  async hasGatedContent(cardIndex: number): Promise<boolean> {
+    const card = this.ideaCards.nth(cardIndex);
+    const gated = card.locator('[data-testid="gated-content"]');
+    return await gated.isVisible();
   }
 }

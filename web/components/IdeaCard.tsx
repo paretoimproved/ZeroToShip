@@ -1,3 +1,4 @@
+/** @deprecated Use IdeaBriefCard instead */
 import Link from "next/link";
 import type { IdeaBrief } from "@/lib/types";
 import { ScoreBadge, EffortBadge } from "./ScoreBadge";
