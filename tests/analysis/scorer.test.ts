@@ -13,6 +13,7 @@ import {
   filterByPriority,
   filterByEffort,
   getWeekendProjects,
+  calculateEngagementScore,
   type ScoredProblem,
 } from '../../src/analysis/scorer';
 import {
@@ -70,6 +71,7 @@ function createMockScoredProblem(overrides: Partial<ScoredProblem> = {}): Scored
       marketSize: 6,
       technicalComplexity: 4,
       timeToMvp: 3,
+      engagement: 5,
       impact: 210,
       effort: 12,
       priority: 50,
@@ -439,11 +441,12 @@ describe('Scorer', () => {
       const cluster = createMockCluster({ frequency: 10 });
       const scored = await scoreProblem(cluster, { useAI: false });
 
-      // IMPACT = frequency × severity × marketSize
+      // IMPACT = frequency × severity × marketSize × (engagement / 5)
       const expectedImpact = scored.scores.frequency *
         scored.scores.severity *
-        scored.scores.marketSize;
-      expect(scored.scores.impact).toBe(expectedImpact);
+        scored.scores.marketSize *
+        (scored.scores.engagement / 5);
+      expect(scored.scores.impact).toBeCloseTo(expectedImpact);
     });
 
     it('calculates effort correctly', async () => {
@@ -540,14 +543,14 @@ describe('Scorer', () => {
         createMockScoredProblem({
           scores: {
             frequency: 5, severity: 8, marketSize: 6,
-            technicalComplexity: 4, timeToMvp: 3,
+            technicalComplexity: 4, timeToMvp: 3, engagement: 5,
             impact: 240, effort: 12, priority: 52,
           },
         }),
         createMockScoredProblem({
           scores: {
             frequency: 3, severity: 6, marketSize: 4,
-            technicalComplexity: 6, timeToMvp: 5,
+            technicalComplexity: 6, timeToMvp: 5, engagement: 5,
             impact: 72, effort: 30, priority: 15,
           },
         }),
@@ -567,7 +570,7 @@ describe('Scorer', () => {
           problemStatement: `Problem ${i}`,
           scores: {
             frequency: 5, severity: 5, marketSize: 5,
-            technicalComplexity: 5, timeToMvp: 5,
+            technicalComplexity: 5, timeToMvp: 5, engagement: 5,
             impact: 125, effort: 25, priority: i + 1,
           },
         })
@@ -585,7 +588,7 @@ describe('Scorer', () => {
           problemStatement: 'Easy high-priority',
           scores: {
             frequency: 5, severity: 8, marketSize: 7,
-            technicalComplexity: 2, timeToMvp: 2,
+            technicalComplexity: 2, timeToMvp: 2, engagement: 5,
             impact: 280, effort: 4, priority: 70,
           },
         }),
@@ -593,7 +596,7 @@ describe('Scorer', () => {
           problemStatement: 'Hard high-priority',
           scores: {
             frequency: 5, severity: 8, marketSize: 7,
-            technicalComplexity: 8, timeToMvp: 8,
+            technicalComplexity: 8, timeToMvp: 8, engagement: 5,
             impact: 280, effort: 64, priority: 26,
           },
         }),
@@ -677,15 +680,15 @@ describe('Scorer', () => {
       const problems = [
         createMockScoredProblem({
           problemStatement: 'Weekend project',
-          scores: { ...createMockScoredProblem().scores, timeToMvp: 2, technicalComplexity: 3, priority: 52 },
+          scores: { ...createMockScoredProblem().scores, timeToMvp: 2, technicalComplexity: 3, engagement: 5, priority: 52 },
         }),
         createMockScoredProblem({
           problemStatement: 'Month project',
-          scores: { ...createMockScoredProblem().scores, timeToMvp: 7, technicalComplexity: 6, priority: 68 },
+          scores: { ...createMockScoredProblem().scores, timeToMvp: 7, technicalComplexity: 6, engagement: 5, priority: 68 },
         }),
         createMockScoredProblem({
           problemStatement: 'Another weekend',
-          scores: { ...createMockScoredProblem().scores, timeToMvp: 1, technicalComplexity: 2, priority: 47 },
+          scores: { ...createMockScoredProblem().scores, timeToMvp: 1, technicalComplexity: 2, engagement: 5, priority: 47 },
         }),
       ];
 
@@ -699,10 +702,10 @@ describe('Scorer', () => {
     it('sorts by priority', () => {
       const problems = [
         createMockScoredProblem({
-          scores: { ...createMockScoredProblem().scores, timeToMvp: 1, technicalComplexity: 2, priority: 40 },
+          scores: { ...createMockScoredProblem().scores, timeToMvp: 1, technicalComplexity: 2, engagement: 5, priority: 40 },
         }),
         createMockScoredProblem({
-          scores: { ...createMockScoredProblem().scores, timeToMvp: 2, technicalComplexity: 3, priority: 59 },
+          scores: { ...createMockScoredProblem().scores, timeToMvp: 2, technicalComplexity: 3, engagement: 5, priority: 59 },
         }),
       ];
 
@@ -897,5 +900,83 @@ describe('Scoring Formula', () => {
     const lowScored = await scoreProblem(lowEngagement, { useAI: false });
 
     expect(highScored.scores.impact).toBeGreaterThan(lowScored.scores.impact);
+  });
+});
+
+describe('Engagement Scoring', () => {
+  describe('calculateEngagementScore', () => {
+    it('returns 1 for zero frequency', () => {
+      expect(calculateEngagementScore(0, 0)).toBe(1);
+    });
+
+    it('returns 1 for zero total score', () => {
+      expect(calculateEngagementScore(0, 5)).toBeCloseTo(1, 0);
+    });
+
+    it('returns ~4.1 for avg engagement of 10', () => {
+      const score = calculateEngagementScore(100, 10); // avg = 10
+      expect(score).toBeGreaterThan(3.5);
+      expect(score).toBeLessThan(5);
+    });
+
+    it('returns ~7 for avg engagement of 100', () => {
+      const score = calculateEngagementScore(1000, 10); // avg = 100
+      expect(score).toBeGreaterThan(6);
+      expect(score).toBeLessThan(8);
+    });
+
+    it('clamps to max 10', () => {
+      const score = calculateEngagementScore(100000, 1); // avg = 100000
+      expect(score).toBe(10);
+    });
+
+    it('clamps to min 1', () => {
+      const score = calculateEngagementScore(0, 100);
+      expect(score).toBeGreaterThanOrEqual(1);
+    });
+
+    it('higher avg engagement produces higher score', () => {
+      const low = calculateEngagementScore(10, 10); // avg = 1
+      const high = calculateEngagementScore(500, 10); // avg = 50
+      expect(high).toBeGreaterThan(low);
+    });
+  });
+
+  it('scored problem includes engagement field', async () => {
+    const cluster = createMockCluster({ frequency: 5, totalScore: 250 });
+    const scored = await scoreProblem(cluster, { useAI: false });
+
+    expect(scored.scores.engagement).toBeDefined();
+    expect(scored.scores.engagement).toBeGreaterThanOrEqual(1);
+    expect(scored.scores.engagement).toBeLessThanOrEqual(10);
+  });
+
+  it('zero-engagement cluster scores lower than high-engagement cluster', async () => {
+    const zeroEngagement = createMockCluster({
+      frequency: 5,
+      totalScore: 0,
+    });
+    const highEngagement = createMockCluster({
+      frequency: 5,
+      totalScore: 500,
+    });
+
+    const zeroScored = await scoreProblem(zeroEngagement, { useAI: false });
+    const highScored = await scoreProblem(highEngagement, { useAI: false });
+
+    expect(highScored.scores.engagement).toBeGreaterThan(zeroScored.scores.engagement);
+    expect(highScored.scores.impact).toBeGreaterThan(zeroScored.scores.impact);
+  });
+
+  it('engagement factor is included in impact calculation', async () => {
+    const cluster = createMockCluster({ frequency: 10, totalScore: 100 });
+    const scored = await scoreProblem(cluster, { useAI: false });
+
+    // IMPACT = frequency × severity × marketSize × (engagement / 5)
+    const baseImpact = scored.scores.frequency *
+      scored.scores.severity *
+      scored.scores.marketSize;
+    const expectedImpact = baseImpact * (scored.scores.engagement / 5);
+    expect(scored.scores.impact).toBeCloseTo(expectedImpact);
   });
 });

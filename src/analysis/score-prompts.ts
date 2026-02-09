@@ -52,11 +52,14 @@ export function buildScoringPrompt(cluster: ProblemCluster): string {
   const samplePosts = formatSamplePosts(allPosts);
   const sourceList = cluster.sources.join(', ');
 
+  const avgEngagement = cluster.frequency > 0 ? (cluster.totalScore / cluster.frequency).toFixed(1) : '0';
+
   return `Analyze this problem and provide scores.
 
 Problem: "${cluster.problemStatement}"
 Mentioned ${cluster.frequency} times across ${sourceList}
 Total engagement score: ${cluster.totalScore}
+Average engagement per post: ${avgEngagement}
 
 Sample posts:
 ${samplePosts}
@@ -104,7 +107,18 @@ Your job is to objectively score problems based on:
 - Technical feasibility
 - Time to build an MVP
 
-Use the FULL 1-10 range. Do not cluster scores in the 4-6 range. A problem with 50+ mentions and high engagement likely warrants severity 7+. A problem affecting >1M users likely warrants market size 7+.
+Use the FULL 1-10 range. Do not cluster scores in the 4-6 range.
+
+## Engagement Calibration
+
+The "totalScore" and "Average engagement per post" values reflect real community upvotes/reactions. Use them to distinguish validated pain from keyword noise:
+
+- Average engagement <3: Low validation. Posts may just mention a keyword without expressing real pain. Score severity conservatively (1-4) unless the post text clearly describes acute suffering.
+- Average engagement 3-20: Moderate validation. Some community agreement that this is a real problem. Severity 4-7 is typical.
+- Average engagement 20-100: Strong validation. Meaningful community resonance. Severity 7+ is warranted if the problem text confirms real pain.
+- Average engagement 100+: Exceptional validation. Widespread agreement. Severity 8-10 is appropriate for genuine blockers.
+
+Many mentions of a keyword (high frequency) with low engagement is NOISE, not signal. Fewer mentions with high engagement is a stronger indicator of a real, validated problem.
 
 Score anchors:
 - 1-2: Trivial — cosmetic issue, <1K affected users, trivial to build, afternoon project
@@ -160,7 +174,18 @@ Your job is to objectively score MULTIPLE problems based on:
 - Technical feasibility
 - Time to build an MVP
 
-Use the FULL 1-10 range. Do not cluster scores in the 4-6 range. A problem with 50+ mentions and high engagement likely warrants severity 7+. A problem affecting >1M users likely warrants market size 7+.
+Use the FULL 1-10 range. Do not cluster scores in the 4-6 range.
+
+## Engagement Calibration
+
+The "Engagement" and "Avg engagement" values reflect real community upvotes/reactions. Use them to distinguish validated pain from keyword noise:
+
+- Average engagement <3: Low validation. Posts may just mention a keyword without expressing real pain. Score severity conservatively (1-4) unless the post text clearly describes acute suffering.
+- Average engagement 3-20: Moderate validation. Some community agreement that this is a real problem. Severity 4-7 is typical.
+- Average engagement 20-100: Strong validation. Meaningful community resonance. Severity 7+ is warranted if the problem text confirms real pain.
+- Average engagement 100+: Exceptional validation. Widespread agreement. Severity 8-10 is appropriate for genuine blockers.
+
+Many mentions of a keyword (high frequency) with low engagement is NOISE, not signal. Fewer mentions with high engagement is a stronger indicator of a real, validated problem.
 
 Score anchors:
 - 1-2: Trivial — cosmetic issue, <1K affected users, trivial to build, afternoon project
@@ -186,11 +211,14 @@ export function buildBatchScoringPrompt(clusters: ProblemCluster[]): string {
       ? `"${samplePost.body.slice(0, 100)}..."`
       : `"${samplePost.title}"`;
 
+    const avgEngagement = c.frequency > 0 ? (c.totalScore / c.frequency).toFixed(1) : '0';
+
     return `## Problem ${i + 1} (ID: ${c.id})
 Statement: ${c.problemStatement}
 Frequency: ${c.frequency} mentions
 Sources: ${c.sources.join(', ')}
 Engagement: ${c.totalScore}
+Avg engagement: ${avgEngagement}
 Representative post: ${postPreview}`;
   }).join('\n\n---\n\n');
 
@@ -307,10 +335,17 @@ export function createDefaultScores(cluster: ProblemCluster): ScoreResponse {
   const engagementScore = Math.min(10, Math.max(1, Math.ceil(Math.log10(cluster.totalScore + 1) * 2)));
   const sourceBonus = cluster.sources.length > 2 ? 1 : 0;
 
+  // Dampen severity when avg engagement is very low (< 3 per post)
+  const avgEngagement = cluster.frequency > 0 ? cluster.totalScore / cluster.frequency : 0;
+  const engagementDamper = avgEngagement < 3 ? 0.6 : 1.0;
+
+  const rawSeverity = Math.min(10, frequencyScore + sourceBonus);
+  const dampenedSeverity = Math.max(1, Math.round(rawSeverity * engagementDamper));
+
   return {
     severity: {
-      score: Math.min(10, frequencyScore + sourceBonus),
-      reasoning: `Based on frequency of ${cluster.frequency} mentions`,
+      score: dampenedSeverity,
+      reasoning: `Based on frequency of ${cluster.frequency} mentions (avg engagement: ${avgEngagement.toFixed(1)})`,
     },
     marketSize: {
       score: Math.min(10, engagementScore + sourceBonus),

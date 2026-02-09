@@ -66,6 +66,7 @@ export interface ProblemScores {
   marketSize: number;
   technicalComplexity: number;
   timeToMvp: number;
+  engagement: number;
   impact: number;
   effort: number;
   priority: number;
@@ -111,11 +112,25 @@ const DEFAULT_OPTIONS: Required<ScoringOptions> = {
 };
 
 /**
- * Calculate impact score
- * IMPACT = frequency × severity × marketSize
+ * Calculate engagement score from total community engagement and frequency.
+ * Uses log-scale normalization to a 1-10 range:
+ *   0 avg → 1, 10 avg → ~4.1, 100 avg → ~7, 1000 avg → 10
  */
-function calculateImpact(frequency: number, severity: number, marketSize: number): number {
-  return frequency * severity * marketSize;
+export function calculateEngagementScore(totalScore: number, frequency: number): number {
+  if (frequency <= 0) return 1;
+  const avgEngagement = totalScore / frequency;
+  const score = Math.log10(avgEngagement + 1) * 3 + 1;
+  return Math.max(1, Math.min(10, score));
+}
+
+/**
+ * Calculate impact score
+ * IMPACT = frequency × severity × marketSize × (engagement / 5)
+ * Engagement centered at 5 = 1.0x multiplier (neutral).
+ * engagement=1 → 0.2x penalty, engagement=10 → 2.0x boost.
+ */
+function calculateImpact(frequency: number, severity: number, marketSize: number, engagement: number): number {
+  return frequency * severity * marketSize * (engagement / 5);
 }
 
 /**
@@ -350,10 +365,13 @@ export async function scoreProblem(
   }
 
   // Calculate composite scores
+  const engagementScore = calculateEngagementScore(cluster.totalScore, cluster.frequency);
+
   const impact = calculateImpact(
     frequencyScore,
     aiScores.severity.score,
-    aiScores.marketSize.score
+    aiScores.marketSize.score,
+    engagementScore
   );
 
   const effort = calculateEffort(
@@ -371,6 +389,7 @@ export async function scoreProblem(
       marketSize: aiScores.marketSize.score,
       technicalComplexity: aiScores.technicalComplexity.score,
       timeToMvp: aiScores.timeToMvp.score,
+      engagement: engagementScore,
       impact,
       effort,
       priority,
@@ -444,11 +463,13 @@ export async function scoreAll(
         // Use AI score if available, otherwise fall back to defaults
         const aiScores = batchScores.get(cluster.id) || createDefaultScores(cluster);
         const frequencyScore = calculateFrequencyScore(cluster.frequency);
+        const engagementScore = calculateEngagementScore(cluster.totalScore, cluster.frequency);
 
         const impact = calculateImpact(
           frequencyScore,
           aiScores.severity.score,
-          aiScores.marketSize.score
+          aiScores.marketSize.score,
+          engagementScore
         );
 
         const effort = calculateEffort(
@@ -466,6 +487,7 @@ export async function scoreAll(
             marketSize: aiScores.marketSize.score,
             technicalComplexity: aiScores.technicalComplexity.score,
             timeToMvp: aiScores.timeToMvp.score,
+            engagement: engagementScore,
             impact,
             effort,
             priority,

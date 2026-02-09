@@ -79,6 +79,7 @@ function createMockScoredProblem(overrides: Partial<ScoredProblem> = {}): Scored
       marketSize: 6,
       technicalComplexity: 4,
       timeToMvp: 3,
+      engagement: 5,
       impact: 210,
       effort: 12,
       priority: 17.5,
@@ -160,6 +161,9 @@ function createMockBrief(overrides: Partial<IdeaBrief> = {}): IdeaBrief {
     },
 
     risks: ['Competition from big players', 'Security concerns', 'Low conversion rate'],
+    sources: [
+      { platform: 'reddit', title: 'Test post title', url: 'https://reddit.com/r/test/123', score: 100, commentCount: 25, postedAt: new Date().toISOString() },
+    ],
     generatedAt: new Date(),
     ...overrides,
   };
@@ -394,6 +398,7 @@ describe('Brief Generator', () => {
           marketSize: 6,
           technicalComplexity: 2,
           timeToMvp: 2,
+          engagement: 5,
           impact: 210,
           effort: 4,
           priority: 52.5,
@@ -404,6 +409,111 @@ describe('Brief Generator', () => {
       const brief = await generateBrief(problem, gaps, { openaiApiKey: '' });
 
       expect(brief.effortEstimate).toBe('weekend');
+    });
+
+    it('includes sources from problem posts in fallback brief', async () => {
+      const problem = createMockScoredProblem({
+        representativePost: createMockPost({ title: 'Main post', score: 200, commentCount: 50 }),
+        relatedPosts: [
+          createMockPost({ title: 'Related post 1', score: 100, commentCount: 30 }),
+          createMockPost({ title: 'Related post 2', score: 50, commentCount: 10 }),
+        ],
+      });
+      const gaps = createMockGapAnalysis({ problemId: problem.id });
+
+      const brief = await generateBrief(problem, gaps, { openaiApiKey: '' });
+
+      expect(brief.sources).toBeDefined();
+      expect(brief.sources.length).toBe(3);
+      // Should be sorted by engagement (score + commentCount) descending
+      expect(brief.sources[0].title).toBe('Main post');
+      expect(brief.sources[0].score).toBe(200);
+      expect(brief.sources[1].title).toBe('Related post 1');
+      expect(brief.sources[2].title).toBe('Related post 2');
+    });
+
+    it('limits sources to top 5 by engagement', async () => {
+      const relatedPosts = Array.from({ length: 8 }, (_, i) =>
+        createMockPost({ title: `Post ${i}`, score: (8 - i) * 10, commentCount: 5 })
+      );
+      const problem = createMockScoredProblem({
+        representativePost: createMockPost({ title: 'Main', score: 500, commentCount: 100 }),
+        relatedPosts,
+      });
+      const gaps = createMockGapAnalysis({ problemId: problem.id });
+
+      const brief = await generateBrief(problem, gaps, { openaiApiKey: '' });
+
+      expect(brief.sources.length).toBe(5);
+      // First should be highest engagement
+      expect(brief.sources[0].title).toBe('Main');
+    });
+
+    it('filters out posts with missing URLs', async () => {
+      const problem = createMockScoredProblem({
+        representativePost: createMockPost({ title: 'Valid post', url: 'https://reddit.com/valid', score: 100, commentCount: 10 }),
+        relatedPosts: [
+          createMockPost({ title: 'No URL', url: '' as any, score: 200, commentCount: 50 }),
+          createMockPost({ title: 'Null URL', url: null as any, score: 300, commentCount: 60 }),
+          createMockPost({ title: 'Good post', url: 'https://reddit.com/good', score: 50, commentCount: 5 }),
+        ],
+      });
+      const gaps = createMockGapAnalysis({ problemId: problem.id });
+
+      const brief = await generateBrief(problem, gaps, { openaiApiKey: '' });
+
+      expect(brief.sources.length).toBe(2);
+      expect(brief.sources.every(s => s.url && typeof s.url === 'string')).toBe(true);
+      expect(brief.sources[0].title).toBe('Valid post');
+      expect(brief.sources[1].title).toBe('Good post');
+    });
+
+    it('handles undefined relatedPosts gracefully', async () => {
+      const problem = createMockScoredProblem({
+        representativePost: createMockPost({ title: 'Solo post', score: 100, commentCount: 10 }),
+        relatedPosts: undefined as any,
+      });
+      const gaps = createMockGapAnalysis({ problemId: problem.id });
+
+      const brief = await generateBrief(problem, gaps, { openaiApiKey: '' });
+
+      expect(brief.sources.length).toBe(1);
+      expect(brief.sources[0].title).toBe('Solo post');
+    });
+
+    it('defaults score and commentCount to 0 when missing', async () => {
+      const problem = createMockScoredProblem({
+        representativePost: createMockPost({ title: 'No metrics', score: undefined as any, commentCount: undefined as any }),
+        relatedPosts: [],
+      });
+      const gaps = createMockGapAnalysis({ problemId: problem.id });
+
+      const brief = await generateBrief(problem, gaps, { openaiApiKey: '' });
+
+      expect(brief.sources.length).toBe(1);
+      expect(brief.sources[0].score).toBe(0);
+      expect(brief.sources[0].commentCount).toBe(0);
+    });
+
+    it('safely coerces non-Date createdAt values to ISO strings', async () => {
+      const isoString = '2026-01-15T12:00:00.000Z';
+      const timestamp = new Date('2026-01-15T12:00:00.000Z').getTime();
+      const problem = createMockScoredProblem({
+        representativePost: createMockPost({ title: 'String date', createdAt: isoString as any, score: 100, commentCount: 10 }),
+        relatedPosts: [
+          createMockPost({ title: 'Numeric date', createdAt: timestamp as any, score: 50, commentCount: 5 }),
+        ],
+      });
+      const gaps = createMockGapAnalysis({ problemId: problem.id });
+
+      const brief = await generateBrief(problem, gaps, { openaiApiKey: '' });
+
+      expect(brief.sources.length).toBe(2);
+      // Both should produce valid ISO strings
+      for (const source of brief.sources) {
+        expect(() => new Date(source.postedAt)).not.toThrow();
+        expect(new Date(source.postedAt).toISOString()).toBe(source.postedAt);
+      }
     });
 
     it('preserves gap analysis data in fallback', async () => {
@@ -507,6 +617,28 @@ describe('Brief Generator', () => {
       expect(markdown).toContain('## Risks');
       expect(markdown).toContain('Risk 1');
       expect(markdown).toContain('Risk 2');
+    });
+
+    it('includes sources section in markdown', () => {
+      const brief = createMockBrief({
+        sources: [
+          { platform: 'reddit', title: 'A reddit post', url: 'https://reddit.com/r/test', score: 100, commentCount: 25, postedAt: new Date().toISOString() },
+          { platform: 'hn', title: 'A HN post', url: 'https://news.ycombinator.com/item?id=1', score: 50, commentCount: 10, postedAt: new Date().toISOString() },
+        ],
+      });
+      const markdown = formatBriefMarkdown(brief);
+
+      expect(markdown).toContain('## Sources');
+      expect(markdown).toContain('[reddit] A reddit post');
+      expect(markdown).toContain('[hn] A HN post');
+      expect(markdown).toContain('100 upvotes');
+    });
+
+    it('omits sources section when empty', () => {
+      const brief = createMockBrief({ sources: [] });
+      const markdown = formatBriefMarkdown(brief);
+
+      expect(markdown).not.toContain('## Sources');
     });
 
     it('includes generation timestamp', () => {

@@ -34,7 +34,7 @@ interface CacheEntry {
  * The full cache file structure
  */
 interface CacheFile {
-  version: 2;
+  version: 3;
   entries: Record<string, CacheEntry>;
 }
 
@@ -76,13 +76,13 @@ function loadCache(cacheDir: string): CacheFile {
   const filePath = getCacheFilePath(cacheDir);
   try {
     if (!fs.existsSync(filePath)) {
-      return { version: 2, entries: {} };
+      return { version: 3, entries: {} };
     }
     const raw = fs.readFileSync(filePath, 'utf-8');
     const data = JSON.parse(raw) as CacheFile;
-    if (data.version !== 2 || typeof data.entries !== 'object') {
+    if (data.version !== 3 || typeof data.entries !== 'object') {
       logger.warn('Score cache file has invalid format, resetting');
-      return { version: 2, entries: {} };
+      return { version: 3, entries: {} };
     }
     return data;
   } catch (err) {
@@ -90,7 +90,7 @@ function loadCache(cacheDir: string): CacheFile {
       { error: err instanceof Error ? err.message : String(err) },
       'Failed to load score cache, starting fresh'
     );
-    return { version: 2, entries: {} };
+    return { version: 3, entries: {} };
   }
 }
 
@@ -134,7 +134,7 @@ export class ScoreCache {
     this.cacheDir = options.cacheDir || CACHE_DIR;
     this.ttlMs = options.ttlMs ?? DEFAULT_TTL_MS;
     this.disabled = options.disabled ?? false;
-    this.cache = this.disabled ? { version: 2, entries: {} } : loadCache(this.cacheDir);
+    this.cache = this.disabled ? { version: 3, entries: {} } : loadCache(this.cacheDir);
   }
 
   /**

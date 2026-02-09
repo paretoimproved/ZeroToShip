@@ -63,6 +63,7 @@ export function buildBriefPrompt(
 
 **Signal Strength:**
 - Frequency: ${problem.frequency} mentions across ${problem.sources.length} sources (${sourcesList})
+- Community Validation: ${problem.scores.engagement.toFixed(1)}/10
 - Priority Score: ${problem.scores.priority.toFixed(2)}
 - Impact Score: ${problem.scores.impact.toFixed(2)}
 - Effort Score: ${problem.scores.effort.toFixed(2)}
@@ -384,6 +385,7 @@ export function buildBatchBriefPrompt(
 ### Problem ${index + 1} (ID: ${p.id})
 **Statement:** ${p.problem.problemStatement}
 **Priority Score:** ${p.problem.scores.priority.toFixed(2)}
+**Community Validation:** ${p.problem.scores.engagement.toFixed(1)}/10
 **Frequency:** ${p.problem.frequency} mentions across ${p.problem.sources.join(', ')}
 **Market Opportunity:** ${p.gaps.marketOpportunity}
 **Competition:** ${competitorList || 'None identified'}

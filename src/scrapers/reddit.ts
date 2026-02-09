@@ -65,6 +65,14 @@ export const DEFAULT_SUBREDDITS = [
   'devops',
   'selfhosted',
   'software',
+  'SaaS',
+  'indiehackers',
+  'smallbusiness',
+  'sysadmin',
+  'cscareerquestions',
+  'ExperiencedDevs',
+  'ProductManagement',
+  'nocode',
 ] as const;
 
 /**
@@ -84,6 +92,9 @@ const REDDIT_POSTS_PER_PAGE = 25;
 
 /** Max posts requested per Reddit API call (100 is Reddit's max) */
 const REDDIT_API_PAGE_LIMIT = 100;
+
+/** Minimum Reddit post score to be included (filters out zero-engagement noise) */
+const MIN_POST_SCORE = 2;
 
 export interface RedditScraperConfig {
   /** User agent string (required by Reddit API) */
@@ -228,6 +239,11 @@ async function scrapeSubreddit(
 
         // Filter by signals if configured
         if (config.signalsOnly && post.signals.length === 0) {
+          continue;
+        }
+
+        // Filter out low-engagement posts
+        if (post.score < MIN_POST_SCORE) {
           continue;
         }
 

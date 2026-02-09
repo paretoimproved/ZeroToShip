@@ -48,6 +48,7 @@ function createMockScoredProblem(overrides: Partial<ScoredProblem> = {}): Scored
       marketSize: 8,
       technicalComplexity: 4,
       timeToMvp: 3,
+      engagement: 5,
       impact: 280,
       effort: 12,
       priority: 23.33,

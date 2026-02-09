@@ -413,6 +413,70 @@ describe('Reddit API Integration', () => {
     expect(posts).toEqual([]);
   });
 
+  it('should filter out posts with score less than 2', async () => {
+    const responseWithLowScore = {
+      kind: 'Listing',
+      data: {
+        after: null,
+        before: null,
+        children: [
+          {
+            kind: 't3',
+            data: {
+              id: 'low1',
+              name: 't3_low1',
+              title: 'I wish there was a better tool',
+              selftext: 'Looking for alternatives',
+              author: 'testuser',
+              score: 1,
+              num_comments: 0,
+              created_utc: Math.floor(Date.now() / 1000) - 3600,
+              permalink: '/r/webdev/comments/low1/test',
+              subreddit: 'webdev',
+              url: 'https://reddit.com/r/webdev/low1',
+              is_self: true,
+              over_18: false,
+              stickied: false,
+            },
+          },
+          {
+            kind: 't3',
+            data: {
+              id: 'high1',
+              name: 't3_high1',
+              title: 'I wish there was a better API',
+              selftext: 'Frustrated with current options',
+              author: 'testuser2',
+              score: 10,
+              num_comments: 5,
+              created_utc: Math.floor(Date.now() / 1000) - 3600,
+              permalink: '/r/webdev/comments/high1/test',
+              subreddit: 'webdev',
+              url: 'https://reddit.com/r/webdev/high1',
+              is_self: true,
+              over_18: false,
+              stickied: false,
+            },
+          },
+        ],
+        dist: 2,
+      },
+    };
+
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(responseWithLowScore),
+    } as Response);
+
+    const { scrapeReddit } = await import('../../src/scrapers/reddit');
+    const posts = await scrapeReddit(['webdev'], 24, { requestDelay: 0 });
+
+    // Post with score=1 should be filtered out (< MIN_POST_SCORE=2)
+    expect(posts.some(p => p.sourceId === 'low1')).toBe(false);
+    // Post with score=10 should pass
+    expect(posts.some(p => p.sourceId === 'high1')).toBe(true);
+  });
+
   it('should filter out posts without signals when signalsOnly is true', async () => {
     const responseWithNoSignals = {
       ...mockRedditResponse,

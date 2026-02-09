@@ -46,8 +46,11 @@ const ALGOLIA_QUERY_DELAY_MS = 100;
 /** Delay between Show HN item detail fetches (ms) */
 const SHOW_HN_ITEM_DELAY_MS = 200;
 
+/** Minimum HN points for an Ask HN post to be included */
+const MIN_ASK_HN_POINTS = 2;
+
 /** Minimum HN points for a front page story to be included */
-const MIN_FRONT_PAGE_POINTS = 10;
+const MIN_FRONT_PAGE_POINTS = 20;
 
 /** Minimum HN comments for a front page story to be included */
 const MIN_FRONT_PAGE_COMMENTS = 5;
@@ -69,6 +72,11 @@ export const DEFAULT_QUERIES = [
   'struggling with',
   'need a tool',
   'better alternative',
+  'painful to',
+  'nobody has built',
+  'biggest problem',
+  'underserved',
+  'broken workflow',
 ] as const;
 
 /**
@@ -142,6 +150,7 @@ async function scrapeAskHN(
       const response = await searchAskHN(query, hoursBack, 0, ALGOLIA_RESULTS_PER_QUERY);
 
       for (const hit of response.hits) {
+        if ((hit.points || 0) < MIN_ASK_HN_POINTS) continue;
         const post = hitToPost(hit);
         post.body = stripHtml(post.body);
         posts.push(post);

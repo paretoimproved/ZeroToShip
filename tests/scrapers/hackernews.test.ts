@@ -293,6 +293,51 @@ describe('HN Scraper Main Functions', () => {
       expect(posts.filter(p => p.sourceId === '12345')).toHaveLength(1);
     });
 
+    it('should filter out Ask HN posts with 0 points', async () => {
+      mockedSearchAskHN.mockResolvedValue({
+        ...createEmptyResponse(),
+        hits: [
+          createMockHit({ objectID: '1', points: 0, story_text: 'I wish there was a better tool' }),
+          createMockHit({ objectID: '2', points: 5, story_text: 'I wish there was a better API' }),
+          createMockHit({ objectID: '3', points: 1, story_text: 'I wish there was a faster build' }),
+        ],
+      });
+
+      const posts = await scrapeHackerNews(['wish'], 24);
+
+      // Post with 0 points and post with 1 point (< MIN_ASK_HN_POINTS=2) should be filtered
+      expect(posts.some(p => p.sourceId === '1')).toBe(false);
+      expect(posts.some(p => p.sourceId === '3')).toBe(false);
+      expect(posts.some(p => p.sourceId === '2')).toBe(true);
+    });
+
+    it('should filter out front page stories with less than 20 points', async () => {
+      mockedSearchStories.mockResolvedValue({
+        ...createEmptyResponse(),
+        hits: [
+          createMockHit({
+            objectID: '10',
+            points: 15,
+            num_comments: 3,
+            story_text: 'I wish there was a tool for developers',
+          }),
+          createMockHit({
+            objectID: '11',
+            points: 25,
+            num_comments: 8,
+            story_text: 'I wish there was another developer tool',
+          }),
+        ],
+      });
+
+      const posts = await scrapeHackerNews(['test'], 24);
+
+      // Story with 15 points should be filtered (< MIN_FRONT_PAGE_POINTS=20)
+      expect(posts.some(p => p.sourceId === '10')).toBe(false);
+      // Story with 25 points should pass
+      expect(posts.some(p => p.sourceId === '11')).toBe(true);
+    });
+
     it('should include high-engagement stories without signals', async () => {
       mockedSearchStories.mockResolvedValue({
         ...createEmptyResponse(),
