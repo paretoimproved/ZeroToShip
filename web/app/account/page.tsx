@@ -314,7 +314,7 @@ export default function AccountPage() {
             const priceKey = billingYearly
               ? plan.yearlyPriceKey || plan.priceKey
               : plan.priceKey;
-            const isLoading = upgradeLoading === priceKey;
+            const isLoading = priceKey !== null && upgradeLoading === priceKey;
 
             return (
               <div
