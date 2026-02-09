@@ -8,6 +8,7 @@
 
 import { runPipeline } from './orchestrator';
 import { startScheduler, stopScheduler } from './index';
+import { closeDatabase } from '../api/db/client';
 import { logger } from './utils/logger';
 import type { PipelineConfig } from './types';
 
@@ -181,10 +182,15 @@ async function main(): Promise<void> {
         }
 
         if (!result.success) {
+          await closeDatabase();
           process.exit(1);
         }
+
+        await closeDatabase();
+        process.exit(0);
       } catch (error) {
         console.error('Pipeline failed:', error);
+        await closeDatabase();
         process.exit(1);
       }
       break;
