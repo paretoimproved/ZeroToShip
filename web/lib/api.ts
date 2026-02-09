@@ -181,6 +181,10 @@ class ApiClient {
     skipDelivery?: boolean;
     hoursBack?: number;
     maxBriefs?: number;
+    scrapers?: { reddit?: boolean; hn?: boolean; twitter?: boolean; github?: boolean };
+    clusteringThreshold?: number;
+    minPriorityScore?: number;
+    minFrequencyForGap?: number;
   }): Promise<PipelineRunResponse> {
     return this.request<PipelineRunResponse>("/admin/pipeline/run", {
       method: "POST",

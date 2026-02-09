@@ -10,7 +10,7 @@ import * as path from 'path';
 import type { FastifyPluginAsync } from 'fastify';
 import { requireAdmin } from '../middleware/auth';
 import { loadRunStatus } from '../../scheduler/utils/persistence';
-import { runPipeline, DEFAULT_PIPELINE_CONFIG } from '../../scheduler';
+import { runPipeline, DEFAULT_PIPELINE_CONFIG, generateRunId } from '../../scheduler';
 import { db, ideas, subscriptions, users, pipelineRuns } from '../db/client';
 import { eq, count, desc, sql } from 'drizzle-orm';
 
@@ -40,16 +40,41 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
     '/pipeline-status',
     { preHandler: [requireAdmin] },
     async (request, reply) => {
-      // Try DB first
+      // Check file-system first for live/in-progress run status (includes phaseStats)
+      const fsRunId = getLatestRunId();
+      if (fsRunId) {
+        const fsStatus = loadRunStatus(fsRunId);
+        if (fsStatus) {
+          // If any phase is still pending and run is recent, prefer file-system status
+          const hasPending = Object.values(fsStatus.phases).some(s => s === 'pending');
+          const isRecent = Date.now() - new Date(fsStatus.updatedAt).getTime() < 10 * 60 * 1000;
+          if (hasPending && isRecent) {
+            return reply.send({
+              status: 'ok',
+              runId: fsStatus.runId,
+              startedAt: fsStatus.startedAt,
+              phases: fsStatus.phases,
+              phaseStats: fsStatus.phaseStats,
+              lastCompletedPhase: fsStatus.lastCompletedPhase,
+              updatedAt: fsStatus.updatedAt,
+            });
+          }
+        }
+      }
+
+      // Try DB for completed runs
       try {
         const latestRun = await db.select().from(pipelineRuns).orderBy(desc(pipelineRuns.startedAt)).limit(1);
         if (latestRun.length > 0) {
           const run = latestRun[0];
+          // Also check file-system for phaseStats (not stored in DB)
+          const fileStatus = run.runId ? loadRunStatus(run.runId) : null;
           return reply.send({
             status: 'ok',
             runId: run.runId,
             startedAt: run.startedAt,
             phases: run.phases,
+            phaseStats: fileStatus?.phaseStats,
             success: run.success,
             completedAt: run.completedAt,
           });
@@ -81,6 +106,7 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
         runId: runStatus.runId,
         startedAt: runStatus.startedAt,
         phases: runStatus.phases,
+        phaseStats: runStatus.phaseStats,
         lastCompletedPhase: runStatus.lastCompletedPhase,
         updatedAt: runStatus.updatedAt,
       });
@@ -150,6 +176,10 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
         skipDelivery?: boolean;
         hoursBack?: number;
         maxBriefs?: number;
+        scrapers?: { reddit?: boolean; hn?: boolean; twitter?: boolean; github?: boolean };
+        clusteringThreshold?: number;
+        minPriorityScore?: number;
+        minFrequencyForGap?: number;
       } | undefined;
 
       const pipelineConfig = {
@@ -157,20 +187,34 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
         hoursBack: body?.hoursBack ?? DEFAULT_PIPELINE_CONFIG.hoursBack,
         maxBriefs: body?.maxBriefs ?? DEFAULT_PIPELINE_CONFIG.maxBriefs,
         dryRun: body?.dryRun ?? body?.skipDelivery ?? false,
+        scrapers: body?.scrapers
+          ? { ...DEFAULT_PIPELINE_CONFIG.scrapers, ...body.scrapers }
+          : DEFAULT_PIPELINE_CONFIG.scrapers,
+        clusteringThreshold: body?.clusteringThreshold ?? DEFAULT_PIPELINE_CONFIG.clusteringThreshold,
+        minPriorityScore: body?.minPriorityScore ?? DEFAULT_PIPELINE_CONFIG.minPriorityScore,
+        minFrequencyForGap: body?.minFrequencyForGap ?? DEFAULT_PIPELINE_CONFIG.minFrequencyForGap,
       };
 
+      // Pre-generate runId so we can return it immediately
+      const runId = generateRunId();
+
       // Fire and forget — run pipeline in background
-      runPipeline(pipelineConfig).catch((err) => {
+      runPipeline(pipelineConfig, runId).catch((err) => {
         request.log.error({ err }, 'Admin-triggered pipeline run failed');
       });
 
       return reply.send({
         status: 'started',
         message: 'Pipeline run started',
+        runId,
         config: {
           hoursBack: pipelineConfig.hoursBack,
           maxBriefs: pipelineConfig.maxBriefs,
           dryRun: pipelineConfig.dryRun,
+          scrapers: pipelineConfig.scrapers,
+          clusteringThreshold: pipelineConfig.clusteringThreshold,
+          minPriorityScore: pipelineConfig.minPriorityScore,
+          minFrequencyForGap: pipelineConfig.minFrequencyForGap,
         },
       });
     }

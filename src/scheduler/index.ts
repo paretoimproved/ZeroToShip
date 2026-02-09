@@ -90,7 +90,7 @@ export function isSchedulerRunning(): boolean {
 }
 
 // Re-export key items
-export { runPipeline, DEFAULT_PIPELINE_CONFIG } from './orchestrator';
+export { runPipeline, DEFAULT_PIPELINE_CONFIG, generateRunId } from './orchestrator';
 export { logger, createLogger, createRunLogger, createPhaseLogger } from './utils/logger';
 export { withRetry, retryable } from './utils/retry';
 export { MetricsCollector } from './utils/metrics';

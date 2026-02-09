@@ -18,6 +18,16 @@ const logger = createLogger({ context: 'persistence' });
 const DATA_DIR = process.env.PIPELINE_DATA_DIR || path.join(process.cwd(), 'data', 'runs');
 
 /**
+ * Summary stats for each pipeline phase, persisted alongside status
+ */
+export interface PhaseStats {
+  scrape?: { totalPosts: number; reddit: number; hn: number; twitter: number; github: number };
+  analyze?: { clusterCount: number; scoredCount: number; gapAnalysisCount: number };
+  generate?: { briefCount: number };
+  deliver?: { sent: number; failed: number; subscriberCount: number };
+}
+
+/**
  * Status of each phase within a persisted run
  */
 export interface RunStatus {
@@ -25,6 +35,7 @@ export interface RunStatus {
   config: PipelineConfig;
   startedAt: string;
   phases: Record<PhaseName, 'pending' | 'completed' | 'failed'>;
+  phaseStats?: PhaseStats;
   lastCompletedPhase: PhaseName | null;
   updatedAt: string;
 }
@@ -150,6 +161,32 @@ export function updatePhaseStatus(
   const filePath = getStatusFilePath(runId);
   fs.writeFileSync(filePath, JSON.stringify(status, null, 2), 'utf-8');
   logger.debug({ runId, phase, outcome }, 'Updated phase status');
+}
+
+/**
+ * Update phase stats in the run status file
+ */
+export function updatePhaseStats(
+  runId: string,
+  phase: PhaseName,
+  stats: PhaseStats[keyof PhaseStats]
+): void {
+  const status = loadRunStatus(runId);
+  if (!status) {
+    logger.warn({ runId }, 'Cannot update phase stats: run status file not found');
+    return;
+  }
+
+  if (!status.phaseStats) {
+    status.phaseStats = {};
+  }
+
+  (status.phaseStats as Record<string, unknown>)[phase] = stats;
+  status.updatedAt = new Date().toISOString();
+
+  const filePath = getStatusFilePath(runId);
+  fs.writeFileSync(filePath, JSON.stringify(status, null, 2), 'utf-8');
+  logger.debug({ runId, phase }, 'Updated phase stats');
 }
 
 /**

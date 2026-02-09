@@ -112,18 +112,23 @@ export interface AdminUser {
 export interface PipelineRunResponse {
   status: string;
   message: string;
-  config: {
-    hoursBack: number;
-    maxBriefs: number;
-    dryRun: boolean;
-  };
+  runId: string;
+  config: Record<string, unknown>;
 }
 
 export interface PipelineStatus {
   status: 'ok' | 'error' | 'no_runs';
   runId?: string;
   startedAt?: string;
+  completedAt?: string;
+  success?: boolean;
   phases?: Record<string, string>;
+  phaseStats?: {
+    scrape?: { totalPosts: number; reddit: number; hn: number; twitter: number; github: number };
+    analyze?: { clusterCount: number; scoredCount: number; gapAnalysisCount: number };
+    generate?: { briefCount: number };
+    deliver?: { sent: number; failed: number; subscriberCount: number };
+  };
   lastCompletedPhase?: string | null;
   updatedAt?: string;
   message?: string;

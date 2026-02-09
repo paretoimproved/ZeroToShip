@@ -19,6 +19,7 @@ import {
   initRunStatus,
   savePhaseResult,
   updatePhaseStatus,
+  updatePhaseStats,
   loadRunStatus,
   loadPhaseResult,
   getResumePhase,
@@ -71,7 +72,7 @@ export const DEFAULT_PIPELINE_CONFIG: PipelineConfig = {
 /**
  * Generate a unique run ID
  */
-function generateRunId(): string {
+export function generateRunId(): string {
   const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
   const rand = crypto.randomBytes(4).toString('hex');
   return `run_${date}_${rand}`;
@@ -149,7 +150,8 @@ function shouldSkipPhase(
  * pipeline picks up from the first incomplete phase.
  */
 export async function runPipeline(
-  config: Partial<PipelineConfig> = {}
+  config: Partial<PipelineConfig> = {},
+  preGeneratedRunId?: string
 ): Promise<PipelineResult> {
   const fullConfig = { ...DEFAULT_PIPELINE_CONFIG, ...config };
 
@@ -172,7 +174,7 @@ export async function runPipeline(
       );
     }
   } else {
-    runId = generateRunId();
+    runId = preGeneratedRunId || generateRunId();
   }
 
   const logger = createRunLogger(runId);
@@ -221,6 +223,13 @@ export async function runPipeline(
     if (scrapeResult.success && scrapeResult.data) {
       savePhaseResult(runId, 'scrape', scrapeResult.data);
       updatePhaseStatus(runId, 'scrape', 'completed');
+      updatePhaseStats(runId, 'scrape', {
+        totalPosts: scrapeResult.data.totalPosts,
+        reddit: scrapeResult.data.reddit.count,
+        hn: scrapeResult.data.hn.count,
+        twitter: scrapeResult.data.twitter.count,
+        github: scrapeResult.data.github.count,
+      });
     } else {
       updatePhaseStatus(runId, 'scrape', 'failed');
     }
@@ -272,6 +281,11 @@ export async function runPipeline(
     if (analyzeResult.success && analyzeResult.data) {
       savePhaseResult(runId, 'analyze', analyzeResult.data);
       updatePhaseStatus(runId, 'analyze', 'completed');
+      updatePhaseStats(runId, 'analyze', {
+        clusterCount: analyzeResult.data.clusterCount,
+        scoredCount: analyzeResult.data.scoredCount,
+        gapAnalysisCount: analyzeResult.data.gapAnalysisCount,
+      });
     } else {
       updatePhaseStatus(runId, 'analyze', 'failed');
     }
@@ -334,6 +348,9 @@ export async function runPipeline(
     if (generateResult.success && generateResult.data) {
       savePhaseResult(runId, 'generate', generateResult.data);
       updatePhaseStatus(runId, 'generate', 'completed');
+      updatePhaseStats(runId, 'generate', {
+        briefCount: generateResult.data.briefCount,
+      });
     } else {
       updatePhaseStatus(runId, 'generate', 'failed');
     }
@@ -379,6 +396,13 @@ export async function runPipeline(
   if (deliverResult.success) {
     savePhaseResult(runId, 'deliver', deliverResult.data);
     updatePhaseStatus(runId, 'deliver', 'completed');
+    if (deliverResult.data) {
+      updatePhaseStats(runId, 'deliver', {
+        sent: deliverResult.data.sent,
+        failed: deliverResult.data.failed,
+        subscriberCount: deliverResult.data.subscriberCount,
+      });
+    }
   } else {
     updatePhaseStatus(runId, 'deliver', 'failed');
     errors.push({
