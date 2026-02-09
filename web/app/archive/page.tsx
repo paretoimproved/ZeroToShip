@@ -37,8 +37,25 @@ export default function ArchivePage() {
 
         const data = await api.getArchive({ pageSize: 50 });
 
-        // API returns { ideas: [...] } not { data: [...] }
-        let results = (data as unknown as { ideas: IdeaBrief[] }).ideas ?? data.data ?? [];
+        // API returns { ideas: IdeaSummary[] } — unwrap nested brief field
+        type IdeaSummaryResponse = IdeaBrief & { brief?: IdeaBrief };
+        type ApiResponse = IdeaSummaryResponse[] | { ideas: IdeaSummaryResponse[]; data?: IdeaSummaryResponse[] };
+        const response = data as unknown as ApiResponse;
+        const rawItems: IdeaSummaryResponse[] = Array.isArray(response)
+          ? response
+          : response.ideas ?? response.data ?? [];
+        let results: IdeaBrief[] = rawItems.map((d) => {
+          const brief = d.brief || d;
+          return {
+            ...brief,
+            id: d.id || brief.id,
+            name: d.name || brief.name,
+            tagline: d.tagline || brief.tagline,
+            priorityScore: d.priorityScore ?? brief.priorityScore,
+            effortEstimate: d.effortEstimate || brief.effortEstimate || "week",
+            generatedAt: d.generatedAt || brief.generatedAt,
+          };
+        });
         // Client-side filtering (archive endpoint returns all ideas)
         if (searchQuery) {
           const q = searchQuery.toLowerCase();
