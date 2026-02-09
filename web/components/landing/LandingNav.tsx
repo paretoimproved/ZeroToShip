@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+import { useAuth } from "@/components/AuthProvider";
 
 const NAV_LINKS = [
   { href: "#features", label: "Features" },
@@ -10,6 +11,7 @@ const NAV_LINKS = [
 ] as const;
 
 export default function LandingNav() {
+  const { isAuthenticated, logout } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
@@ -142,19 +144,37 @@ export default function LandingNav() {
 
             <div className="ml-4 h-5 w-px bg-gray-300 dark:bg-gray-700" />
 
-            <Link
-              href="/login"
-              className={`ml-3 rounded-md px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-300 dark:hover:text-white ${focusRingClasses}`}
-            >
-              Sign In
-            </Link>
-
-            <Link
-              href="/signup"
-              className={`ml-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-700 ${focusRingClasses}`}
-            >
-              Get Started Free
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link
+                  href="/dashboard"
+                  className={`ml-3 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-700 ${focusRingClasses}`}
+                >
+                  Dashboard
+                </Link>
+                <button
+                  onClick={logout}
+                  className={`ml-2 rounded-md px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 ${focusRingClasses}`}
+                >
+                  Log out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className={`ml-3 rounded-md px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-300 dark:hover:text-white ${focusRingClasses}`}
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/signup"
+                  className={`ml-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-700 ${focusRingClasses}`}
+                >
+                  Get Started Free
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile hamburger */}
@@ -237,21 +257,43 @@ export default function LandingNav() {
 
             <hr className="my-2 border-gray-200 dark:border-gray-700" />
 
-            <Link
-              href="/login"
-              onClick={closeMobileMenu}
-              className={`rounded-lg px-4 py-3 text-lg font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800 ${focusRingClasses}`}
-            >
-              Sign In
-            </Link>
-
-            <Link
-              href="/signup"
-              onClick={closeMobileMenu}
-              className={`mt-2 rounded-lg bg-primary-600 px-4 py-3 text-center text-lg font-semibold text-white shadow-sm transition-colors hover:bg-primary-700 ${focusRingClasses}`}
-            >
-              Get Started Free
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link
+                  href="/dashboard"
+                  onClick={closeMobileMenu}
+                  className={`mt-2 rounded-lg bg-primary-600 px-4 py-3 text-center text-lg font-semibold text-white shadow-sm transition-colors hover:bg-primary-700 ${focusRingClasses}`}
+                >
+                  Dashboard
+                </Link>
+                <button
+                  onClick={() => {
+                    closeMobileMenu();
+                    logout();
+                  }}
+                  className={`rounded-lg px-4 py-3 text-lg font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/50 text-left ${focusRingClasses}`}
+                >
+                  Log out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  onClick={closeMobileMenu}
+                  className={`rounded-lg px-4 py-3 text-lg font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800 ${focusRingClasses}`}
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/signup"
+                  onClick={closeMobileMenu}
+                  className={`mt-2 rounded-lg bg-primary-600 px-4 py-3 text-center text-lg font-semibold text-white shadow-sm transition-colors hover:bg-primary-700 ${focusRingClasses}`}
+                >
+                  Get Started Free
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}
