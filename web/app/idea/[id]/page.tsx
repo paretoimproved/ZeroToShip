@@ -63,6 +63,10 @@ const mockBrief: IdeaBrief = {
     "Scaling costs if metric volume grows faster than revenue",
     "Enterprise players could launch indie-focused tiers",
   ],
+  sources: [
+    { platform: 'reddit', title: 'Why is monitoring so expensive?', url: 'https://reddit.com/r/devops/example', score: 234, commentCount: 89, postedAt: new Date().toISOString() },
+    { platform: 'hn', title: 'Ask HN: Affordable monitoring for side projects?', url: 'https://news.ycombinator.com/item?id=example', score: 156, commentCount: 67, postedAt: new Date().toISOString() },
+  ],
   generatedAt: new Date().toISOString(),
 };
 
@@ -98,6 +102,7 @@ export default function IdeaPage() {
           businessModel: data.businessModel || { pricing: "TBD", revenueProjection: "TBD", monetizationPath: "TBD" },
           goToMarket: data.goToMarket || { launchStrategy: "TBD", channels: [], firstCustomers: "TBD" },
           risks: data.risks || [],
+          sources: data.sources || [],
         };
         setBrief(idea);
       } catch (error) {

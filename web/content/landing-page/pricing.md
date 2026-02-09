@@ -21,16 +21,13 @@ Perfect for exploring what's possible
 
 ### Features
 - 3 ideas per day
-- Problem statement
-- Target audience
-- Basic solution outline
-- Email delivery
+- 1 featured brief per email
+- Problem + audience summary
+- Daily email delivery
 
 ### Limitations
-- No full technical specs
-- No competitor analysis
-- No business model
-- No archive access
+- No full briefs for all ideas
+- No archive & search
 
 ### CTA
 Get Started Free
@@ -49,16 +46,16 @@ Builder
 Most Popular
 
 ### Description
-Everything you need to find and validate ideas
+Full briefs for every idea, every day
 
 ### Features
-- 10 ideas per day
-- Full technical specs
-- Competitor analysis
-- Business model & pricing
-- Go-to-market strategy
+- 10 full briefs per day
+- Complete market analysis
+- Tech stack recommendations
+- Go-to-market playbook
 - Full archive access
-- Priority email delivery
+- Search across all ideas
+- CSV export
 
 ### CTA
 Start Building
@@ -77,11 +74,10 @@ Team
 For agencies and serial builders
 
 ### Features
+- Everything in Builder
 - Unlimited ideas
-- API access
-- Custom category filters
-- Idea validation reports
-- Export to Notion/CSV
+- API access & keys
+- JSON & CSV export
 - Team sharing (coming soon)
 - Priority support
 
@@ -93,7 +89,7 @@ Contact Us
 ## FAQ Below Pricing
 
 ### Why is Pro worth $19/mo?
-A single validated idea can be worth thousands in MRR. We save you hours of scrolling and research every day.
+Each brief includes market analysis, tech stack recommendations, competitor landscape, and a go-to-market playbook. It replaces hours of research with a 5-minute read. One validated idea can be worth thousands in MRR.
 
 ### Can I cancel anytime?
 Yes, cancel with one click. No questions asked, no contracts.

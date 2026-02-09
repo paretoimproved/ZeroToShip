@@ -330,7 +330,7 @@ describe('Email Builder', () => {
       const briefs = createMockBriefs(5);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.html).toContain('Unlock All Ideas');
+      expect(result.html).toContain('Every Brief. Every Day.');
       expect(result.html).toContain('Upgrade to Pro');
     });
 
@@ -338,7 +338,7 @@ describe('Email Builder', () => {
       const briefs = createMockBriefs(5);
       const result = buildDailyEmail(briefs, 'pro');
 
-      expect(result.html).not.toContain('Unlock All Ideas');
+      expect(result.html).not.toContain('Every Brief. Every Day.');
     });
 
     it('includes unsubscribe link in footer', () => {
@@ -1238,7 +1238,7 @@ describe('Tier-based content', () => {
       const briefs = createMockBriefs(10);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.text).toContain('Upgrade to Pro for all 10 daily ideas');
+      expect(result.text).toContain('Upgrade to Pro for every full brief, plus archive & search:');
     });
   });
 

@@ -103,8 +103,8 @@ export default function NavBar() {
     hamburgerRef.current?.focus();
   }, []);
 
-  // Hide NavBar on the landing page
-  if (pathname === "/") return null;
+  // Hide NavBar on pages with their own nav
+  if (pathname === "/" || pathname === "/pricing") return null;
 
   const focusRingClasses =
     "focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900";

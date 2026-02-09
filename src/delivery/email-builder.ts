@@ -402,8 +402,8 @@ function buildCtaSection(tier: SubscriberTier, config: Required<EmailBuilderConf
 
   return `
     <div class="cta-section">
-      <h3>Unlock All Ideas</h3>
-      <p>Get access to 10 ideas daily, full briefs, and exclusive deep-dives.</p>
+      <h3>Every Brief. Every Day.</h3>
+      <p>You're seeing 1 featured brief per email. Pro members get the full brief for every idea, plus archive access and search.</p>
       <a href="${escapeHtml(config.upgradeUrl)}" class="cta-button">Upgrade to Pro</a>
     </div>
   `;
@@ -551,7 +551,7 @@ function buildPlainTextEmail(
   if (tier === 'free') {
     lines.push('');
     lines.push('-'.repeat(50));
-    lines.push('Upgrade to Pro for all 10 daily ideas:');
+    lines.push('Upgrade to Pro for every full brief, plus archive & search:');
     lines.push(config.upgradeUrl);
   }
 

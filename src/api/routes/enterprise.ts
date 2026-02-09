@@ -14,10 +14,6 @@ import { requireEnterprise } from '../middleware/auth';
 import { rateLimitMiddleware } from '../middleware/rateLimit';
 import { createTierGate } from '../middleware/tierGate';
 import {
-  checkValidationLimit,
-  trackValidationRequest,
-} from '../middleware/usageLimit';
-import {
   searchIdeas,
   exportIdeas,
   ideasToCsv,
@@ -90,7 +86,7 @@ export const enterpriseRoutes: FastifyPluginAsync = async (fastify) => {
   /**
    * POST /api/v1/validate
    * Request deep validation for an idea (Enterprise only)
-   * Subject to daily usage limits (see TIER_USAGE_LIMITS)
+   * Requires Enterprise tier access
    */
   app.post(
     '/validate',
@@ -99,9 +95,7 @@ export const enterpriseRoutes: FastifyPluginAsync = async (fastify) => {
         requireEnterprise,
         rateLimitMiddleware,
         createTierGate('validate'),
-        checkValidationLimit,
       ],
-      onResponse: [trackValidationRequest],
       schema: {
         body: ValidationRequestSchema,
         response: {

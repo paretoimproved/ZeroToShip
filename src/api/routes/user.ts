@@ -167,17 +167,7 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
       schema: {
         response: {
           200: z.object({
-            freshBriefsUsed: z.number(),
-            freshBriefsLimit: z.number(),
-            freshBriefsRemaining: z.number(),
-            validationRequestsUsed: z.number(),
-            validationRequestsLimit: z.number(),
-            validationRequestsRemaining: z.number(),
-            overageBriefs: z.number(),
-            overageAmountCents: z.number(),
-            canRequestFreshBrief: z.boolean(),
-            canRequestValidation: z.boolean(),
-            wouldIncurOverage: z.boolean(),
+            requestsPerHour: z.number(),
             resetAt: z.string(),
             tier: z.string(),
           }),

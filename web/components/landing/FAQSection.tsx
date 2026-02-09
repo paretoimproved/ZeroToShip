@@ -12,7 +12,7 @@ const faqItems = [
   {
     question: "Can I get ideas for specific niches?",
     answer:
-      "Yes! With Pro and Enterprise plans, you can set category preferences (developer tools, SaaS, AI/ML, consumer apps, etc.) and we'll prioritize matching ideas.",
+      "Yes! Pro members can set category preferences (developer tools, SaaS, AI/ML, consumer apps, etc.) and we'll prioritize matching ideas.",
   },
   {
     question: "How are ideas scored?",

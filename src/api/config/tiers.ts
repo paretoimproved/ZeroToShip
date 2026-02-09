@@ -33,61 +33,27 @@ export const IDEAS_LIMIT: Record<UserTier, number> = {
 };
 
 /**
- * Usage limits per tier for AI generation operations
- * These are daily limits to prevent abuse and control costs
+ * Usage limits per tier for API rate limiting
  */
 export interface TierUsageLimits {
-  // Existing rate limits (requests per hour)
   requestsPerHour: number;
-
-  // Generation limits (daily)
-  freshBriefsPerDay: number; // Fresh AI-generated briefs
-  validationRequestsPerDay: number; // Deep-dive validations
-
-  // Weekly brief teaser (for free tier conversion hook)
-  // null = no weekly limit (use daily limit instead)
-  weeklyBriefAllowance: number | null;
-
-  // Overage pricing (null = not allowed)
-  overagePricePerBrief: number | null;
 }
 
 /**
  * Usage limits configuration per tier
- *
- * Cost protection:
- * - Enterprise worst case: 50 briefs/day × $0.05 = $2.50/day = $75/mo
- * - With overage at $0.15/brief, heavy usage becomes revenue-positive
- * - Pro users capped at 10/day (matches batch output)
  */
 export const TIER_USAGE_LIMITS: Record<UserTier, TierUsageLimits> = {
   anonymous: {
     requestsPerHour: 10,
-    freshBriefsPerDay: 0, // Anonymous get cached only
-    validationRequestsPerDay: 0,
-    weeklyBriefAllowance: null,
-    overagePricePerBrief: null,
   },
   free: {
     requestsPerHour: 100,
-    freshBriefsPerDay: 0, // Free users get cached only
-    validationRequestsPerDay: 0,
-    weeklyBriefAllowance: 1, // 1 brief/week teaser for conversion
-    overagePricePerBrief: null,
   },
   pro: {
     requestsPerHour: 1000,
-    freshBriefsPerDay: 10, // Matches daily batch
-    validationRequestsPerDay: 2,
-    weeklyBriefAllowance: null, // Uses daily limit
-    overagePricePerBrief: null, // No overage for Pro
   },
   enterprise: {
     requestsPerHour: 10000,
-    freshBriefsPerDay: 50, // Generous but bounded
-    validationRequestsPerDay: 10,
-    weeklyBriefAllowance: null, // Uses daily limit
-    overagePricePerBrief: 0.15, // $0.15 per additional brief
   },
 };
 

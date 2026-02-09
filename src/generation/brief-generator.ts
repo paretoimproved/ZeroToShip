@@ -153,22 +153,42 @@ function generateBriefId(): string {
 
 /**
  * Extract top source posts from a scored problem, ranked by engagement.
+ * Filters out posts with missing URLs or titles, and safely coerces dates.
  */
 function extractSources(problem: ScoredProblem): IdeaBrief['sources'] {
-  const allPosts = [problem.representativePost, ...problem.relatedPosts];
+  const related = problem.relatedPosts ?? [];
+  const allPosts = [problem.representativePost, ...related];
   return allPosts
-    .sort((a, b) => (b.score + b.commentCount) - (a.score + a.commentCount))
+    .filter(post => post && post.url && post.title)
+    .sort((a, b) => ((b.score || 0) + (b.commentCount || 0)) - ((a.score || 0) + (a.commentCount || 0)))
     .slice(0, 5)
     .map(post => ({
       platform: post.source,
       title: post.title,
       url: post.url,
-      score: post.score,
-      commentCount: post.commentCount,
-      postedAt: post.createdAt instanceof Date
-        ? post.createdAt.toISOString()
-        : String(post.createdAt),
+      score: post.score || 0,
+      commentCount: post.commentCount || 0,
+      postedAt: safeISODate(post.createdAt),
     }));
+}
+
+/**
+ * Safely convert a value to an ISO date string.
+ * Handles Date objects, ISO strings, numeric timestamps, and fallbacks.
+ */
+function safeISODate(value: unknown): string {
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    return value.toISOString();
+  }
+  if (typeof value === 'string') {
+    const parsed = new Date(value);
+    if (!isNaN(parsed.getTime())) return parsed.toISOString();
+  }
+  if (typeof value === 'number') {
+    const parsed = new Date(value);
+    if (!isNaN(parsed.getTime())) return parsed.toISOString();
+  }
+  return new Date().toISOString();
 }
 
 /**

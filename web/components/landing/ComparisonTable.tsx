@@ -52,7 +52,7 @@ const COMPARISON_DATA: ComparisonRow[] = [
   },
   {
     feature: "Price",
-    zerotoship: { status: "text", label: "Free - $19/mo" },
+    zerotoship: { status: "text", label: "Free – $19/mo" },
     manual: { status: "text", label: "Your time ($50-100/hr)" },
     aiTools: { status: "text", label: "$20+/mo" },
   },

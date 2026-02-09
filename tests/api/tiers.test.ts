@@ -202,25 +202,10 @@ describe('getUpgradePrompt', () => {
 });
 
 describe('Tier consistency', () => {
-  it('should have usage limits that align with feature access', () => {
-    // If a tier has validation requests allocated, it should have validate feature access
-    const proLimits = TIER_USAGE_LIMITS.pro;
-    const proCanValidate = hasAccess('pro', 'validate');
-    expect(proLimits.validationRequestsPerDay).toBe(2);
-    expect(proCanValidate).toBe(true);
-  });
-
   it('should have all tiers defined in both TIER_HIERARCHY and usage limits', () => {
     for (const tier of TIER_HIERARCHY) {
       expect(TIER_USAGE_LIMITS[tier]).toBeDefined();
       expect(IDEAS_LIMIT[tier]).toBeDefined();
     }
-  });
-
-  it('should have weeklyBriefAllowance only for free tier', () => {
-    expect(TIER_USAGE_LIMITS.anonymous.weeklyBriefAllowance).toBeNull();
-    expect(TIER_USAGE_LIMITS.free.weeklyBriefAllowance).toBe(1);
-    expect(TIER_USAGE_LIMITS.pro.weeklyBriefAllowance).toBeNull();
-    expect(TIER_USAGE_LIMITS.enterprise.weeklyBriefAllowance).toBeNull();
   });
 });

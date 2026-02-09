@@ -1,0 +1,94 @@
+import { test, expect } from '@playwright/test';
+
+test.describe('Landing Page — Pricing Section', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await page.locator('#pricing').scrollIntoViewIfNeeded();
+  });
+
+  test('should display three plan cards', async ({ page }) => {
+    const section = page.locator('#pricing');
+    await expect(section.getByRole('heading', { name: 'Starter' })).toBeVisible();
+    await expect(section.getByRole('heading', { name: 'Builder', exact: true })).toBeVisible();
+    await expect(section.getByRole('heading', { name: 'Team' })).toBeVisible();
+  });
+
+  test('should show section heading', async ({ page }) => {
+    await expect(
+      page.getByRole('heading', { name: 'Simple Pricing, Serious Value' }),
+    ).toBeVisible();
+  });
+
+  test('should show $0 for Starter monthly', async ({ page }) => {
+    const section = page.locator('#pricing');
+    await expect(section.getByText('$0')).toBeVisible();
+  });
+
+  test('should show $19 for Builder monthly', async ({ page }) => {
+    const section = page.locator('#pricing');
+    await expect(section.getByText('$19')).toBeVisible();
+  });
+
+  test('should show $99 for Team monthly', async ({ page }) => {
+    const section = page.locator('#pricing');
+    await expect(section.getByText('$99')).toBeVisible();
+  });
+
+  test('should highlight Builder as Most Popular', async ({ page }) => {
+    await expect(page.getByText('Most Popular')).toBeVisible();
+  });
+
+  test('should toggle to annual pricing', async ({ page }) => {
+    const section = page.locator('#pricing');
+    await section.getByRole('radio', { name: /Annual/i }).click();
+    await page.waitForTimeout(200);
+    await expect(section.getByText('$12.42')).toBeVisible();
+    await expect(section.getByText('$82.50')).toBeVisible();
+  });
+
+  test('should show savings badges on annual toggle', async ({ page }) => {
+    const section = page.locator('#pricing');
+    await section.getByRole('radio', { name: /Annual/i }).click();
+    await page.waitForTimeout(200);
+    await expect(section.getByText('Save 35%')).toBeVisible();
+    await expect(section.getByText('Save 17%')).toBeVisible();
+  });
+
+  test('should show annual billing subtext', async ({ page }) => {
+    const section = page.locator('#pricing');
+    await section.getByRole('radio', { name: /Annual/i }).click();
+    await page.waitForTimeout(200);
+    await expect(section.getByText('billed at $149/year')).toBeVisible();
+    await expect(section.getByText('billed at $990/year')).toBeVisible();
+  });
+
+  test('Starter should list featured brief as included', async ({ page }) => {
+    await expect(page.getByText('1 featured brief per email')).toBeVisible();
+  });
+
+  test('Starter should list full briefs as not included', async ({ page }) => {
+    await expect(page.getByText('Full briefs for all ideas')).toBeVisible();
+  });
+
+  test('Builder should list archive access as included', async ({ page }) => {
+    await expect(page.getByText('Full archive access')).toBeVisible();
+  });
+
+  test('Builder should list CSV export', async ({ page }) => {
+    await expect(page.getByText('CSV export', { exact: true })).toBeVisible();
+  });
+
+  test('Get Started Free button navigates to /signup', async ({ page }) => {
+    const section = page.locator('#pricing');
+    const btn = section.getByRole('button', { name: 'Get Started Free' });
+    await btn.click();
+    await expect(page).toHaveURL(/\/signup/);
+  });
+
+  test('Start Building button navigates to /signup?plan=pro', async ({ page }) => {
+    const section = page.locator('#pricing');
+    const btn = section.getByRole('button', { name: 'Start Building' });
+    await btn.click();
+    await expect(page).toHaveURL(/\/signup\?plan=pro/);
+  });
+});

@@ -22,7 +22,7 @@ We scrape 300+ posts daily across 8 subreddits, Hacker News, Twitter, and GitHub
 
 ### Can I get ideas for specific niches?
 
-With Pro and Enterprise plans, you can set category preferences (developer tools, SaaS, AI/ML, consumer apps, etc.) and we'll prioritize matching ideas. Custom keyword filters are available on Enterprise.
+Yes! Pro members can set category preferences (developer tools, SaaS, AI/ML, consumer apps, etc.) and we'll prioritize matching ideas.
 
 ---
 
