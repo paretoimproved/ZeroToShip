@@ -109,7 +109,6 @@ export default function ArchivePage() {
   const [selectedIdea, setSelectedIdea] = useState<IdeaBrief | null>(null);
   const [fetchKey, setFetchKey] = useState(0);
   const { isAuthenticated } = useAuth();
-  const sentinelRef = useRef<HTMLDivElement>(null);
 
   // Client-side filtering on accumulated ideas
   const filteredIdeas = useMemo(() => {
@@ -229,22 +228,28 @@ export default function ArchivePage() {
     }
   }, [page, hasMore, loadingMore, parseResponse, allIdeas.length]);
 
-  // IntersectionObserver for infinite scroll
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel || loading) return;
+  // Ref to always have the latest loadMore (avoids stale closures in scroll handler)
+  const loadMoreRef = useRef(loadMore);
+  loadMoreRef.current = loadMore;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loadingMore) {
-          loadMore();
-        }
-      },
-      { rootMargin: "200px" }
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [hasMore, loadingMore, loading, loadMore]);
+  // Infinite scroll via scroll handler
+  useEffect(() => {
+    if (loading) return;
+
+    function checkScroll() {
+      const scrollBottom = window.innerHeight + window.scrollY;
+      const docHeight = document.documentElement.scrollHeight;
+      if (scrollBottom >= docHeight - 400) {
+        loadMoreRef.current();
+      }
+    }
+
+    window.addEventListener("scroll", checkScroll, { passive: true });
+    // Check immediately — if content doesn't fill the viewport, load more right away
+    checkScroll();
+
+    return () => window.removeEventListener("scroll", checkScroll);
+  }, [loading, loadingMore]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
@@ -425,9 +430,6 @@ export default function ArchivePage() {
               </p>
             </div>
           )}
-
-          {/* Infinite scroll sentinel */}
-          <div ref={sentinelRef} className="h-1" />
 
           {loadingMore && (
             <div className="flex justify-center py-8">
