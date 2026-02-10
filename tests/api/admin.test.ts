@@ -43,11 +43,11 @@ vi.mock('../../src/api/db/client', () => ({
     execute: vi.fn().mockResolvedValue([]),
     onConflictDoNothing: vi.fn().mockReturnThis(),
   },
-  users: { id: 'id', email: 'email', name: 'name', tier: 'tier', createdAt: 'createdAt' },
+  users: { id: 'id', email: 'email', name: 'name', tier: 'tier', isAdmin: 'isAdmin', createdAt: 'createdAt' },
   userPreferences: { userId: 'userId' },
   subscriptions: { userId: 'userId', plan: 'plan', status: 'status' },
   apiKeys: {
-    id: 'id', userId: 'userId', key: 'key',
+    id: 'id', userId: 'userId', key: 'key', keyHash: 'keyHash',
     isActive: 'isActive', expiresAt: 'expiresAt', lastUsedAt: 'lastUsedAt',
   },
   ideas: { id: 'id', generatedAt: 'generatedAt' },

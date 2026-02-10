@@ -4,7 +4,7 @@
  * Creates test users for each tier and sample ideas for testing
  */
 
-import { randomBytes } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import { db } from './client';
 import { users, userPreferences, apiKeys, ideas, subscriptions } from './schema';
 import { eq } from 'drizzle-orm';
@@ -425,9 +425,11 @@ export async function seed(): Promise<void> {
         console.log(`  API key for ${enterpriseUser.email} already exists: ${existing[0].key.substring(0, 20)}...`);
       } else {
         const key = generateApiKey();
+        const keyHash = createHash('sha256').update(key).digest('hex');
         await db.insert(apiKeys).values({
           userId: enterpriseUser.id,
           key,
+          keyHash,
           name: 'Test API Key',
           isActive: true,
         });

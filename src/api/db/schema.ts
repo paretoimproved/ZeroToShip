@@ -41,6 +41,7 @@ export const users = pgTable(
     email: varchar('email', { length: 255 }).notNull().unique(),
     name: varchar('name', { length: 255 }),
     tier: varchar('tier', { length: 20 }).notNull().default('free'),
+    isAdmin: boolean('is_admin').notNull().default(false),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
   },
@@ -76,7 +77,8 @@ export const apiKeys = pgTable(
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    key: varchar('key', { length: 64 }).notNull().unique(),
+    key: varchar('key', { length: 64 }).notNull(),
+    keyHash: text('key_hash').notNull(),
     name: varchar('name', { length: 100 }).notNull(),
     lastUsedAt: timestamp('last_used_at'),
     expiresAt: timestamp('expires_at'),
@@ -84,7 +86,7 @@ export const apiKeys = pgTable(
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (table) => ({
-    keyIdx: index('api_keys_key_idx').on(table.key),
+    keyHashIdx: uniqueIndex('api_keys_key_hash_idx').on(table.keyHash),
   })
 );
 

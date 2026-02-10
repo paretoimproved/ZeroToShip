@@ -5,7 +5,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { requireAuth, isAdminEmail } from '../middleware/auth';
+import { requireAuth } from '../middleware/auth';
 import { supabase } from '../middleware/auth';
 import { getOrCreateUser, getUserById } from '../services/users';
 
@@ -222,7 +222,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
         user = await getOrCreateUser(request.userId!, request.userEmail!, name);
       }
 
-      return reply.send({ ...user, isAdmin: isAdminEmail(user.email) });
+      return reply.send({ ...user, isAdmin: user.isAdmin });
     }
   );
 };

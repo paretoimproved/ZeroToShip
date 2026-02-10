@@ -49,7 +49,7 @@ vi.mock('../../src/api/db/client', () => ({
     execute: vi.fn().mockResolvedValue([]),
     onConflictDoNothing: vi.fn().mockReturnThis(),
   },
-  users: { id: 'id', email: 'email', name: 'name', tier: 'tier' },
+  users: { id: 'id', email: 'email', name: 'name', tier: 'tier', isAdmin: 'isAdmin' },
   userPreferences: { userId: 'userId' },
   subscriptions: {
     userId: 'userId',
@@ -60,6 +60,7 @@ vi.mock('../../src/api/db/client', () => ({
     id: 'id',
     userId: 'userId',
     key: 'key',
+    keyHash: 'keyHash',
     isActive: 'isActive',
     expiresAt: 'expiresAt',
     lastUsedAt: 'lastUsedAt',
@@ -182,6 +183,7 @@ const TEST_USER = {
   email: 'test@zerotoship.dev',
   name: 'Test User',
   tier: 'free',
+  isAdmin: false,
 };
 
 const TEST_SESSION = {
@@ -787,16 +789,11 @@ describe('Auth Routes E2E', () => {
     });
 
     it('should return isAdmin true for admin users', async () => {
-      // Set admin email
-      process.env.ADMIN_EMAILS = TEST_USER.email;
-      const { _resetConfigForTesting } = await import('../../src/config/env');
-      _resetConfigForTesting();
-
       mockGetUser.mockResolvedValue({
         data: { user: supabaseUser() },
         error: null,
       });
-      mockGetUserById.mockResolvedValue(TEST_USER);
+      mockGetUserById.mockResolvedValue({ ...TEST_USER, isAdmin: true });
 
       const response = await server.inject({
         method: 'GET',
@@ -809,10 +806,6 @@ describe('Auth Routes E2E', () => {
       expect(response.statusCode).toBe(200);
       const body = JSON.parse(response.payload);
       expect(body.isAdmin).toBe(true);
-
-      // Clean up
-      delete process.env.ADMIN_EMAILS;
-      _resetConfigForTesting();
     });
 
     it('should call Supabase getUser with the Bearer token', async () => {

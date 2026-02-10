@@ -6,13 +6,20 @@
  * - API keys (for Enterprise tier programmatic access)
  */
 
-import { randomBytes } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import { FastifyRequest, FastifyReply, FastifyPluginAsync } from 'fastify';
 import { createClient } from '@supabase/supabase-js';
 import { eq } from 'drizzle-orm';
 import { config } from '../../config/env';
 import { db, users, apiKeys, subscriptions } from '../db/client';
 import type { UserTier } from '../schemas';
+
+/**
+ * Hash an API key with SHA-256 for secure storage and lookup
+ */
+export function hashApiKey(key: string): string {
+  return createHash('sha256').update(key).digest('hex');
+}
 
 // Supabase client for JWT verification
 const supabaseUrl = config.SUPABASE_URL;
@@ -93,6 +100,7 @@ async function verifyApiKey(
   key: string
 ): Promise<{ userId: string; keyId: string } | null> {
   try {
+    const keyHash = hashApiKey(key);
     const result = await db
       .select({
         id: apiKeys.id,
@@ -101,7 +109,7 @@ async function verifyApiKey(
         expiresAt: apiKeys.expiresAt,
       })
       .from(apiKeys)
-      .where(eq(apiKeys.key, key))
+      .where(eq(apiKeys.keyHash, keyHash))
       .limit(1);
 
     const apiKey = result[0];
@@ -211,7 +219,7 @@ export async function optionalAuth(
 
       // Admin tier override: if admin sends X-Tier-Override, apply it
       const tierOverride = request.headers['x-tier-override'] as string | undefined;
-      if (tierOverride && isAdminEmail(userData.email)) {
+      if (tierOverride && await isAdmin(userData.userId, userData.email)) {
         const validTiers: UserTier[] = ['anonymous', 'free', 'pro', 'enterprise'];
         if (validTiers.includes(tierOverride as UserTier)) {
           request.userTier = tierOverride as UserTier;
@@ -279,11 +287,33 @@ export async function requirePro(
 }
 
 /**
- * Check if an email address belongs to an admin
+ * Check if an email address belongs to an admin via env allowlist.
+ * Prefer checking user.isAdmin from the DB when possible.
  */
 export function isAdminEmail(email: string | undefined): boolean {
   if (!email) return false;
   return config.adminEmails.has(email.toLowerCase());
+}
+
+/**
+ * Check if a user is an admin by querying the DB isAdmin column.
+ * Falls back to email allowlist if the DB check fails.
+ */
+async function isAdmin(userId: string, email: string | undefined): Promise<boolean> {
+  try {
+    const result = await db
+      .select({ isAdmin: users.isAdmin })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (result.length > 0) {
+      return result[0].isAdmin;
+    }
+  } catch {
+    // Fall back to email allowlist
+  }
+  return isAdminEmail(email);
 }
 
 /**
@@ -297,7 +327,8 @@ export async function requireAdmin(
 
   if (reply.sent) return;
 
-  if (!isAdminEmail(request.userEmail)) {
+  const admin = await isAdmin(request.userId!, request.userEmail);
+  if (!admin) {
     reply.status(403).send({
       code: 'ADMIN_REQUIRED',
       message: 'Admin access required',
@@ -347,6 +378,7 @@ export async function createApiKeyForUser(
     }
 
     const key = generateApiKey();
+    const keyHash = hashApiKey(key);
     const expiresAt = expiresInDays
       ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000)
       : null;
@@ -356,6 +388,7 @@ export async function createApiKeyForUser(
       .values({
         userId,
         key,
+        keyHash,
         name,
         expiresAt,
       })

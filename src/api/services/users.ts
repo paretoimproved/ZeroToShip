@@ -22,14 +22,14 @@ import type {
   UserTier,
   EffortLevel,
 } from '../schemas';
-import { generateApiKey, invalidateTierCache } from '../middleware/auth';
+import { generateApiKey, hashApiKey, invalidateTierCache } from '../middleware/auth';
 
 /**
  * Get user by ID
  */
 export async function getUserById(
   userId: string
-): Promise<{ id: string; email: string; name: string | null; tier: string } | null> {
+): Promise<{ id: string; email: string; name: string | null; tier: string; isAdmin: boolean } | null> {
   const rows = await db.select().from(users).where(eq(users.id, userId)).limit(1);
 
   if (rows.length === 0) {
@@ -46,7 +46,7 @@ export async function getOrCreateUser(
   id: string,
   email: string,
   name?: string
-): Promise<{ id: string; email: string; name: string | null; tier: string }> {
+): Promise<{ id: string; email: string; name: string | null; tier: string; isAdmin: boolean }> {
   // Try to get existing user
   const existing = await getUserById(id);
   if (existing) {
@@ -246,6 +246,7 @@ export async function createApiKey(
 ): Promise<{ id: string; key: string } | null> {
   try {
     const key = generateApiKey();
+    const keyHash = hashApiKey(key);
     const expiresAt = expiresInDays
       ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000)
       : null;
@@ -255,6 +256,7 @@ export async function createApiKey(
       .values({
         userId,
         key,
+        keyHash,
         name,
         expiresAt,
       })
