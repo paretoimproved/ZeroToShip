@@ -77,6 +77,9 @@ const envSchema = z.object({
   // Admin
   ADMIN_EMAILS: z.string().default(''),
 
+  // Redis
+  REDIS_URL: z.string().optional(),
+
   // Scheduler
   SCHEDULER_CRON: z.string().default('0 6 * * *'),
   SCHEDULER_TIMEZONE: z.string().default('America/New_York'),
