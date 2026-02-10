@@ -33,6 +33,7 @@ import {
   WEEKEND_STACKS,
   WEEK_STACKS,
 } from '../../src/generation/tech-stacks';
+import { makeGenerationBrief } from '../fixtures';
 
 // Helper to create mock posts
 function createMockPost(overrides: Partial<RawPost> = {}): RawPost {
@@ -122,52 +123,8 @@ function createMockGapAnalysis(overrides: Partial<GapAnalysis> = {}): GapAnalysi
 }
 
 // Helper to create mock brief
-function createMockBrief(overrides: Partial<IdeaBrief> = {}): IdeaBrief {
-  return {
-    id: 'brief_test123',
-    name: 'KeyVault',
-    tagline: 'API keys made simple',
-    priorityScore: 17.5,
-    effortEstimate: 'week',
-    revenueEstimate: '$5k-20k MRR Year 1',
-
-    problemStatement: 'Developers struggle managing API keys across projects',
-    targetAudience: 'Indie developers and small teams',
-    marketSize: 'TAM: $2B developer tools market',
-
-    existingSolutions: 'Vault (complex), .env files (insecure)',
-    gaps: 'No simple solution for indie developers',
-
-    proposedSolution: 'A simple CLI tool with cloud sync',
-    keyFeatures: ['CLI tool', 'Cloud sync', 'Team sharing', 'Audit logs'],
-    mvpScope: 'CLI + basic cloud storage',
-
-    technicalSpec: {
-      stack: ['Node.js', 'TypeScript', 'PostgreSQL'],
-      architecture: 'Serverless API with CLI client',
-      estimatedEffort: 'week',
-    },
-
-    businessModel: {
-      pricing: 'Free for personal, $9/mo for teams',
-      revenueProjection: '$5k MRR Year 1, $20k Year 2',
-      monetizationPath: 'Freemium with team features',
-    },
-
-    goToMarket: {
-      launchStrategy: 'Launch on HN, ProductHunt, then Reddit',
-      channels: ['Hacker News', 'Product Hunt', 'Twitter'],
-      firstCustomers: 'Post in developer communities, offer free trials',
-    },
-
-    risks: ['Competition from big players', 'Security concerns', 'Low conversion rate'],
-    sources: [
-      { platform: 'reddit', title: 'Test post title', url: 'https://reddit.com/r/test/123', score: 100, commentCount: 25, postedAt: new Date().toISOString() },
-    ],
-    generatedAt: new Date(),
-    ...overrides,
-  };
-}
+const createMockBrief = (overrides: Partial<IdeaBrief> = {}): IdeaBrief =>
+  makeGenerationBrief(overrides);
 
 describe('Tech Stacks', () => {
   describe('detectCategory', () => {

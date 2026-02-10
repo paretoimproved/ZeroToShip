@@ -16,44 +16,7 @@ import {
   getIdeasLimit,
 } from '../../src/api/middleware/tierGate';
 import type { IdeaBrief, UserTier } from '../../src/api/schemas';
-
-/** Minimal valid IdeaBrief fixture */
-function makeIdeaBrief(overrides: Partial<IdeaBrief> = {}): IdeaBrief {
-  return {
-    id: overrides.id || 'a0000000-0000-0000-0000-000000000001',
-    name: 'Test Idea',
-    tagline: 'A test idea tagline',
-    priorityScore: 75,
-    effortEstimate: 'week',
-    problemStatement: 'Users struggle with X',
-    generatedAt: '2026-02-08T00:00:00.000Z',
-    category: 'developer-tools',
-    targetAudience: 'Developers',
-    marketSize: '$1B',
-    existingSolutions: 'Competitor A, B',
-    gaps: 'Missing feature Y',
-    proposedSolution: 'Build Z',
-    keyFeatures: ['Feature 1', 'Feature 2'],
-    mvpScope: '2 weeks MVP',
-    technicalSpec: {
-      stack: ['Node.js', 'React'],
-      architecture: 'Monolith',
-      estimatedEffort: '2 weeks',
-    },
-    businessModel: {
-      pricing: '$19/mo',
-      revenueProjection: '$10k MRR',
-      monetizationPath: 'SaaS subscription',
-    },
-    goToMarket: {
-      launchStrategy: 'Product Hunt',
-      channels: ['Twitter', 'HN'],
-      firstCustomers: 'Early adopters',
-    },
-    risks: ['Competition', 'Low retention'],
-    ...overrides,
-  };
-}
+import { makeIdeaBrief } from '../fixtures';
 
 describe('filterIdeaForTier', () => {
   const fullBrief = makeIdeaBrief();

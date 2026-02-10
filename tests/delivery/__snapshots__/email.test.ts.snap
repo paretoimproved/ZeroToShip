@@ -210,7 +210,7 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for multiple
   <div class="container">
     <div class="header">
       <h1>ZeroToShip</h1>
-      <p class="date">Monday, February 9, 2026</p>
+      <p class="date">Tuesday, February 10, 2026</p>
     </div>
 
     
@@ -554,7 +554,7 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for multiple
   <div class="container">
     <div class="header">
       <h1>ZeroToShip</h1>
-      <p class="date">Monday, February 9, 2026</p>
+      <p class="date">Tuesday, February 10, 2026</p>
     </div>
 
     
@@ -980,7 +980,7 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for single b
   <div class="container">
     <div class="header">
       <h1>ZeroToShip</h1>
-      <p class="date">Monday, February 9, 2026</p>
+      <p class="date">Tuesday, February 10, 2026</p>
     </div>
 
     

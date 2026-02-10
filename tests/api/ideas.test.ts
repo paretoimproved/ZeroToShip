@@ -23,49 +23,7 @@ import {
   ApiErrorSchema,
 } from '../../src/api/schemas';
 import { expectSchemaValid, expectSchemaInvalid } from './helpers';
-
-// Mock idea for testing
-const mockIdea: IdeaBrief = {
-  id: '123e4567-e89b-12d3-a456-426614174000',
-  name: 'Test Idea',
-  tagline: 'A test idea for testing',
-  priorityScore: 85.5,
-  effortEstimate: 'week',
-  revenueEstimate: '$10k-50k/mo',
-  category: 'developer-tools',
-
-  problemStatement: 'Developers waste time on repetitive tasks',
-  targetAudience: 'Software developers',
-  marketSize: '$5B globally',
-
-  existingSolutions: 'Various automation tools',
-  gaps: 'No integrated solution',
-
-  proposedSolution: 'An all-in-one automation platform',
-  keyFeatures: ['Feature 1', 'Feature 2', 'Feature 3'],
-  mvpScope: 'Core automation features',
-
-  technicalSpec: {
-    stack: ['TypeScript', 'Node.js', 'PostgreSQL'],
-    architecture: 'Microservices',
-    estimatedEffort: '2-3 weeks',
-  },
-
-  businessModel: {
-    pricing: 'Freemium with $19/mo Pro tier',
-    revenueProjection: '$10k MRR by month 6',
-    monetizationPath: 'SaaS subscriptions',
-  },
-
-  goToMarket: {
-    launchStrategy: 'ProductHunt launch',
-    channels: ['Twitter', 'Reddit', 'HackerNews'],
-    firstCustomers: 'Indie hackers',
-  },
-
-  risks: ['Competition', 'Market timing'],
-  generatedAt: '2026-01-31T10:00:00.000Z',
-};
+import { mockIdea, makeIdeaBrief } from '../fixtures';
 
 describe('Tier Filtering', () => {
   describe('filterIdeaForTier', () => {

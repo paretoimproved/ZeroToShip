@@ -24,6 +24,7 @@ import {
   type BatchDeliveryResult,
 } from '../../src/delivery/email';
 import type { IdeaBrief } from '../../src/generation/brief-generator';
+import { makeGenerationBrief, makeGenerationBriefs } from '../fixtures';
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -33,53 +34,11 @@ global.fetch = mockFetch;
 // Test data factories
 // ---------------------------------------------------------------------------
 
-function createMockBrief(overrides: Partial<IdeaBrief> = {}): IdeaBrief {
-  return {
-    id: 'brief_stable_id',
-    name: 'TestIdea',
-    tagline: 'A test idea for testing purposes',
-    priorityScore: 8.5,
-    effortEstimate: 'weekend',
-    revenueEstimate: '$10K MRR',
-    problemStatement: 'Users struggle with testing email systems',
-    targetAudience: 'Developers building email features',
-    marketSize: '$1B market',
-    existingSolutions: 'Manual testing, expensive tools',
-    gaps: 'No simple automated testing solution',
-    proposedSolution: 'Automated email testing framework',
-    keyFeatures: ['Feature 1', 'Feature 2', 'Feature 3', 'Feature 4'],
-    mvpScope: 'Basic email testing with assertions',
-    technicalSpec: {
-      stack: ['TypeScript', 'Node.js', 'Vitest'],
-      architecture: 'Modular testing framework',
-      estimatedEffort: 'weekend',
-    },
-    businessModel: {
-      pricing: 'Freemium with Pro tier',
-      revenueProjection: '$10K MRR in 6 months',
-      monetizationPath: 'Free tier converts to paid',
-    },
-    goToMarket: {
-      launchStrategy: 'Launch on Product Hunt',
-      channels: ['Twitter', 'Reddit', 'HN'],
-      firstCustomers: 'Indie hackers and startups',
-    },
-    risks: ['Competition from existing tools', 'Market saturation'],
-    generatedAt: new Date('2026-01-15T00:00:00Z'),
-    ...overrides,
-  };
-}
+const createMockBrief = (overrides: Partial<IdeaBrief> = {}): IdeaBrief =>
+  makeGenerationBrief({ id: 'brief_stable_id', ...overrides });
 
-function createMockBriefs(count: number): IdeaBrief[] {
-  return Array.from({ length: count }, (_, i) =>
-    createMockBrief({
-      id: `brief_${i}`,
-      name: `Idea ${i + 1}`,
-      tagline: `Tagline for idea ${i + 1}`,
-      priorityScore: 10 - i * 0.5,
-    })
-  );
-}
+const createMockBriefs = (count: number): IdeaBrief[] =>
+  makeGenerationBriefs(count);
 
 function mockResendSuccess(messageId = 'msg_123456') {
   mockFetch.mockResolvedValueOnce({

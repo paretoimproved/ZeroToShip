@@ -17,6 +17,7 @@ import type { ProblemCluster, ScoredProblem } from '../../src/analysis';
 import type { GapAnalysis } from '../../src/analysis/gap-analyzer';
 import type { IdeaBrief } from '../../src/generation';
 import type { PipelineConfig } from '../../src/scheduler/types';
+import { makeGenerationBrief } from '../fixtures';
 
 // Mock all scrapers
 vi.mock('../../src/scrapers/reddit', () => ({
@@ -170,42 +171,8 @@ function createMockGap(problemId: string): GapAnalysis {
   };
 }
 
-function createMockBrief(overrides: Partial<IdeaBrief> = {}): IdeaBrief {
-  return {
-    id: `brief_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-    name: 'TestApp',
-    tagline: 'Test tagline',
-    priorityScore: 18,
-    effortEstimate: 'week',
-    revenueEstimate: '$10K MRR',
-    problemStatement: 'Test problem',
-    targetAudience: 'Developers',
-    marketSize: 'Large',
-    existingSolutions: 'None',
-    gaps: 'Many gaps',
-    proposedSolution: 'Our solution',
-    keyFeatures: ['Feature 1'],
-    mvpScope: 'Basic MVP',
-    technicalSpec: {
-      stack: ['TypeScript'],
-      architecture: 'Monolith',
-      estimatedEffort: '1 week',
-    },
-    businessModel: {
-      pricing: '$10/mo',
-      revenueProjection: '$10K',
-      monetizationPath: 'SaaS',
-    },
-    goToMarket: {
-      launchStrategy: 'Product Hunt',
-      channels: ['Twitter'],
-      firstCustomers: 'Indie hackers',
-    },
-    risks: ['Competition'],
-    generatedAt: new Date(),
-    ...overrides,
-  };
-}
+const createMockBrief = (overrides: Partial<IdeaBrief> = {}): IdeaBrief =>
+  makeGenerationBrief(overrides);
 
 /**
  * Helper to set up all mocks for a full successful pipeline run.
