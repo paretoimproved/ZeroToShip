@@ -6,6 +6,7 @@ import IdeaBriefCard from "@/components/IdeaBriefCard";
 import ProtectedLayout from "@/components/ProtectedLayout";
 import { useAuth } from "@/components/AuthProvider";
 import { api } from "@/lib/api";
+import { normalizeIdeas } from "@/lib/normalize";
 import type { IdeaBrief } from "@/lib/types";
 
 // Mock data for fallback when API is unavailable
@@ -56,27 +57,7 @@ export default function HomePage() {
     async function fetchIdeas() {
       try {
         const data = await api.getTodayIdeas();
-
-        // getTodayIdeas returns { ideas: IdeaSummary[] } where each summary
-        // has an optional `brief` field with the full data (pro/enterprise only)
-        type IdeaSummaryResponse = IdeaBrief & { brief?: IdeaBrief };
-        type ApiResponse = IdeaSummaryResponse[] | { ideas: IdeaSummaryResponse[] };
-        const response = data as unknown as ApiResponse;
-        const raw: IdeaSummaryResponse[] = Array.isArray(response) ? response : response.ideas ?? [];
-
-        // Unwrap: if the summary has a nested `brief`, merge it into the top level
-        const ideas: IdeaBrief[] = raw.map((d) => {
-          const brief = d.brief || d;
-          return {
-            ...brief,
-            id: d.id || brief.id,
-            name: d.name || brief.name,
-            tagline: d.tagline || brief.tagline,
-            priorityScore: d.priorityScore ?? brief.priorityScore,
-            effortEstimate: d.effortEstimate || brief.effortEstimate || "week",
-            generatedAt: d.generatedAt || brief.generatedAt,
-          };
-        });
+        const ideas = normalizeIdeas(data);
 
         setIdeas(ideas);
         setSource("api");

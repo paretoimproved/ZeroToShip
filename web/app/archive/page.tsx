@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import IdeaBriefCard from "@/components/IdeaBriefCard";
+import { Spinner } from "@/components/icons";
 import { useAuth } from "@/components/AuthProvider";
 import { api } from "@/lib/api";
+import { normalizeIdeas } from "@/lib/normalize";
 import type { IdeaBrief, EffortLevel } from "@/lib/types";
 
 const PAGE_SIZE = 24;
@@ -161,28 +163,6 @@ export default function ArchivePage() {
 
   const closeModal = useCallback(() => setSelectedIdea(null), []);
 
-  // Parse API response into IdeaBrief[]
-  const parseResponse = useCallback((data: unknown): IdeaBrief[] => {
-    type IdeaSummaryResponse = IdeaBrief & { brief?: IdeaBrief };
-    type ApiResponse = IdeaSummaryResponse[] | { ideas: IdeaSummaryResponse[]; data?: IdeaSummaryResponse[] };
-    const response = data as ApiResponse;
-    const rawItems: IdeaSummaryResponse[] = Array.isArray(response)
-      ? response
-      : response.ideas ?? response.data ?? [];
-    return rawItems.map((d) => {
-      const brief = d.brief || d;
-      return {
-        ...brief,
-        id: d.id || brief.id,
-        name: d.name || brief.name,
-        tagline: d.tagline || brief.tagline,
-        priorityScore: d.priorityScore ?? brief.priorityScore,
-        effortEstimate: d.effortEstimate || brief.effortEstimate || "week",
-        generatedAt: d.generatedAt || brief.generatedAt,
-      };
-    });
-  }, []);
-
   // Initial fetch (page 1)
   useEffect(() => {
     let cancelled = false;
@@ -195,7 +175,7 @@ export default function ArchivePage() {
       try {
         const data = await api.getArchive({ page: 1, pageSize: PAGE_SIZE });
         if (cancelled) return;
-        const results = parseResponse(data);
+        const results = normalizeIdeas(data);
         setAllIdeas(results);
         setTotal(data.total ?? results.length);
         setHasMore(data.hasMore ?? results.length >= PAGE_SIZE);
@@ -211,7 +191,7 @@ export default function ArchivePage() {
     }
     fetchInitial();
     return () => { cancelled = true; };
-  }, [parseResponse, fetchKey]);
+  }, [fetchKey]);
 
   // Load next page
   const loadMore = useCallback(async () => {
@@ -219,7 +199,7 @@ export default function ArchivePage() {
     setLoadingMore(true);
     try {
       const data = await api.getArchive({ page, pageSize: PAGE_SIZE });
-      const results = parseResponse(data);
+      const results = normalizeIdeas(data);
       setAllIdeas((prev) => {
         const existingIds = new Set(prev.map((i) => i.id));
         const newItems = results.filter((i) => !existingIds.has(i.id));
@@ -233,7 +213,7 @@ export default function ArchivePage() {
     } finally {
       setLoadingMore(false);
     }
-  }, [page, hasMore, loadingMore, parseResponse, allIdeas.length]);
+  }, [page, hasMore, loadingMore, allIdeas.length]);
 
   // Ref to always have the latest loadMore (avoids stale closures in scroll handler)
   const loadMoreRef = useRef(loadMore);
@@ -440,26 +420,7 @@ export default function ArchivePage() {
 
           {loadingMore && (
             <div className="flex justify-center py-8">
-              <svg
-                className="animate-spin h-6 w-6 text-primary-500"
-                fill="none"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                />
-              </svg>
+              <Spinner className="h-6 w-6 text-primary-500" />
             </div>
           )}
 
