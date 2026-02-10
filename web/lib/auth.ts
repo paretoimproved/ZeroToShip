@@ -111,24 +111,44 @@ export async function loginWithOAuth(provider: OAuthProvider): Promise<void> {
 }
 
 /**
- * Handle the OAuth callback by extracting the session from the URL hash.
+ * Handle the OAuth callback after Supabase redirects back to our app.
  * Called by AuthProvider on mount to detect OAuth redirects.
+ *
+ * Supabase JS v2.39+ defaults to PKCE flow, which puts a `code` param
+ * in the query string (not an access_token in the hash). We exchange
+ * that code for a session via the Supabase client.
+ *
  * Returns the access token if an OAuth session was found, null otherwise.
  */
 export async function handleOAuthCallback(): Promise<string | null> {
-  // Supabase puts tokens in the URL hash after OAuth redirect
   if (typeof window === "undefined") return null;
 
+  // PKCE flow (default in supabase-js v2.39+): code in query string
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get("code");
+
+  if (code) {
+    const { supabase } = await import("./supabase");
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
+    if (error || !data.session) return null;
+
+    const accessToken = data.session.access_token;
+    setToken(accessToken);
+
+    // Clean the URL
+    window.history.replaceState(null, "", window.location.pathname);
+    return accessToken;
+  }
+
+  // Implicit flow fallback: tokens in URL hash
   const hashParams = new URLSearchParams(window.location.hash.substring(1));
   const accessToken = hashParams.get("access_token");
 
   if (!accessToken) return null;
 
-  // Store the token
   setToken(accessToken);
-
-  // Clean the URL hash
-  window.history.replaceState(null, "", window.location.pathname + window.location.search);
+  window.history.replaceState(null, "", window.location.pathname);
 
   return accessToken;
 }
