@@ -114,40 +114,34 @@ export async function loginWithOAuth(provider: OAuthProvider): Promise<void> {
  * Handle the OAuth callback after Supabase redirects back to our app.
  * Called by AuthProvider on mount to detect OAuth redirects.
  *
- * Supabase JS v2.39+ defaults to PKCE flow, which puts a `code` param
- * in the query string (not an access_token in the hash). We exchange
- * that code for a session via the Supabase client.
+ * The Supabase client automatically detects PKCE `?code=` params and
+ * implicit `#access_token=` fragments during initialization and exchanges
+ * them for a session internally. We just need to call getSession() which
+ * waits for that initialization to complete, then grab the access token.
  *
  * Returns the access token if an OAuth session was found, null otherwise.
  */
 export async function handleOAuthCallback(): Promise<string | null> {
   if (typeof window === "undefined") return null;
 
-  // PKCE flow (default in supabase-js v2.39+): code in query string
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get("code");
+  // Only run when OAuth callback indicators are present in the URL
+  const hasCode = window.location.search.includes("code=");
+  const hasHashToken = window.location.hash.includes("access_token");
 
-  if (code) {
-    const { supabase } = await import("./supabase");
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+  if (!hasCode && !hasHashToken) return null;
 
-    if (error || !data.session) return null;
+  const { supabase } = await import("./supabase");
 
-    const accessToken = data.session.access_token;
-    setToken(accessToken);
+  // getSession() waits for the client's internal initialization which
+  // auto-handles PKCE code exchange and implicit token extraction.
+  const { data: { session }, error } = await supabase.auth.getSession();
 
-    // Clean the URL
-    window.history.replaceState(null, "", window.location.pathname);
-    return accessToken;
-  }
+  if (error || !session) return null;
 
-  // Implicit flow fallback: tokens in URL hash
-  const hashParams = new URLSearchParams(window.location.hash.substring(1));
-  const accessToken = hashParams.get("access_token");
-
-  if (!accessToken) return null;
-
+  const accessToken = session.access_token;
   setToken(accessToken);
+
+  // Clean OAuth params from URL
   window.history.replaceState(null, "", window.location.pathname);
 
   return accessToken;
