@@ -107,6 +107,7 @@ export default function ArchivePage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [selectedIdea, setSelectedIdea] = useState<IdeaBrief | null>(null);
+  const [fetchKey, setFetchKey] = useState(0);
   const { isAuthenticated } = useAuth();
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -204,7 +205,7 @@ export default function ArchivePage() {
     }
     fetchInitial();
     return () => { cancelled = true; };
-  }, [parseResponse]);
+  }, [parseResponse, fetchKey]);
 
   // Load next page
   const loadMore = useCallback(async () => {
@@ -380,7 +381,7 @@ export default function ArchivePage() {
           <p className="mt-2 text-sm text-red-500 dark:text-red-400">{error}</p>
           <div className="mt-6">
             <button
-              onClick={() => setMinScore((s) => s)}
+              onClick={() => setFetchKey((k) => k + 1)}
               className="rounded-lg bg-primary-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
             >
               Try Again
