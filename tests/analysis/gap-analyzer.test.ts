@@ -3,6 +3,12 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+// Safety net: prevent any real HTTP calls to Anthropic API
+// The competitor module (called by gap-analyzer) uses fetch() to call Anthropic
+const mockFetch = vi.fn().mockRejectedValue(new Error('Real fetch called — test is missing a mock'));
+vi.stubGlobal('fetch', mockFetch);
+
 import { _resetConfigForTesting } from '../../src/config/env';
 import type { RawPost } from '../../src/scrapers/types';
 import type { ProblemCluster } from '../../src/analysis/deduplicator';
@@ -416,6 +422,10 @@ describe('Competitor Analysis Module', () => {
 });
 
 describe('Gap Analyzer Module', () => {
+  beforeEach(() => {
+    mockFetch.mockClear();
+  });
+
   describe('analyzeGaps', () => {
     it('skips analysis for low frequency problems', async () => {
       const cluster = createMockCluster({ frequency: 1 });

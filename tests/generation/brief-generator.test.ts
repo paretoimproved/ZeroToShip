@@ -3,6 +3,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// Safety net: prevent any real HTTP calls to Anthropic API
+const mockFetch = vi.fn().mockRejectedValue(new Error('Real fetch called — test is missing a mock'));
+vi.stubGlobal('fetch', mockFetch);
+
 import type { RawPost } from '../../src/scrapers/types';
 import type { ProblemCluster } from '../../src/analysis/deduplicator';
 import type { ScoredProblem } from '../../src/analysis/scorer';
@@ -324,12 +329,16 @@ describe('Templates', () => {
 });
 
 describe('Brief Generator', () => {
+  beforeEach(() => {
+    mockFetch.mockClear();
+  });
+
   describe('generateBrief', () => {
     it('generates fallback brief without API key', async () => {
       const problem = createMockScoredProblem();
       const gaps = createMockGapAnalysis({ problemId: problem.id });
 
-      const brief = await generateBrief(problem, gaps, { openaiApiKey: '' });
+      const brief = await generateBrief(problem, gaps, { anthropicApiKey: '' });
 
       expect(brief).toBeDefined();
       expect(brief.id).toMatch(/^brief_/);
@@ -341,7 +350,7 @@ describe('Brief Generator', () => {
       const problem = createMockScoredProblem();
       const gaps = createMockGapAnalysis({ problemId: problem.id });
 
-      const brief = await generateBrief(problem, gaps, { openaiApiKey: '' });
+      const brief = await generateBrief(problem, gaps, { anthropicApiKey: '' });
 
       expect(brief.technicalSpec.stack.length).toBeGreaterThan(0);
       expect(brief.technicalSpec.architecture).toBeDefined();
@@ -363,7 +372,7 @@ describe('Brief Generator', () => {
       });
       const gaps = createMockGapAnalysis({ problemId: problem.id });
 
-      const brief = await generateBrief(problem, gaps, { openaiApiKey: '' });
+      const brief = await generateBrief(problem, gaps, { anthropicApiKey: '' });
 
       expect(brief.effortEstimate).toBe('weekend');
     });
@@ -378,7 +387,7 @@ describe('Brief Generator', () => {
       });
       const gaps = createMockGapAnalysis({ problemId: problem.id });
 
-      const brief = await generateBrief(problem, gaps, { openaiApiKey: '' });
+      const brief = await generateBrief(problem, gaps, { anthropicApiKey: '' });
 
       expect(brief.sources).toBeDefined();
       expect(brief.sources.length).toBe(3);
@@ -399,7 +408,7 @@ describe('Brief Generator', () => {
       });
       const gaps = createMockGapAnalysis({ problemId: problem.id });
 
-      const brief = await generateBrief(problem, gaps, { openaiApiKey: '' });
+      const brief = await generateBrief(problem, gaps, { anthropicApiKey: '' });
 
       expect(brief.sources.length).toBe(5);
       // First should be highest engagement
@@ -417,7 +426,7 @@ describe('Brief Generator', () => {
       });
       const gaps = createMockGapAnalysis({ problemId: problem.id });
 
-      const brief = await generateBrief(problem, gaps, { openaiApiKey: '' });
+      const brief = await generateBrief(problem, gaps, { anthropicApiKey: '' });
 
       expect(brief.sources.length).toBe(2);
       expect(brief.sources.every(s => s.url && typeof s.url === 'string')).toBe(true);
@@ -432,7 +441,7 @@ describe('Brief Generator', () => {
       });
       const gaps = createMockGapAnalysis({ problemId: problem.id });
 
-      const brief = await generateBrief(problem, gaps, { openaiApiKey: '' });
+      const brief = await generateBrief(problem, gaps, { anthropicApiKey: '' });
 
       expect(brief.sources.length).toBe(1);
       expect(brief.sources[0].title).toBe('Solo post');
@@ -445,7 +454,7 @@ describe('Brief Generator', () => {
       });
       const gaps = createMockGapAnalysis({ problemId: problem.id });
 
-      const brief = await generateBrief(problem, gaps, { openaiApiKey: '' });
+      const brief = await generateBrief(problem, gaps, { anthropicApiKey: '' });
 
       expect(brief.sources.length).toBe(1);
       expect(brief.sources[0].score).toBe(0);
@@ -463,7 +472,7 @@ describe('Brief Generator', () => {
       });
       const gaps = createMockGapAnalysis({ problemId: problem.id });
 
-      const brief = await generateBrief(problem, gaps, { openaiApiKey: '' });
+      const brief = await generateBrief(problem, gaps, { anthropicApiKey: '' });
 
       expect(brief.sources.length).toBe(2);
       // Both should produce valid ISO strings
@@ -484,7 +493,7 @@ describe('Brief Generator', () => {
         gaps: ['Gap 1', 'Gap 2'],
       });
 
-      const brief = await generateBrief(problem, gaps, { openaiApiKey: '' });
+      const brief = await generateBrief(problem, gaps, { anthropicApiKey: '' });
 
       expect(brief.existingSolutions).toContain('Competitor1');
       expect(brief.existingSolutions).toContain('Competitor2');
@@ -508,7 +517,7 @@ describe('Brief Generator', () => {
       gapMap.set('p1', createMockGapAnalysis({ problemId: 'p1' }));
       gapMap.set('p2', createMockGapAnalysis({ problemId: 'p2' }));
 
-      const briefs = await generateAllBriefs(problems, gapMap, { openaiApiKey: '' });
+      const briefs = await generateAllBriefs(problems, gapMap, { anthropicApiKey: '' });
 
       expect(briefs.length).toBe(2);
     });
@@ -518,7 +527,7 @@ describe('Brief Generator', () => {
         createMockScoredProblem({ id: 'p1' }),
       ];
 
-      const briefs = await generateAllBriefs(problems, new Map(), { openaiApiKey: '' });
+      const briefs = await generateAllBriefs(problems, new Map(), { anthropicApiKey: '' });
 
       expect(briefs.length).toBe(1);
       expect(briefs[0].gaps).toContain('');
@@ -534,7 +543,7 @@ describe('Brief Generator', () => {
       const gapMap = new Map<string, GapAnalysis>();
       problems.forEach(p => gapMap.set(p.id, createMockGapAnalysis({ problemId: p.id })));
 
-      const briefs = await generateAllBriefs(problems, gapMap, { openaiApiKey: '' });
+      const briefs = await generateAllBriefs(problems, gapMap, { anthropicApiKey: '' });
 
       expect(briefs[0].priorityScore).toBe(30);
       expect(briefs[1].priorityScore).toBe(20);
