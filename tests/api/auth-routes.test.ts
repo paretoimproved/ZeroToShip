@@ -127,6 +127,51 @@ vi.mock('../../src/api/services/ideas', () => ({
   exportIdeas: vi.fn().mockResolvedValue([]),
 }));
 
+// Mock config — provide Supabase env vars so the supabase client is created
+vi.mock('../../src/config/env', () => ({
+  config: {
+    NODE_ENV: 'test',
+    PORT: 3001,
+    HOST: '0.0.0.0',
+    LOG_LEVEL: 'error',
+    CORS_ORIGIN: 'http://localhost:3000',
+    DATABASE_URL: '',
+    SUPABASE_DB_URL: '',
+    SUPABASE_URL: 'https://test.supabase.co',
+    SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
+    ANTHROPIC_API_KEY: '',
+    OPENAI_API_KEY: '',
+    RESEND_API_KEY: '',
+    GITHUB_TOKEN: undefined,
+    TWITTER_BEARER_TOKEN: undefined,
+    NITTER_INSTANCES: undefined,
+    SERPAPI_KEY: '',
+    BRAVE_API_KEY: '',
+    STRIPE_SECRET_KEY: '',
+    STRIPE_WEBHOOK_SECRET: '',
+    STRIPE_PRICE_PRO_MONTHLY: '',
+    STRIPE_PRICE_PRO_YEARLY: '',
+    STRIPE_PRICE_ENT_MONTHLY: '',
+    STRIPE_PRICE_ENT_YEARLY: '',
+    CHECKOUT_SUCCESS_URL: 'http://localhost:3000/account?session_id={CHECKOUT_SESSION_ID}',
+    CHECKOUT_CANCEL_URL: 'http://localhost:3000/pricing',
+    BILLING_PORTAL_RETURN_URL: 'http://localhost:3000/account',
+    ADMIN_EMAILS: '',
+    REDIS_URL: undefined,
+    SCHEDULER_CRON: '0 6 * * *',
+    SCHEDULER_TIMEZONE: 'America/New_York',
+    SCHEDULER_ENABLED: true,
+    // Derived AppConfig fields
+    databaseUrl: '',
+    isProduction: false,
+    isTest: true,
+    logLevel: 'error',
+    corsOrigins: ['http://localhost:3000'],
+    nitterInstances: undefined,
+    adminEmails: new Set(),
+  },
+}));
+
 // Mock rate limit middleware
 vi.mock('../../src/api/middleware/rateLimit', () => ({
   rateLimitMiddleware: vi.fn().mockImplementation(async () => {}),
