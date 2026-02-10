@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import IdeaBriefCard from "@/components/IdeaBriefCard";
 import { useAuth } from "@/components/AuthProvider";
 import { api } from "@/lib/api";
 import type { IdeaBrief, EffortLevel } from "@/lib/types";
+
+const PAGE_SIZE = 24;
 
 const effortOptions: { value: EffortLevel | "all"; label: string }[] = [
   { value: "all", label: "All Efforts" },
@@ -97,12 +99,36 @@ export default function ArchivePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [effortFilter, setEffortFilter] = useState<EffortLevel | "all">("all");
   const [minScore, setMinScore] = useState(0);
-  const [ideas, setIdeas] = useState<IdeaBrief[]>([]);
+  const [allIdeas, setAllIdeas] = useState<IdeaBrief[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [selectedIdea, setSelectedIdea] = useState<IdeaBrief | null>(null);
   const { isAuthenticated } = useAuth();
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // Client-side filtering on accumulated ideas
+  const filteredIdeas = useMemo(() => {
+    let results = allIdeas;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      results = results.filter(
+        (idea) =>
+          idea.name.toLowerCase().includes(q) ||
+          idea.tagline.toLowerCase().includes(q)
+      );
+    }
+    if (effortFilter !== "all") {
+      results = results.filter((idea) => idea.effortEstimate === effortFilter);
+    }
+    if (minScore > 0) {
+      results = results.filter((idea) => idea.priorityScore >= minScore);
+    }
+    return results;
+  }, [allIdeas, searchQuery, effortFilter, minScore]);
 
   // Escape key to close modal
   useEffect(() => {
@@ -128,68 +154,96 @@ export default function ArchivePage() {
 
   const closeModal = useCallback(() => setSelectedIdea(null), []);
 
+  // Parse API response into IdeaBrief[]
+  const parseResponse = useCallback((data: unknown): IdeaBrief[] => {
+    type IdeaSummaryResponse = IdeaBrief & { brief?: IdeaBrief };
+    type ApiResponse = IdeaSummaryResponse[] | { ideas: IdeaSummaryResponse[]; data?: IdeaSummaryResponse[] };
+    const response = data as ApiResponse;
+    const rawItems: IdeaSummaryResponse[] = Array.isArray(response)
+      ? response
+      : response.ideas ?? response.data ?? [];
+    return rawItems.map((d) => {
+      const brief = d.brief || d;
+      return {
+        ...brief,
+        id: d.id || brief.id,
+        name: d.name || brief.name,
+        tagline: d.tagline || brief.tagline,
+        priorityScore: d.priorityScore ?? brief.priorityScore,
+        effortEstimate: d.effortEstimate || brief.effortEstimate || "week",
+        generatedAt: d.generatedAt || brief.generatedAt,
+      };
+    });
+  }, []);
+
+  // Initial fetch (page 1)
   useEffect(() => {
-    async function fetchArchive() {
+    let cancelled = false;
+    async function fetchInitial() {
       setLoading(true);
       setError(null);
+      setAllIdeas([]);
+      setPage(1);
+      setHasMore(true);
       try {
-        const params = new URLSearchParams();
-        if (searchQuery) params.set("q", searchQuery);
-        if (effortFilter !== "all") params.set("effort", effortFilter);
-        if (minScore > 0) params.set("minScore", minScore.toString());
-        params.set("pageSize", "50");
-
-        const data = await api.getArchive({ pageSize: 50 });
-
-        // API returns { ideas: IdeaSummary[] } — unwrap nested brief field
-        type IdeaSummaryResponse = IdeaBrief & { brief?: IdeaBrief };
-        type ApiResponse = IdeaSummaryResponse[] | { ideas: IdeaSummaryResponse[]; data?: IdeaSummaryResponse[] };
-        const response = data as unknown as ApiResponse;
-        const rawItems: IdeaSummaryResponse[] = Array.isArray(response)
-          ? response
-          : response.ideas ?? response.data ?? [];
-        let results: IdeaBrief[] = rawItems.map((d) => {
-          const brief = d.brief || d;
-          return {
-            ...brief,
-            id: d.id || brief.id,
-            name: d.name || brief.name,
-            tagline: d.tagline || brief.tagline,
-            priorityScore: d.priorityScore ?? brief.priorityScore,
-            effortEstimate: d.effortEstimate || brief.effortEstimate || "week",
-            generatedAt: d.generatedAt || brief.generatedAt,
-          };
-        });
-        // Client-side filtering (archive endpoint returns all ideas)
-        if (searchQuery) {
-          const q = searchQuery.toLowerCase();
-          results = results.filter(
-            (idea) =>
-              idea.name.toLowerCase().includes(q) ||
-              idea.tagline.toLowerCase().includes(q)
-          );
-        }
-        if (effortFilter !== "all") {
-          results = results.filter((idea) => idea.effortEstimate === effortFilter);
-        }
-        if (minScore > 0) {
-          results = results.filter((idea) => idea.priorityScore >= minScore);
-        }
-
-        setIdeas(results);
+        const data = await api.getArchive({ page: 1, pageSize: PAGE_SIZE });
+        if (cancelled) return;
+        const results = parseResponse(data);
+        setAllIdeas(results);
         setTotal(data.total ?? results.length);
+        setHasMore(data.hasMore ?? results.length >= PAGE_SIZE);
+        setPage(2);
       } catch (err) {
+        if (cancelled) return;
         console.error("Failed to fetch archive:", err);
         setError("Failed to load archive. Please try again later.");
-        setIdeas([]);
+        setAllIdeas([]);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
+    fetchInitial();
+    return () => { cancelled = true; };
+  }, [parseResponse]);
 
-    const debounce = setTimeout(fetchArchive, 300);
-    return () => clearTimeout(debounce);
-  }, [searchQuery, effortFilter, minScore]);
+  // Load next page
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const data = await api.getArchive({ page, pageSize: PAGE_SIZE });
+      const results = parseResponse(data);
+      setAllIdeas((prev) => {
+        const existingIds = new Set(prev.map((i) => i.id));
+        const newItems = results.filter((i) => !existingIds.has(i.id));
+        return [...prev, ...newItems];
+      });
+      setTotal(data.total ?? (allIdeas.length + results.length));
+      setHasMore(data.hasMore ?? results.length >= PAGE_SIZE);
+      setPage((p) => p + 1);
+    } catch (err) {
+      console.error("Failed to load more ideas:", err);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [page, hasMore, loadingMore, parseResponse, allIdeas.length]);
+
+  // IntersectionObserver for infinite scroll
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || loading) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+          loadMore();
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loading, loadMore]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
@@ -336,7 +390,7 @@ export default function ArchivePage() {
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {ideas.map((idea, i) => (
+            {filteredIdeas.map((idea, i) => (
               <CompactCard
                 key={idea.id}
                 idea={idea}
@@ -346,7 +400,7 @@ export default function ArchivePage() {
             ))}
           </div>
 
-          {ideas.length === 0 && (
+          {filteredIdeas.length === 0 && (
             <div className="text-center py-16">
               <svg
                 className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600"
@@ -371,10 +425,38 @@ export default function ArchivePage() {
             </div>
           )}
 
-          {ideas.length > 0 && (
-            <div className="mt-8 flex justify-center">
+          {/* Infinite scroll sentinel */}
+          <div ref={sentinelRef} className="h-1" />
+
+          {loadingMore && (
+            <div className="flex justify-center py-8">
+              <svg
+                className="animate-spin h-6 w-6 text-primary-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+            </div>
+          )}
+
+          {filteredIdeas.length > 0 && (
+            <div className="mt-4 flex justify-center">
               <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-400">
-                Showing {ideas.length} of {total} ideas
+                Showing {filteredIdeas.length} of {total} ideas
               </span>
             </div>
           )}
