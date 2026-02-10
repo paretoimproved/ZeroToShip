@@ -7,6 +7,7 @@
 import { generateAllBriefs, validateBriefQuality } from '../../generation/brief-generator';
 import type { ScoredProblem } from '../../analysis/scorer';
 import type { GapAnalysis } from '../../analysis/gap-analyzer';
+import { cosineSimilarity } from '../../analysis/similarity';
 import { createPhaseLogger } from '../utils/logger';
 import { AnalysisError, wrapError } from '../../lib/errors';
 import type {
@@ -16,6 +17,49 @@ import type {
 } from '../types';
 import { getPipelineBriefModel } from '../../config/models';
 import { db, ideas } from '../../api/db/client';
+
+/** Similarity threshold for post-filter deduplication of scored problems */
+const BRIEF_DEDUP_THRESHOLD = 0.85;
+
+/**
+ * Deduplicate scored problems by comparing cluster embeddings.
+ * Keeps the higher-priority problem when two are too similar.
+ * Returns up to `limit` deduplicated problems, backfilling from
+ * the remaining pool when duplicates are removed.
+ */
+function deduplicateByEmbedding(
+  problems: ScoredProblem[],
+  limit: number,
+  threshold: number = BRIEF_DEDUP_THRESHOLD,
+): { selected: ScoredProblem[]; removed: number } {
+  // Problems are already sorted by priority (descending) from the scorer
+  const selected: ScoredProblem[] = [];
+  let removed = 0;
+
+  for (const problem of problems) {
+    if (selected.length >= limit) break;
+
+    // Skip if embedding is missing
+    if (!problem.embedding || problem.embedding.length === 0) {
+      selected.push(problem);
+      continue;
+    }
+
+    // Check similarity against already-selected problems
+    const isDuplicate = selected.some((existing) => {
+      if (!existing.embedding || existing.embedding.length === 0) return false;
+      return cosineSimilarity(problem.embedding, existing.embedding) >= threshold;
+    });
+
+    if (isDuplicate) {
+      removed++;
+    } else {
+      selected.push(problem);
+    }
+  }
+
+  return { selected, removed };
+}
 
 /**
  * Run the generate phase
@@ -35,10 +79,19 @@ export async function runGeneratePhase(
   );
 
   try {
-    // Filter by minimum priority and limit count
-    const filteredProblems = scoredProblems
-      .filter((p) => p.scores.priority >= config.minPriorityScore)
-      .slice(0, config.maxBriefs);
+    // Filter by minimum priority, then deduplicate similar problems
+    const eligibleProblems = scoredProblems
+      .filter((p) => p.scores.priority >= config.minPriorityScore);
+
+    const { selected: filteredProblems, removed: dedupRemoved } =
+      deduplicateByEmbedding(eligibleProblems, config.maxBriefs);
+
+    if (dedupRemoved > 0) {
+      logger.info(
+        { removed: dedupRemoved, threshold: BRIEF_DEDUP_THRESHOLD },
+        'Removed similar problems via embedding deduplication'
+      );
+    }
 
     logger.debug(
       { filteredCount: filteredProblems.length },
