@@ -448,7 +448,9 @@ export async function getArchivedIdeasForTier(
   tier: UserTier
 ): Promise<{ ideas: IdeaSummary[]; total: number; hasMore: boolean }> {
   const { ideas: allIdeas, total } = await getArchivedIdeas(query);
-  const { ideas: filtered } = filterIdeasForTier(allIdeas, tier);
+  // Apply per-idea field redaction (not the array-slicing tier limit,
+  // which is meant for the "today" endpoint — archive uses pagination instead)
+  const filtered = allIdeas.map((idea) => filterIdeaForTier(idea, tier));
   const hasMore = (Number(query.page) || 1) * (Number(query.pageSize) || 10) < total;
 
   return { ideas: filtered, total, hasMore };
