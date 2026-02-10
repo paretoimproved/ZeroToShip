@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import IdeaBriefCard from "@/components/IdeaBriefCard";
 import { useAuth } from "@/components/AuthProvider";
 import { api } from "@/lib/api";
@@ -14,6 +14,85 @@ const effortOptions: { value: EffortLevel | "all"; label: string }[] = [
   { value: "quarter", label: "Quarter+" },
 ];
 
+function getScoreCircleColor(score: number) {
+  if (score >= 80) return "bg-green-500";
+  if (score >= 60) return "bg-blue-500";
+  if (score >= 40) return "bg-yellow-500";
+  return "bg-gray-400";
+}
+
+function getEffortLabel(effort: EffortLevel) {
+  const labels: Record<EffortLevel, string> = {
+    weekend: "Weekend",
+    week: "1 Week",
+    month: "1 Month",
+    quarter: "Quarter+",
+  };
+  return labels[effort] || effort;
+}
+
+function getEffortBadgeColor(effort: EffortLevel) {
+  const colors: Record<EffortLevel, string> = {
+    weekend: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
+    week: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+    month: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+    quarter: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+  };
+  return colors[effort] || "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
+}
+
+function CompactCard({
+  idea,
+  index,
+  onClick,
+}: {
+  idea: IdeaBrief;
+  index: number;
+  onClick: () => void;
+}) {
+  const delay = Math.min(index, 8) * 150;
+
+  return (
+    <article
+      onClick={onClick}
+      className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:border-primary-400 dark:hover:border-primary-500 transition-all duration-200 animate-fade-in-up opacity-0"
+      style={{ animationDelay: `${delay}ms`, animationFillMode: "forwards" }}
+    >
+      {/* Top: score circle + name */}
+      <div className="flex items-center gap-3 mb-2">
+        <div
+          className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold ${getScoreCircleColor(idea.priorityScore)}`}
+        >
+          {idea.priorityScore.toFixed(0)}
+        </div>
+        <h3 className="font-mono text-sm font-bold text-gray-900 dark:text-white truncate">
+          {idea.name}
+        </h3>
+      </div>
+
+      {/* Tagline */}
+      <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-4">
+        {idea.tagline}
+      </p>
+
+      {/* Bottom: effort badge + revenue */}
+      <div className="flex items-center justify-between gap-2">
+        <span
+          className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full ${getEffortBadgeColor(idea.effortEstimate)}`}
+        >
+          {getEffortLabel(idea.effortEstimate)}
+        </span>
+        <span
+          title={idea.revenueEstimate}
+          className="text-xs font-medium text-emerald-700 dark:text-emerald-300 truncate max-w-[120px]"
+        >
+          {idea.revenueEstimate}
+        </span>
+      </div>
+    </article>
+  );
+}
+
 export default function ArchivePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [effortFilter, setEffortFilter] = useState<EffortLevel | "all">("all");
@@ -22,7 +101,32 @@ export default function ArchivePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
+  const [selectedIdea, setSelectedIdea] = useState<IdeaBrief | null>(null);
   const { isAuthenticated } = useAuth();
+
+  // Escape key to close modal
+  useEffect(() => {
+    if (!selectedIdea) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectedIdea(null);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [selectedIdea]);
+
+  // Lock body scroll while modal is open
+  useEffect(() => {
+    if (selectedIdea) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [selectedIdea]);
+
+  const closeModal = useCallback(() => setSelectedIdea(null), []);
 
   useEffect(() => {
     async function fetchArchive() {
@@ -88,7 +192,7 @@ export default function ArchivePage() {
   }, [searchQuery, effortFilter, minScore]);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8">
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
       <header className="mb-8">
         <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-4xl mb-2">
           Idea Archive
@@ -179,39 +283,23 @@ export default function ArchivePage() {
 
       {/* Results */}
       {loading ? (
-        <div className="space-y-6">
-          {[1, 2, 3].map((i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
-              className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden animate-pulse"
+              className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 animate-pulse"
             >
-              {/* Header skeleton */}
-              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-start gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-2" />
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="h-6 w-12 bg-gray-200 dark:bg-gray-700 rounded-full" />
-                    <div className="h-6 w-16 bg-gray-200 dark:bg-gray-700 rounded-full" />
-                    <div className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded-full" />
-                  </div>
-                </div>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
               </div>
-              {/* Tab bar skeleton */}
-              <div className="flex border-b border-gray-200 dark:border-gray-700 px-4 gap-4">
-                {[1, 2, 3, 4].map((j) => (
-                  <div key={j} className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded my-3" />
-                ))}
+              <div className="space-y-2 mb-4">
+                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-4/5" />
               </div>
-              {/* Panel skeleton */}
-              <div className="p-6 space-y-4">
-                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-24" />
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full" />
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6" />
-                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-24 mt-6" />
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+              <div className="flex items-center justify-between">
+                <div className="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                <div className="h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded" />
               </div>
             </div>
           ))}
@@ -247,13 +335,13 @@ export default function ArchivePage() {
         </div>
       ) : (
         <>
-          <div className="space-y-6">
-            {ideas.map((idea, index) => (
-              <IdeaBriefCard
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {ideas.map((idea, i) => (
+              <CompactCard
                 key={idea.id}
-                brief={idea}
-                index={index}
-                gated={!isAuthenticated}
+                idea={idea}
+                index={i}
+                onClick={() => setSelectedIdea(idea)}
               />
             ))}
           </div>
@@ -291,6 +379,51 @@ export default function ArchivePage() {
             </div>
           )}
         </>
+      )}
+
+      {/* Modal Overlay */}
+      {selectedIdea && (
+        <div
+          data-testid="idea-modal"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+        >
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-modal-backdrop"
+            onClick={closeModal}
+          />
+
+          {/* Card wrapper */}
+          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl animate-modal-card">
+            {/* Close button */}
+            <button
+              onClick={closeModal}
+              className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              aria-label="Close"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+
+            <IdeaBriefCard
+              brief={selectedIdea}
+              gated={!isAuthenticated}
+              defaultTab="problem"
+            />
+          </div>
+        </div>
       )}
     </div>
   );

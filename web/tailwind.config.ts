@@ -46,11 +46,21 @@ const config: Config = {
           "0%": { opacity: "0" },
           "100%": { opacity: "1" },
         },
+        "modal-backdrop-in": {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+        "modal-card-in": {
+          "0%": { opacity: "0", transform: "scale(0.93) translateY(10px)" },
+          "100%": { opacity: "1", transform: "scale(1) translateY(0)" },
+        },
       },
       animation: {
         "grid-rows-expand": "grid-rows-expand 300ms ease-out forwards",
         "fade-in-up": "fade-in-up 500ms ease-out forwards",
         "fade-in": "fade-in 500ms ease-out forwards",
+        "modal-backdrop": "modal-backdrop-in 200ms ease-out forwards",
+        "modal-card": "modal-card-in 300ms cubic-bezier(0.32, 0.72, 0, 1) forwards",
       },
       transitionDelay: {
         0: "0ms",
