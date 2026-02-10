@@ -15,9 +15,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // ============================================================================
 
 // Use vi.hoisted to ensure mock fns are available when vi.mock factories run
-const { mockGetUser } = vi.hoisted(() => ({
-  mockGetUser: vi.fn(),
-}));
+// Also set Supabase env vars before modules load so the supabase client is created
+// (without these, supabase = null in CI and optionalAuth skips JWT verification)
+const { mockGetUser } = vi.hoisted(() => {
+  process.env.SUPABASE_URL = process.env.SUPABASE_URL || 'https://test.supabase.co';
+  process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'test-service-key';
+  return { mockGetUser: vi.fn() };
+});
 
 vi.mock('@supabase/supabase-js', () => ({
   createClient: () => ({
