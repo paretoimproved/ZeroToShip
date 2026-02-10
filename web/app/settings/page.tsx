@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { isAuthenticated } from "@/lib/auth";
+import { useState } from "react";
+import ProtectedLayout from "@/components/ProtectedLayout";
 import { api } from "@/lib/api";
 import type { EffortLevel } from "@/lib/types";
 
@@ -49,36 +48,6 @@ const emailFrequencyLabels: Record<string, { title: string; description: string 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [saved, setSaved] = useState(false);
-  const [isAuth, setIsAuth] = useState(false);
-
-  useEffect(() => {
-    setIsAuth(isAuthenticated());
-  }, []);
-
-  if (!isAuth) {
-    return (
-      <div className="mx-auto max-w-2xl px-4 sm:px-6 py-8 text-center">
-        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-4xl mb-4">
-          Settings
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mb-8">
-          Sign in to access your settings and customize your experience.
-        </p>
-        <Link
-          href="/landing"
-          className="inline-block rounded-lg bg-primary-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
-        >
-          Sign Up
-        </Link>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
-          Already have an account?{" "}
-          <Link href="/login" className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
-            Sign In
-          </Link>
-        </p>
-      </div>
-    );
-  }
 
   const handleCategoryToggle = (category: string) => {
     setSettings((prev) => ({
@@ -116,6 +85,7 @@ export default function SettingsPage() {
   };
 
   return (
+    <ProtectedLayout>
     <div className="mx-auto max-w-2xl px-4 sm:px-6 py-8">
       <header className="mb-8">
         <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-4xl mb-2">
@@ -400,5 +370,6 @@ export default function SettingsPage() {
         </div>
       </div>
     </div>
+    </ProtectedLayout>
   );
 }

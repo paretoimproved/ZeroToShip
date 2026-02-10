@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import IdeaBriefCard from "@/components/IdeaBriefCard";
+import ProtectedLayout from "@/components/ProtectedLayout";
 import { useAuth } from "@/components/AuthProvider";
 import { api } from "@/lib/api";
 import type { IdeaBrief } from "@/lib/types";
@@ -92,6 +93,7 @@ export default function HomePage() {
   }, []);
 
   return (
+    <ProtectedLayout>
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8">
       <header className="mb-8">
         <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-4xl mb-2">
@@ -205,5 +207,6 @@ export default function HomePage() {
         </>
       )}
     </div>
+    </ProtectedLayout>
   );
 }

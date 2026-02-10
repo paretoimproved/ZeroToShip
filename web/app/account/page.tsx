@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
 import { api } from "@/lib/api";
-import { isAuthenticated } from "@/lib/auth";
+import ProtectedLayout from "@/components/ProtectedLayout";
 import { useAdmin } from "@/components/AdminProvider";
 import {
   createCheckoutSession,
@@ -80,14 +79,9 @@ export default function AccountPage() {
   const [error, setError] = useState<string | null>(null);
   const [upgradeLoading, setUpgradeLoading] = useState<string | null>(null);
   const [billingYearly, setBillingYearly] = useState(false);
-  const [isAuth, setIsAuth] = useState(false);
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
   const apiKeyDialogRef = useRef<HTMLDialogElement>(null);
-
-  useEffect(() => {
-    setIsAuth(isAuthenticated());
-  }, []);
 
   // Fetch subscription on mount
   useEffect(() => {
@@ -134,33 +128,9 @@ export default function AccountPage() {
     }
   };
 
-  if (!isAuth) {
-    return (
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8 text-center">
-        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-4xl mb-4">
-          Account
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mb-8">
-          Sign in to manage your account and subscription.
-        </p>
-        <Link
-          href="/signup"
-          className="inline-block rounded-lg bg-primary-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
-        >
-          Sign Up
-        </Link>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
-          Already have an account?{" "}
-          <Link href="/login" className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
-            Sign In
-          </Link>
-        </p>
-      </div>
-    );
-  }
-
   if (loading) {
     return (
+      <ProtectedLayout>
       <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8">
         <div className="animate-pulse space-y-8">
           <div>
@@ -191,12 +161,14 @@ export default function AccountPage() {
           </div>
         </div>
       </div>
+      </ProtectedLayout>
     );
   }
 
   const currentPlan = effectiveTier as "free" | "pro" | "enterprise";
 
   return (
+    <ProtectedLayout>
     <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8">
       <header className="mb-8">
         <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-4xl mb-2">
@@ -552,5 +524,6 @@ export default function AccountPage() {
         )}
       </section>
     </div>
+    </ProtectedLayout>
   );
 }
