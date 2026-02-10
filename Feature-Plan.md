@@ -34,7 +34,7 @@
 ### Scrapers
 - **Reddit**: 8 subreddits, JSON API, rate limiting, 50+ pain point signal patterns
 - **Hacker News**: Algolia API, Ask HN + Show HN comments
-- **Twitter**: API v2 with Nitter fallback (5 instances, auto-rotate)
+- **Twitter**: ~~API v2 with Nitter fallback~~ — **Non-functional** (no bearer token, all Nitter instances dead since 2023). Scheduled for replacement.
 - **GitHub**: Octokit REST, issue labels, repos with >500 stars
 
 ### Analysis Pipeline
@@ -59,6 +59,8 @@
 - [ ] Beta launch to 100 users
 - [ ] Monitoring and alerting
 - [ ] Automated pipeline failure notifications
+- [ ] **Replace Twitter scraper with Bluesky, dev.to, and Lobste.rs** — Twitter/X API costs $100/mo and all Nitter instances are dead. Replace with three free alternatives: Bluesky (AT Protocol, `@atproto/api`, social/microblogging), dev.to (REST API, developer articles), Lobste.rs (JSON API, tech link aggregator). All three are free with no API keys required (Bluesky has optional auth for higher rate limits). Plan details in `.claude/plans/glowing-imagining-karp.md`. Files to create: `src/scrapers/bluesky.ts`, `src/scrapers/devto.ts`, `src/scrapers/lobsters.ts` + tests. Files to update: `src/scrapers/types.ts`, `src/scheduler/types.ts`, `src/scheduler/phases/scrape.ts`, `src/scheduler/orchestrator.ts`, `src/config/env.ts`.
+- [ ] **Live Pipeline Logs in Admin Dashboard** — Currently scraper/analyzer logs go to stdout only (visible in Railway deploy logs, but ephemeral). Add DB-backed log capture so logs are viewable in the admin UI. Approach: new `pipeline_logs` table (runId, level, phase, message, data, timestamp) + custom Pino transport that inserts log entries alongside stdout + `GET /api/v1/admin/runs/:runId/logs` endpoint with phase/level filtering + SSE endpoint for live streaming during active runs + log viewer component (auto-scroll, level color coding, phase filter chips) wired into `/admin/runs/[runId]` and `/admin/pipeline`. Works because scheduler and API share the same Supabase Postgres instance. Estimated effort: 1-2 days. Files to create: Drizzle migration, `src/scheduler/utils/pino-db-transport.ts`, log viewer component. Files to modify: `src/api/db/schema.ts`, `src/scheduler/utils/logger.ts`, `src/api/routes/admin.ts`, `web/app/admin/runs/[runId]/page.tsx`, `web/app/admin/pipeline/page.tsx`.
 
 ---
 
@@ -109,7 +111,7 @@
 | **Multi-source scraping** | ✅ 4 platforms | ❌ Reddit only | ⚠️ Multiple (trends) | ⚠️ Social profiles | ⚠️ Google Trends+ | ❌ Curated manually | ✅ Multiple sources | ✅ Multiple sources |
 | **Reddit monitoring** | ✅ 8 subreddits + 50 signals | ✅ Full Reddit search | ⚠️ Trend detection only | ❌ | ✅ Subreddit trends | ❌ | ✅ Content monitoring | ✅ Full monitoring |
 | **HN scraping** | ✅ Algolia API | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **Twitter monitoring** | ✅ API v2 + Nitter | ❌ | ✅ Trend tracking | ⚠️ Audience data only | ❌ | ❌ | ✅ Content monitoring | ✅ Full monitoring |
+| **Twitter/social monitoring** | ⚠️ Broken (planned: Bluesky + dev.to + Lobste.rs) | ❌ | ✅ Trend tracking | ⚠️ Audience data only | ❌ | ❌ | ✅ Content monitoring | ✅ Full monitoring |
 | **GitHub issue tracking** | ✅ 500+ star repos | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **AI clustering** | ✅ Embeddings + cosine 0.85 | ⚠️ Keyword grouping | ⚠️ Topic clustering | ⚠️ Audience clustering | ⚠️ Trend grouping | ❌ Manual curation | ⚠️ Topic clustering | ✅ AI-powered |
 | **Pain point detection** | ✅ 50+ signal patterns | ✅ Keyword-based | ❌ Trend-focused | ❌ Audience-focused | ❌ Trend-focused | ⚠️ Manual selection | ❌ Content-focused | ⚠️ Sentiment only |

@@ -272,22 +272,30 @@ export class WebSearchClient {
   }
 
   /**
-   * Execute a search query
+   * Execute a search query with automatic fallback
    */
   async search(query: string): Promise<SearchResponse> {
     await this.rateLimit();
 
     const provider = this.getProvider();
 
-    switch (provider) {
-      case 'serpapi':
-        return this.searchSerpApi(query);
-      case 'brave':
-        return this.searchBrave(query);
-      case 'mock':
-      default:
-        return this.searchMock(query);
+    if (provider === 'serpapi') {
+      try {
+        return await this.searchSerpApi(query);
+      } catch (error) {
+        if (this.config.braveApiKey) {
+          logger.warn({ err: error, query }, 'SerpAPI failed, falling back to Brave Search');
+          return this.searchBrave(query);
+        }
+        throw error;
+      }
     }
+
+    if (provider === 'brave') {
+      return this.searchBrave(query);
+    }
+
+    return this.searchMock(query);
   }
 
   /**
