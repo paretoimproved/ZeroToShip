@@ -195,6 +195,7 @@ export const viewedIdeas = pgTable(
     viewedAt: timestamp('viewed_at').notNull().defaultNow(),
   },
   (table) => ({
+    userIdeaUnique: uniqueIndex('viewed_ideas_user_idea_idx').on(table.userId, table.ideaId),
     userIdx: index('viewed_ideas_user_idx').on(table.userId),
     ideaIdx: index('viewed_ideas_idea_idx').on(table.ideaId),
   })

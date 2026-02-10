@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS "viewed_ideas_user_idea_idx" ON "viewed_ideas" ("user_id","idea_id");

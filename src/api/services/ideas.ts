@@ -76,7 +76,8 @@ export async function getTodaysIdeas(): Promise<IdeaBrief[]> {
         lte(ideas.publishedAt, tomorrow)
       )
     )
-    .orderBy(desc(ideas.priorityScore));
+    .orderBy(desc(ideas.priorityScore))
+    .limit(20);
 
   return rows.map(rowToIdeaBrief);
 }
@@ -313,15 +314,11 @@ export function ideasToCsv(ideaList: IdeaBrief[]): string {
  * Track that a user viewed an idea
  */
 export async function trackView(userId: string, ideaId: string): Promise<void> {
-  try {
-    await db.insert(viewedIdeas).values({
-      userId,
-      ideaId,
-      viewedAt: new Date(),
-    });
-  } catch {
-    // Ignore duplicates
-  }
+  await db.insert(viewedIdeas).values({
+    userId,
+    ideaId,
+    viewedAt: new Date(),
+  }).onConflictDoNothing();
 }
 
 /**

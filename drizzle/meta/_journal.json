@@ -15,6 +15,13 @@
       "when": 1770593762036,
       "tag": "0001_green_bullseye",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1770753628762,
+      "tag": "0002_spooky_grandmaster",
+      "breakpoints": true
     }
   ]
 }
