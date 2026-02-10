@@ -48,7 +48,7 @@ const DEFAULT_MIN_FREQUENCY_FOR_GAP = 2;
 const DEFAULT_MAX_BRIEFS = 10;
 
 /** Minimum priority score for a problem to be included in brief generation */
-const DEFAULT_MIN_PRIORITY_SCORE = 8;
+const DEFAULT_MIN_PRIORITY_SCORE = 5;
 
 /**
  * Default pipeline configuration
