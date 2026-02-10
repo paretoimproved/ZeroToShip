@@ -77,6 +77,19 @@ export const DEFAULT_QUERIES = [
   'biggest problem',
   'underserved',
   'broken workflow',
+  // Expert-level queries targeting developers hitting real limits
+  'impossible to debug',
+  'wasted hours on',
+  'why does every tool',
+  'building my own because',
+  'switched away from',
+  'no good solution for',
+  'hacked together',
+  'workaround for',
+  'should be easier',
+  'reinventing the wheel',
+  'keeps breaking',
+  'doesn\'t scale',
 ] as const;
 
 /**

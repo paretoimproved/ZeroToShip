@@ -451,6 +451,37 @@ User wakes up → checks email → knows what to build today
 
 ---
 
+## Signal Quality Improvements (2026-02-09)
+
+### Completed
+- ✅ **Expanded Reddit sources**: Added 20 developer-productivity subreddits (neovim, vscode, docker, kubernetes, aws, dataengineering, MLOps, msp, etc.)
+- ✅ **Fixed priority score formula**: Changed effort calculation from linear (`complexity * time`) to sub-linear (`(complexity * time)^0.7`), so month-long projects aren't crushed below score 10
+- ✅ **Added expert HN queries**: 12 new queries targeting experienced developers hitting real limits ("impossible to debug", "building my own because", "reinventing the wheel", etc.)
+
+### Remaining Signal Quality Work
+
+**Item 4: Fix Twitter/GitHub Scrapers (High Priority)**
+Both returned 0 posts in the last two pipeline runs. These are valuable signal sources being completely wasted.
+- **Twitter**: Check whether `TWITTER_BEARER_TOKEN` is set in the environment. Developer frustration tweets are high-value signal (real pain, expressed publicly). The scraper has a Nitter fallback, but it may also be failing — investigate both paths.
+- **GitHub**: Check whether `GITHUB_TOKEN` is set. Issues with `help-wanted` labels + high reactions = validated demand from real users. The scraper targets repos with 500+ stars, so the signal quality should be strong.
+- **Impact**: Fixing these two sources could add 100+ additional raw posts per run, significantly improving cluster diversity and frequency scores.
+
+**Item 5: Re-evaluate minPriorityScore Threshold**
+Current default is `8` (in `src/scheduler/orchestrator.ts`, `DEFAULT_MIN_PRIORITY_SCORE`). Before the formula fix, 78% of scored problems were being filtered out by this threshold.
+- After the effort formula change, re-run the pipeline and check the new score distribution
+- If scores are still clustering below 8, lower the threshold to 4-5
+- Consider making this configurable per-run via the admin dashboard (already partially supported via `triggerPipeline` options)
+- **Why it matters**: A too-aggressive filter throws away real validated problems, leaving only trivially easy weekend hacks
+
+**Item 6: Increase maxBriefs**
+Currently capped at `10` (`DEFAULT_MAX_BRIEFS` in `orchestrator.ts`). With more diverse input from expanded sources:
+- Increase to 15-20 briefs per run
+- More briefs = more chances for a standout idea to surface
+- The frontend already supports pagination/scrolling, so this won't break the UI
+- **Why it matters**: With only 10 briefs, a single bad scoring run means the entire day's output is weak. 15-20 provides better resilience
+
+---
+
 ## Questions / Blockers
 
 - [ ] Do we have Twitter API access? (fallback: Nitter)

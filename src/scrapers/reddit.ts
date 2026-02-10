@@ -73,6 +73,32 @@ export const DEFAULT_SUBREDDITS = [
   'ExperiencedDevs',
   'ProductManagement',
   'nocode',
+  // Developer Workflow Friction
+  'neovim',
+  'vscode',
+  'vim',
+  'docker',
+  'kubernetes',
+  'aws',
+  'googlecloud',
+  'azure',
+  'terraform',
+  'ansible',
+  // Professional Pain Points
+  'dataengineering',
+  'MachineLearning',
+  'MLOps',
+  'reactjs',
+  'nextjs',
+  'node',
+  'golang',
+  'rust',
+  // Business/Operations Friction
+  'msp',
+  'ITManagers',
+  'freelance',
+  // Underserved Niche Communities
+  'homelab',
 ] as const;
 
 /**

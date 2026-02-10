@@ -449,13 +449,16 @@ describe('Scorer', () => {
       expect(scored.scores.impact).toBeCloseTo(expectedImpact);
     });
 
-    it('calculates effort correctly', async () => {
+    it('calculates effort correctly with sub-linear scaling', async () => {
       const cluster = createMockCluster();
       const scored = await scoreProblem(cluster, { useAI: false });
 
-      // EFFORT = technicalComplexity × timeToMvp
-      const expectedEffort = scored.scores.technicalComplexity * scored.scores.timeToMvp;
-      expect(scored.scores.effort).toBe(expectedEffort);
+      // EFFORT = (technicalComplexity × timeToMvp) ^ 0.7
+      const expectedEffort = Math.pow(
+        scored.scores.technicalComplexity * scored.scores.timeToMvp,
+        0.7,
+      );
+      expect(scored.scores.effort).toBeCloseTo(expectedEffort);
     });
 
     it('calculates priority correctly', async () => {
@@ -879,6 +882,22 @@ describe('Scoring Formula', () => {
     const highScored = await scoreProblem(highFreq, { useAI: false });
 
     expect(highScored.scores.frequency).toBeGreaterThan(lowScored.scores.frequency);
+  });
+
+  it('high-effort problem still gets a reasonable priority score', async () => {
+    // A problem with complexity=6, timeToMvp=5 (raw effort=30) should not
+    // be crushed below a priority of 10 when impact factors are decent.
+    const cluster = createMockCluster({
+      frequency: 15,
+      totalScore: 500,
+      sources: ['reddit', 'hn'],
+    });
+
+    const scored = await scoreProblem(cluster, { useAI: false });
+
+    // With sub-linear scaling, effort = 30^0.7 ≈ 12.2 instead of 30,
+    // so high-impact ideas should retain a meaningful priority.
+    expect(scored.scores.priority).toBeGreaterThanOrEqual(10);
   });
 
   it('priority favors high impact low effort', async () => {

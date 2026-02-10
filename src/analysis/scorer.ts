@@ -134,11 +134,18 @@ function calculateImpact(frequency: number, severity: number, marketSize: number
 }
 
 /**
- * Calculate effort score
- * EFFORT = technicalComplexity × timeToMvp
+ * Calculate effort score using sub-linear scaling.
+ * EFFORT = (technicalComplexity × timeToMvp) ^ 0.7
+ *
+ * The 0.7 exponent compresses high effort values so that complex,
+ * longer-horizon ideas are penalised less harshly during priority
+ * ranking while still favouring simpler problems:
+ *   raw 4  (weekend hack)  → ~2.6
+ *   raw 12 (week project)  → ~6.3
+ *   raw 20 (month project) → ~9.0
  */
 function calculateEffort(technicalComplexity: number, timeToMvp: number): number {
-  return technicalComplexity * timeToMvp;
+  return Math.pow(technicalComplexity * timeToMvp, 0.7);
 }
 
 /**
