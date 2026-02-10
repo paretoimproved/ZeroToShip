@@ -2,16 +2,9 @@
  * Integration tests for pipeline orchestrator
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as fs from 'fs';
-import * as path from 'path';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { runPipeline, DEFAULT_PIPELINE_CONFIG } from '../../src/scheduler/orchestrator';
-import {
-  initRunStatus,
-  savePhaseResult,
-  updatePhaseStatus,
-  loadRunStatus,
-} from '../../src/scheduler/utils/persistence';
+import type { RunStatus } from '../../src/scheduler/utils/persistence';
 import type { RawPost } from '../../src/scrapers/types';
 import type { ProblemCluster, ScoredProblem } from '../../src/analysis';
 import type { GapAnalysis } from '../../src/analysis/gap-analyzer';
@@ -62,7 +55,7 @@ vi.mock('../../src/delivery/email', () => ({
   sendDailyBriefsBatch: vi.fn(),
 }));
 
-// Mock database client (used by generate.ts and deliver.ts for persistence)
+// Mock database client (used by orchestrator for final update and by other modules)
 vi.mock('../../src/api/db/client', () => ({
   db: {
     select: vi.fn().mockReturnValue({
@@ -80,11 +73,30 @@ vi.mock('../../src/api/db/client', () => ({
         onConflictDoNothing: vi.fn().mockResolvedValue(undefined),
       }),
     }),
+    update: vi.fn().mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue(undefined),
+      }),
+    }),
   },
   users: {},
   subscriptions: {},
   userPreferences: {},
   ideas: {},
+  pipelineRuns: {
+    runId: 'run_id',
+  },
+}));
+
+// Mock persistence (DB-backed)
+vi.mock('../../src/scheduler/utils/persistence', () => ({
+  initRunStatus: vi.fn().mockResolvedValue(undefined),
+  savePhaseResult: vi.fn().mockResolvedValue(undefined),
+  updatePhaseStatus: vi.fn().mockResolvedValue(undefined),
+  updatePhaseStats: vi.fn().mockResolvedValue(undefined),
+  loadRunStatus: vi.fn().mockResolvedValue(null),
+  loadPhaseResult: vi.fn().mockResolvedValue(null),
+  getResumePhase: vi.fn().mockReturnValue(null),
 }));
 
 // Mock monitoring (used by orchestrator)
@@ -225,41 +237,65 @@ async function setupFullPipelineMocks() {
   };
 }
 
-// ---- Persistence test helpers ----
-const DATA_DIR = path.join(process.cwd(), 'data', 'runs');
-
-const testRunIds: string[] = [];
-
-function cleanupTestRuns(): void {
-  for (const runId of testRunIds) {
-    const dir = path.join(DATA_DIR, runId);
-    if (fs.existsSync(dir)) {
-      fs.rmSync(dir, { recursive: true });
-    }
-  }
-  testRunIds.length = 0;
-}
-
-function trackRunId(runId: string): void {
-  testRunIds.push(runId);
-}
-
-// Helper to create a persisted run with specific phases completed
-function createPersistedRun(
-  runId: string,
+/**
+ * Helper to set up persistence mocks for a resumed run.
+ * Simulates a previous run with specific phases completed and data persisted.
+ */
+async function setupResumedRunMocks(
+  resumeRunId: string,
   completedPhases: ('scrape' | 'analyze' | 'generate' | 'deliver')[],
   phaseData: Record<string, unknown>
-): void {
-  trackRunId(runId);
-  const config: PipelineConfig = { ...DEFAULT_PIPELINE_CONFIG, dryRun: true };
-  initRunStatus(runId, config);
+) {
+  const persistence = await import('../../src/scheduler/utils/persistence');
+
+  const phases: Record<string, string> = {
+    scrape: 'pending',
+    analyze: 'pending',
+    generate: 'pending',
+    deliver: 'pending',
+  };
+  let lastCompletedPhase: string | null = null;
 
   for (const phase of completedPhases) {
-    if (phaseData[phase]) {
-      savePhaseResult(runId, phase, phaseData[phase]);
-      updatePhaseStatus(runId, phase, 'completed');
+    phases[phase] = 'completed';
+    lastCompletedPhase = phase;
+  }
+
+  const runStatus: RunStatus = {
+    runId: resumeRunId,
+    config: { ...DEFAULT_PIPELINE_CONFIG, dryRun: true },
+    startedAt: new Date().toISOString(),
+    phases: phases as RunStatus['phases'],
+    lastCompletedPhase: lastCompletedPhase as RunStatus['lastCompletedPhase'],
+    updatedAt: new Date().toISOString(),
+  };
+
+  vi.mocked(persistence.loadRunStatus).mockResolvedValue(runStatus);
+
+  // Use the real getResumePhase logic
+  const phaseOrder = ['scrape', 'analyze', 'generate', 'deliver'] as const;
+  let resumePhase: string | null = null;
+  for (const phase of phaseOrder) {
+    if (phases[phase] !== 'completed') {
+      resumePhase = phase;
+      break;
     }
   }
+  vi.mocked(persistence.getResumePhase).mockReturnValue(
+    resumePhase as ReturnType<typeof persistence.getResumePhase>
+  );
+
+  // Mock loadPhaseResult to return data for completed phases
+  vi.mocked(persistence.loadPhaseResult).mockImplementation(
+    async <T>(_runId: string, phase: string): Promise<T | null> => {
+      if (phaseData[phase]) {
+        return phaseData[phase] as T;
+      }
+      return null;
+    }
+  );
+
+  return persistence;
 }
 
 // ===========================================================================
@@ -267,12 +303,18 @@ function createPersistedRun(
 // ===========================================================================
 
 describe('Pipeline Orchestrator', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    cleanupTestRuns();
+    // Reset persistence mocks to defaults after each test
+    // (clearAllMocks only clears call records, not implementations)
+    const persistence = await import('../../src/scheduler/utils/persistence');
+    vi.mocked(persistence.initRunStatus).mockResolvedValue(undefined);
+    vi.mocked(persistence.savePhaseResult).mockResolvedValue(undefined);
+    vi.mocked(persistence.updatePhaseStatus).mockResolvedValue(undefined);
+    vi.mocked(persistence.updatePhaseStats).mockResolvedValue(undefined);
+    vi.mocked(persistence.loadRunStatus).mockResolvedValue(null);
+    vi.mocked(persistence.loadPhaseResult).mockResolvedValue(null);
+    vi.mocked(persistence.getResumePhase).mockReturnValue(null);
   });
 
   // ---- Existing tests (preserved) ----
@@ -480,9 +522,6 @@ describe('Pipeline Orchestrator', () => {
 
       vi.mocked(mocks.sendDailyBriefsBatch).mockRejectedValue(new Error('Resend API down'));
 
-      // Deliver phase actually runs through the phase runner which catches errors,
-      // but in dryRun mode the deliver phase skips sending. Let's test non-dryRun
-      // where delivery is attempted but the phase returns a failure.
       const result = await runPipeline({ dryRun: true });
 
       // In dry run mode, delivery doesn't call sendDailyBriefsBatch,
@@ -503,8 +542,6 @@ describe('Pipeline Orchestrator', () => {
 
       const result = await runPipeline({ dryRun: true });
 
-      // Analyze succeeds with 0 scored problems, but generate should fail
-      // because there are no scored problems to generate from
       expect(result.phases.scrape.success).toBe(true);
       expect(result.phases.analyze.success).toBe(true);
       expect(result.phases.analyze.data?.scoredCount).toBe(0);
@@ -515,7 +552,6 @@ describe('Pipeline Orchestrator', () => {
     it('should handle scored problems below minimum priority threshold', async () => {
       const { mocks } = await setupFullPipelineMocks();
 
-      // All problems have low priority (below default threshold of 8)
       const lowPriorityProblem = createMockScoredProblem({
         scores: {
           frequency: 1,
@@ -534,8 +570,6 @@ describe('Pipeline Orchestrator', () => {
       const result = await runPipeline({ dryRun: true });
 
       expect(result.phases.analyze.success).toBe(true);
-      // Generate phase will have the problem filtered out by minPriorityScore
-      // and return a failure since no problems met the threshold
       expect(result.phases.generate.success).toBe(false);
     });
   });
@@ -635,40 +669,42 @@ describe('Pipeline Orchestrator', () => {
   // ---- New tests: Persistence integration ----
 
   describe('persistence integration', () => {
-    it('should persist phase results to disk on successful run', async () => {
+    it('should call initRunStatus and persistence functions on successful run', async () => {
       await setupFullPipelineMocks();
+      const persistence = await import('../../src/scheduler/utils/persistence');
 
       const result = await runPipeline({ dryRun: true });
-      trackRunId(result.runId);
 
-      // Verify status file was created
-      const status = loadRunStatus(result.runId);
-      expect(status).not.toBeNull();
-      expect(status!.phases.scrape).toBe('completed');
-      expect(status!.phases.analyze).toBe('completed');
-      expect(status!.phases.generate).toBe('completed');
-      expect(status!.phases.deliver).toBe('completed');
+      // initRunStatus should have been called
+      expect(persistence.initRunStatus).toHaveBeenCalledWith(
+        expect.stringMatching(/^run_/),
+        expect.any(Object)
+      );
+
+      // Phase results should have been saved
+      expect(persistence.savePhaseResult).toHaveBeenCalled();
+      expect(persistence.updatePhaseStatus).toHaveBeenCalled();
     });
 
-    it('should mark failed phases in status file', async () => {
+    it('should call updatePhaseStatus with failed for failed phases', async () => {
       const { scrapeReddit } = await import('../../src/scrapers/reddit');
       const { scrapeHackerNews } = await import('../../src/scrapers/hackernews');
       const { twitterScraper } = await import('../../src/scrapers/twitter');
       const { scrapeGitHub } = await import('../../src/scrapers/github');
+      const persistence = await import('../../src/scheduler/utils/persistence');
 
       vi.mocked(scrapeReddit).mockRejectedValue(new Error('fail'));
       vi.mocked(scrapeHackerNews).mockRejectedValue(new Error('fail'));
       vi.mocked(twitterScraper.scrapeAll).mockRejectedValue(new Error('fail'));
       vi.mocked(scrapeGitHub).mockRejectedValue(new Error('fail'));
 
-      const result = await runPipeline();
-      trackRunId(result.runId);
+      await runPipeline();
 
-      const status = loadRunStatus(result.runId);
-      expect(status).not.toBeNull();
-      expect(status!.phases.scrape).toBe('failed');
-      // Later phases remain pending since the pipeline aborted
-      expect(status!.phases.analyze).toBe('pending');
+      expect(persistence.updatePhaseStatus).toHaveBeenCalledWith(
+        expect.any(String),
+        'scrape',
+        'failed'
+      );
     });
   });
 
@@ -688,9 +724,7 @@ describe('Pipeline Orchestrator', () => {
         posts: [createMockPost(), createMockPost()],
       };
 
-      createPersistedRun(resumeRunId, ['scrape'], { scrape: mockScrapeData });
-      // Mark analyze as failed to simulate a previous failure
-      updatePhaseStatus(resumeRunId, 'analyze', 'failed');
+      await setupResumedRunMocks(resumeRunId, ['scrape'], { scrape: mockScrapeData });
 
       const result = await runPipeline({ resumeRunId, dryRun: true });
 
@@ -729,12 +763,10 @@ describe('Pipeline Orchestrator', () => {
         gapAnalyses: new Map([['cluster_1', createMockGap('cluster_1')]]),
       };
 
-      createPersistedRun(resumeRunId, ['scrape', 'analyze'], {
+      await setupResumedRunMocks(resumeRunId, ['scrape', 'analyze'], {
         scrape: mockScrapeData,
         analyze: mockAnalyzeData,
       });
-      // Mark generate as failed
-      updatePhaseStatus(resumeRunId, 'generate', 'failed');
 
       const result = await runPipeline({ resumeRunId, dryRun: true });
 
@@ -778,13 +810,11 @@ describe('Pipeline Orchestrator', () => {
         briefs: [createMockBrief()],
       };
 
-      createPersistedRun(resumeRunId, ['scrape', 'analyze', 'generate'], {
+      await setupResumedRunMocks(resumeRunId, ['scrape', 'analyze', 'generate'], {
         scrape: mockScrapeData,
         analyze: mockAnalyzeData,
         generate: mockGenerateData,
       });
-      // Mark deliver as failed
-      updatePhaseStatus(resumeRunId, 'deliver', 'failed');
 
       const result = await runPipeline({ resumeRunId, dryRun: true });
 
@@ -800,27 +830,29 @@ describe('Pipeline Orchestrator', () => {
     it('should throw when resuming a non-existent run', async () => {
       await expect(
         runPipeline({ resumeRunId: 'nonexistent_run_xyz' })
-      ).rejects.toThrow('status file not found or corrupted');
+      ).rejects.toThrow('run not found in database');
     });
 
     it('should throw when resuming a fully completed run', async () => {
       const resumeRunId = `test_resume_complete_${Date.now()}`;
+      const persistence = await import('../../src/scheduler/utils/persistence');
 
-      const mockScrapeData = {
-        totalPosts: 1,
-        posts: [createMockPost()],
-        reddit: { count: 1, success: true },
-        hn: { count: 0, success: true },
-        twitter: { count: 0, success: true },
-        github: { count: 0, success: true },
+      const runStatus: RunStatus = {
+        runId: resumeRunId,
+        config: { ...DEFAULT_PIPELINE_CONFIG },
+        startedAt: new Date().toISOString(),
+        phases: {
+          scrape: 'completed',
+          analyze: 'completed',
+          generate: 'completed',
+          deliver: 'completed',
+        },
+        lastCompletedPhase: 'deliver',
+        updatedAt: new Date().toISOString(),
       };
 
-      createPersistedRun(resumeRunId, ['scrape', 'analyze', 'generate', 'deliver'], {
-        scrape: mockScrapeData,
-        analyze: { clusterCount: 0, scoredCount: 0, gapAnalysisCount: 0, clusters: [], scoredProblems: [], gapAnalyses: new Map() },
-        generate: { briefCount: 0, briefs: [] },
-        deliver: { subscriberCount: 0, sent: 0, failed: 0, dryRun: true },
-      });
+      vi.mocked(persistence.loadRunStatus).mockResolvedValue(runStatus);
+      vi.mocked(persistence.getResumePhase).mockReturnValue(null);
 
       await expect(
         runPipeline({ resumeRunId })
@@ -880,9 +912,6 @@ describe('Pipeline Orchestrator', () => {
       ];
       vi.mocked(mocks.generateAllBriefs).mockResolvedValue(specificBriefs);
 
-      // Need non-dryRun to actually call sendDailyBriefsBatch
-      // but dryRun short-circuits delivery. The deliver phase in dryRun mode
-      // skips sendDailyBriefsBatch. Let's just verify the result has the briefs.
       const result = await runPipeline({ dryRun: true });
 
       expect(result.phases.generate.data?.briefs).toHaveLength(1);

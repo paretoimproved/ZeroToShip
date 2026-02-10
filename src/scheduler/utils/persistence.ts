@@ -1,21 +1,18 @@
 /**
  * Pipeline Run Persistence
  *
- * Persists phase results to disk so a failed pipeline can resume
+ * Persists phase results to the database so a failed pipeline can resume
  * from the last completed phase instead of starting from scratch.
  *
- * Data is stored as JSON files under data/runs/{runId}/.
+ * Uses the `pipeline_runs` table as the single source of truth.
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
+import { eq } from 'drizzle-orm';
 import { createLogger } from './logger';
+import { db, pipelineRuns } from '../../api/db/client';
 import type { PhaseName, PipelineConfig } from '../types';
 
 const logger = createLogger({ context: 'persistence' });
-
-/** Base directory for all run data, relative to project root */
-const DATA_DIR = process.env.PIPELINE_DATA_DIR || path.join(process.cwd(), 'data', 'runs');
 
 /**
  * Summary stats for each pipeline phase, persisted alongside status
@@ -38,35 +35,6 @@ export interface RunStatus {
   phaseStats?: PhaseStats;
   lastCompletedPhase: PhaseName | null;
   updatedAt: string;
-}
-
-/**
- * Get the directory path for a specific run
- */
-function getRunDir(runId: string): string {
-  return path.join(DATA_DIR, runId);
-}
-
-/**
- * Get the file path for a phase's persisted data
- */
-function getPhaseFilePath(runId: string, phase: PhaseName): string {
-  return path.join(getRunDir(runId), `${phase}.json`);
-}
-
-/**
- * Get the file path for the run status file
- */
-function getStatusFilePath(runId: string): string {
-  return path.join(getRunDir(runId), 'status.json');
-}
-
-/**
- * Ensure the run directory exists
- */
-function ensureRunDir(runId: string): void {
-  const dir = getRunDir(runId);
-  fs.mkdirSync(dir, { recursive: true });
 }
 
 /**
@@ -99,137 +67,200 @@ function jsonReviver(_key: string, value: unknown): unknown {
 }
 
 /**
- * Initialize a new run status file
+ * Serialize data for JSONB storage, handling Map instances.
  */
-export function initRunStatus(runId: string, config: PipelineConfig): void {
-  ensureRunDir(runId);
-
-  const status: RunStatus = {
-    runId,
-    config,
-    startedAt: new Date().toISOString(),
-    phases: {
-      scrape: 'pending',
-      analyze: 'pending',
-      generate: 'pending',
-      deliver: 'pending',
-    },
-    lastCompletedPhase: null,
-    updatedAt: new Date().toISOString(),
-  };
-
-  const filePath = getStatusFilePath(runId);
-  fs.writeFileSync(filePath, JSON.stringify(status, null, 2), 'utf-8');
-  logger.debug({ runId, filePath }, 'Initialized run status');
+function serializeForJsonb(data: unknown): unknown {
+  return JSON.parse(JSON.stringify(data, jsonReplacer));
 }
 
 /**
- * Persist phase output data to disk
+ * Deserialize data from JSONB storage, restoring Map instances.
  */
-export function savePhaseResult(
+function deserializeFromJsonb<T>(data: unknown): T {
+  return JSON.parse(JSON.stringify(data), jsonReviver) as T;
+}
+
+/**
+ * Initialize a new run status in the database
+ */
+export async function initRunStatus(runId: string, config: PipelineConfig): Promise<void> {
+  const phases = {
+    scrape: 'pending',
+    analyze: 'pending',
+    generate: 'pending',
+    deliver: 'pending',
+  };
+
+  await db.insert(pipelineRuns).values({
+    runId,
+    status: 'running',
+    startedAt: new Date(),
+    config,
+    phases,
+    stats: { postsScraped: 0, clustersCreated: 0, ideasGenerated: 0, emailsSent: 0 },
+    phaseResults: {},
+    phaseStats: {},
+    lastCompletedPhase: null,
+    success: false,
+    updatedAt: new Date(),
+  });
+
+  logger.debug({ runId }, 'Initialized run status in database');
+}
+
+/**
+ * Persist phase output data to the database
+ */
+export async function savePhaseResult(
   runId: string,
   phase: PhaseName,
   data: unknown
-): void {
-  ensureRunDir(runId);
+): Promise<void> {
+  const row = await db.select({ phaseResults: pipelineRuns.phaseResults })
+    .from(pipelineRuns)
+    .where(eq(pipelineRuns.runId, runId))
+    .limit(1);
 
-  const filePath = getPhaseFilePath(runId, phase);
-  fs.writeFileSync(filePath, JSON.stringify(data, jsonReplacer, 2), 'utf-8');
-  logger.debug({ runId, phase, filePath }, 'Saved phase result');
+  if (row.length === 0) {
+    logger.warn({ runId }, 'Cannot save phase result: run not found in database');
+    return;
+  }
+
+  const existing = (row[0].phaseResults as Record<string, unknown>) || {};
+  existing[phase] = serializeForJsonb(data);
+
+  await db.update(pipelineRuns)
+    .set({ phaseResults: existing, updatedAt: new Date() })
+    .where(eq(pipelineRuns.runId, runId));
+
+  logger.debug({ runId, phase }, 'Saved phase result to database');
 }
 
 /**
  * Update the run status after a phase completes or fails
  */
-export function updatePhaseStatus(
+export async function updatePhaseStatus(
   runId: string,
   phase: PhaseName,
   outcome: 'completed' | 'failed'
-): void {
-  const status = loadRunStatus(runId);
-  if (!status) {
-    logger.warn({ runId }, 'Cannot update status: run status file not found');
+): Promise<void> {
+  const row = await db.select({
+    phases: pipelineRuns.phases,
+    lastCompletedPhase: pipelineRuns.lastCompletedPhase,
+  })
+    .from(pipelineRuns)
+    .where(eq(pipelineRuns.runId, runId))
+    .limit(1);
+
+  if (row.length === 0) {
+    logger.warn({ runId }, 'Cannot update status: run not found in database');
     return;
   }
 
-  status.phases[phase] = outcome;
-  if (outcome === 'completed') {
-    status.lastCompletedPhase = phase;
-  }
-  status.updatedAt = new Date().toISOString();
+  const phases = row[0].phases as Record<PhaseName, 'pending' | 'completed' | 'failed'>;
+  phases[phase] = outcome;
 
-  const filePath = getStatusFilePath(runId);
-  fs.writeFileSync(filePath, JSON.stringify(status, null, 2), 'utf-8');
-  logger.debug({ runId, phase, outcome }, 'Updated phase status');
+  const updates: Record<string, unknown> = {
+    phases,
+    updatedAt: new Date(),
+  };
+
+  if (outcome === 'completed') {
+    updates.lastCompletedPhase = phase;
+  }
+
+  await db.update(pipelineRuns)
+    .set(updates)
+    .where(eq(pipelineRuns.runId, runId));
+
+  logger.debug({ runId, phase, outcome }, 'Updated phase status in database');
 }
 
 /**
- * Update phase stats in the run status file
+ * Update phase stats in the database
  */
-export function updatePhaseStats(
+export async function updatePhaseStats(
   runId: string,
   phase: PhaseName,
   stats: PhaseStats[keyof PhaseStats]
-): void {
-  const status = loadRunStatus(runId);
-  if (!status) {
-    logger.warn({ runId }, 'Cannot update phase stats: run status file not found');
+): Promise<void> {
+  const row = await db.select({ phaseStats: pipelineRuns.phaseStats })
+    .from(pipelineRuns)
+    .where(eq(pipelineRuns.runId, runId))
+    .limit(1);
+
+  if (row.length === 0) {
+    logger.warn({ runId }, 'Cannot update phase stats: run not found in database');
     return;
   }
 
-  if (!status.phaseStats) {
-    status.phaseStats = {};
-  }
+  const existing = (row[0].phaseStats as Record<string, unknown>) || {};
+  existing[phase] = stats;
 
-  (status.phaseStats as Record<string, unknown>)[phase] = stats;
-  status.updatedAt = new Date().toISOString();
+  await db.update(pipelineRuns)
+    .set({ phaseStats: existing, updatedAt: new Date() })
+    .where(eq(pipelineRuns.runId, runId));
 
-  const filePath = getStatusFilePath(runId);
-  fs.writeFileSync(filePath, JSON.stringify(status, null, 2), 'utf-8');
-  logger.debug({ runId, phase }, 'Updated phase stats');
+  logger.debug({ runId, phase }, 'Updated phase stats in database');
 }
 
 /**
- * Load the run status from disk. Returns null if not found or corrupted.
+ * Load the run status from the database. Returns null if not found.
  */
-export function loadRunStatus(runId: string): RunStatus | null {
-  const filePath = getStatusFilePath(runId);
-
+export async function loadRunStatus(runId: string): Promise<RunStatus | null> {
   try {
-    if (!fs.existsSync(filePath)) {
+    const row = await db.select()
+      .from(pipelineRuns)
+      .where(eq(pipelineRuns.runId, runId))
+      .limit(1);
+
+    if (row.length === 0) {
       return null;
     }
-    const raw = fs.readFileSync(filePath, 'utf-8');
-    return JSON.parse(raw) as RunStatus;
+
+    const run = row[0];
+    return {
+      runId: run.runId,
+      config: run.config as PipelineConfig,
+      startedAt: run.startedAt.toISOString(),
+      phases: run.phases as Record<PhaseName, 'pending' | 'completed' | 'failed'>,
+      phaseStats: (run.phaseStats as PhaseStats) || undefined,
+      lastCompletedPhase: (run.lastCompletedPhase as PhaseName) || null,
+      updatedAt: run.updatedAt.toISOString(),
+    };
   } catch (err) {
     logger.warn(
       { runId, error: err instanceof Error ? err.message : String(err) },
-      'Failed to load run status (file may be corrupted)'
+      'Failed to load run status from database'
     );
     return null;
   }
 }
 
 /**
- * Load persisted phase output from disk. Returns null if not found or corrupted.
+ * Load persisted phase output from the database. Returns null if not found.
  */
-export function loadPhaseResult<T>(runId: string, phase: PhaseName): T | null {
-  const filePath = getPhaseFilePath(runId, phase);
-
+export async function loadPhaseResult<T>(runId: string, phase: PhaseName): Promise<T | null> {
   try {
-    if (!fs.existsSync(filePath)) {
+    const row = await db.select({ phaseResults: pipelineRuns.phaseResults })
+      .from(pipelineRuns)
+      .where(eq(pipelineRuns.runId, runId))
+      .limit(1);
+
+    if (row.length === 0) {
       return null;
     }
-    const raw = fs.readFileSync(filePath, 'utf-8');
-    return JSON.parse(raw, jsonReviver) as T;
+
+    const phaseResults = row[0].phaseResults as Record<string, unknown> | null;
+    if (!phaseResults || !(phase in phaseResults)) {
+      return null;
+    }
+
+    return deserializeFromJsonb<T>(phaseResults[phase]);
   } catch (err) {
     logger.warn(
-      {
-        runId,
-        phase,
-        error: err instanceof Error ? err.message : String(err),
-      },
-      'Failed to load phase result (file may be corrupted)'
+      { runId, phase, error: err instanceof Error ? err.message : String(err) },
+      'Failed to load phase result from database'
     );
     return null;
   }

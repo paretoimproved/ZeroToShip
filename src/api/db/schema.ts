@@ -294,16 +294,21 @@ export const usageTracking = pgTable(
 export const pipelineRuns = pgTable('pipeline_runs', {
   id: serial('id').primaryKey(),
   runId: text('run_id').notNull().unique(),
+  status: varchar('status', { length: 20 }).notNull().default('running'),
   startedAt: timestamp('started_at').notNull(),
   completedAt: timestamp('completed_at'),
   config: jsonb('config').notNull(),
   phases: jsonb('phases').notNull(),
   stats: jsonb('stats').notNull(),
+  phaseResults: jsonb('phase_results'),
+  phaseStats: jsonb('phase_stats'),
+  lastCompletedPhase: text('last_completed_phase'),
   success: boolean('success').notNull().default(false),
   totalDuration: integer('total_duration'),
   errors: jsonb('errors').default([]),
   apiMetrics: jsonb('api_metrics'),
   briefSummaries: jsonb('brief_summaries'),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
 // Relations

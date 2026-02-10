@@ -5,32 +5,11 @@
  * user management, and pipeline control.
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
 import type { FastifyPluginAsync } from 'fastify';
 import { requireAdmin } from '../middleware/auth';
-import { loadRunStatus } from '../../scheduler/utils/persistence';
 import { runPipeline, DEFAULT_PIPELINE_CONFIG, generateRunId } from '../../scheduler';
 import { db, ideas, subscriptions, users, pipelineRuns } from '../db/client';
 import { eq, count, desc, sql } from 'drizzle-orm';
-
-const DATA_DIR = process.env.PIPELINE_DATA_DIR || path.join(process.cwd(), 'data', 'runs');
-
-/**
- * Get the most recent run ID from the data directory
- */
-function getLatestRunId(): string | null {
-  try {
-    if (!fs.existsSync(DATA_DIR)) return null;
-    const dirs = fs.readdirSync(DATA_DIR)
-      .filter((d) => d.startsWith('run_'))
-      .sort()
-      .reverse();
-    return dirs[0] || null;
-  } catch {
-    return null;
-  }
-}
 
 export const adminRoutes: FastifyPluginAsync = async (server) => {
   /**
@@ -40,75 +19,29 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
     '/pipeline-status',
     { preHandler: [requireAdmin] },
     async (request, reply) => {
-      // Check file-system first for live/in-progress run status (includes phaseStats)
-      const fsRunId = getLatestRunId();
-      if (fsRunId) {
-        const fsStatus = loadRunStatus(fsRunId);
-        if (fsStatus) {
-          // If any phase is still pending and run is recent, prefer file-system status
-          const hasPending = Object.values(fsStatus.phases).some(s => s === 'pending');
-          const isRecent = Date.now() - new Date(fsStatus.updatedAt).getTime() < 10 * 60 * 1000;
-          if (hasPending && isRecent) {
-            return reply.send({
-              status: 'ok',
-              runId: fsStatus.runId,
-              startedAt: fsStatus.startedAt,
-              phases: fsStatus.phases,
-              phaseStats: fsStatus.phaseStats,
-              lastCompletedPhase: fsStatus.lastCompletedPhase,
-              updatedAt: fsStatus.updatedAt,
-            });
-          }
-        }
-      }
-
-      // Try DB for completed runs
       try {
         const latestRun = await db.select().from(pipelineRuns).orderBy(desc(pipelineRuns.startedAt)).limit(1);
         if (latestRun.length > 0) {
           const run = latestRun[0];
-          // Also check file-system for phaseStats (not stored in DB)
-          const fileStatus = run.runId ? loadRunStatus(run.runId) : null;
           return reply.send({
             status: 'ok',
             runId: run.runId,
             startedAt: run.startedAt,
             phases: run.phases,
-            phaseStats: fileStatus?.phaseStats,
+            phaseStats: run.phaseStats,
+            lastCompletedPhase: run.lastCompletedPhase,
             success: run.success,
             completedAt: run.completedAt,
+            updatedAt: run.updatedAt,
           });
         }
       } catch {
-        // DB query failed, fall through to file-system
-      }
-
-      // Fallback to file system (pre-migration runs)
-      const latestRunId = getLatestRunId();
-      if (!latestRunId) {
-        return reply.send({
-          status: 'no_runs',
-          message: 'No pipeline runs found',
-        });
-      }
-
-      const runStatus = loadRunStatus(latestRunId);
-      if (!runStatus) {
-        return reply.send({
-          status: 'error',
-          message: 'Failed to load run status',
-          runId: latestRunId,
-        });
+        // DB query failed, fall through
       }
 
       return reply.send({
-        status: 'ok',
-        runId: runStatus.runId,
-        startedAt: runStatus.startedAt,
-        phases: runStatus.phases,
-        phaseStats: runStatus.phaseStats,
-        lastCompletedPhase: runStatus.lastCompletedPhase,
-        updatedAt: runStatus.updatedAt,
+        status: 'no_runs',
+        message: 'No pipeline runs found',
       });
     }
   );
@@ -120,9 +53,6 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
     '/system-health',
     { preHandler: [requireAdmin] },
     async (request, reply) => {
-      const latestRunId = getLatestRunId();
-      const runStatus = latestRunId ? loadRunStatus(latestRunId) : null;
-
       // Get counts from database
       let subscriberCount = 0;
       let ideaCount = 0;
@@ -146,12 +76,28 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
         // DB query failed
       }
 
+      // Get latest run info from DB
+      let lastRunId: string | null = null;
+      let lastRunAt: Date | null = null;
+      let lastRunPhases: unknown = null;
+
+      try {
+        const latestRun = await db.select().from(pipelineRuns).orderBy(desc(pipelineRuns.startedAt)).limit(1);
+        if (latestRun.length > 0) {
+          lastRunId = latestRun[0].runId;
+          lastRunAt = latestRun[0].startedAt;
+          lastRunPhases = latestRun[0].phases;
+        }
+      } catch {
+        // DB query failed
+      }
+
       return reply.send({
         status: 'ok',
         pipeline: {
-          lastRunId: runStatus?.runId || null,
-          lastRunAt: runStatus?.startedAt || null,
-          lastRunPhases: runStatus?.phases || null,
+          lastRunId,
+          lastRunAt,
+          lastRunPhases,
         },
         counts: {
           activeSubscribers: subscriberCount,
@@ -297,7 +243,6 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
         // DB query failed
       }
 
-      // Try DB first for pipeline info
       let lastRunId: string | null = null;
       let lastRunAt: Date | null = null;
 
@@ -308,15 +253,7 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
           lastRunAt = latestRun[0].startedAt;
         }
       } catch {
-        // DB query failed, fall through to file-system
-      }
-
-      // Fallback to file system if DB had no results
-      if (!lastRunId) {
-        const latestRunId = getLatestRunId();
-        const runStatus = latestRunId ? loadRunStatus(latestRunId) : null;
-        lastRunId = runStatus?.runId || null;
-        lastRunAt = runStatus?.startedAt ? new Date(runStatus.startedAt) : null;
+        // DB query failed
       }
 
       return reply.send({

@@ -5,6 +5,7 @@
  */
 
 import * as crypto from 'crypto';
+import { eq } from 'drizzle-orm';
 import { createRunLogger } from './utils/logger';
 import { MetricsCollector } from './utils/metrics';
 import { getGlobalMetrics, resetGlobalMetrics } from './utils/api-metrics';
@@ -12,7 +13,6 @@ import { runScrapePhase } from './phases/scrape';
 import { runAnalyzePhase } from './phases/analyze';
 import { runGeneratePhase } from './phases/generate';
 import { runDeliverPhase } from './phases/deliver';
-import { isZeroToShipError, isFatalError } from '../lib/errors';
 import { initMonitoring, captureException } from '../lib/monitoring';
 import { sendPipelineFailureAlert } from '../lib/alerts';
 import {
@@ -146,7 +146,7 @@ function shouldSkipPhase(
  * Run the complete ZeroToShip pipeline
  *
  * Supports resuming from a previous failed run via `config.resumeRunId`.
- * When resuming, completed phase results are loaded from disk and the
+ * When resuming, completed phase results are loaded from the database and the
  * pipeline picks up from the first incomplete phase.
  */
 export async function runPipeline(
@@ -160,10 +160,10 @@ export async function runPipeline(
   let resumePhase: PhaseName | null = null;
 
   if (fullConfig.resumeRunId) {
-    const previousStatus = loadRunStatus(fullConfig.resumeRunId);
+    const previousStatus = await loadRunStatus(fullConfig.resumeRunId);
     if (!previousStatus) {
       throw new Error(
-        `Cannot resume run "${fullConfig.resumeRunId}": status file not found or corrupted`
+        `Cannot resume run "${fullConfig.resumeRunId}": run not found in database`
       );
     }
     runId = fullConfig.resumeRunId;
@@ -196,14 +196,14 @@ export async function runPipeline(
     );
   } else {
     logger.info({ config: fullConfig }, 'Pipeline started');
-    initRunStatus(runId, fullConfig);
+    await initRunStatus(runId, fullConfig);
   }
 
   // Phase 1: Scrape
   let scrapeResult: PhaseResult<ScrapePhaseOutput>;
 
   if (shouldSkipPhase(resumePhase, 'scrape')) {
-    const cached = loadPhaseResult<ScrapePhaseOutput>(runId, 'scrape');
+    const cached = await loadPhaseResult<ScrapePhaseOutput>(runId, 'scrape');
     if (!cached) {
       throw new Error(`Resume failed: could not load persisted scrape data for run "${runId}"`);
     }
@@ -221,9 +221,9 @@ export async function runPipeline(
     metrics.completePhase('scrape', scrapeResult.success, scrapeResult.data?.totalPosts || 0);
 
     if (scrapeResult.success && scrapeResult.data) {
-      savePhaseResult(runId, 'scrape', scrapeResult.data);
-      updatePhaseStatus(runId, 'scrape', 'completed');
-      updatePhaseStats(runId, 'scrape', {
+      await savePhaseResult(runId, 'scrape', scrapeResult.data);
+      await updatePhaseStatus(runId, 'scrape', 'completed');
+      await updatePhaseStats(runId, 'scrape', {
         totalPosts: scrapeResult.data.totalPosts,
         reddit: scrapeResult.data.reddit.count,
         hn: scrapeResult.data.hn.count,
@@ -231,7 +231,7 @@ export async function runPipeline(
         github: scrapeResult.data.github.count,
       });
     } else {
-      updatePhaseStatus(runId, 'scrape', 'failed');
+      await updatePhaseStatus(runId, 'scrape', 'failed');
     }
   }
 
@@ -259,7 +259,7 @@ export async function runPipeline(
   let analyzeResult: PhaseResult<AnalyzePhaseOutput>;
 
   if (shouldSkipPhase(resumePhase, 'analyze')) {
-    const cached = loadPhaseResult<AnalyzePhaseOutput>(runId, 'analyze');
+    const cached = await loadPhaseResult<AnalyzePhaseOutput>(runId, 'analyze');
     if (!cached) {
       throw new Error(`Resume failed: could not load persisted analyze data for run "${runId}"`);
     }
@@ -279,15 +279,15 @@ export async function runPipeline(
     metrics.completePhase('analyze', analyzeResult.success, analyzeResult.data?.scoredCount || 0);
 
     if (analyzeResult.success && analyzeResult.data) {
-      savePhaseResult(runId, 'analyze', analyzeResult.data);
-      updatePhaseStatus(runId, 'analyze', 'completed');
-      updatePhaseStats(runId, 'analyze', {
+      await savePhaseResult(runId, 'analyze', analyzeResult.data);
+      await updatePhaseStatus(runId, 'analyze', 'completed');
+      await updatePhaseStats(runId, 'analyze', {
         clusterCount: analyzeResult.data.clusterCount,
         scoredCount: analyzeResult.data.scoredCount,
         gapAnalysisCount: analyzeResult.data.gapAnalysisCount,
       });
     } else {
-      updatePhaseStatus(runId, 'analyze', 'failed');
+      await updatePhaseStatus(runId, 'analyze', 'failed');
     }
   }
 
@@ -321,7 +321,7 @@ export async function runPipeline(
   let generateResult: PhaseResult<GeneratePhaseOutput>;
 
   if (shouldSkipPhase(resumePhase, 'generate')) {
-    const cached = loadPhaseResult<GeneratePhaseOutput>(runId, 'generate');
+    const cached = await loadPhaseResult<GeneratePhaseOutput>(runId, 'generate');
     if (!cached) {
       throw new Error(`Resume failed: could not load persisted generate data for run "${runId}"`);
     }
@@ -346,13 +346,13 @@ export async function runPipeline(
     metrics.completePhase('generate', generateResult.success, generateResult.data?.briefCount || 0);
 
     if (generateResult.success && generateResult.data) {
-      savePhaseResult(runId, 'generate', generateResult.data);
-      updatePhaseStatus(runId, 'generate', 'completed');
-      updatePhaseStats(runId, 'generate', {
+      await savePhaseResult(runId, 'generate', generateResult.data);
+      await updatePhaseStatus(runId, 'generate', 'completed');
+      await updatePhaseStats(runId, 'generate', {
         briefCount: generateResult.data.briefCount,
       });
     } else {
-      updatePhaseStatus(runId, 'generate', 'failed');
+      await updatePhaseStatus(runId, 'generate', 'failed');
     }
   }
 
@@ -394,17 +394,17 @@ export async function runPipeline(
   metrics.completePhase('deliver', deliverResult.success, deliverResult.data?.sent || 0);
 
   if (deliverResult.success) {
-    savePhaseResult(runId, 'deliver', deliverResult.data);
-    updatePhaseStatus(runId, 'deliver', 'completed');
+    await savePhaseResult(runId, 'deliver', deliverResult.data);
+    await updatePhaseStatus(runId, 'deliver', 'completed');
     if (deliverResult.data) {
-      updatePhaseStats(runId, 'deliver', {
+      await updatePhaseStats(runId, 'deliver', {
         sent: deliverResult.data.sent,
         failed: deliverResult.data.failed,
         subscriberCount: deliverResult.data.subscriberCount,
       });
     }
   } else {
-    updatePhaseStatus(runId, 'deliver', 'failed');
+    await updatePhaseStatus(runId, 'deliver', 'failed');
     errors.push({
       phase: 'deliver',
       message: deliverResult.error || 'Unknown error',
@@ -435,7 +435,7 @@ export async function runPipeline(
   // Attach API metrics to result
   result.apiMetrics = getGlobalMetrics().getSummary();
 
-  // Persist run to database
+  // Update the pipeline run row with final results
   try {
     const briefSummaries = result.phases.generate.data?.briefs?.map(b => ({
       name: b.name,
@@ -444,30 +444,25 @@ export async function runPipeline(
       effortEstimate: b.effortEstimate,
     })) || [];
 
-    await db.insert(pipelineRuns).values({
-      runId: result.runId,
-      startedAt: result.startedAt,
-      completedAt: result.completedAt,
-      config: fullConfig,
-      phases: {
-        scrape: scrapeResult.success ? 'completed' : 'failed',
-        analyze: analyzeResult.success ? 'completed' : 'failed',
-        generate: generateResult.success ? 'completed' : 'failed',
-        deliver: deliverResult.success ? 'completed' : 'failed',
-      },
-      stats: result.stats,
-      success: result.success,
-      totalDuration: result.totalDuration,
-      errors: result.errors,
-      apiMetrics: result.apiMetrics || null,
-      briefSummaries,
-    }).onConflictDoNothing();
+    await db.update(pipelineRuns)
+      .set({
+        status: result.success ? 'completed' : 'failed',
+        completedAt: result.completedAt,
+        stats: result.stats,
+        success: result.success,
+        totalDuration: result.totalDuration,
+        errors: result.errors,
+        apiMetrics: result.apiMetrics || null,
+        briefSummaries,
+        updatedAt: new Date(),
+      })
+      .where(eq(pipelineRuns.runId, runId));
 
-    logger.info({ runId }, 'Pipeline run persisted to database');
+    logger.info({ runId }, 'Pipeline run finalized in database');
   } catch (dbError) {
     logger.warn(
       { error: dbError instanceof Error ? dbError.message : String(dbError) },
-      'Failed to persist pipeline run to database (non-fatal)'
+      'Failed to finalize pipeline run in database (non-fatal)'
     );
   }
 
