@@ -1,14 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/AuthProvider";
 import { login, loginWithOAuth } from "@/lib/auth";
 import AuthForm from "@/components/AuthForm";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { isAuthenticated, isLoading } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Redirect to dashboard if already authenticated (e.g. after OAuth callback)
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace("/dashboard");
+    }
+  }, [isLoading, isAuthenticated, router]);
 
   const handleOAuth = async (provider: "google" | "github") => {
     setError(null);

@@ -95,10 +95,13 @@ export type OAuthProvider = "google" | "github";
 export async function loginWithOAuth(provider: OAuthProvider): Promise<void> {
   const { supabase } = await import("./supabase");
 
+  // Redirect back to /login (not /dashboard) so the OAuth callback
+  // lands on a page WITHOUT ProtectedLayout. AuthProvider processes
+  // the token, then the login page redirects to /dashboard.
   const { error } = await supabase.auth.signInWithOAuth({
     provider,
     options: {
-      redirectTo: `${window.location.origin}/dashboard`,
+      redirectTo: `${window.location.origin}/login`,
     },
   });
 
