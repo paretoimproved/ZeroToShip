@@ -96,6 +96,7 @@ function CompactCard({
 }
 
 export default function ArchivePage() {
+  const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [effortFilter, setEffortFilter] = useState<EffortLevel | "all">("all");
   const [minScore, setMinScore] = useState(0);
@@ -109,6 +110,12 @@ export default function ArchivePage() {
   const [selectedIdea, setSelectedIdea] = useState<IdeaBrief | null>(null);
   const [fetchKey, setFetchKey] = useState(0);
   const { isAuthenticated } = useAuth();
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => setSearchQuery(searchInput), 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   // Client-side filtering on accumulated ideas
   const filteredIdeas = useMemo(() => {
@@ -293,8 +300,8 @@ export default function ArchivePage() {
                 id="search"
                 type="text"
                 placeholder="Search ideas..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="w-full rounded-lg border border-gray-300 dark:border-gray-600 pl-10 pr-4 py-3 text-sm shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition-colors"
               />
             </div>
