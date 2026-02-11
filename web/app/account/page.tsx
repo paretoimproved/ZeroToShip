@@ -32,7 +32,7 @@ const plans = [
       "7-day archive access",
       "Email digest (weekly)",
     ],
-    cta: "Current Plan",
+    cta: "Free Forever",
   },
   {
     id: "pro",
