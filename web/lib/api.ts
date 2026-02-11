@@ -15,6 +15,7 @@ import type {
   PipelineRunResponse,
   PipelineStatus,
   PipelineRunRow,
+  EmailLogRow,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
@@ -214,6 +215,20 @@ class ApiClient {
 
   async getRunDetail(runId: string): Promise<{ run: PipelineRunRow }> {
     return this.request(`/admin/runs/${runId}`);
+  }
+
+  async getEmailLogs(params?: { page?: number; limit?: number; status?: string }): Promise<{
+    logs: EmailLogRow[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    if (params?.status) searchParams.set('status', params.status);
+    const qs = searchParams.toString();
+    return this.request(`/admin/email-logs${qs ? `?${qs}` : ''}`);
   }
 
   // Saved ideas (bookmark) endpoints

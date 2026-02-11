@@ -338,6 +338,40 @@ export const onboardingEmails = pgTable(
   })
 );
 
+/**
+ * Email delivery log status
+ */
+export type EmailLogStatus = 'sent' | 'delivered' | 'opened' | 'bounced' | 'complained' | 'failed';
+
+/**
+ * Email logs — tracks individual email deliveries and engagement
+ */
+export const emailLogs = pgTable(
+  'email_logs',
+  {
+    id: serial('id').primaryKey(),
+    runId: text('run_id'),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    recipientEmail: varchar('recipient_email', { length: 255 }).notNull(),
+    subject: varchar('subject', { length: 500 }).notNull(),
+    messageId: varchar('message_id', { length: 255 }),
+    status: varchar('status', { length: 20 }).notNull().default('sent'),
+    error: text('error'),
+    sentAt: timestamp('sent_at').notNull().defaultNow(),
+    deliveredAt: timestamp('delivered_at'),
+    openedAt: timestamp('opened_at'),
+  },
+  (table) => ({
+    runIdIdx: index('email_logs_run_id_idx').on(table.runId),
+    userIdIdx: index('email_logs_user_id_idx').on(table.userId),
+    messageIdUniqueIdx: uniqueIndex('email_logs_message_id_unique_idx').on(table.messageId),
+    statusIdx: index('email_logs_status_idx').on(table.status),
+    sentAtIdx: index('email_logs_sent_at_idx').on(table.sentAt),
+  })
+);
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   preferences: one(userPreferences, {
@@ -354,6 +388,14 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   validationRequests: many(validationRequests),
   usageRecords: many(usageTracking),
   onboardingEmails: many(onboardingEmails),
+  emailLogs: many(emailLogs),
+}));
+
+export const emailLogsRelations = relations(emailLogs, ({ one }) => ({
+  user: one(users, {
+    fields: [emailLogs.userId],
+    references: [users.id],
+  }),
 }));
 
 export const onboardingEmailsRelations = relations(onboardingEmails, ({ one }) => ({

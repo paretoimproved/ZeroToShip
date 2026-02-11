@@ -27,6 +27,7 @@ import { billingRoutes } from './routes/billing';
 import { webhookRoutes } from './routes/webhooks';
 import { authRoutes } from './routes/auth';
 import { adminRoutes } from './routes/admin';
+import { resendWebhookRoutes } from './routes/resendWebhooks';
 import type { UserTier } from './schemas';
 
 // Extend FastifyRequest to include user info
@@ -137,6 +138,7 @@ export async function createServer(config: ServerConfig = {}): Promise<FastifyIn
   // Webhooks need separate registration to avoid global JSON parsing
   // The webhook route has its own content type parser for raw body
   await server.register(webhookRoutes, { prefix: '/api/webhooks' });
+  await server.register(resendWebhookRoutes, { prefix: '/api/webhooks/resend' });
 
   // Global error handler
   server.setErrorHandler((error, request, reply) => {

@@ -17,7 +17,7 @@ import type {
   DeliverPhaseOutput,
   PipelineConfig,
 } from '../types';
-import { db, users, subscriptions, userPreferences } from '../../api/db/client';
+import { db, users, subscriptions, userPreferences, emailLogs } from '../../api/db/client';
 import { eq } from 'drizzle-orm';
 
 /**
@@ -114,6 +114,31 @@ export async function runDeliverPhase(
         },
       }
     );
+
+    // Persist delivery statuses to email_logs
+    try {
+      const emailLogRows = result.deliveries
+        .filter((d) => d.status === 'sent' || d.status === 'failed')
+        .map((delivery) => ({
+          runId,
+          userId: delivery.subscriberId,
+          recipientEmail: delivery.email,
+          subject: `Your Daily Startup Ideas — ${new Date().toLocaleDateString()}`,
+          messageId: delivery.messageId,
+          status: delivery.status as string,
+          error: delivery.error || null,
+          sentAt: delivery.sentAt,
+        }));
+
+      if (emailLogRows.length > 0) {
+        await db.insert(emailLogs).values(emailLogRows);
+      }
+    } catch (logError) {
+      logger.warn(
+        { error: logError instanceof Error ? logError.message : String(logError) },
+        'Failed to persist email delivery logs (non-fatal)'
+      );
+    }
 
     const duration = Date.now() - startTime;
 

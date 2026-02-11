@@ -8,7 +8,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { requireAdmin } from '../middleware/auth';
 import { runPipeline, DEFAULT_PIPELINE_CONFIG, generateRunId } from '../../scheduler';
-import { db, ideas, subscriptions, users, pipelineRuns } from '../db/client';
+import { db, ideas, subscriptions, users, pipelineRuns, emailLogs } from '../db/client';
 import { eq, count, desc, sql } from 'drizzle-orm';
 
 export const adminRoutes: FastifyPluginAsync = async (server) => {
@@ -319,5 +319,40 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
     }
 
     return reply.send({ run: result[0] });
+  });
+
+  /**
+   * GET /api/v1/admin/email-logs
+   * Paginated email delivery logs
+   */
+  server.get('/email-logs', { preHandler: [requireAdmin] }, async (request, reply) => {
+    const query = request.query as { page?: string; limit?: string; status?: string };
+    const page = Math.max(1, parseInt(query.page || '1'));
+    const limit = Math.min(100, Math.max(1, parseInt(query.limit || '20')));
+    const offset = (page - 1) * limit;
+
+    const statusFilter = query.status && query.status !== 'all'
+      ? eq(emailLogs.status, query.status)
+      : undefined;
+
+    const baseQuery = statusFilter
+      ? db.select().from(emailLogs).where(statusFilter)
+      : db.select().from(emailLogs);
+
+    const countQuery = statusFilter
+      ? db.select({ count: count() }).from(emailLogs).where(statusFilter)
+      : db.select({ count: count() }).from(emailLogs);
+
+    const [logs, totalResult] = await Promise.all([
+      baseQuery.orderBy(desc(emailLogs.sentAt)).limit(limit).offset(offset),
+      countQuery,
+    ]);
+
+    return reply.send({
+      logs,
+      total: totalResult[0]?.count || 0,
+      page,
+      limit,
+    });
   });
 };

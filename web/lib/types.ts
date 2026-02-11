@@ -184,3 +184,16 @@ export interface PipelineRunRow {
     effortEstimate: string;
   }> | null;
 }
+
+export interface EmailLogRow {
+  id: number;
+  runId: string | null;
+  recipientEmail: string;
+  subject: string;
+  messageId: string | null;
+  status: 'sent' | 'delivered' | 'opened' | 'bounced' | 'complained' | 'failed';
+  error: string | null;
+  sentAt: string;
+  deliveredAt: string | null;
+  openedAt: string | null;
+}

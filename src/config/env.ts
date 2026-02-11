@@ -45,6 +45,7 @@ const envSchema = z.object({
 
   // Email
   RESEND_API_KEY: z.string().default(''),
+  RESEND_WEBHOOK_SECRET: z.string().default(''),
 
   // Scrapers
   GITHUB_TOKEN: z.string().optional(),

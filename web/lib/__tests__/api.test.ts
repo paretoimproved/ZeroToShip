@@ -385,4 +385,36 @@ describe('ApiClient', () => {
       );
     });
   });
+
+  describe('Admin email logs endpoint', () => {
+    it('getEmailLogs should call /admin/email-logs with query params', async () => {
+      const mockResponse = {
+        logs: [{ id: 1, recipientEmail: 'user@example.com', status: 'delivered' }],
+        total: 1,
+        page: 1,
+        limit: 20,
+      };
+      mockFetch.mockReturnValue(jsonResponse(mockResponse));
+
+      const result = await api.getEmailLogs({ page: 2, limit: 10, status: 'delivered' });
+
+      expect(result).toEqual(mockResponse);
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain('/admin/email-logs?');
+      expect(url).toContain('page=2');
+      expect(url).toContain('limit=10');
+      expect(url).toContain('status=delivered');
+    });
+
+    it('getEmailLogs should call /admin/email-logs without query params when none provided', async () => {
+      const mockResponse = { logs: [], total: 0, page: 1, limit: 20 };
+      mockFetch.mockReturnValue(jsonResponse(mockResponse));
+
+      await api.getEmailLogs();
+
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain('/admin/email-logs');
+      expect(url).not.toContain('?');
+    });
+  });
 });
