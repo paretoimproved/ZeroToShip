@@ -614,7 +614,7 @@ describe('Auth Middleware Behavior', () => {
       if (request.userTier !== 'pro' && request.userTier !== 'enterprise') {
         reply.status(403).send({
           code: 'PRO_REQUIRED',
-          message: 'This endpoint requires a Pro or Enterprise subscription',
+          message: 'This endpoint requires a Builder or Enterprise subscription',
         });
       }
     }
@@ -910,7 +910,7 @@ describe('Auth Error Response Format', () => {
     const reply = createMockReply();
     reply.status(403).send({
       code: 'PRO_REQUIRED',
-      message: 'This endpoint requires a Pro or Enterprise subscription',
+      message: 'This endpoint requires a Builder or Enterprise subscription',
     });
 
     expect(reply._body).toHaveProperty('code');

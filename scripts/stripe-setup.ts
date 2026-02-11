@@ -40,17 +40,17 @@ interface ProductConfig {
 
 const products: ProductConfig[] = [
   {
-    name: 'ZeroToShip Pro',
+    name: 'ZeroToShip Builder',
     description: 'Access to all 10 daily ideas with full business briefs, unlimited archive, and priority support.',
     prices: [
       {
-        nickname: 'Pro Monthly',
+        nickname: 'Builder Monthly',
         unit_amount: 1900, // $19.00
         interval: 'month',
         envKey: 'STRIPE_PRICE_PRO_MONTHLY',
       },
       {
-        nickname: 'Pro Yearly',
+        nickname: 'Builder Yearly',
         unit_amount: 19000, // $190.00 (2 months free)
         interval: 'year',
         envKey: 'STRIPE_PRICE_PRO_YEARLY',
@@ -59,7 +59,7 @@ const products: ProductConfig[] = [
   },
   {
     name: 'ZeroToShip Enterprise',
-    description: 'Everything in Pro plus API access, custom categories, team sharing, and dedicated support.',
+    description: 'Everything in Builder plus API access, custom categories, team sharing, and dedicated support.',
     prices: [
       {
         nickname: 'Enterprise Monthly',

@@ -62,13 +62,13 @@ export const PRICE_DISPLAY = {
   pro_monthly: {
     amount: 1900,
     interval: "month" as const,
-    name: "Pro",
+    name: "Builder",
     description: "Perfect for indie hackers",
   },
   pro_yearly: {
     amount: 19000,
     interval: "year" as const,
-    name: "Pro",
+    name: "Builder",
     description: "2 months free",
   },
   enterprise_monthly: {

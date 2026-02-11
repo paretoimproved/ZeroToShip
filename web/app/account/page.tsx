@@ -37,7 +37,7 @@ const plans = [
   },
   {
     id: "pro",
-    name: "Pro",
+    name: "Builder",
     price: "$19",
     period: "per month",
     priceKey: "pro_monthly" as PriceKey,
@@ -51,7 +51,7 @@ const plans = [
       "Export to PDF/Notion",
       "Priority support",
     ],
-    cta: "Upgrade to Pro",
+    cta: "Upgrade to Builder",
     highlighted: true,
   },
   {
@@ -63,7 +63,7 @@ const plans = [
     yearlyPriceKey: "enterprise_yearly" as PriceKey,
     yearlyPrice: "$990/year (save 2 months)",
     features: [
-      "Everything in Pro",
+      "Everything in Builder",
       "Custom idea categories",
       "API access",
       "Team sharing (up to 10)",

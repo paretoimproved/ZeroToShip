@@ -91,8 +91,8 @@ vi.mock('../../../src/api/config/stripe', () => {
     string,
     { amount: number; interval: string; name: string; tier: 'pro' | 'enterprise' }
   > = {
-    pro_monthly: { amount: 1900, interval: 'month', name: 'Pro Monthly', tier: 'pro' },
-    pro_yearly: { amount: 19000, interval: 'year', name: 'Pro Yearly', tier: 'pro' },
+    pro_monthly: { amount: 1900, interval: 'month', name: 'Builder Monthly', tier: 'pro' },
+    pro_yearly: { amount: 19000, interval: 'year', name: 'Builder Yearly', tier: 'pro' },
     enterprise_monthly: {
       amount: 9900,
       interval: 'month',

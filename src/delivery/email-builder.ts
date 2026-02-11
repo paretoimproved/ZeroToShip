@@ -385,7 +385,7 @@ function buildOtherIdeasSection(
       ${rows}
       ${lockedCount > 0 && tier === 'free' ? `
         <p style="text-align: center; color: #888; margin-top: 16px;">
-          ${lockedCount} more idea${lockedCount > 1 ? 's' : ''} available with Pro
+          ${lockedCount} more idea${lockedCount > 1 ? 's' : ''} available with Builder
         </p>
       ` : ''}
     </div>
@@ -403,7 +403,7 @@ function buildCtaSection(tier: SubscriberTier, config: Required<EmailBuilderConf
   return `
     <div class="cta-section">
       <h3>Every Brief. Every Day.</h3>
-      <p>You're seeing 1 featured brief per email. Pro members get the full brief for every idea, plus archive access and search.</p>
+      <p>You're seeing 1 featured brief per email. Builder members get the full brief for every idea, plus archive access and search.</p>
       <a href="${escapeHtml(config.upgradeUrl)}" class="cta-button">Unlock Every Brief</a>
     </div>
   `;
@@ -551,7 +551,7 @@ function buildPlainTextEmail(
   if (tier === 'free') {
     lines.push('');
     lines.push('-'.repeat(50));
-    lines.push('Upgrade to Pro for every full brief, plus archive & search:');
+    lines.push('Upgrade to Builder for every full brief, plus archive & search:');
     lines.push(config.upgradeUrl);
   }
 

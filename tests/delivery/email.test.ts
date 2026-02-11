@@ -1188,11 +1188,11 @@ describe('Tier-based content', () => {
       expect(result.html).toContain('locked-idea');
     });
 
-    it('shows "available with Pro" message for free tier', () => {
+    it('shows "available with Builder" message for free tier', () => {
       const briefs = createMockBriefs(10);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.html).toContain('available with Pro');
+      expect(result.html).toContain('available with Builder');
     });
 
     it('shows correct locked count for free tier', () => {
@@ -1201,14 +1201,14 @@ describe('Tier-based content', () => {
       const briefs = createMockBriefs(10);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.html).toContain('7 more ideas available with Pro');
+      expect(result.html).toContain('7 more ideas available with Builder');
     });
 
     it('shows upgrade URL in plain text', () => {
       const briefs = createMockBriefs(10);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.text).toContain('Upgrade to Pro for every full brief, plus archive & search:');
+      expect(result.text).toContain('Upgrade to Builder for every full brief, plus archive & search:');
     });
   });
 
@@ -1225,14 +1225,14 @@ describe('Tier-based content', () => {
       const result = buildDailyEmail(briefs, 'pro');
 
       expect(result.html).not.toContain('Unlock All Ideas');
-      expect(result.html).not.toContain('Upgrade to Pro</a>');
+      expect(result.html).not.toContain('Upgrade to Builder</a>');
     });
 
     it('does not show upgrade message in plain text', () => {
       const briefs = createMockBriefs(10);
       const result = buildDailyEmail(briefs, 'pro');
 
-      expect(result.text).not.toContain('Upgrade to Pro');
+      expect(result.text).not.toContain('Upgrade to Builder');
     });
 
     it('does not apply locked-idea class to any idea rows', () => {

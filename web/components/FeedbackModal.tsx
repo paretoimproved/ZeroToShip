@@ -296,7 +296,7 @@ export default function FeedbackModal({
               <p className="text-sm text-primary-700 dark:text-primary-300">
                 Want to help even more?{" "}
                 <a href="/signup?plan=pro" className="font-medium underline">
-                  Upgrade to Pro
+                  Upgrade to Builder
                 </a>{" "}
                 and get 10 full briefs daily.
               </p>

@@ -86,13 +86,13 @@ export const PRICE_INFO = {
   pro_monthly: {
     amount: 1900, // cents
     interval: 'month' as const,
-    name: 'Pro Monthly',
+    name: 'Builder Monthly',
     tier: 'pro' as const,
   },
   pro_yearly: {
     amount: 19000, // cents - 2 months free
     interval: 'year' as const,
-    name: 'Pro Yearly',
+    name: 'Builder Yearly',
     tier: 'pro' as const,
   },
   enterprise_monthly: {

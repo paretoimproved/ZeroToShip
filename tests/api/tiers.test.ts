@@ -182,7 +182,7 @@ describe('getUpgradePrompt', () => {
   it('should return correct prompt for pro-gated features', () => {
     const prompt = getUpgradePrompt('ideas.fullBrief');
     expect(prompt.requiredTier).toBe('pro');
-    expect(prompt.message).toContain('Pro');
+    expect(prompt.message).toContain('Builder');
     expect(prompt.upgradeUrl).toBeTruthy();
   });
 

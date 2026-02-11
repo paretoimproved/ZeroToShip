@@ -152,7 +152,7 @@ export function getUpgradePrompt(feature: string): {
   const tierNames: Record<UserTier, string> = {
     anonymous: 'Free',
     free: 'Free',
-    pro: 'Pro',
+    pro: 'Builder',
     enterprise: 'Enterprise',
   };
 

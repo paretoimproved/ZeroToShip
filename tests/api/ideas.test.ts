@@ -167,7 +167,7 @@ describe('Upgrade Prompts', () => {
       const prompt = getUpgradePrompt('ideas.fullBrief');
 
       expect(prompt.requiredTier).toBe('pro');
-      expect(prompt.message).toContain('Pro');
+      expect(prompt.message).toContain('Builder');
       expect(prompt.upgradeUrl).toBe('https://zerotoship.dev/pricing');
     });
 
@@ -175,7 +175,7 @@ describe('Upgrade Prompts', () => {
       const prompt = getUpgradePrompt('ideas.search');
 
       expect(prompt.requiredTier).toBe('pro');
-      expect(prompt.message).toContain('Pro');
+      expect(prompt.message).toContain('Builder');
     });
 
     it('should return default prompt for unknown feature', () => {
