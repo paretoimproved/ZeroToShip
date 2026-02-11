@@ -30,6 +30,17 @@ import { makeGenerationBrief, makeGenerationBriefs } from '../fixtures';
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
+/** Normalize HTML for stable snapshot comparison:
+ *  - Strip leading whitespace (indentation varies across environments)
+ *  - Replace dynamic date with placeholder (changes daily) */
+const normalizeForSnapshot = (s: string) =>
+  s.replace(/^[ \t]+/gm, '')
+   .replace(
+     /\b(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday), \w+ \d{1,2}, \d{4}\b/g,
+     'DATE_PLACEHOLDER',
+   )
+   .replace(/&copy; \d{4}/g, '&copy; YEAR');
+
 // ---------------------------------------------------------------------------
 // Test data factories
 // ---------------------------------------------------------------------------
@@ -87,7 +98,7 @@ describe('Email Builder', () => {
         upgradeUrl: 'https://test.zerotoship.dev/upgrade',
       });
 
-      expect(result.html).toMatchSnapshot();
+      expect(normalizeForSnapshot(result.html)).toMatchSnapshot();
     });
 
     it('matches snapshot for multiple briefs (free tier)', () => {
@@ -98,7 +109,7 @@ describe('Email Builder', () => {
         upgradeUrl: 'https://test.zerotoship.dev/upgrade',
       });
 
-      expect(result.html).toMatchSnapshot();
+      expect(normalizeForSnapshot(result.html)).toMatchSnapshot();
     });
 
     it('matches snapshot for multiple briefs (pro tier)', () => {
@@ -109,7 +120,7 @@ describe('Email Builder', () => {
         upgradeUrl: 'https://test.zerotoship.dev/upgrade',
       });
 
-      expect(result.html).toMatchSnapshot();
+      expect(normalizeForSnapshot(result.html)).toMatchSnapshot();
     });
 
     it('matches snapshot for empty briefs', () => {

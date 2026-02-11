@@ -16,9 +16,10 @@ jobs:
           node-version: '23'
           cache: 'npm'
       - run: npm ci
+      - run: npm run build --workspace=@zerotoship/shared
+      - run: npm test
       - run: npm run build
       - run: npx tsc --noEmit
-      - run: npm test
 
   deploy:
     needs: build-and-test
