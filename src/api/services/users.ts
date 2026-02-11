@@ -4,7 +4,7 @@
  * Business logic for user management, preferences, and subscriptions
  */
 
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import {
   db,
   users,
@@ -283,10 +283,11 @@ export async function createApiKey(
  */
 export async function deleteApiKey(userId: string, keyId: string): Promise<boolean> {
   try {
-    await db
+    const result = await db
       .delete(apiKeys)
-      .where(eq(apiKeys.id, keyId));
-    return true;
+      .where(and(eq(apiKeys.id, keyId), eq(apiKeys.userId, userId)))
+      .returning({ id: apiKeys.id });
+    return result.length > 0;
   } catch {
     return false;
   }
@@ -297,11 +298,12 @@ export async function deleteApiKey(userId: string, keyId: string): Promise<boole
  */
 export async function deactivateApiKey(userId: string, keyId: string): Promise<boolean> {
   try {
-    await db
+    const result = await db
       .update(apiKeys)
       .set({ isActive: false })
-      .where(eq(apiKeys.id, keyId));
-    return true;
+      .where(and(eq(apiKeys.id, keyId), eq(apiKeys.userId, userId)))
+      .returning({ id: apiKeys.id });
+    return result.length > 0;
   } catch {
     return false;
   }
