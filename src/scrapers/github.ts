@@ -11,7 +11,7 @@ const DEFAULT_HOURS_BACK = 2160;
 const DEFAULT_MAX_PER_QUERY = 50;
 
 /** Default minimum star count for a repo to be included */
-const DEFAULT_MIN_STARS = 100;
+const DEFAULT_MIN_STARS = 10;
 
 /** GitHub API results per page (max allowed by API) */
 const GITHUB_API_PER_PAGE = 100;
@@ -89,11 +89,22 @@ export class GitHubScraper {
     minStars?: number;
   } = {}): Promise<ScrapeResult<GitHubIssue>> {
     const { hoursBack = DEFAULT_HOURS_BACK, maxPerQuery = DEFAULT_MAX_PER_QUERY, minStars = DEFAULT_MIN_STARS } = options;
+
+    const tokenValid = await this.api.validateToken();
+    if (!tokenValid) {
+      throw wrapScraperError(
+        new Error('GitHub token is invalid or expired — check GITHUB_TOKEN'),
+        'github',
+        {}
+      );
+    }
+
     const cutoffDate = getCutoffDate(hoursBack);
 
     const allIssues: GitHubIssue[] = [];
     const seenIds = new Set<number>();
     let totalFound = 0;
+    let filteredByStars = 0;
     let rateLimitRemaining = INITIAL_RATE_LIMIT_BUDGET;
 
     logger.info({ queryCount: this.queries.length }, 'Starting GitHub scrape');
@@ -120,7 +131,10 @@ export class GitHubScraper {
           seenIds.add(item.id);
 
           const repoStars = await this.getRepoStars(item.repoFullName);
-          if (repoStars < minStars) continue;
+          if (repoStars < minStars) {
+            filteredByStars++;
+            continue;
+          }
 
           const issue = this.transformToGitHubIssue(item, repoStars);
           allIssues.push(issue);
@@ -137,6 +151,11 @@ export class GitHubScraper {
         logger.error({ err: scraperErr, description: queryConfig.description }, 'Error with query');
       }
     }
+
+    logger.info(
+      { kept: allIssues.length, filtered: filteredByStars, total: totalFound },
+      'GitHub star filter results'
+    );
 
     const sortedIssues = allIssues.sort((a, b) => {
       const scoreA = a.reactions + a.commentCount + (a.repoStars / STARS_SCORE_DIVISOR);
@@ -173,7 +192,8 @@ export class GitHubScraper {
       const repoInfo = await this.api.getRepoInfo(owner, repo);
       repoStarsCache.set(repoFullName, repoInfo.stars);
       return repoInfo.stars;
-    } catch {
+    } catch (error) {
+      logger.warn({ repo: repoFullName, err: error }, 'Failed to fetch repo stars');
       repoStarsCache.set(repoFullName, 0);
       return 0;
     }

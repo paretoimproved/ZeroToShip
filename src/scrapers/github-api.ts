@@ -174,6 +174,18 @@ export class GitHubAPI {
     return false;
   }
 
+  /**
+   * Validate the configured token by calling the rate limit endpoint
+   */
+  async validateToken(): Promise<boolean> {
+    try {
+      await this.getRateLimit();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   get currentRateLimitRemaining(): number {
     return this.rateLimitRemaining;
   }
