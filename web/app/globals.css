@@ -7,11 +7,9 @@
   --background: #ffffff;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground: #ededed;
-    --background: #0a0a0a;
-  }
+.dark {
+  --foreground: #ededed;
+  --background: #0a0a0a;
 }
 
 body {
@@ -75,10 +73,8 @@ input[type="range"]::-webkit-slider-runnable-track {
   background: #e5e7eb;
 }
 
-@media (prefers-color-scheme: dark) {
-  input[type="range"]::-webkit-slider-runnable-track {
-    background: #374151;
-  }
+.dark input[type="range"]::-webkit-slider-runnable-track {
+  background: #374151;
 }
 
 input[type="range"]::-webkit-slider-thumb {
@@ -100,10 +96,8 @@ input[type="range"]::-moz-range-track {
   background: #e5e7eb;
 }
 
-@media (prefers-color-scheme: dark) {
-  input[type="range"]::-moz-range-track {
-    background: #374151;
-  }
+.dark input[type="range"]::-moz-range-track {
+  background: #374151;
 }
 
 input[type="range"]::-moz-range-thumb {

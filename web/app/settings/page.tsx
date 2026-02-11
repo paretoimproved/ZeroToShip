@@ -1,44 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
 import ProtectedLayout from "@/components/ProtectedLayout";
 import { api } from "@/lib/api";
 import { trackEmailSettingsChanged } from "@/lib/analytics";
-import type { EffortLevel } from "@/lib/types";
-
-interface Settings {
-  emailFrequency: "daily" | "weekly" | "none";
-  categories: string[];
-  effortFilter: EffortLevel[];
-  minPriorityScore: number;
-  darkMode: "system" | "light" | "dark";
-}
-
-const defaultSettings: Settings = {
-  emailFrequency: "daily",
-  categories: ["developer-tools", "saas", "ai"],
-  effortFilter: ["weekend", "week"],
-  minPriorityScore: 50,
-  darkMode: "system",
-};
-
-const categoryOptions = [
-  { value: "developer-tools", label: "Developer Tools" },
-  { value: "saas", label: "SaaS" },
-  { value: "ai", label: "AI/ML" },
-  { value: "fintech", label: "Fintech" },
-  { value: "ecommerce", label: "E-commerce" },
-  { value: "productivity", label: "Productivity" },
-  { value: "marketing", label: "Marketing" },
-  { value: "health", label: "Health & Fitness" },
-];
-
-const effortOptions: { value: EffortLevel; label: string }[] = [
-  { value: "weekend", label: "Weekend Projects" },
-  { value: "week", label: "1-Week Builds" },
-  { value: "month", label: "Month-long Projects" },
-  { value: "quarter", label: "Quarter+ Ventures" },
-];
 
 const emailFrequencyLabels: Record<string, { title: string; description: string }> = {
   daily: { title: "Daily digest", description: "Get a curated list of ideas every morning" },
@@ -47,40 +13,28 @@ const emailFrequencyLabels: Record<string, { title: string; description: string 
 };
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState<Settings>(defaultSettings);
+  const [emailFrequency, setEmailFrequency] = useState<"daily" | "weekly" | "none">("daily");
   const [saved, setSaved] = useState(false);
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
-  const handleCategoryToggle = (category: string) => {
-    setSettings((prev) => ({
-      ...prev,
-      categories: prev.categories.includes(category)
-        ? prev.categories.filter((c) => c !== category)
-        : [...prev.categories, category],
-    }));
-    setSaved(false);
-  };
-
-  const handleEffortToggle = (effort: EffortLevel) => {
-    setSettings((prev) => ({
-      ...prev,
-      effortFilter: prev.effortFilter.includes(effort)
-        ? prev.effortFilter.filter((e) => e !== effort)
-        : [...prev.effortFilter, effort],
-    }));
-    setSaved(false);
-  };
+  useEffect(() => {
+    setMounted(true);
+    api.getCurrentUser().then((user) => {
+      if (user.preferences?.emailFrequency) {
+        setEmailFrequency(user.preferences.emailFrequency);
+      }
+    }).catch(() => {
+      // Silently fall back to default if fetch fails
+    });
+  }, []);
 
   const handleSave = async () => {
     try {
-      await api.updatePreferences({
-        categories: settings.categories,
-        effortFilter: settings.effortFilter,
-        emailFrequency: settings.emailFrequency,
-        minPriorityScore: settings.minPriorityScore,
-      });
+      await api.updatePreferences({ emailFrequency });
       trackEmailSettingsChanged({
-        frequency: settings.emailFrequency,
-        categories: settings.categories,
+        frequency: emailFrequency,
+        categories: [],
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -117,16 +71,13 @@ export default function SettingsPage() {
 
           <div className="space-y-3">
             {(["daily", "weekly", "none"] as const).map((frequency) => {
-              const isSelected = settings.emailFrequency === frequency;
+              const isSelected = emailFrequency === frequency;
               const label = emailFrequencyLabels[frequency];
               return (
                 <button
                   key={frequency}
                   onClick={() => {
-                    setSettings((prev) => ({
-                      ...prev,
-                      emailFrequency: frequency,
-                    }));
+                    setEmailFrequency(frequency);
                     setSaved(false);
                   }}
                   className={`w-full flex items-center gap-3 p-4 rounded-lg border-2 transition-all text-left ${
@@ -157,127 +108,6 @@ export default function SettingsPage() {
                 </button>
               );
             })}
-          </div>
-        </section>
-
-        {/* Categories */}
-        <section className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center flex-shrink-0">
-              <svg className="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Preferred Categories
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Select the types of ideas you&apos;re most interested in
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {categoryOptions.map((category) => {
-              const isActive = settings.categories.includes(category.value);
-              return (
-                <button
-                  key={category.value}
-                  onClick={() => handleCategoryToggle(category.value)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    isActive
-                      ? "bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300 ring-2 ring-primary-500 ring-offset-2 dark:ring-offset-gray-800"
-                      : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                  }`}
-                >
-                  {category.label}
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Effort Filter */}
-        <section className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center flex-shrink-0">
-              <svg className="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Effort Preferences
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Show ideas that match your available time commitment
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            {effortOptions.map((effort) => (
-              <label key={effort.value} className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={settings.effortFilter.includes(effort.value)}
-                  onChange={() => handleEffortToggle(effort.value)}
-                  className="w-4 h-4 text-primary-600 focus:ring-primary-500 rounded"
-                />
-                <span className="ml-3 text-gray-700 dark:text-gray-300">
-                  {effort.label}
-                </span>
-              </label>
-            ))}
-          </div>
-        </section>
-
-        {/* Minimum Score */}
-        <section className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center flex-shrink-0">
-              <svg className="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Quality Threshold
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Only show ideas with a priority score above this threshold
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                Minimum Score
-              </span>
-              <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                {settings.minPriorityScore}
-              </span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={settings.minPriorityScore}
-              onChange={(e) => {
-                setSettings((prev) => ({
-                  ...prev,
-                  minPriorityScore: Number(e.target.value),
-                }));
-                setSaved(false);
-              }}
-              className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
-            />
-            <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-              <span>Show all</span>
-              <span>Top quality only</span>
-            </div>
           </div>
         </section>
 
@@ -326,14 +156,11 @@ export default function SettingsPage() {
                 },
               ]
             ).map(({ mode, label, icon }) => {
-              const isActive = settings.darkMode === mode;
+              const isActive = mounted && theme === mode;
               return (
                 <button
                   key={mode}
-                  onClick={() => {
-                    setSettings((prev) => ({ ...prev, darkMode: mode }));
-                    setSaved(false);
-                  }}
+                  onClick={() => setTheme(mode)}
                   className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all cursor-pointer ${
                     isActive
                       ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20"

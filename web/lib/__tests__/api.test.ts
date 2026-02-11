@@ -125,13 +125,13 @@ describe('ApiClient', () => {
       expect(callArgs[1].body).toBe(JSON.stringify({ priceKey: 'pro_monthly' }));
     });
 
-    it('should send PATCH with JSON body for updatePreferences', async () => {
+    it('should send PUT with JSON body for updatePreferences', async () => {
       mockFetch.mockReturnValue(jsonResponse({ id: '1', email: 'test@test.com' }));
 
       await api.updatePreferences({ emailFrequency: 'weekly' });
 
       const callArgs = mockFetch.mock.calls[0];
-      expect(callArgs[1].method).toBe('PATCH');
+      expect(callArgs[1].method).toBe('PUT');
       expect(callArgs[1].body).toBe(JSON.stringify({ emailFrequency: 'weekly' }));
     });
 
@@ -311,17 +311,17 @@ describe('ApiClient', () => {
       );
     });
 
-    it('updatePreferences should call /users/me/preferences with PATCH', async () => {
+    it('updatePreferences should call /user/preferences with PUT', async () => {
       const mockUser = { id: '1', email: 'test@example.com' };
       mockFetch.mockReturnValue(jsonResponse(mockUser));
 
-      await api.updatePreferences({ categories: ['devtools'], minPriorityScore: 60 });
+      await api.updatePreferences({ emailFrequency: 'weekly' });
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/users/me/preferences'),
+        expect.stringContaining('/user/preferences'),
         expect.objectContaining({
-          method: 'PATCH',
-          body: JSON.stringify({ categories: ['devtools'], minPriorityScore: 60 }),
+          method: 'PUT',
+          body: JSON.stringify({ emailFrequency: 'weekly' }),
         })
       );
     });

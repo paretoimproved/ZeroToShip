@@ -136,10 +136,7 @@ export interface PipelineStatus {
 }
 
 export interface UserPreferences {
-  categories: string[];
-  effortFilter: EffortLevel[];
   emailFrequency: "daily" | "weekly" | "none";
-  minPriorityScore: number;
 }
 
 export interface Subscription {
