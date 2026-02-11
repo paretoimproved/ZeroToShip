@@ -19,8 +19,7 @@ import {
 } from './similarity';
 import { calculateSignalStrength } from '../scrapers/signals';
 import { getBatchModel } from '../config/models';
-import { getGlobalMetrics } from '../scheduler/utils/api-metrics';
-import { estimateTokens } from '../scheduler/utils/token-estimator';
+import { callAnthropicApi } from '../lib/anthropic';
 
 /**
  * A cluster of related posts describing the same problem
@@ -160,30 +159,15 @@ ${postSummaries}
 Problem statement:`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': anthropicApiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: getBatchModel(),
-        max_tokens: STATEMENT_MAX_TOKENS,
-        messages: [{ role: 'user', content: prompt }],
-      }),
+    const result = await callAnthropicApi({
+      apiKey: anthropicApiKey,
+      model: getBatchModel(),
+      prompt,
+      maxTokens: STATEMENT_MAX_TOKENS,
+      module: 'deduplicator',
     });
 
-    if (!response.ok) {
-      logger.warn({ status: response.status }, 'Failed to generate problem statement');
-      return representative.title;
-    }
-
-    const data = await response.json() as {
-      content: Array<{ type: string; text: string }>;
-    };
-
-    return data.content[0]?.text?.trim() || representative.title;
+    return result.text.trim() || representative.title;
   } catch (error) {
     logger.warn({ err: error }, 'Error generating problem statement');
     return representative.title;
@@ -234,62 +218,21 @@ async function generateProblemStatementsBatch(
   clusters: Array<{ id: string; posts: RawPost[] }>,
   anthropicApiKey: string
 ): Promise<Map<string, string>> {
-  const startTime = Date.now();
   const prompt = buildBatchStatementPrompt(clusters);
   const model = getBatchModel();
-  const inputTokens = estimateTokens(prompt);
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': anthropicApiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: STATEMENT_BATCH_MAX_TOKENS,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
-
-    if (!response.ok) {
-      // Record failed call
-      getGlobalMetrics().recordCall({
-        timestamp: new Date(),
-        module: 'deduplicator',
-        model,
-        batchSize: clusters.length,
-        itemsProcessed: 0,
-        inputTokens,
-        outputTokens: 0,
-        success: false,
-        durationMs: Date.now() - startTime,
-      });
-      throw new Error(`Batch statement generation failed: ${response.status}`);
-    }
-
-    const data = await response.json() as {
-      content: Array<{ type: string; text: string }>;
-    };
-    const content = data.content[0]?.text;
-
-    // Record successful call
-    getGlobalMetrics().recordCall({
-      timestamp: new Date(),
-      module: 'deduplicator',
+    const result = await callAnthropicApi({
+      apiKey: anthropicApiKey,
       model,
+      prompt,
+      maxTokens: STATEMENT_BATCH_MAX_TOKENS,
+      module: 'deduplicator',
       batchSize: clusters.length,
-      itemsProcessed: clusters.length,
-      inputTokens,
-      outputTokens: estimateTokens(content || ''),
-      success: true,
-      durationMs: Date.now() - startTime,
     });
 
     // Parse JSON response - extract array from response
-    const jsonMatch = content?.match(/\[[\s\S]*\]/);
+    const jsonMatch = result.text.match(/\[[\s\S]*\]/);
     if (!jsonMatch) throw new Error('No JSON array in response');
 
     const parsed = JSON.parse(jsonMatch[0]) as Array<{ id: string; statement: string }>;

@@ -19,8 +19,8 @@ import {
 } from './templates';
 import { getRecommendedStack, type EffortLevel, type TechStackRecommendation } from './tech-stacks';
 import { getBriefModel, type UserTier } from '../config/models';
-import { getGlobalMetrics } from '../scheduler/utils/api-metrics';
-import { estimateTokens } from '../scheduler/utils/token-estimator';
+import { callAnthropicApi } from '../lib/anthropic';
+import { sleep } from '../scrapers/shared';
 
 /**
  * Complete business brief for a startup idea
@@ -138,13 +138,6 @@ const DEFAULT_CONFIG: Required<BriefGeneratorConfig> = {
 };
 
 /**
- * Sleep helper for rate limiting
- */
-function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-/**
  * Generate unique brief ID
  */
 function generateBriefId(): string {
@@ -200,88 +193,20 @@ async function callClaude(
   model: string,
   temperature: number
 ): Promise<GPTBriefResponse | null> {
-  const startTime = Date.now();
-  const inputTokens = estimateTokens(BRIEF_SYSTEM_PROMPT) + estimateTokens(prompt);
-
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: SINGLE_BRIEF_MAX_TOKENS,
-        temperature,
-        system: BRIEF_SYSTEM_PROMPT,
-        messages: [
-          { role: 'user', content: prompt },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      logger.warn({ status: response.status, error }, 'Anthropic API error');
-
-      // Record failed call
-      getGlobalMetrics().recordCall({
-        timestamp: new Date(),
-        module: 'brief-generator',
-        model,
-        batchSize: 1,
-        itemsProcessed: 0,
-        inputTokens,
-        outputTokens: 0,
-        success: false,
-        durationMs: Date.now() - startTime,
-      });
-
-      return null;
-    }
-
-    const data = await response.json() as {
-      content: Array<{ type: string; text: string }>;
-    };
-
-    const content = data.content[0]?.text;
-    if (!content) {
-      logger.warn('No content in Anthropic response');
-      return null;
-    }
-
-    // Record successful call
-    getGlobalMetrics().recordCall({
-      timestamp: new Date(),
-      module: 'brief-generator',
+    const result = await callAnthropicApi({
+      apiKey,
       model,
-      batchSize: 1,
-      itemsProcessed: 1,
-      inputTokens,
-      outputTokens: estimateTokens(content),
-      success: true,
-      durationMs: Date.now() - startTime,
+      system: BRIEF_SYSTEM_PROMPT,
+      prompt,
+      maxTokens: SINGLE_BRIEF_MAX_TOKENS,
+      temperature,
+      module: 'brief-generator',
     });
 
-    return parseJsonResponse<GPTBriefResponse>(content);
+    return parseJsonResponse<GPTBriefResponse>(result.text);
   } catch (error) {
     logger.warn({ err: error }, 'Anthropic API call failed');
-
-    // Record failed call
-    getGlobalMetrics().recordCall({
-      timestamp: new Date(),
-      module: 'brief-generator',
-      model,
-      batchSize: 1,
-      itemsProcessed: 0,
-      inputTokens,
-      outputTokens: 0,
-      success: false,
-      durationMs: Date.now() - startTime,
-    });
-
     return null;
   }
 }
@@ -321,89 +246,23 @@ async function callClaudeBatch(
   temperature: number,
   batchSize: number
 ): Promise<GPTBatchBriefResponse[] | null> {
-  const startTime = Date.now();
-  const inputTokens = estimateTokens(BRIEF_SYSTEM_PROMPT) + estimateTokens(prompt);
-
   const maxTokens = Math.min(TOKENS_PER_BRIEF_ESTIMATE * batchSize, BATCH_MAX_OUTPUT_TOKENS);
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: maxTokens,
-        temperature,
-        system: BRIEF_SYSTEM_PROMPT,
-        messages: [
-          { role: 'user', content: prompt },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      logger.warn({ status: response.status, error }, 'Anthropic API error');
-
-      getGlobalMetrics().recordCall({
-        timestamp: new Date(),
-        module: 'brief-generator',
-        model,
-        batchSize,
-        itemsProcessed: 0,
-        inputTokens,
-        outputTokens: 0,
-        success: false,
-        durationMs: Date.now() - startTime,
-      });
-
-      return null;
-    }
-
-    const data = await response.json() as {
-      content: Array<{ type: string; text: string }>;
-    };
-
-    const content = data.content[0]?.text;
-    if (!content) {
-      logger.warn('No content in Anthropic response');
-      return null;
-    }
-
-    const parsed = parseJsonResponse<GPTBatchBriefResponse[]>(content);
-
-    getGlobalMetrics().recordCall({
-      timestamp: new Date(),
-      module: 'brief-generator',
+    const result = await callAnthropicApi({
+      apiKey,
       model,
+      system: BRIEF_SYSTEM_PROMPT,
+      prompt,
+      maxTokens,
+      temperature,
+      module: 'brief-generator',
       batchSize,
-      itemsProcessed: parsed?.length || 0,
-      inputTokens,
-      outputTokens: estimateTokens(content),
-      success: true,
-      durationMs: Date.now() - startTime,
     });
 
-    return parsed;
+    return parseJsonResponse<GPTBatchBriefResponse[]>(result.text);
   } catch (error) {
     logger.warn({ err: error }, 'Anthropic API batch call failed');
-
-    getGlobalMetrics().recordCall({
-      timestamp: new Date(),
-      module: 'brief-generator',
-      model,
-      batchSize,
-      itemsProcessed: 0,
-      inputTokens,
-      outputTokens: 0,
-      success: false,
-      durationMs: Date.now() - startTime,
-    });
-
     return null;
   }
 }

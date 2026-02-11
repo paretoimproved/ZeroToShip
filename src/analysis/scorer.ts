@@ -20,9 +20,9 @@ import {
   type ScoreResponse,
 } from './score-prompts';
 import { getBatchModel } from '../config/models';
-import { getGlobalMetrics } from '../scheduler/utils/api-metrics';
-import { estimateTokens } from '../scheduler/utils/token-estimator';
 import { ScoreCache, type ScoreCacheOptions } from './score-cache';
+import { callAnthropicApi } from '../lib/anthropic';
+import { sleep } from '../scrapers/shared';
 
 /**
  * Batch size for batch scoring API calls
@@ -169,13 +169,6 @@ function normalizePriority(rawPriority: number): number {
 }
 
 /**
- * Sleep helper for rate limiting
- */
-function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-/**
  * Call Anthropic API to score a problem cluster
  */
 async function callAnthropic(
@@ -184,44 +177,16 @@ async function callAnthropic(
   model: string
 ): Promise<ScoreResponse | null> {
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: SCORING_MAX_TOKENS,
-        system: SCORING_SYSTEM_PROMPT,
-        messages: [
-          { role: 'user', content: prompt },
-        ],
-      }),
+    const result = await callAnthropicApi({
+      apiKey,
+      model,
+      system: SCORING_SYSTEM_PROMPT,
+      prompt,
+      maxTokens: SCORING_MAX_TOKENS,
+      module: 'scorer',
     });
 
-    if (!response.ok) {
-      const error = await response.text();
-      const analysisErr = new AnalysisError(`Anthropic API error (${response.status})`, {
-        severity: 'degraded',
-        context: { statusCode: response.status, response: error },
-      });
-      logger.warn({ err: analysisErr, status: response.status }, 'Anthropic API error');
-      return null;
-    }
-
-    const data = await response.json() as {
-      content: Array<{ type: string; text: string }>;
-    };
-
-    const content = data.content[0]?.text;
-    if (!content) {
-      logger.warn('No content in Anthropic response');
-      return null;
-    }
-
-    return parseScoreResponse(content);
+    return parseScoreResponse(result.text);
   } catch (error) {
     const analysisErr = new AnalysisError(
       `Anthropic API call failed: ${error instanceof Error ? error.message : String(error)}`,
@@ -244,94 +209,27 @@ async function scoreBatch(
   apiKey: string,
   model: string
 ): Promise<Map<string, ScoreResponse>> {
-  const startTime = Date.now();
   const prompt = buildBatchScoringPrompt(clusters);
   const clusterIds = clusters.map(c => c.id);
-  const inputTokens = estimateTokens(BATCH_SCORING_SYSTEM_PROMPT) + estimateTokens(prompt);
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: BATCH_SCORING_MAX_TOKENS,
-        system: BATCH_SCORING_SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      const analysisErr = new AnalysisError(`Batch scoring API error (${response.status})`, {
-        severity: 'degraded',
-        context: { statusCode: response.status, batchSize: clusters.length },
-      });
-      logger.warn({ err: analysisErr, status: response.status }, 'Batch scoring API error');
-
-      // Record failed call
-      getGlobalMetrics().recordCall({
-        timestamp: new Date(),
-        module: 'scorer',
-        model,
-        batchSize: clusters.length,
-        itemsProcessed: 0,
-        inputTokens,
-        outputTokens: 0,
-        success: false,
-        durationMs: Date.now() - startTime,
-      });
-
-      return new Map();
-    }
-
-    const data = await response.json() as {
-      content: Array<{ type: string; text: string }>;
-    };
-
-    const content = data.content[0]?.text;
-    if (!content) {
-      logger.warn('No content in batch scoring response');
-      return new Map();
-    }
-
-    // Record successful call
-    getGlobalMetrics().recordCall({
-      timestamp: new Date(),
-      module: 'scorer',
+    const result = await callAnthropicApi({
+      apiKey,
       model,
+      system: BATCH_SCORING_SYSTEM_PROMPT,
+      prompt,
+      maxTokens: BATCH_SCORING_MAX_TOKENS,
+      module: 'scorer',
       batchSize: clusters.length,
-      itemsProcessed: clusters.length,
-      inputTokens,
-      outputTokens: estimateTokens(content),
-      success: true,
-      durationMs: Date.now() - startTime,
     });
 
-    return parseBatchScoreResponse(content, clusterIds);
+    return parseBatchScoreResponse(result.text, clusterIds);
   } catch (error) {
     const analysisErr = new AnalysisError(
       `Batch scoring API call failed: ${error instanceof Error ? error.message : String(error)}`,
       { severity: 'degraded', context: { batchSize: clusters.length }, cause: error instanceof Error ? error : undefined }
     );
     logger.warn({ err: analysisErr }, 'Batch scoring API call failed');
-
-    // Record failed call
-    getGlobalMetrics().recordCall({
-      timestamp: new Date(),
-      module: 'scorer',
-      model,
-      batchSize: clusters.length,
-      itemsProcessed: 0,
-      inputTokens,
-      outputTokens: 0,
-      success: false,
-      durationMs: Date.now() - startTime,
-    });
 
     return new Map();
   }

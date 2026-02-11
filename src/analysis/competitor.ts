@@ -9,8 +9,7 @@ import type { SearchResult } from './web-search';
 import { getBatchModel } from '../config/models';
 import { config } from '../config/env';
 import logger from '../lib/logger';
-import { getGlobalMetrics } from '../scheduler/utils/api-metrics';
-import { estimateTokens } from '../scheduler/utils/token-estimator';
+import { callAnthropicApi } from '../lib/anthropic';
 
 /**
  * A competitor identified from search results
@@ -275,39 +274,16 @@ export async function analyzeCompetitors(
   const prompt = buildAnalysisPrompt(problemStatement, relevantResults);
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': opts.anthropicApiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: opts.model,
-        max_tokens: 2000,
-        system: 'You are a market research analyst. Analyze search results to identify competitors, market gaps, and opportunities. Always respond with valid JSON.',
-        messages: [
-          { role: 'user', content: prompt },
-        ],
-      }),
+    const result = await callAnthropicApi({
+      apiKey: opts.anthropicApiKey,
+      model: opts.model,
+      system: 'You are a market research analyst. Analyze search results to identify competitors, market gaps, and opportunities. Always respond with valid JSON.',
+      prompt,
+      maxTokens: 2000,
+      module: 'competitor',
     });
 
-    if (!response.ok) {
-      logger.warn({ status: response.status }, 'Anthropic API error, using fallback');
-      return createFallbackAnalysis(relevantResults);
-    }
-
-    const data = await response.json() as {
-      content: Array<{ type: string; text: string }>;
-    };
-
-    const content = data.content[0]?.text;
-    if (!content) {
-      logger.warn('Empty response from Anthropic, using fallback');
-      return createFallbackAnalysis(relevantResults);
-    }
-
-    return parseAnalysisResponse(content);
+    return parseAnalysisResponse(result.text);
   } catch (error) {
     logger.warn({ err: error }, 'Error analyzing competitors');
     return createFallbackAnalysis(relevantResults);
@@ -504,7 +480,6 @@ export async function analyzeCompetitorsBatch(
 
   // Process in batches of BATCH_SIZE
   for (let i = 0; i < problems.length; i += BATCH_SIZE) {
-    const startTime = Date.now();
     const batch = problems.slice(i, i + BATCH_SIZE);
     const problemIds = batch.map(p => p.id);
 
@@ -512,72 +487,24 @@ export async function analyzeCompetitorsBatch(
       batch.map(p => ({ statement: p.statement, results: p.results }))
     );
 
-    const inputTokens = estimateTokens(systemPrompt) + estimateTokens(prompt);
-
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': opts.anthropicApiKey,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: opts.model,
-          max_tokens: 6000, // Larger for batch response
-          system: systemPrompt,
-          messages: [{ role: 'user', content: prompt }],
-        }),
+      const result = await callAnthropicApi({
+        apiKey: opts.anthropicApiKey,
+        model: opts.model,
+        system: systemPrompt,
+        prompt,
+        maxTokens: 6000,
+        module: 'competitor',
+        batchSize: batch.length,
       });
 
-      if (!response.ok) {
-        // Record failed call
-        getGlobalMetrics().recordCall({
-          timestamp: new Date(),
-          module: 'competitor',
-          model: opts.model,
-          batchSize: batch.length,
-          itemsProcessed: 0,
-          inputTokens,
-          outputTokens: 0,
-          success: false,
-          durationMs: Date.now() - startTime,
-        });
-        throw new Error(`Batch analysis failed: ${response.status}`);
-      }
+      const batchResults = parseBatchCompetitorResponse(result.text, problemIds);
 
-      const data = (await response.json()) as {
-        content: Array<{ type: string; text: string }>;
-      };
-
-      const content = data.content[0]?.text;
-      if (content) {
-        // Record successful call
-        getGlobalMetrics().recordCall({
-          timestamp: new Date(),
-          module: 'competitor',
-          model: opts.model,
-          batchSize: batch.length,
-          itemsProcessed: batch.length,
-          inputTokens,
-          outputTokens: estimateTokens(content),
-          success: true,
-          durationMs: Date.now() - startTime,
-        });
-
-        const batchResults = parseBatchCompetitorResponse(content, problemIds);
-
-        // Merge results and add fallbacks for any missing
-        for (const p of batch) {
-          if (batchResults.has(p.id)) {
-            allResults.set(p.id, batchResults.get(p.id)!);
-          } else {
-            allResults.set(p.id, createFallbackAnalysis(p.results));
-          }
-        }
-      } else {
-        // Empty response, use fallbacks
-        for (const p of batch) {
+      // Merge results and add fallbacks for any missing
+      for (const p of batch) {
+        if (batchResults.has(p.id)) {
+          allResults.set(p.id, batchResults.get(p.id)!);
+        } else {
           allResults.set(p.id, createFallbackAnalysis(p.results));
         }
       }
