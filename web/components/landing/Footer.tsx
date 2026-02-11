@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Logo from "@/components/Logo";
 
 const productLinks = [
   { label: "Features", href: "#features" },
@@ -153,7 +154,9 @@ export default function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand */}
           <div>
-            <p className="text-xl font-bold text-white">ZeroToShip</p>
+            <div className="text-white">
+              <Logo size="sm" />
+            </div>
             <p className="text-sm text-gray-400 mt-2">
               Daily startup ideas, scraped and scored by AI.
             </p>
@@ -220,7 +223,7 @@ export default function Footer() {
         <div className="mt-12 pt-8 border-t border-gray-800 text-center text-sm">
           <p>&copy; {new Date().getFullYear()} ZeroToShip. All rights reserved.</p>
           <p className="text-gray-500 mt-1">
-            Built for indie hackers, by indie hackers.
+            Ship ideas, not guesses.
           </p>
         </div>
       </div>

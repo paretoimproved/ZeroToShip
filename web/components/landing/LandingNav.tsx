@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
+import Logo from "@/components/Logo";
 
 const NAV_LINKS = [
   { href: "#features", label: "Features" },
@@ -125,9 +126,9 @@ export default function LandingNav() {
           {/* Logo */}
           <Link
             href="/"
-            className={`text-xl font-bold text-gray-900 dark:text-white rounded-md ${focusRingClasses}`}
+            className={`text-gray-900 dark:text-white rounded-md ${focusRingClasses}`}
           >
-            ZeroToShip
+            <Logo size="sm" />
           </Link>
 
           {/* Desktop nav links */}
@@ -171,7 +172,7 @@ export default function LandingNav() {
                   href="/signup"
                   className={`ml-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-700 ${focusRingClasses}`}
                 >
-                  Get Started Free
+                  Start Free
                 </Link>
               </>
             )}
@@ -216,8 +217,8 @@ export default function LandingNav() {
         >
           {/* Overlay header */}
           <div className="flex h-16 items-center justify-between px-4 sm:px-6">
-            <span className="text-xl font-bold text-gray-900 dark:text-white">
-              ZeroToShip
+            <span className="text-gray-900 dark:text-white">
+              <Logo size="sm" />
             </span>
             <button
               type="button"
@@ -290,7 +291,7 @@ export default function LandingNav() {
                   onClick={closeMobileMenu}
                   className={`mt-2 rounded-lg bg-primary-600 px-4 py-3 text-center text-lg font-semibold text-white shadow-sm transition-colors hover:bg-primary-700 ${focusRingClasses}`}
                 >
-                  Get Started Free
+                  Start Free
                 </Link>
               </>
             )}

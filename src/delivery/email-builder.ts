@@ -80,7 +80,7 @@ function formatScore(score: number): string {
 function getEmailStyles(): string {
   return `
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       line-height: 1.6;
       color: #1a1a1a;
       background-color: #f5f5f5;
@@ -93,7 +93,7 @@ function getEmailStyles(): string {
       background-color: #ffffff;
     }
     .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
       color: white;
       padding: 32px 24px;
       text-align: center;
@@ -153,7 +153,7 @@ function getEmailStyles(): string {
     .score-value {
       font-size: 20px;
       font-weight: 700;
-      color: #667eea;
+      color: #6366f1;
     }
     .brief-section {
       padding: 24px;
@@ -205,7 +205,7 @@ function getEmailStyles(): string {
     .idea-rank {
       width: 32px;
       height: 32px;
-      background: #667eea;
+      background: #6366f1;
       color: white;
       border-radius: 50%;
       display: flex;
@@ -229,7 +229,7 @@ function getEmailStyles(): string {
     }
     .idea-score {
       font-weight: 600;
-      color: #667eea;
+      color: #6366f1;
       font-size: 18px;
     }
     .locked-idea {
@@ -239,7 +239,7 @@ function getEmailStyles(): string {
     .cta-section {
       padding: 32px 24px;
       text-align: center;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
     }
     .cta-section h3 {
       color: white;
@@ -253,7 +253,7 @@ function getEmailStyles(): string {
     .cta-button {
       display: inline-block;
       background: white;
-      color: #667eea;
+      color: #6366f1;
       padding: 14px 32px;
       border-radius: 8px;
       text-decoration: none;
@@ -290,17 +290,17 @@ function buildHeroSection(brief: IdeaBrief): string {
         <tr>
           <td width="33%" style="background: #fff; padding: 12px 16px; border-radius: 8px; border: 1px solid #e0e0e0; text-align: center;">
             <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px;">Priority</div>
-            <div style="font-size: 20px; font-weight: 700; color: #667eea;">${formatScore(brief.priorityScore)}</div>
+            <div style="font-size: 20px; font-weight: 700; color: #6366f1;">${formatScore(brief.priorityScore)}</div>
           </td>
           <td width="4%"></td>
           <td width="33%" style="background: #fff; padding: 12px 16px; border-radius: 8px; border: 1px solid #e0e0e0; text-align: center;">
             <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px;">Effort</div>
-            <div style="font-size: 20px; font-weight: 700; color: #667eea;">${escapeHtml(brief.effortEstimate)}</div>
+            <div style="font-size: 20px; font-weight: 700; color: #6366f1;">${escapeHtml(brief.effortEstimate)}</div>
           </td>
           <td width="4%"></td>
           <td width="33%" style="background: #fff; padding: 12px 16px; border-radius: 8px; border: 1px solid #e0e0e0; text-align: center;">
             <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px;">Revenue</div>
-            <div style="font-size: 14px; font-weight: 700; color: #667eea;">${escapeHtml(brief.revenueEstimate.slice(0, REVENUE_DISPLAY_LENGTH))}</div>
+            <div style="font-size: 14px; font-weight: 700; color: #6366f1;">${escapeHtml(brief.revenueEstimate.slice(0, REVENUE_DISPLAY_LENGTH))}</div>
           </td>
         </tr>
       </table>
@@ -404,7 +404,7 @@ function buildCtaSection(tier: SubscriberTier, config: Required<EmailBuilderConf
     <div class="cta-section">
       <h3>Every Brief. Every Day.</h3>
       <p>You're seeing 1 featured brief per email. Pro members get the full brief for every idea, plus archive access and search.</p>
-      <a href="${escapeHtml(config.upgradeUrl)}" class="cta-button">Upgrade to Pro</a>
+      <a href="${escapeHtml(config.upgradeUrl)}" class="cta-button">Unlock Every Brief</a>
     </div>
   `;
 }

@@ -301,7 +301,7 @@ describe('Email Builder', () => {
       const result = buildDailyEmail(briefs, 'free');
 
       expect(result.html).toContain('Every Brief. Every Day.');
-      expect(result.html).toContain('Upgrade to Pro');
+      expect(result.html).toContain('Unlock Every Brief');
     });
 
     it('hides upgrade CTA for pro tier users', () => {
@@ -1004,8 +1004,8 @@ describe('Email Service', () => {
       const freeResult = previewDailyBrief('free', briefs);
       const proResult = previewDailyBrief('pro', briefs);
 
-      expect(freeResult.html).toContain('Upgrade to Pro');
-      expect(proResult.html).not.toContain('Upgrade to Pro');
+      expect(freeResult.html).toContain('Unlock Every Brief');
+      expect(proResult.html).not.toContain('Unlock Every Brief');
     });
 
     it('accepts custom config', () => {

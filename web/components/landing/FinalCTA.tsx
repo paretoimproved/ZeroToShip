@@ -26,7 +26,7 @@ export default function FinalCTA() {
           id="cta-heading"
           className="text-3xl font-bold text-white mb-4"
         >
-          {isAuthenticated ? "Your Ideas Are Waiting" : "Ready to Find Your Next Idea?"}
+          {isAuthenticated ? "Your Ideas Are Waiting" : "Your next startup is in tomorrow\u2019s inbox."}
         </h2>
         <p className="text-primary-100 mb-8">
           {isAuthenticated
@@ -63,7 +63,7 @@ export default function FinalCTA() {
                 type="submit"
                 className="px-6 py-3 rounded-lg bg-white text-primary-600 font-semibold text-sm hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-primary-600"
               >
-                Get Started Free
+                Get Your First Ideas Free
               </button>
             </form>
 

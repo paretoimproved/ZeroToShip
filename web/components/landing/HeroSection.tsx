@@ -48,16 +48,17 @@ export default function HeroSection() {
           id="hero-heading"
           className="text-balance text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-5xl lg:text-6xl"
         >
-          Stop Scrolling.{" "}
+          The Internet Complains.{" "}
           <span className="text-primary-600 dark:text-primary-400">
-            Start Building.
+            We Find Your Next Startup.
           </span>
         </h1>
 
         {/* Subheadline */}
         <p className="mx-auto mt-6 max-w-2xl text-balance text-lg leading-relaxed text-gray-600 dark:text-gray-400 sm:text-xl">
-          Every morning, get startup ideas scraped from Reddit, HN, and
-          GitHub &mdash; scored by AI, with full business briefs. Free.
+          Every morning, ZeroToShip scrapes 300+ posts from Reddit, HN, and
+          GitHub, clusters real pain points, and delivers 10 scored startup
+          ideas with full business briefs. Wake up to signal, not noise.
         </p>
 
         {/* Email capture form / Dashboard CTA */}
@@ -112,7 +113,7 @@ export default function HeroSection() {
               type="submit"
               className="shrink-0 rounded-lg bg-primary-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
             >
-              Get Started Free
+              Get Tomorrow&apos;s Ideas
             </button>
           </form>
         )}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "./AuthProvider";
 import { useAdmin } from "./AdminProvider";
+import Logo from "./Logo";
 
 const navItems = [
   { href: "/dashboard", label: "Today" },
@@ -127,9 +128,9 @@ export default function NavBar() {
           {/* Logo */}
           <Link
             href="/"
-            className={`text-xl font-bold text-primary-600 dark:text-primary-400 rounded-md ${focusRingClasses}`}
+            className={`text-primary-600 dark:text-primary-400 rounded-md ${focusRingClasses}`}
           >
-            ZeroToShip
+            <Logo size="sm" />
           </Link>
 
           {/* Desktop nav links */}
@@ -219,8 +220,8 @@ export default function NavBar() {
         >
           {/* Overlay header */}
           <div className="flex h-16 items-center justify-between px-4 sm:px-6">
-            <span className="text-xl font-bold text-primary-600 dark:text-primary-400">
-              ZeroToShip
+            <span className="text-primary-600 dark:text-primary-400">
+              <Logo size="sm" />
             </span>
             <button
               type="button"

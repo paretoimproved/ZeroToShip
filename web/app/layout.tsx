@@ -1,21 +1,42 @@
 import type { Metadata } from "next";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import NavBar from "@/components/NavBar";
 import ClientProviders from "@/components/ClientProviders";
 import TierSwitcher from "@/components/TierSwitcher";
 
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "ZeroToShip — Daily Startup Ideas Scraped from Reddit, HN & GitHub",
-  description: "Wake up to 10 AI-scored startup ideas with full technical specs, business models, and go-to-market strategies. Scraped from Reddit, Hacker News, and GitHub. Free to start.",
+  title: "ZeroToShip — Ship Ideas, Not Guesses",
+  description:
+    "Every morning, ZeroToShip scrapes 300+ posts from Reddit, HN, and GitHub, clusters real pain points, and delivers 10 scored startup ideas with full business briefs. Wake up to signal, not noise.",
+  icons: {
+    icon: "/favicon.svg",
+    apple: "/apple-touch-icon.png",
+  },
+  manifest: "/site.webmanifest",
   openGraph: {
-    title: "ZeroToShip — Daily Startup Ideas with Full Business Briefs",
-    description: "Every morning, get 10 startup ideas scraped from Reddit, HN, and GitHub — scored by AI, with technical specs included.",
+    title: "ZeroToShip — Ship Ideas, Not Guesses",
+    description:
+      "Scrapes Reddit, HN, and GitHub daily. Delivers 10 scored startup ideas with full business briefs every morning.",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "ZeroToShip — Daily Startup Ideas with Full Business Briefs",
-    description: "Every morning, get 10 startup ideas scraped from Reddit, HN, and GitHub — scored by AI, with technical specs included.",
+    title: "ZeroToShip — Ship Ideas, Not Guesses",
+    description:
+      "Scrapes Reddit, HN, and GitHub daily. Delivers 10 scored startup ideas with full business briefs every morning.",
   },
 };
 
@@ -25,7 +46,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${inter.variable} ${jetbrainsMono.variable}`}
+    >
       <body className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <ClientProviders>
           <NavBar />

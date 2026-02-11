@@ -33,7 +33,7 @@
       margin: 0 !important;
       padding: 0 !important;
       background-color: #f5f5f5;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       line-height: 1.6;
       color: #1a1a1a;
     }
@@ -47,7 +47,7 @@
 
     /* Header */
     .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
       color: white;
       padding: 32px 24px;
       text-align: center;
@@ -107,7 +107,7 @@
     .score-value {
       font-size: 20px;
       font-weight: 700;
-      color: #667eea;
+      color: #6366f1;
     }
 
     /* Brief sections */
@@ -165,7 +165,7 @@
     .idea-rank {
       width: 32px;
       height: 32px;
-      background: #667eea;
+      background: #6366f1;
       color: white;
       border-radius: 50%;
       display: flex;
@@ -189,7 +189,7 @@
     }
     .idea-score {
       font-weight: 600;
-      color: #667eea;
+      color: #6366f1;
       font-size: 18px;
     }
     .locked-overlay {
@@ -209,7 +209,7 @@
     .cta-section {
       padding: 32px 24px;
       text-align: center;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
     }
     .cta-section h3 {
       color: white;
@@ -223,7 +223,7 @@
     .cta-button {
       display: inline-block;
       background: white;
-      color: #667eea;
+      color: #6366f1;
       padding: 14px 32px;
       border-radius: 8px;
       text-decoration: none;
@@ -275,7 +275,7 @@
     <div class="email-container">
       <!-- Header -->
       <div class="header">
-        <h1>IdeaForge</h1>
+        <h1>ZeroToShip</h1>
         <p class="date">{{date}}</p>
       </div>
 
@@ -367,20 +367,20 @@
       <!-- CTA Section (Free tier only) -->
       {{#if showUpgrade}}
       <div class="cta-section">
-        <h3>Unlock All Ideas</h3>
-        <p>Get access to 10 ideas daily, full briefs, and exclusive deep-dives.</p>
-        <a href="{{upgradeUrl}}" class="cta-button">Upgrade to Pro</a>
+        <h3>Every Brief. Every Day.</h3>
+        <p>You're seeing 1 featured brief per email. Pro members get the full brief for every idea, plus archive access and search.</p>
+        <a href="{{upgradeUrl}}" class="cta-button">Unlock Every Brief</a>
       </div>
       {{/if}}
 
       <!-- Footer -->
       <div class="footer">
-        <p>You're receiving this because you subscribed to IdeaForge daily briefs.</p>
+        <p>You're receiving this because you subscribed to ZeroToShip daily briefs.</p>
         <p>
           <a href="{{unsubscribeUrl}}">Unsubscribe</a> |
           <a href="{{baseUrl}}">View in browser</a>
         </p>
-        <p>&copy; {{year}} IdeaForge. All rights reserved.</p>
+        <p>&copy; {{year}} ZeroToShip. All rights reserved.</p>
       </div>
     </div>
 
