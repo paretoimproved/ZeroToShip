@@ -159,12 +159,10 @@ function SourceToggle({
 function dateRangeToFromTo(range: DateRange): { from?: string; to?: string } {
   if (range === "all") return {};
   const now = new Date();
-  const to = now.toISOString().split("T")[0];
+  const to = now.toISOString();
   const daysMap: Record<string, number> = { "7d": 7, "30d": 30, "90d": 90 };
   const days = daysMap[range];
-  const from = new Date(now.getTime() - days * 86400000)
-    .toISOString()
-    .split("T")[0];
+  const from = new Date(now.getTime() - days * 86400000).toISOString();
   return { from, to };
 }
 
