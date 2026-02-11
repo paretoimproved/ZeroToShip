@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { login, loginWithOAuth } from "@/lib/auth";
+import { trackLoginCompleted } from "@/lib/analytics";
 import AuthForm from "@/components/AuthForm";
 
 export default function LoginPage() {
@@ -21,6 +22,7 @@ export default function LoginPage() {
 
   const handleOAuth = async (provider: "google" | "github") => {
     setError(null);
+    trackLoginCompleted(provider);
     await loginWithOAuth(provider);
   };
 
@@ -30,6 +32,7 @@ export default function LoginPage() {
 
     try {
       await login(data.email, data.password);
+      trackLoginCompleted("email");
       router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");

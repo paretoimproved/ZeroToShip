@@ -311,6 +311,33 @@ export const pipelineRuns = pgTable('pipeline_runs', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
+/**
+ * Onboarding email types
+ */
+export type OnboardingEmailType = 'welcome' | 'day1' | 'day3' | 'day7';
+
+/**
+ * Onboarding emails — tracks which drip emails have been sent to each user
+ */
+export const onboardingEmails = pgTable(
+  'onboarding_emails',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    emailType: varchar('email_type', { length: 20 }).notNull(),
+    sentAt: timestamp('sent_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    userEmailTypeUnique: uniqueIndex('onboarding_user_email_type_idx').on(
+      table.userId,
+      table.emailType
+    ),
+    userIdx: index('onboarding_emails_user_idx').on(table.userId),
+  })
+);
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   preferences: one(userPreferences, {
@@ -326,6 +353,14 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   viewedIdeas: many(viewedIdeas),
   validationRequests: many(validationRequests),
   usageRecords: many(usageTracking),
+  onboardingEmails: many(onboardingEmails),
+}));
+
+export const onboardingEmailsRelations = relations(onboardingEmails, ({ one }) => ({
+  user: one(users, {
+    fields: [onboardingEmails.userId],
+    references: [users.id],
+  }),
 }));
 
 export const usageTrackingRelations = relations(usageTracking, ({ one }) => ({

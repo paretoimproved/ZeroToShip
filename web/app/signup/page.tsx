@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signup, loginWithOAuth } from "@/lib/auth";
+import { trackSignupCompleted } from "@/lib/analytics";
 import AuthForm from "@/components/AuthForm";
 
 function SignupForm() {
@@ -21,6 +22,7 @@ function SignupForm() {
 
   const handleOAuth = async (provider: "google" | "github") => {
     setError(null);
+    trackSignupCompleted(provider);
     await loginWithOAuth(provider);
   };
 
@@ -30,6 +32,7 @@ function SignupForm() {
 
     try {
       await signup(data.email, data.password, data.name ?? "");
+      trackSignupCompleted("email");
       router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Signup failed");

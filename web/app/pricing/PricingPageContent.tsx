@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { trackUpgradeClicked } from "@/lib/analytics";
 
 /* ------------------------------------------------------------------ */
 /*  Types & data                                                      */
@@ -411,8 +412,11 @@ export default function PricingPageContent() {
     if (plan.ctaAction === "signup") {
       router.push("/signup");
     } else if (plan.ctaAction === "contact") {
+      trackUpgradeClicked({ from_tier: "unknown", to_tier: "enterprise", location: "pricing_page" });
       window.location.href = "mailto:hello@zerotoship.dev";
     } else if (plan.ctaAction === "checkout" && plan.priceKey) {
+      const toTier = plan.name.toLowerCase();
+      trackUpgradeClicked({ from_tier: "unknown", to_tier: toTier, location: "pricing_page" });
       const key =
         billing === "monthly" ? plan.priceKey.monthly : plan.priceKey.annual;
       handleCheckout(key);

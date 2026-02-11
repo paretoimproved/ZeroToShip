@@ -8,6 +8,7 @@ import {
   sendDailyBriefsBatch,
   type Subscriber,
 } from '../../delivery/email';
+import { processOnboardingDrip } from '../../delivery/onboarding';
 import type { IdeaBrief } from '../../generation/brief-generator';
 import { createPhaseLogger } from '../utils/logger';
 import { DeliveryError, wrapError } from '../../lib/errors';
@@ -115,6 +116,25 @@ export async function runDeliverPhase(
     );
 
     const duration = Date.now() - startTime;
+
+    // Process onboarding drip emails after daily digest
+    try {
+      const dripResult = await processOnboardingDrip();
+      logger.info(
+        {
+          onboardingSent: dripResult.sent,
+          onboardingSkipped: dripResult.skipped,
+          onboardingFailed: dripResult.failed,
+        },
+        'Onboarding drip processing complete'
+      );
+    } catch (dripError) {
+      // Onboarding drip failures should not fail the deliver phase
+      logger.warn(
+        { error: dripError instanceof Error ? dripError.message : String(dripError) },
+        'Onboarding drip processing failed (non-fatal)'
+      );
+    }
 
     logger.info(
       {

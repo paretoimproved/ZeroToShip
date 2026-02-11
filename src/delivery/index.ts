@@ -28,3 +28,11 @@ export {
   type BatchDeliveryResult,
   type EmailServiceConfig,
 } from './email';
+
+// Onboarding drip exports
+export {
+  sendOnboardingEmail,
+  processOnboardingDrip,
+  type OnboardingEmailResult,
+  type DripProcessingResult,
+} from './onboarding';

@@ -26,6 +26,8 @@ interface IdeaBriefCardProps {
   gated?: boolean;
   gatedAction?: 'signup' | 'upgrade';
   defaultTab?: TabId;
+  /** Optional bookmark button to render in the card header */
+  bookmarkSlot?: React.ReactNode;
 }
 
 export default function IdeaBriefCard({
@@ -35,6 +37,7 @@ export default function IdeaBriefCard({
   gated = false,
   gatedAction = "signup",
   defaultTab = "problem",
+  bookmarkSlot,
 }: IdeaBriefCardProps) {
   const hasSources = brief.sources && brief.sources.length > 0;
   const tabs: readonly TabId[] = hasSources ? allTabs : allTabs.filter((t) => t !== "sources");
@@ -100,6 +103,7 @@ export default function IdeaBriefCard({
             >
               {brief.revenueEstimate}
             </span>
+            {bookmarkSlot}
           </div>
         </div>
       </div>

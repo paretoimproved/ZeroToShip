@@ -10,6 +10,7 @@ import {
   openBillingPortal,
   type PriceKey,
 } from "@/lib/billing";
+import { trackUpgradeClicked } from "@/lib/analytics";
 
 interface Subscription {
   id: string;
@@ -109,6 +110,12 @@ export default function AccountPage() {
     setUpgradeLoading(priceKey);
     setError(null);
     try {
+      const toTier = priceKey.startsWith("pro") ? "pro" : "enterprise";
+      trackUpgradeClicked({
+        from_tier: effectiveTier,
+        to_tier: toTier,
+        location: "account_page",
+      });
       await createCheckoutSession(priceKey);
       // Redirect happens in createCheckoutSession
     } catch (err) {

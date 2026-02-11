@@ -23,6 +23,8 @@ import type {
   EffortLevel,
 } from '../schemas';
 import { generateApiKey, hashApiKey, invalidateTierCache } from '../middleware/auth';
+import { sendOnboardingEmail } from '../../delivery/onboarding';
+import logger from '../../lib/logger';
 
 /**
  * Get user by ID
@@ -64,6 +66,14 @@ export async function getOrCreateUser(
 
   // Create default subscription (free tier)
   await db.insert(subscriptions).values({ userId: id, plan: 'free', status: 'active' });
+
+  // Send welcome onboarding email (fire-and-forget, never block signup)
+  sendOnboardingEmail(id, 'welcome').catch((err) => {
+    logger.error(
+      { userId: id, error: err instanceof Error ? err.message : String(err) },
+      'Failed to send welcome onboarding email'
+    );
+  });
 
   return result[0];
 }

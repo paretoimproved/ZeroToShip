@@ -9,11 +9,12 @@
 import { runPipeline } from './orchestrator';
 import { startScheduler, stopScheduler } from './index';
 import { closeDatabase } from '../api/db/client';
+import { processOnboardingDrip } from '../delivery/onboarding';
 import { logger } from './utils/logger';
 import type { PipelineConfig } from './types';
 
 interface CliOptions {
-  command: 'run' | 'schedule' | 'health' | 'help';
+  command: 'run' | 'schedule' | 'health' | 'onboarding-drip' | 'help';
   dryRun: boolean;
   hoursBack: number;
   verbose: boolean;
@@ -38,6 +39,7 @@ function parseArgs(args: string[]): CliOptions {
     if (arg === 'run') options.command = 'run';
     else if (arg === 'schedule') options.command = 'schedule';
     else if (arg === 'health') options.command = 'health';
+    else if (arg === 'onboarding-drip') options.command = 'onboarding-drip';
     else if (arg === 'help' || arg === '--help' || arg === '-h')
       options.command = 'help';
     else if (arg === '--dry-run') options.dryRun = true;
@@ -108,10 +110,11 @@ USAGE:
   npm run scheduler <command> [options]
 
 COMMANDS:
-  run        Run the pipeline once
-  schedule   Start the scheduler (runs continuously)
-  health     Check environment and configuration
-  help       Show this help message
+  run              Run the pipeline once
+  schedule         Start the scheduler (runs continuously)
+  onboarding-drip  Process onboarding drip emails for eligible users
+  health           Check environment and configuration
+  help             Show this help message
 
 OPTIONS:
   --dry-run         Skip actual email delivery
@@ -123,6 +126,7 @@ EXAMPLES:
   npm run scheduler run --dry-run
   npm run scheduler run --hours 48 --max-briefs 5
   npm run scheduler schedule
+  npm run scheduler onboarding-drip
   npm run scheduler health
 `);
 }
@@ -223,6 +227,44 @@ async function main(): Promise<void> {
 
       // Keep process running
       console.log('Scheduler is running. Press Ctrl+C to stop.\n');
+      break;
+    }
+
+    case 'onboarding-drip': {
+      console.log('Processing onboarding drip emails...\n');
+
+      try {
+        const dripResult = await processOnboardingDrip();
+
+        console.log('\n' + '='.repeat(60));
+        console.log('  ONBOARDING DRIP RESULTS');
+        console.log('='.repeat(60));
+        console.log(`Processed: ${dripResult.processed}`);
+        console.log(`Sent: ${dripResult.sent}`);
+        console.log(`Skipped: ${dripResult.skipped}`);
+        console.log(`Failed: ${dripResult.failed}`);
+
+        if (dripResult.details.length > 0) {
+          console.log('\nDetails:');
+          for (const detail of dripResult.details) {
+            const status = detail.sent
+              ? 'SENT'
+              : detail.skipped
+                ? 'SKIPPED'
+                : 'FAILED';
+            console.log(
+              `  [${status}] ${detail.emailType} -> ${detail.userId}${detail.error ? ` (${detail.error})` : ''}`
+            );
+          }
+        }
+
+        await closeDatabase();
+        process.exit(0);
+      } catch (error) {
+        console.error('Onboarding drip failed:', error);
+        await closeDatabase();
+        process.exit(1);
+      }
       break;
     }
 

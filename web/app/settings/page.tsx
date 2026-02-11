@@ -3,6 +3,7 @@
 import { useState } from "react";
 import ProtectedLayout from "@/components/ProtectedLayout";
 import { api } from "@/lib/api";
+import { trackEmailSettingsChanged } from "@/lib/analytics";
 import type { EffortLevel } from "@/lib/types";
 
 interface Settings {
@@ -76,6 +77,10 @@ export default function SettingsPage() {
         effortFilter: settings.effortFilter,
         emailFrequency: settings.emailFrequency,
         minPriorityScore: settings.minPriorityScore,
+      });
+      trackEmailSettingsChanged({
+        frequency: settings.emailFrequency,
+        categories: settings.categories,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
