@@ -246,15 +246,15 @@ function CompactCard({
       )}
 
       {/* Bottom: effort badge + revenue */}
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2 min-w-0">
         <span
-          className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full ${getEffortBadgeColor(idea.effortEstimate)}`}
+          className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${getEffortBadgeColor(idea.effortEstimate)}`}
         >
           {getEffortLabel(idea.effortEstimate)}
         </span>
         <span
           title={idea.revenueEstimate}
-          className="text-xs font-medium text-emerald-700 dark:text-emerald-300 truncate max-w-[120px]"
+          className="text-xs font-medium text-emerald-700 dark:text-emerald-300 truncate min-w-0"
         >
           {idea.revenueEstimate}
         </span>
