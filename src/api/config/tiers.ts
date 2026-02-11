@@ -63,7 +63,7 @@ export const TIER_USAGE_LIMITS: Record<UserTier, TierUsageLimits> = {
 export const FEATURE_ACCESS: Record<string, { minTier: UserTier; description: string }> = {
   'ideas.today': { minTier: 'anonymous', description: "Get today's ideas" },
   'ideas.detail': { minTier: 'anonymous', description: 'Get idea details' },
-  'ideas.archive': { minTier: 'pro', description: 'Access idea archive' },
+  'ideas.archive': { minTier: 'anonymous', description: 'Access idea archive' },
   'ideas.fullBrief': { minTier: 'pro', description: 'View full business briefs' },
   'ideas.search': { minTier: 'pro', description: 'Full-text search' },
   'ideas.export': { minTier: 'enterprise', description: 'Export ideas' },
@@ -73,6 +73,9 @@ export const FEATURE_ACCESS: Record<string, { minTier: UserTier; description: st
   'user.subscription': { minTier: 'free', description: 'View subscription' },
   'api.keys': { minTier: 'enterprise', description: 'Manage API keys' },
 };
+
+/** Number of archive ideas shown to free/anonymous users as a preview */
+export const ARCHIVE_PREVIEW_LIMIT = 6;
 
 /**
  * Tier hierarchy (higher index = higher tier)

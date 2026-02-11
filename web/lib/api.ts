@@ -99,14 +99,18 @@ class ApiClient {
   async getArchive(params: {
     page?: number;
     pageSize?: number;
-    startDate?: string;
-    endDate?: string;
+    from?: string;
+    to?: string;
+    effort?: EffortLevel;
+    minScore?: number;
   }): Promise<PaginatedResponse<IdeaBrief>> {
     const searchParams = new URLSearchParams();
     if (params.page) searchParams.set("page", params.page.toString());
     if (params.pageSize) searchParams.set("pageSize", params.pageSize.toString());
-    if (params.startDate) searchParams.set("startDate", params.startDate);
-    if (params.endDate) searchParams.set("endDate", params.endDate);
+    if (params.from) searchParams.set("from", params.from);
+    if (params.to) searchParams.set("to", params.to);
+    if (params.effort) searchParams.set("effort", params.effort);
+    if (params.minScore) searchParams.set("minScore", params.minScore.toString());
 
     return this.request<PaginatedResponse<IdeaBrief>>(
       `/ideas/archive?${searchParams.toString()}`

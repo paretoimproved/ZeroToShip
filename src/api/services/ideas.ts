@@ -21,6 +21,7 @@ import {
   filterIdeaForTier,
   canAccessFullBrief,
 } from '../middleware/tierGate';
+import { ARCHIVE_PREVIEW_LIMIT } from '../config/tiers';
 
 /**
  * Convert database row to IdeaBrief
@@ -439,18 +440,28 @@ export async function getTodaysIdeasForTier(
 
 /**
  * Get archived ideas filtered by tier, with pagination metadata.
+ * For anonymous/free users: returns a capped preview set.
+ * For pro/enterprise: returns full paginated results.
  */
 export async function getArchivedIdeasForTier(
   query: ArchiveQuery,
   tier: UserTier
-): Promise<{ ideas: IdeaSummary[]; total: number; hasMore: boolean }> {
+): Promise<{ ideas: IdeaSummary[]; total: number; hasMore: boolean; preview: boolean }> {
+  const isPreview = tier === 'anonymous' || tier === 'free';
+
+  if (isPreview) {
+    // Override pagination to return only the preview set
+    const previewQuery: ArchiveQuery = { ...query, page: 1, pageSize: ARCHIVE_PREVIEW_LIMIT };
+    const { ideas: allIdeas, total } = await getArchivedIdeas(previewQuery);
+    const filtered = allIdeas.map((idea) => filterIdeaForTier(idea, tier));
+    return { ideas: filtered, total, hasMore: false, preview: true };
+  }
+
   const { ideas: allIdeas, total } = await getArchivedIdeas(query);
-  // Apply per-idea field redaction (not the array-slicing tier limit,
-  // which is meant for the "today" endpoint — archive uses pagination instead)
   const filtered = allIdeas.map((idea) => filterIdeaForTier(idea, tier));
   const hasMore = (Number(query.page) || 1) * (Number(query.pageSize) || 10) < total;
 
-  return { ideas: filtered, total, hasMore };
+  return { ideas: filtered, total, hasMore, preview: false };
 }
 
 /**

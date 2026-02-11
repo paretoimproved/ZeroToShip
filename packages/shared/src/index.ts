@@ -92,6 +92,7 @@ export const IdeaSummarySchema = z.object({
   tagline: z.string(),
   priorityScore: z.number(),
   effortEstimate: EffortLevelSchema,
+  revenueEstimate: z.string().optional(),
   category: z.string().optional(),
   generatedAt: z.string(),
   brief: IdeaBriefSchema.optional(),

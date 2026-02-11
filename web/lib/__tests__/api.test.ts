@@ -256,16 +256,33 @@ describe('ApiClient', () => {
       await api.getArchive({
         page: 3,
         pageSize: 50,
-        startDate: '2026-01-01',
-        endDate: '2026-01-31',
+        from: '2026-01-01',
+        to: '2026-01-31',
       });
 
       const url = mockFetch.mock.calls[0][0] as string;
       expect(url).toContain('/ideas/archive?');
       expect(url).toContain('page=3');
       expect(url).toContain('pageSize=50');
-      expect(url).toContain('startDate=2026-01-01');
-      expect(url).toContain('endDate=2026-01-31');
+      expect(url).toContain('from=2026-01-01');
+      expect(url).toContain('to=2026-01-31');
+    });
+
+    it('getArchive should pass effort and minScore params', async () => {
+      const mockResponse = { data: [], total: 0, page: 1, pageSize: 10, hasMore: false };
+      mockFetch.mockReturnValue(jsonResponse(mockResponse));
+
+      await api.getArchive({
+        page: 1,
+        pageSize: 24,
+        effort: 'weekend',
+        minScore: 70,
+      });
+
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain('/ideas/archive?');
+      expect(url).toContain('effort=weekend');
+      expect(url).toContain('minScore=70');
     });
 
     it('getArchive should omit undefined params', async () => {

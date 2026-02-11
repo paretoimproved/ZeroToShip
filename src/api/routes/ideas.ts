@@ -12,7 +12,6 @@ import { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { optionalAuth, requireAuth } from '../middleware/auth';
 import { rateLimitMiddleware } from '../middleware/rateLimit';
-import { createTierGate } from '../middleware/tierGate';
 import {
   listIdeas,
   unsaveIdea,
@@ -117,7 +116,7 @@ export const ideasRoutes: FastifyPluginAsync = async (fastify) => {
   app.get(
     '/archive',
     {
-      preHandler: [optionalAuth, rateLimitMiddleware, createTierGate('ideas.archive')],
+      preHandler: [optionalAuth, rateLimitMiddleware],
       schema: {
         querystring: ArchiveQuerySchema,
         response: {
@@ -127,6 +126,7 @@ export const ideasRoutes: FastifyPluginAsync = async (fastify) => {
             page: z.number(),
             pageSize: z.number(),
             hasMore: z.boolean(),
+            preview: z.boolean(),
             tier: z.string(),
           }),
         },
@@ -134,7 +134,7 @@ export const ideasRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, reply) => {
       const query = request.query;
-      const { ideas, total, hasMore } = await getArchivedIdeasForTier(query, request.userTier);
+      const { ideas, total, hasMore, preview } = await getArchivedIdeasForTier(query, request.userTier);
 
       return reply.send({
         ideas,
@@ -142,6 +142,7 @@ export const ideasRoutes: FastifyPluginAsync = async (fastify) => {
         page: Number(query.page) || 1,
         pageSize: Number(query.pageSize) || 10,
         hasMore,
+        preview,
         tier: request.userTier,
       });
     }

@@ -16,6 +16,7 @@ export interface PaginatedResponse<T> {
   page: number;
   pageSize: number;
   hasMore: boolean;
+  preview?: boolean;
 }
 
 export interface ApiError {

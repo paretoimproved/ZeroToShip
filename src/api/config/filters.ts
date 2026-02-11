@@ -16,6 +16,7 @@ export interface IdeaSummary {
   tagline: string;
   priorityScore: number;
   effortEstimate: string;
+  revenueEstimate?: string;
   category?: string;
   generatedAt: string;
   brief?: IdeaBrief;
@@ -77,6 +78,7 @@ export function filterIdeaForTier(idea: IdeaBrief, tier: UserTier): IdeaSummary 
     tagline: idea.tagline,
     priorityScore: idea.priorityScore,
     effortEstimate: idea.effortEstimate,
+    revenueEstimate: idea.revenueEstimate,
     category: idea.category,
     generatedAt: idea.generatedAt,
   };

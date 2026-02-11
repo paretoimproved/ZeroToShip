@@ -148,7 +148,7 @@ describe('Feature Access', () => {
     });
 
     it('should deny anonymous access to protected features', () => {
-      expect(hasAccess('anonymous', 'ideas.archive')).toBe(false);
+      expect(hasAccess('anonymous', 'ideas.archive')).toBe(true);
       expect(hasAccess('anonymous', 'user.preferences')).toBe(false);
     });
 
@@ -159,7 +159,7 @@ describe('Feature Access', () => {
 
     it('should deny free tier access to pro features', () => {
       expect(hasAccess('free', 'ideas.fullBrief')).toBe(false);
-      expect(hasAccess('free', 'ideas.archive')).toBe(false);
+      expect(hasAccess('free', 'ideas.archive')).toBe(true);
       expect(hasAccess('free', 'ideas.search')).toBe(false);
       expect(hasAccess('free', 'validate')).toBe(false);
     });
@@ -224,7 +224,7 @@ describe('Tier Hierarchy', () => {
 describe('Tier Gate Middleware', () => {
   describe('createTierGate', () => {
     it('should allow access when user tier meets minimum requirement', async () => {
-      const gate = createTierGate('ideas.archive'); // minTier: 'pro'
+      const gate = createTierGate('ideas.fullBrief'); // minTier: 'pro'
       const request = createMockRequest({ userTier: 'pro' });
       const reply = createMockReply();
 
@@ -234,7 +234,7 @@ describe('Tier Gate Middleware', () => {
     });
 
     it('should allow access when user tier exceeds minimum requirement', async () => {
-      const gate = createTierGate('ideas.archive'); // minTier: 'pro'
+      const gate = createTierGate('ideas.fullBrief'); // minTier: 'pro'
       const request = createMockRequest({ userTier: 'enterprise' });
       const reply = createMockReply();
 
@@ -244,7 +244,7 @@ describe('Tier Gate Middleware', () => {
     });
 
     it('should deny access with 403 when user tier is below minimum', async () => {
-      const gate = createTierGate('ideas.archive'); // minTier: 'pro'
+      const gate = createTierGate('ideas.fullBrief'); // minTier: 'pro'
       const request = createMockRequest({ userTier: 'free' });
       const reply = createMockReply();
 
@@ -364,7 +364,7 @@ describe('Route Auth Configuration', () => {
       { method: 'GET', path: '/api/v1/ideas/today', tier: 'anonymous' },
       { method: 'GET', path: '/api/v1/ideas/categories', tier: 'anonymous' },
       { method: 'GET', path: '/api/v1/ideas/:id', tier: 'anonymous' },
-      { method: 'GET', path: '/api/v1/ideas/archive', tier: 'pro', tierGate: 'ideas.archive' },
+      { method: 'GET', path: '/api/v1/ideas/archive', tier: 'anonymous', tierGate: 'ideas.archive' },
     ];
 
     it('should have correct tier requirements for optionalAuth routes', () => {
@@ -381,9 +381,9 @@ describe('Route Auth Configuration', () => {
       expect(hasAccess('anonymous', 'ideas.today')).toBe(true);
     });
 
-    it('ideas.archive should require at least pro tier', () => {
-      expect(hasAccess('anonymous', 'ideas.archive')).toBe(false);
-      expect(hasAccess('free', 'ideas.archive')).toBe(false);
+    it('ideas.archive should be accessible by all tiers (preview for lower tiers)', () => {
+      expect(hasAccess('anonymous', 'ideas.archive')).toBe(true);
+      expect(hasAccess('free', 'ideas.archive')).toBe(true);
       expect(hasAccess('pro', 'ideas.archive')).toBe(true);
     });
   });
@@ -832,15 +832,14 @@ describe('Route-by-Route Auth Verification', () => {
       expect(reply.statusCode).toBe(403);
     });
 
-    it('free user accessing archive should get 403 (requires free tier login)', async () => {
+    it('anonymous user accessing archive should pass through (preview mode)', async () => {
       const gate = createTierGate('ideas.archive');
       const request = createMockRequest({ userId: undefined, userTier: 'anonymous' });
       const reply = createMockReply();
 
       await gate(request, reply);
 
-      expect(reply.statusCode).toBe(403);
-      expect(reply._body.code).toBe('TIER_RESTRICTED');
+      expect(reply.sent).toBe(false);
     });
   });
 

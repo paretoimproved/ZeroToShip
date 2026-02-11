@@ -24,6 +24,7 @@ interface IdeaBriefCardProps {
   rank?: number;
   index?: number;
   gated?: boolean;
+  gatedAction?: 'signup' | 'upgrade';
   defaultTab?: TabId;
 }
 
@@ -32,6 +33,7 @@ export default function IdeaBriefCard({
   rank,
   index,
   gated = false,
+  gatedAction = "signup",
   defaultTab = "problem",
 }: IdeaBriefCardProps) {
   const hasSources = brief.sources && brief.sources.length > 0;
@@ -146,7 +148,7 @@ export default function IdeaBriefCard({
         className="p-6"
       >
         {showGatedOverlay ? (
-          <GatedPanel />
+          <GatedPanel action={gatedAction} />
         ) : (
           <div className="transition-opacity duration-200">
             {activeTab === "problem" && <ProblemPanel brief={brief} />}
@@ -328,7 +330,8 @@ function SourcesPanel({ brief }: { brief: IdeaBrief }) {
   );
 }
 
-function GatedPanel() {
+function GatedPanel({ action = "signup" }: { action?: "signup" | "upgrade" }) {
+  const isUpgrade = action === "upgrade";
   return (
     <div
       data-testid="gated-content"
@@ -354,14 +357,15 @@ function GatedPanel() {
         Full Analysis Locked
       </h3>
       <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
-        Sign up to unlock the complete idea breakdown including technical specs,
-        business model, and go-to-market strategy.
+        {isUpgrade
+          ? "Upgrade to Builder to unlock the complete idea breakdown including technical specs, business model, and go-to-market strategy."
+          : "Sign up to unlock the complete idea breakdown including technical specs, business model, and go-to-market strategy."}
       </p>
       <Link
-        href="/signup"
+        href={isUpgrade ? "/pricing" : "/signup"}
         className="inline-block rounded-lg bg-primary-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
       >
-        Sign Up
+        {isUpgrade ? "Upgrade to Builder" : "Sign Up"}
       </Link>
     </div>
   );

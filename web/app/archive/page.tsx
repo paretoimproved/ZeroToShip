@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import Link from "next/link";
 import IdeaBriefCard from "@/components/IdeaBriefCard";
 import { Spinner } from "@/components/icons";
 import { useAuth } from "@/components/AuthProvider";
@@ -10,6 +11,18 @@ import type { IdeaBrief, EffortLevel } from "@/lib/types";
 
 const PAGE_SIZE = 24;
 
+type Platform = "reddit" | "hn" | "twitter" | "github";
+const ALL_PLATFORMS: Platform[] = ["reddit", "hn", "twitter", "github"];
+
+type DateRange = "all" | "7d" | "30d" | "90d";
+
+const dateRangeOptions: { value: DateRange; label: string }[] = [
+  { value: "all", label: "All Time" },
+  { value: "7d", label: "7 Days" },
+  { value: "30d", label: "30 Days" },
+  { value: "90d", label: "90 Days" },
+];
+
 const effortOptions: { value: EffortLevel | "all"; label: string }[] = [
   { value: "all", label: "All Efforts" },
   { value: "weekend", label: "Weekend" },
@@ -17,6 +30,36 @@ const effortOptions: { value: EffortLevel | "all"; label: string }[] = [
   { value: "month", label: "1 Month" },
   { value: "quarter", label: "Quarter+" },
 ];
+
+const platformConfig: Record<
+  Platform,
+  { letter: string; label: string; activeColor: string }
+> = {
+  reddit: {
+    letter: "R",
+    label: "Reddit",
+    activeColor:
+      "bg-orange-100 text-orange-800 border-orange-400 dark:bg-orange-900 dark:text-orange-200 dark:border-orange-600",
+  },
+  hn: {
+    letter: "Y",
+    label: "HN",
+    activeColor:
+      "bg-orange-100 text-orange-800 border-orange-400 dark:bg-orange-900 dark:text-orange-200 dark:border-orange-600",
+  },
+  twitter: {
+    letter: "T",
+    label: "Twitter",
+    activeColor:
+      "bg-blue-100 text-blue-800 border-blue-400 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-600",
+  },
+  github: {
+    letter: "G",
+    label: "GitHub",
+    activeColor:
+      "bg-gray-200 text-gray-800 border-gray-500 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-500",
+  },
+};
 
 function getScoreCircleColor(score: number) {
   if (score >= 80) return "bg-green-500";
@@ -45,6 +88,77 @@ function getEffortBadgeColor(effort: EffortLevel) {
   return colors[effort] || "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
 }
 
+function relativeTime(dateStr: string): string {
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const diffMs = now - then;
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+  const diffWeeks = Math.floor(diffDays / 7);
+  if (diffWeeks < 5) return `${diffWeeks}w ago`;
+  const diffMonths = Math.floor(diffDays / 30);
+  if (diffMonths < 12) return `${diffMonths}mo ago`;
+  const diffYears = Math.floor(diffDays / 365);
+  return `${diffYears}y ago`;
+}
+
+function MiniPlatformBadge({ platform }: { platform: Platform }) {
+  const config = platformConfig[platform];
+  if (!config) return null;
+  return (
+    <span
+      className={`inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold ${config.activeColor}`}
+      title={config.label}
+    >
+      {config.letter}
+    </span>
+  );
+}
+
+function SourceToggle({
+  platform,
+  active,
+  onToggle,
+}: {
+  platform: Platform;
+  active: boolean;
+  onToggle: () => void;
+}) {
+  const config = platformConfig[platform];
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={active}
+      className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-xs font-medium transition-colors ${
+        active
+          ? config.activeColor
+          : "bg-gray-100 text-gray-400 border-gray-200 dark:bg-gray-800 dark:text-gray-500 dark:border-gray-700"
+      }`}
+    >
+      <span className="font-bold">{config.letter}</span>
+      <span className="hidden sm:inline">{config.label}</span>
+    </button>
+  );
+}
+
+function dateRangeToFromTo(range: DateRange): { from?: string; to?: string } {
+  if (range === "all") return {};
+  const now = new Date();
+  const to = now.toISOString().split("T")[0];
+  const daysMap: Record<string, number> = { "7d": 7, "30d": 30, "90d": 90 };
+  const days = daysMap[range];
+  const from = new Date(now.getTime() - days * 86400000)
+    .toISOString()
+    .split("T")[0];
+  return { from, to };
+}
+
 function CompactCard({
   idea,
   index,
@@ -55,6 +169,19 @@ function CompactCard({
   onClick: () => void;
 }) {
   const delay = Math.min(index, 8) * 150;
+
+  // Deduplicated source platforms
+  const sourcePlatforms: Platform[] = useMemo(() => {
+    if (!idea.sources || idea.sources.length === 0) return [];
+    const seen = new Set<Platform>();
+    return idea.sources.reduce<Platform[]>((acc, s) => {
+      if (!seen.has(s.platform)) {
+        seen.add(s.platform);
+        acc.push(s.platform);
+      }
+      return acc;
+    }, []);
+  }, [idea.sources]);
 
   return (
     <article
@@ -75,9 +202,25 @@ function CompactCard({
       </div>
 
       {/* Tagline */}
-      <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-4">
+      <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">
         {idea.tagline}
       </p>
+
+      {/* Source badges + relative date */}
+      {(sourcePlatforms.length > 0 || idea.generatedAt) && (
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-1">
+            {sourcePlatforms.map((p) => (
+              <MiniPlatformBadge key={p} platform={p} />
+            ))}
+          </div>
+          {idea.generatedAt && (
+            <span className="text-[11px] text-gray-400 dark:text-gray-500 whitespace-nowrap">
+              {relativeTime(idea.generatedAt)}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Bottom: effort badge + revenue */}
       <div className="flex items-center justify-between gap-2">
@@ -101,7 +244,12 @@ export default function ArchivePage() {
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [effortFilter, setEffortFilter] = useState<EffortLevel | "all">("all");
+  const [minScoreInput, setMinScoreInput] = useState(0);
   const [minScore, setMinScore] = useState(0);
+  const [dateRange, setDateRange] = useState<DateRange>("all");
+  const [selectedSources, setSelectedSources] = useState<Set<Platform>>(
+    () => new Set(ALL_PLATFORMS)
+  );
   const [allIdeas, setAllIdeas] = useState<IdeaBrief[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -111,7 +259,8 @@ export default function ArchivePage() {
   const [hasMore, setHasMore] = useState(true);
   const [selectedIdea, setSelectedIdea] = useState<IdeaBrief | null>(null);
   const [fetchKey, setFetchKey] = useState(0);
-  const { isAuthenticated } = useAuth();
+  const [preview, setPreview] = useState(false);
+  const { isAuthenticated, user } = useAuth();
 
   // Debounce search input
   useEffect(() => {
@@ -119,7 +268,29 @@ export default function ArchivePage() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  // Client-side filtering on accumulated ideas
+  // Debounce minScore slider
+  useEffect(() => {
+    const timer = setTimeout(() => setMinScore(minScoreInput), 500);
+    return () => clearTimeout(timer);
+  }, [minScoreInput]);
+
+  // Derive server params from server-side filters
+  const serverParams = useMemo(() => {
+    const params: {
+      effort?: EffortLevel;
+      minScore?: number;
+      from?: string;
+      to?: string;
+    } = {};
+    if (effortFilter !== "all") params.effort = effortFilter;
+    if (minScore > 0) params.minScore = minScore;
+    const { from, to } = dateRangeToFromTo(dateRange);
+    if (from) params.from = from;
+    if (to) params.to = to;
+    return params;
+  }, [effortFilter, minScore, dateRange]);
+
+  // Client-side filtering on accumulated ideas (search + source)
   const filteredIdeas = useMemo(() => {
     let results = allIdeas;
     if (searchQuery) {
@@ -130,14 +301,16 @@ export default function ArchivePage() {
           idea.tagline.toLowerCase().includes(q)
       );
     }
-    if (effortFilter !== "all") {
-      results = results.filter((idea) => idea.effortEstimate === effortFilter);
-    }
-    if (minScore > 0) {
-      results = results.filter((idea) => idea.priorityScore >= minScore);
+    // Source filter: idea must have at least one source from a selected platform
+    // Ideas with no sources are always shown (don't penalize missing metadata)
+    if (selectedSources.size < ALL_PLATFORMS.length) {
+      results = results.filter((idea) => {
+        if (!idea.sources || idea.sources.length === 0) return true;
+        return idea.sources.some((s) => selectedSources.has(s.platform));
+      });
     }
     return results;
-  }, [allIdeas, searchQuery, effortFilter, minScore]);
+  }, [allIdeas, searchQuery, selectedSources]);
 
   // Escape key to close modal
   useEffect(() => {
@@ -163,7 +336,20 @@ export default function ArchivePage() {
 
   const closeModal = useCallback(() => setSelectedIdea(null), []);
 
-  // Initial fetch (page 1)
+  // Toggle source platform
+  const toggleSource = useCallback((platform: Platform) => {
+    setSelectedSources((prev) => {
+      const next = new Set(prev);
+      if (next.has(platform)) {
+        next.delete(platform);
+      } else {
+        next.add(platform);
+      }
+      return next;
+    });
+  }, []);
+
+  // Initial fetch (page 1) — re-runs when serverParams change
   useEffect(() => {
     let cancelled = false;
     async function fetchInitial() {
@@ -172,13 +358,19 @@ export default function ArchivePage() {
       setAllIdeas([]);
       setPage(1);
       setHasMore(true);
+      setPreview(false);
       try {
-        const data = await api.getArchive({ page: 1, pageSize: PAGE_SIZE });
+        const data = await api.getArchive({
+          page: 1,
+          pageSize: PAGE_SIZE,
+          ...serverParams,
+        });
         if (cancelled) return;
         const results = normalizeIdeas(data);
         setAllIdeas(results);
         setTotal(data.total ?? results.length);
         setHasMore(data.hasMore ?? results.length >= PAGE_SIZE);
+        setPreview(!!(data as unknown as Record<string, unknown>).preview);
         setPage(2);
       } catch (err) {
         if (cancelled) return;
@@ -190,22 +382,28 @@ export default function ArchivePage() {
       }
     }
     fetchInitial();
-    return () => { cancelled = true; };
-  }, [fetchKey]);
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchKey, serverParams]);
 
   // Load next page
   const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore) return;
     setLoadingMore(true);
     try {
-      const data = await api.getArchive({ page, pageSize: PAGE_SIZE });
+      const data = await api.getArchive({
+        page,
+        pageSize: PAGE_SIZE,
+        ...serverParams,
+      });
       const results = normalizeIdeas(data);
       setAllIdeas((prev) => {
         const existingIds = new Set(prev.map((i) => i.id));
         const newItems = results.filter((i) => !existingIds.has(i.id));
         return [...prev, ...newItems];
       });
-      setTotal(data.total ?? (allIdeas.length + results.length));
+      setTotal(data.total ?? allIdeas.length + results.length);
       setHasMore(data.hasMore ?? results.length >= PAGE_SIZE);
       setPage((p) => p + 1);
     } catch (err) {
@@ -213,15 +411,15 @@ export default function ArchivePage() {
     } finally {
       setLoadingMore(false);
     }
-  }, [page, hasMore, loadingMore, allIdeas.length]);
+  }, [page, hasMore, loadingMore, allIdeas.length, serverParams]);
 
   // Ref to always have the latest loadMore (avoids stale closures in scroll handler)
   const loadMoreRef = useRef(loadMore);
   loadMoreRef.current = loadMore;
 
-  // Infinite scroll via scroll handler
+  // Infinite scroll via scroll handler (disabled in preview mode)
   useEffect(() => {
-    if (loading) return;
+    if (loading || preview) return;
 
     function checkScroll() {
       const scrollBottom = window.innerHeight + window.scrollY;
@@ -236,7 +434,7 @@ export default function ArchivePage() {
     checkScroll();
 
     return () => window.removeEventListener("scroll", checkScroll);
-  }, [loading, loadingMore]);
+  }, [loading, loadingMore, preview]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
@@ -250,43 +448,86 @@ export default function ArchivePage() {
       </header>
 
       {/* Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 mb-6 space-y-4">
+        {/* Row 1: Search (full width) */}
+        <div>
+          <label
+            htmlFor="search"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >
+            Search
+          </label>
+          <div className="relative">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <svg
+                className="h-4 w-4 text-gray-400 dark:text-gray-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
+            <input
+              id="search"
+              type="text"
+              placeholder="Search ideas..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 pl-10 pr-4 py-3 text-sm shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition-colors"
+            />
+          </div>
+        </div>
+
+        {/* Row 2: Date, Sources, Effort, Score */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Date Range */}
           <div>
-            <label
-              htmlFor="search"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >
-              Search
-            </label>
-            <div className="relative">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                <svg
-                  className="h-4 w-4 text-gray-400 dark:text-gray-500"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
+            <span className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Date Range
+            </span>
+            <div className="flex flex-wrap gap-1">
+              {dateRangeOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setDateRange(opt.value)}
+                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors ${
+                    dateRange === opt.value
+                      ? "bg-primary-100 text-primary-800 border-primary-400 dark:bg-primary-900 dark:text-primary-200 dark:border-primary-600"
+                      : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
+                  }`}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-              </div>
-              <input
-                id="search"
-                type="text"
-                placeholder="Search ideas..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 pl-10 pr-4 py-3 text-sm shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition-colors"
-              />
+                  {opt.label}
+                </button>
+              ))}
             </div>
           </div>
 
+          {/* Sources */}
+          <div>
+            <span className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Sources
+            </span>
+            <div className="flex flex-wrap gap-1">
+              {ALL_PLATFORMS.map((p) => (
+                <SourceToggle
+                  key={p}
+                  platform={p}
+                  active={selectedSources.has(p)}
+                  onToggle={() => toggleSource(p)}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Effort Level */}
           <div>
             <label
               htmlFor="effort"
@@ -297,8 +538,10 @@ export default function ArchivePage() {
             <select
               id="effort"
               value={effortFilter}
-              onChange={(e) => setEffortFilter(e.target.value as EffortLevel | "all")}
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-3 text-sm shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition-colors"
+              onChange={(e) =>
+                setEffortFilter(e.target.value as EffortLevel | "all")
+              }
+              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition-colors"
             >
               {effortOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -308,21 +551,22 @@ export default function ArchivePage() {
             </select>
           </div>
 
+          {/* Min Score */}
           <div>
             <label
               htmlFor="score"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
-              Min Score: {minScore}
+              Min Score: {minScoreInput}
             </label>
             <input
               id="score"
               type="range"
               min="0"
               max="100"
-              value={minScore}
-              onChange={(e) => setMinScore(Number(e.target.value))}
-              className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer mt-3"
+              value={minScoreInput}
+              onChange={(e) => setMinScoreInput(Number(e.target.value))}
+              className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer mt-2"
             />
           </div>
         </div>
@@ -393,6 +637,17 @@ export default function ArchivePage() {
             ))}
           </div>
 
+          {preview && filteredIdeas.length > 0 && (
+            <>
+              <ArchiveUpgradeWall total={total} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                <GhostCard />
+                <GhostCard />
+                <GhostCard />
+              </div>
+            </>
+          )}
+
           {filteredIdeas.length === 0 && (
             <div className="text-center py-16">
               <svg
@@ -424,10 +679,18 @@ export default function ArchivePage() {
             </div>
           )}
 
-          {filteredIdeas.length > 0 && (
+          {filteredIdeas.length > 0 && !preview && (
             <div className="mt-4 flex justify-center">
               <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-400">
                 Showing {filteredIdeas.length} of {total} ideas
+              </span>
+            </div>
+          )}
+
+          {filteredIdeas.length > 0 && preview && (
+            <div className="mt-4 flex justify-center">
+              <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900 px-3 py-1 text-xs font-medium text-primary-700 dark:text-primary-300">
+                Previewing {filteredIdeas.length} of {total} ideas
               </span>
             </div>
           )}
@@ -472,12 +735,75 @@ export default function ArchivePage() {
 
             <IdeaBriefCard
               brief={selectedIdea}
-              gated={!isAuthenticated}
+              gated={!isAuthenticated || user?.tier === "free"}
+              gatedAction={isAuthenticated ? "upgrade" : "signup"}
               defaultTab="problem"
             />
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function ArchiveUpgradeWall({ total }: { total: number }) {
+  return (
+    <div className="relative mt-8 rounded-2xl border border-primary-200 dark:border-primary-800 bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/30 dark:to-primary-800/30 p-8 text-center">
+      <div className="mx-auto w-14 h-14 rounded-full bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center mb-4">
+        <svg
+          className="w-7 h-7 text-primary-600 dark:text-primary-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+          />
+        </svg>
+      </div>
+      <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+        Unlock the Full Archive
+      </h3>
+      <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-lg mx-auto">
+        You're previewing a small sample. Upgrade to Builder to browse all{" "}
+        <span className="font-semibold text-gray-900 dark:text-white">
+          {total.toLocaleString()}
+        </span>{" "}
+        ideas with full search, filters, and detailed briefs.
+      </p>
+      <Link
+        href="/pricing"
+        className="inline-block rounded-lg bg-primary-600 px-8 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+      >
+        Upgrade to Builder
+      </Link>
+    </div>
+  );
+}
+
+function GhostCard() {
+  return (
+    <div
+      aria-hidden="true"
+      className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 select-none pointer-events-none"
+      style={{ filter: "blur(6px)", opacity: 0.5 }}
+    >
+      <div className="flex items-center gap-3 mb-2">
+        <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full" />
+        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
+      </div>
+      <div className="space-y-2 mb-4">
+        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-4/5" />
+      </div>
+      <div className="flex items-center justify-between">
+        <div className="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded-full" />
+        <div className="h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded" />
+      </div>
     </div>
   );
 }

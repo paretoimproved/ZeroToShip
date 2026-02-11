@@ -84,10 +84,10 @@ describe('hasAccess', () => {
     });
   });
 
-  describe('pro-tier features (archive, fullBrief, search, validate)', () => {
-    it('should gate archive at pro tier', () => {
-      expect(hasAccess('anonymous', 'ideas.archive')).toBe(false);
-      expect(hasAccess('free', 'ideas.archive')).toBe(false);
+  describe('pro-tier features (fullBrief, search, validate)', () => {
+    it('should allow archive access for all tiers (preview mode for lower tiers)', () => {
+      expect(hasAccess('anonymous', 'ideas.archive')).toBe(true);
+      expect(hasAccess('free', 'ideas.archive')).toBe(true);
       expect(hasAccess('pro', 'ideas.archive')).toBe(true);
       expect(hasAccess('enterprise', 'ideas.archive')).toBe(true);
     });

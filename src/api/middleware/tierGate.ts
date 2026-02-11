@@ -68,6 +68,7 @@ export function filterIdeaForTier(idea: IdeaBrief, tier: UserTier): IdeaSummary 
     tagline: idea.tagline,
     priorityScore: idea.priorityScore,
     effortEstimate: idea.effortEstimate,
+    revenueEstimate: idea.revenueEstimate,
     category: idea.category,
     generatedAt: idea.generatedAt,
   };

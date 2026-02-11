@@ -134,12 +134,9 @@ describe('Access Control Functions', () => {
   });
 
   describe('canAccessArchive', () => {
-    it('should return false for anonymous', () => {
-      expect(canAccessArchive('anonymous')).toBe(false);
-    });
-
-    it('should return true for pro and above', () => {
-      expect(canAccessArchive('free')).toBe(false);
+    it('should return true for all tiers (preview mode for lower tiers)', () => {
+      expect(canAccessArchive('anonymous')).toBe(true);
+      expect(canAccessArchive('free')).toBe(true);
       expect(canAccessArchive('pro')).toBe(true);
       expect(canAccessArchive('enterprise')).toBe(true);
     });
