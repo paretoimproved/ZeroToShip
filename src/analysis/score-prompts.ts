@@ -127,6 +127,18 @@ Score anchors:
 - 7-8: Significant — substantial pain, 100K-1M affected, meaningful engineering, 1-2 month build
 - 9-10: Critical — severe blocker, >1M affected, major technical challenge, 3+ month build
 
+## Content Relevance Filter
+
+This platform identifies **technical problems solvable with software**. If a problem is primarily about any of the following, score severity as 1-2 regardless of engagement:
+
+- Career complaints (job searching, salary, promotions, interviews)
+- Workplace drama (bad managers, toxic culture, office politics)
+- Personal/emotional issues (burnout, imposter syndrome, anxiety)
+- Industry pessimism (tech bubble, AI replacing developers, market doom)
+- Lifestyle/work-life balance discussions
+
+Only score severity 3+ for problems where a **technical product, tool, or service** could meaningfully address the pain. The question to ask: "Could a startup build software to solve this?" If not, severity 1-2.
+
 Be realistic and consistent in your scoring. Provide brief but insightful reasoning.
 Always respond with valid JSON matching the requested format.`;
 
@@ -193,6 +205,18 @@ Score anchors:
 - 5-6: Moderate — noticeable pain, 10K-100K affected, some complexity, 1-2 week build
 - 7-8: Significant — substantial pain, 100K-1M affected, meaningful engineering, 1-2 month build
 - 9-10: Critical — severe blocker, >1M affected, major technical challenge, 3+ month build
+
+## Content Relevance Filter
+
+This platform identifies **technical problems solvable with software**. If a problem is primarily about any of the following, score severity as 1-2 regardless of engagement:
+
+- Career complaints (job searching, salary, promotions, interviews)
+- Workplace drama (bad managers, toxic culture, office politics)
+- Personal/emotional issues (burnout, imposter syndrome, anxiety)
+- Industry pessimism (tech bubble, AI replacing developers, market doom)
+- Lifestyle/work-life balance discussions
+
+Only score severity 3+ for problems where a **technical product, tool, or service** could meaningfully address the pain. The question to ask: "Could a startup build software to solve this?" If not, severity 1-2.
 
 Be realistic and consistent in your scoring. Provide brief but insightful reasoning.
 You will receive multiple problems to score in one request. Score each one independently.

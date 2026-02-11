@@ -7,6 +7,7 @@
 
 import { RawPost } from './types';
 import { detectSignals, hasSignals } from './signals';
+import { isNonTechnicalContent } from './content-filter';
 import logger from '../lib/logger';
 import { ScraperError } from '../lib/errors';
 import {
@@ -69,8 +70,6 @@ export const DEFAULT_SUBREDDITS = [
   'indiehackers',
   'smallbusiness',
   'sysadmin',
-  'cscareerquestions',
-  'ExperiencedDevs',
   'ProductManagement',
   'nocode',
   // Developer Workflow Friction
@@ -265,6 +264,11 @@ async function scrapeSubreddit(
 
         // Filter by signals if configured
         if (config.signalsOnly && post.signals.length === 0) {
+          continue;
+        }
+
+        // Filter out non-technical content (career, workplace, personal)
+        if (isNonTechnicalContent(post.title, post.body)) {
           continue;
         }
 

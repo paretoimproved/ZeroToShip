@@ -25,6 +25,7 @@ import {
 } from './hn-api';
 import { type HNPost } from './types';
 import { detectSignals, hasSignals } from './signals';
+import { isNonTechnicalContent } from './content-filter';
 import logger from '../lib/logger';
 import {
   sleep,
@@ -166,6 +167,7 @@ async function scrapeAskHN(
         if ((hit.points || 0) < MIN_ASK_HN_POINTS) continue;
         const post = hitToPost(hit);
         post.body = stripHtml(post.body);
+        if (isNonTechnicalContent(post.title, post.body)) continue;
         posts.push(post);
       }
 
@@ -195,6 +197,7 @@ async function scrapeComments(
       for (const hit of response.hits) {
         const post = hitToPost(hit);
         post.body = stripHtml(post.body);
+        if (isNonTechnicalContent(post.title, post.body)) continue;
         posts.push(post);
       }
 
@@ -255,7 +258,9 @@ function extractPainPointComments(children: HNItem[], storyTitle: string): HNPos
     if (child.text && hasSignals(child.text)) {
       const post = itemToPost(child, storyTitle);
       post.body = stripHtml(post.body);
-      posts.push(post);
+      if (!isNonTechnicalContent(post.title, post.body)) {
+        posts.push(post);
+      }
     }
 
     // Recurse into nested comments
