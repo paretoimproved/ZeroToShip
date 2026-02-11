@@ -30,7 +30,7 @@ const TABS: TabDefinition[] = [
           </svg>
         ),
         title: "Multi-Source Scraping",
-        description: "Reddit, HN, Twitter, and GitHub scraped daily for real pain points.",
+        description: "Reddit, HN, and GitHub scraped daily for real pain points.",
       },
       {
         icon: (

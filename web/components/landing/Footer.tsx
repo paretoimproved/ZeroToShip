@@ -160,7 +160,6 @@ export default function Footer() {
             <div className="flex items-center gap-3 mt-4">
               <RedditIcon />
               <HNIcon />
-              <TwitterIcon />
               <GitHubIcon />
             </div>
           </div>

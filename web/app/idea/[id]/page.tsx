@@ -6,6 +6,7 @@ import Link from "next/link";
 import IdeaBriefCard from "@/components/IdeaBriefCard";
 import { useAuth } from "@/components/AuthProvider";
 import { api } from "@/lib/api";
+import { trackIdeaViewed } from "@/lib/analytics";
 import type { IdeaBrief } from "@/lib/types";
 
 // Mock data for fallback when API is unavailable
@@ -52,10 +53,10 @@ const mockBrief: IdeaBrief = {
   },
   goToMarket: {
     launchStrategy:
-      "Soft launch on Twitter to build waitlist, then Product Hunt launch with Indie Hackers cross-post. Focus on building in public to attract target audience.",
-    channels: ["Twitter/X", "Indie Hackers", "Reddit r/SideProject", "Dev.to", "Hacker News"],
+      "Product Hunt launch with Indie Hackers cross-post. Focus on building in public to attract target audience.",
+    channels: ["Indie Hackers", "Reddit r/SideProject", "Dev.to", "Hacker News"],
     firstCustomers:
-      "Reach out to indie hackers on Twitter who have complained about monitoring costs. Offer lifetime deals to first 50 customers for testimonials.",
+      "Reach out to indie hackers on Reddit and HN who have complained about monitoring costs. Offer lifetime deals to first 50 customers for testimonials.",
   },
   risks: [
     "Competition from free tools and generous free tiers",
@@ -101,6 +102,11 @@ export default function IdeaPage() {
           sources: data.sources || [],
         };
         setBrief(idea);
+        trackIdeaViewed({
+          ideaId: idea.id,
+          source: "detail_page",
+          score: idea.priorityScore,
+        });
       } catch (error) {
         console.log("API unavailable, using mock data:", error);
         setBrief({ ...mockBrief, id });

@@ -13,7 +13,7 @@ Hey {{name}},
 
 Welcome to ZeroToShip!
 
-Starting tomorrow at 8 AM, you'll get {{ideaCount}} startup ideas delivered to your inbox. Each one scraped from Reddit, Hacker News, Twitter, and GitHub in the last 24 hours.
+Starting tomorrow at 8 AM, you'll get {{ideaCount}} startup ideas delivered to your inbox. Each one scraped from Reddit, Hacker News, and GitHub in the last 24 hours.
 
 **Here's how it works:**
 

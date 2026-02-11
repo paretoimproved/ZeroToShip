@@ -4,7 +4,7 @@
 **Stop Scrolling. Start Building.**
 
 ## Subheadline
-Every morning, get 10 startup ideas scraped from Reddit, HN, and Twitter—scored by opportunity, with technical specs included.
+Every morning, get 10 startup ideas scraped from Reddit, HN, and GitHub—scored by opportunity, with technical specs included.
 
 ## CTA Primary
 **Get Your First Ideas Free**

@@ -185,7 +185,7 @@ class ApiClient {
     skipDelivery?: boolean;
     hoursBack?: number;
     maxBriefs?: number;
-    scrapers?: { reddit?: boolean; hn?: boolean; twitter?: boolean; github?: boolean };
+    scrapers?: { reddit?: boolean; hn?: boolean; github?: boolean };
     clusteringThreshold?: number;
     minPriorityScore?: number;
     minFrequencyForGap?: number;
@@ -212,6 +212,23 @@ class ApiClient {
 
   async getRunDetail(runId: string): Promise<{ run: PipelineRunRow }> {
     return this.request(`/admin/runs/${runId}`);
+  }
+
+  // Saved ideas (bookmark) endpoints
+  async saveIdea(ideaId: string): Promise<{ success: boolean; message: string }> {
+    return this.request<{ success: boolean; message: string }>(`/ideas/${ideaId}/save`, {
+      method: "POST",
+    });
+  }
+
+  async unsaveIdea(ideaId: string): Promise<{ success: boolean; message: string }> {
+    return this.request<{ success: boolean; message: string }>(`/ideas/${ideaId}/save`, {
+      method: "DELETE",
+    });
+  }
+
+  async getSavedIdeas(): Promise<IdeaBrief[]> {
+    return this.request<IdeaBrief[]>("/ideas/saved");
   }
 }
 

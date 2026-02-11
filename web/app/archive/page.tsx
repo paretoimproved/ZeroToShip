@@ -3,16 +3,22 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Link from "next/link";
 import IdeaBriefCard from "@/components/IdeaBriefCard";
+import BookmarkButton from "@/components/BookmarkButton";
 import { Spinner } from "@/components/icons";
 import { useAuth } from "@/components/AuthProvider";
 import { api } from "@/lib/api";
 import { normalizeIdeas } from "@/lib/normalize";
+import {
+  trackIdeaViewed,
+  trackArchiveFiltered,
+  trackUpgradeClicked,
+} from "@/lib/analytics";
 import type { IdeaBrief, EffortLevel } from "@/lib/types";
 
 const PAGE_SIZE = 24;
 
-type Platform = "reddit" | "hn" | "twitter" | "github";
-const ALL_PLATFORMS: Platform[] = ["reddit", "hn", "twitter", "github"];
+type Platform = "reddit" | "hn" | "github";
+const ALL_PLATFORMS: Platform[] = ["reddit", "hn", "github"];
 
 type DateRange = "all" | "7d" | "30d" | "90d";
 
@@ -46,12 +52,6 @@ const platformConfig: Record<
     label: "HN",
     activeColor:
       "bg-orange-100 text-orange-800 border-orange-400 dark:bg-orange-900 dark:text-orange-200 dark:border-orange-600",
-  },
-  twitter: {
-    letter: "T",
-    label: "Twitter",
-    activeColor:
-      "bg-blue-100 text-blue-800 border-blue-400 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-600",
   },
   github: {
     letter: "G",
@@ -163,10 +163,14 @@ function CompactCard({
   idea,
   index,
   onClick,
+  isSaved,
+  onToggleSave,
 }: {
   idea: IdeaBrief;
   index: number;
   onClick: () => void;
+  isSaved: boolean;
+  onToggleSave: (saved: boolean) => void;
 }) {
   const delay = Math.min(index, 8) * 150;
 
@@ -189,16 +193,22 @@ function CompactCard({
       className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:border-primary-400 dark:hover:border-primary-500 transition-all duration-200 animate-fade-in-up opacity-0"
       style={{ animationDelay: `${delay}ms`, animationFillMode: "forwards" }}
     >
-      {/* Top: score circle + name */}
+      {/* Top: score circle + name + bookmark */}
       <div className="flex items-center gap-3 mb-2">
         <div
           className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold ${getScoreCircleColor(idea.priorityScore)}`}
         >
           {idea.priorityScore.toFixed(0)}
         </div>
-        <h3 className="font-mono text-sm font-bold text-gray-900 dark:text-white truncate">
+        <h3 className="font-mono text-sm font-bold text-gray-900 dark:text-white truncate flex-1">
           {idea.name}
         </h3>
+        <BookmarkButton
+          ideaId={idea.id}
+          initialSaved={isSaved}
+          onToggle={onToggleSave}
+          size="sm"
+        />
       </div>
 
       {/* Tagline */}
@@ -260,7 +270,43 @@ export default function ArchivePage() {
   const [selectedIdea, setSelectedIdea] = useState<IdeaBrief | null>(null);
   const [fetchKey, setFetchKey] = useState(0);
   const [preview, setPreview] = useState(false);
+  const [savedIdeaIds, setSavedIdeaIds] = useState<Set<string>>(new Set());
+  const [showSavedOnly, setShowSavedOnly] = useState(false);
   const { isAuthenticated, user } = useAuth();
+
+  // Fetch saved idea IDs for the logged-in user
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setSavedIdeaIds(new Set());
+      return;
+    }
+    let cancelled = false;
+    async function fetchSaved() {
+      try {
+        const saved = await api.getSavedIdeas();
+        if (cancelled) return;
+        const normalized = normalizeIdeas(saved);
+        setSavedIdeaIds(new Set(normalized.map((idea) => idea.id)));
+      } catch {
+        // Silently fail — bookmark state is non-critical
+      }
+    }
+    fetchSaved();
+    return () => { cancelled = true; };
+  }, [isAuthenticated]);
+
+  // Callback for toggling a saved idea
+  const handleToggleSave = useCallback((ideaId: string, saved: boolean) => {
+    setSavedIdeaIds((prev) => {
+      const next = new Set(prev);
+      if (saved) {
+        next.add(ideaId);
+      } else {
+        next.delete(ideaId);
+      }
+      return next;
+    });
+  }, []);
 
   // Debounce search input
   useEffect(() => {
@@ -290,9 +336,12 @@ export default function ArchivePage() {
     return params;
   }, [effortFilter, minScore, dateRange]);
 
-  // Client-side filtering on accumulated ideas (search + source)
+  // Client-side filtering on accumulated ideas (search + source + saved)
   const filteredIdeas = useMemo(() => {
     let results = allIdeas;
+    if (showSavedOnly) {
+      results = results.filter((idea) => savedIdeaIds.has(idea.id));
+    }
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       results = results.filter(
@@ -310,7 +359,7 @@ export default function ArchivePage() {
       });
     }
     return results;
-  }, [allIdeas, searchQuery, selectedSources]);
+  }, [allIdeas, searchQuery, selectedSources, showSavedOnly, savedIdeaIds]);
 
   // Escape key to close modal
   useEffect(() => {
@@ -485,6 +534,38 @@ export default function ArchivePage() {
           </div>
         </div>
 
+        {/* Saved filter toggle (only shown when authenticated) */}
+        {isAuthenticated && (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowSavedOnly((prev) => !prev)}
+              aria-pressed={showSavedOnly}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
+                showSavedOnly
+                  ? "bg-primary-100 text-primary-800 border-primary-400 dark:bg-primary-900 dark:text-primary-200 dark:border-primary-600"
+                  : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
+              }`}
+            >
+              <svg
+                className="w-4 h-4"
+                fill={showSavedOnly ? "currentColor" : "none"}
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                />
+              </svg>
+              Saved Only
+            </button>
+          </div>
+        )}
+
         {/* Row 2: Date, Sources, Effort, Score */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Date Range */}
@@ -497,7 +578,10 @@ export default function ArchivePage() {
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => setDateRange(opt.value)}
+                  onClick={() => {
+                    setDateRange(opt.value);
+                    trackArchiveFiltered({ filter_type: "date_range", filter_value: opt.value });
+                  }}
                   className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors ${
                     dateRange === opt.value
                       ? "bg-primary-100 text-primary-800 border-primary-400 dark:bg-primary-900 dark:text-primary-200 dark:border-primary-600"
@@ -538,9 +622,11 @@ export default function ArchivePage() {
             <select
               id="effort"
               value={effortFilter}
-              onChange={(e) =>
-                setEffortFilter(e.target.value as EffortLevel | "all")
-              }
+              onChange={(e) => {
+                const value = e.target.value as EffortLevel | "all";
+                setEffortFilter(value);
+                trackArchiveFiltered({ filter_type: "effort", filter_value: value });
+              }}
               className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition-colors"
             >
               {effortOptions.map((option) => (
@@ -632,7 +718,16 @@ export default function ArchivePage() {
                 key={idea.id}
                 idea={idea}
                 index={i}
-                onClick={() => setSelectedIdea(idea)}
+                onClick={() => {
+                  setSelectedIdea(idea);
+                  trackIdeaViewed({
+                    ideaId: idea.id,
+                    source: "archive_modal",
+                    score: idea.priorityScore,
+                  });
+                }}
+                isSaved={savedIdeaIds.has(idea.id)}
+                onToggleSave={(saved) => handleToggleSave(idea.id, saved)}
               />
             ))}
           </div>
@@ -711,27 +806,37 @@ export default function ArchivePage() {
 
           {/* Card wrapper */}
           <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl animate-modal-card">
-            {/* Close button */}
-            <button
-              onClick={closeModal}
-              className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-              aria-label="Close"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
+            {/* Modal action buttons */}
+            <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+              {isAuthenticated && (
+                <BookmarkButton
+                  ideaId={selectedIdea.id}
+                  initialSaved={savedIdeaIds.has(selectedIdea.id)}
+                  onToggle={(saved) => handleToggleSave(selectedIdea.id, saved)}
+                  size="sm"
                 />
-              </svg>
-            </button>
+              )}
+              <button
+                onClick={closeModal}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Close"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
 
             <IdeaBriefCard
               brief={selectedIdea}
@@ -777,6 +882,7 @@ function ArchiveUpgradeWall({ total }: { total: number }) {
       </p>
       <Link
         href="/pricing"
+        onClick={() => trackUpgradeClicked({ from_tier: "free", to_tier: "pro", location: "archive_wall" })}
         className="inline-block rounded-lg bg-primary-600 px-8 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
       >
         Upgrade to Builder

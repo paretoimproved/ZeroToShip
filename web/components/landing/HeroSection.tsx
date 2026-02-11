@@ -56,7 +56,7 @@ export default function HeroSection() {
 
         {/* Subheadline */}
         <p className="mx-auto mt-6 max-w-2xl text-balance text-lg leading-relaxed text-gray-600 dark:text-gray-400 sm:text-xl">
-          Every morning, get startup ideas scraped from Reddit, HN, Twitter, and
+          Every morning, get startup ideas scraped from Reddit, HN, and
           GitHub &mdash; scored by AI, with full business briefs. Free.
         </p>
 
@@ -161,7 +161,7 @@ export default function HeroSection() {
                 d="M5 13l4 4L19 7"
               />
             </svg>
-            4 sources monitored
+            3 sources monitored
           </li>
           <li className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
             <svg

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import IdeaBriefCard from "@/components/IdeaBriefCard";
+import BookmarkButton from "@/components/BookmarkButton";
 import ProtectedLayout from "@/components/ProtectedLayout";
 import { useAuth } from "@/components/AuthProvider";
 import { api } from "@/lib/api";
@@ -39,8 +40,8 @@ const mockIdeas: IdeaBrief[] = [
     },
     goToMarket: {
       launchStrategy: "Product Hunt + Indie Hackers",
-      channels: ["Twitter", "Reddit", "Dev.to"],
-      firstCustomers: "Indie hackers on Twitter",
+      channels: ["Reddit", "Dev.to", "Indie Hackers"],
+      firstCustomers: "Indie hackers on Reddit and HN",
     },
     risks: ["Competition from free tools", "Pricing pressure"],
     generatedAt: new Date().toISOString(),
@@ -51,6 +52,7 @@ export default function HomePage() {
   const [ideas, setIdeas] = useState<IdeaBrief[]>([]);
   const [source, setSource] = useState<"api" | "mock" | null>(null);
   const [loading, setLoading] = useState(true);
+  const [savedIdeaIds, setSavedIdeaIds] = useState<Set<string>>(new Set());
   const { isAuthenticated } = useAuth();
 
   useEffect(() => {
@@ -71,6 +73,39 @@ export default function HomePage() {
     }
 
     fetchIdeas();
+  }, []);
+
+  // Fetch saved idea IDs for authenticated user
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setSavedIdeaIds(new Set());
+      return;
+    }
+    let cancelled = false;
+    async function fetchSaved() {
+      try {
+        const saved = await api.getSavedIdeas();
+        if (cancelled) return;
+        const normalized = normalizeIdeas(saved);
+        setSavedIdeaIds(new Set(normalized.map((idea) => idea.id)));
+      } catch {
+        // Silently fail — bookmark state is non-critical
+      }
+    }
+    fetchSaved();
+    return () => { cancelled = true; };
+  }, [isAuthenticated]);
+
+  const handleToggleSave = useCallback((ideaId: string, saved: boolean) => {
+    setSavedIdeaIds((prev) => {
+      const next = new Set(prev);
+      if (saved) {
+        next.add(ideaId);
+      } else {
+        next.delete(ideaId);
+      }
+      return next;
+    });
   }, []);
 
   return (
@@ -149,6 +184,16 @@ export default function HomePage() {
                 rank={index + 1}
                 index={index}
                 gated={!isAuthenticated}
+                bookmarkSlot={
+                  isAuthenticated ? (
+                    <BookmarkButton
+                      ideaId={idea.id}
+                      initialSaved={savedIdeaIds.has(idea.id)}
+                      onToggle={(saved) => handleToggleSave(idea.id, saved)}
+                      size="sm"
+                    />
+                  ) : undefined
+                }
               />
             ))}
           </div>

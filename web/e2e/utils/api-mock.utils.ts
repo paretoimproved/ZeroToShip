@@ -70,7 +70,7 @@ export function generateMockIdeas(count: number = SEED_IDEAS.length): MockIdea[]
     },
     goToMarket: {
       launchStrategy: 'Product Hunt launch',
-      channels: ['Twitter', 'Reddit', 'Indie Hackers'],
+      channels: ['Reddit', 'Indie Hackers', 'Hacker News'],
       firstCustomers: 'Early adopters',
     },
     risks: ['Competition', 'Market changes'],

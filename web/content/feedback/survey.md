@@ -74,7 +74,6 @@ Ranking (drag to reorder) or single select
 ### Options
 - Reddit
 - Hacker News
-- Twitter/X
 - GitHub
 
 ---

@@ -8,7 +8,7 @@ const steps = [
     number: 1,
     title: "We Scrape",
     description:
-      "Every morning, we scan 300+ posts across Reddit, Hacker News, Twitter, and GitHub for real problems people are complaining about.",
+      "Every morning, we scan 300+ posts across Reddit, Hacker News, and GitHub for real problems people are complaining about.",
     icon: (
       <svg
         width={32}

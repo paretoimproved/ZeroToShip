@@ -7,7 +7,7 @@
 
 ### How is this different from browsing Reddit/HN myself?
 
-We scrape 300+ posts daily across 8 subreddits, Hacker News, Twitter, and GitHub. Then AI clusters similar problems, scores them by opportunity, and generates technical specs. You'd spend hours doing this manually—we do it in minutes and deliver the best ideas to your inbox.
+We scrape 300+ posts daily across 8 subreddits, Hacker News, and GitHub. Then AI clusters similar problems, scores them by opportunity, and generates technical specs. You'd spend hours doing this manually—we do it in minutes and deliver the best ideas to your inbox.
 
 ---
 
@@ -15,7 +15,6 @@ We scrape 300+ posts daily across 8 subreddits, Hacker News, Twitter, and GitHub
 
 - **Reddit**: r/startups, r/SideProject, r/webdev, r/entrepreneur, r/Entrepreneur, r/indiehackers, r/SaaS, r/devtools
 - **Hacker News**: Ask HN threads, Show HN comments, front page discussions
-- **Twitter**: #buildinpublic, #indiehacker, developer pain point tweets
 - **GitHub**: Issues from repos with 500+ stars, feature requests, enhancement discussions
 
 ---

@@ -65,9 +65,8 @@ export const sampleBrief: IdeaBrief = {
 
   goToMarket: {
     launchStrategy:
-      "Build in public on Twitter/X with weekly progress threads. Launch on Product Hunt as a 'Developer Tools' product. Post Show HN with a focus on the technical architecture. Submit to Indie Hackers and dev tool newsletters (TLDR, Bytes, Console.dev).",
+      "Launch on Product Hunt as a 'Developer Tools' product. Post Show HN with a focus on the technical architecture. Submit to Indie Hackers and dev tool newsletters (TLDR, Bytes, Console.dev).",
     channels: [
-      "Twitter/X build-in-public threads",
       "Product Hunt launch",
       "Hacker News Show HN",
       "Indie Hackers community post",
@@ -75,7 +74,7 @@ export const sampleBrief: IdeaBrief = {
       "Reddit r/selfhosted and r/webdev",
     ],
     firstCustomers:
-      "Target 50 beta users from personal Twitter audience and Indie Hackers community. Offer lifetime Pro access to first 20 beta signups in exchange for detailed feedback and testimonials. Partner with 2–3 dev tool YouTubers for early reviews.",
+      "Target 50 beta users from Indie Hackers community and Reddit. Offer lifetime Pro access to first 20 beta signups in exchange for detailed feedback and testimonials. Partner with 2–3 dev tool YouTubers for early reviews.",
   },
 
   risks: [

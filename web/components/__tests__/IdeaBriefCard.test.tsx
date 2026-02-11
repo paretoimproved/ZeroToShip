@@ -41,7 +41,7 @@ function makeBrief(overrides: Partial<IdeaBrief> = {}): IdeaBrief {
     },
     goToMarket: {
       launchStrategy: "Product Hunt launch",
-      channels: ["Twitter", "Reddit"],
+      channels: ["Reddit", "Hacker News"],
       firstCustomers: "Indie hackers",
     },
     risks: ["Market timing"],

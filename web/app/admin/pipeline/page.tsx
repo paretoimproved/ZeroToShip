@@ -74,7 +74,6 @@ export default function PipelinePage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [scraperReddit, setScraperReddit] = useState(true);
   const [scraperHN, setScraperHN] = useState(true);
-  const [scraperTwitter, setScraperTwitter] = useState(true);
   const [scraperGithub, setScraperGithub] = useState(true);
   const [clusteringThreshold, setClusteringThreshold] = useState("0.75");
   const [minPriorityScore, setMinPriorityScore] = useState("8");
@@ -164,7 +163,6 @@ export default function PipelinePage() {
         options.scrapers = {
           reddit: scraperReddit,
           hn: scraperHN,
-          twitter: scraperTwitter,
           github: scraperGithub,
         };
         options.clusteringThreshold = Number(clusteringThreshold);
@@ -287,7 +285,6 @@ export default function PipelinePage() {
                     {[
                       { key: "reddit", label: "Reddit", checked: scraperReddit, set: setScraperReddit },
                       { key: "hn", label: "HN", checked: scraperHN, set: setScraperHN },
-                      { key: "twitter", label: "Twitter", checked: scraperTwitter, set: setScraperTwitter },
                       { key: "github", label: "GitHub", checked: scraperGithub, set: setScraperGithub },
                     ].map((s) => (
                       <label key={s.key} className="flex items-center space-x-1.5 text-sm text-gray-600 dark:text-gray-400">

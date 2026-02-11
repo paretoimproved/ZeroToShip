@@ -26,7 +26,7 @@ export interface ApiError {
 }
 
 export interface IdeaSource {
-  platform: 'reddit' | 'hn' | 'twitter' | 'github';
+  platform: 'reddit' | 'hn' | 'github';
   title: string;
   url: string;
   score: number;
@@ -125,7 +125,7 @@ export interface PipelineStatus {
   success?: boolean;
   phases?: Record<string, string>;
   phaseStats?: {
-    scrape?: { totalPosts: number; reddit: number; hn: number; twitter: number; github: number };
+    scrape?: { totalPosts: number; reddit: number; hn: number; github: number };
     analyze?: { clusterCount: number; scoredCount: number; gapAnalysisCount: number };
     generate?: { briefCount: number };
     deliver?: { sent: number; failed: number; subscriberCount: number };

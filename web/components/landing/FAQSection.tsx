@@ -2,12 +2,12 @@ const faqItems = [
   {
     question: "How is this different from browsing Reddit/HN myself?",
     answer:
-      "We scrape 300+ posts daily across 8 subreddits, Hacker News, Twitter, and GitHub. Then AI clusters similar problems, scores them by opportunity, and generates technical specs. You'd spend hours doing this manually \u2014 we do it in minutes and deliver the best ideas to your inbox.",
+      "We scrape 300+ posts daily across 8 subreddits, Hacker News, and GitHub. Then AI clusters similar problems, scores them by opportunity, and generates technical specs. You'd spend hours doing this manually \u2014 we do it in minutes and deliver the best ideas to your inbox.",
   },
   {
     question: "What sources do you scrape?",
     answer:
-      "Reddit (r/startups, r/SideProject, r/webdev, and 5 more), Hacker News (Ask HN, Show HN, comments), Twitter (#buildinpublic, #indiehacker), and GitHub issues from repos with 500+ stars.",
+      "Reddit (r/startups, r/SideProject, r/webdev, and 5 more), Hacker News (Ask HN, Show HN, comments), and GitHub issues from repos with 500+ stars.",
   },
   {
     question: "Can I get ideas for specific niches?",
