@@ -769,7 +769,7 @@ function ArchiveUpgradeWall({ total }: { total: number }) {
         Unlock the Full Archive
       </h3>
       <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-lg mx-auto">
-        You're previewing a small sample. Upgrade to Builder to browse all{" "}
+        You&apos;re previewing a small sample. Upgrade to Builder to browse all{" "}
         <span className="font-semibold text-gray-900 dark:text-white">
           {total.toLocaleString()}
         </span>{" "}
