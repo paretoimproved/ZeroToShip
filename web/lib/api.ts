@@ -103,6 +103,7 @@ class ApiClient {
     to?: string;
     effort?: EffortLevel;
     minScore?: number;
+    sort?: string;
   }): Promise<PaginatedResponse<IdeaBrief>> {
     const searchParams = new URLSearchParams();
     if (params.page) searchParams.set("page", params.page.toString());
@@ -111,6 +112,7 @@ class ApiClient {
     if (params.to) searchParams.set("to", params.to);
     if (params.effort) searchParams.set("effort", params.effort);
     if (params.minScore) searchParams.set("minScore", params.minScore.toString());
+    if (params.sort) searchParams.set("sort", params.sort);
 
     return this.request<PaginatedResponse<IdeaBrief>>(
       `/ideas/archive?${searchParams.toString()}`
@@ -123,8 +125,8 @@ class ApiClient {
   }
 
   async updatePreferences(preferences: Partial<UserPreferences>): Promise<User> {
-    return this.request<User>("/users/me/preferences", {
-      method: "PATCH",
+    return this.request<User>("/user/preferences", {
+      method: "PUT",
       body: JSON.stringify(preferences),
     });
   }

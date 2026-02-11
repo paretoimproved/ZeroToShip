@@ -123,6 +123,7 @@ export const ArchiveQuerySchema = z.object({
   minScore: z.coerce.number().min(0).max(100).optional(),
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),
+  sort: z.enum(['newest', 'top-scored', 'lowest-effort', 'a-z']).default('newest'),
 });
 
 // Search query params (Enterprise)

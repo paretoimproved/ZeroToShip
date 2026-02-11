@@ -4,7 +4,7 @@
  * Business logic for fetching, filtering, and managing ideas
  */
 
-import { eq, desc, gte, lte, and, like, sql, ilike, or } from 'drizzle-orm';
+import { eq, desc, asc, gte, lte, and, like, sql, ilike, or } from 'drizzle-orm';
 import { db, ideas, savedIdeas, viewedIdeas, validationRequests } from '../db/client';
 import type {
   IdeaBrief,
@@ -184,11 +184,29 @@ export async function getArchivedIdeas(
   const page = Number(query.page) || 1;
   const pageSize = Number(query.pageSize) || 10;
   const offset = (page - 1) * pageSize;
+  // Build dynamic sort order
+  function buildOrderBy(sort: string) {
+    switch (sort) {
+      case 'top-scored':
+        return [desc(ideas.priorityScore), desc(ideas.publishedAt)];
+      case 'lowest-effort': {
+        const effortOrder = sql`CASE ${ideas.effortEstimate}
+          WHEN 'weekend' THEN 1 WHEN 'week' THEN 2
+          WHEN 'month' THEN 3 WHEN 'quarter' THEN 4 ELSE 5 END`;
+        return [asc(effortOrder), desc(ideas.priorityScore)];
+      }
+      case 'a-z':
+        return [asc(ideas.name), desc(ideas.publishedAt)];
+      default: // 'newest'
+        return [desc(ideas.publishedAt), desc(ideas.priorityScore)];
+    }
+  }
+
   const rows = await db
     .select()
     .from(ideas)
     .where(whereClause)
-    .orderBy(desc(ideas.publishedAt), desc(ideas.priorityScore))
+    .orderBy(...buildOrderBy(query.sort))
     .limit(pageSize)
     .offset(offset);
 
@@ -396,7 +414,8 @@ export async function createValidationRequest(
  * Get validation request status
  */
 export async function getValidationStatus(
-  requestId: string
+  requestId: string,
+  userId: string
 ): Promise<{
   id: string;
   status: string;
@@ -406,7 +425,7 @@ export async function getValidationStatus(
   const rows = await db
     .select()
     .from(validationRequests)
-    .where(eq(validationRequests.id, requestId))
+    .where(and(eq(validationRequests.id, requestId), eq(validationRequests.userId, userId)))
     .limit(1);
 
   if (rows.length === 0) {
