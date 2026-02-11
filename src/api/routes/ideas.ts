@@ -20,6 +20,7 @@ import {
   getArchivedIdeasForTier,
   getIdeaByIdForTier,
   saveIdeaForUser,
+  getSavedIdeasForUser,
 } from '../services/ideas';
 import {
   IdeaListResponseSchema,
@@ -145,6 +146,26 @@ export const ideasRoutes: FastifyPluginAsync = async (fastify) => {
         preview,
         tier: request.userTier,
       });
+    }
+  );
+
+  /**
+   * GET /api/v1/ideas/saved
+   * Get all saved (bookmarked) ideas for the authenticated user
+   */
+  app.get(
+    '/saved',
+    {
+      preHandler: [requireAuth, rateLimitMiddleware],
+      schema: {
+        response: {
+          200: z.array(IdeaSummarySchema),
+        },
+      },
+    },
+    async (request, reply) => {
+      const ideas = await getSavedIdeasForUser(request.userId!);
+      return reply.send(ideas);
     }
   );
 

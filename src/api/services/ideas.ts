@@ -371,6 +371,20 @@ export async function unsaveIdea(userId: string, ideaId: string): Promise<boolea
 }
 
 /**
+ * Get all saved ideas for a user
+ */
+export async function getSavedIdeasForUser(userId: string): Promise<IdeaBrief[]> {
+  const rows = await db
+    .select({ idea: ideas })
+    .from(savedIdeas)
+    .innerJoin(ideas, eq(savedIdeas.ideaId, ideas.id))
+    .where(eq(savedIdeas.userId, userId))
+    .orderBy(desc(savedIdeas.savedAt));
+
+  return rows.map((r) => rowToIdeaBrief(r.idea));
+}
+
+/**
  * Get all categories
  */
 export async function getCategories(): Promise<string[]> {
@@ -511,7 +525,7 @@ export async function getIdeaByIdForTier(
     return {
       idea: filtered,
       upgrade: {
-        message: 'Upgrade to Pro to see the full business brief',
+        message: 'Upgrade to Builder to see the full business brief',
         url: 'https://zerotoship.dev/pricing',
       },
     };
