@@ -132,11 +132,21 @@ export async function handleOAuthCallback(): Promise<string | null> {
 
   const { supabase } = await import("./supabase");
 
-  // getSession() waits for the client's internal initialization which
-  // auto-handles PKCE code exchange and implicit token extraction.
-  const { data: { session }, error } = await supabase.auth.getSession();
+  let session;
 
-  if (error || !session) return null;
+  if (hasCode) {
+    // PKCE flow: exchange the authorization code for a session
+    const code = new URLSearchParams(window.location.search).get("code");
+    if (!code) return null;
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error || !data.session) return null;
+    session = data.session;
+  } else {
+    // Implicit flow: session is extracted from the URL hash automatically
+    const { data: { session: existing }, error } = await supabase.auth.getSession();
+    if (error || !existing) return null;
+    session = existing;
+  }
 
   const accessToken = session.access_token;
   setToken(accessToken);

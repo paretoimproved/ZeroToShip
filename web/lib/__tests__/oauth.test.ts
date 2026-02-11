@@ -2,10 +2,14 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // Mock supabase module (dynamic import target)
 const mockSignInWithOAuth = vi.fn();
+const mockExchangeCodeForSession = vi.fn();
+const mockGetSession = vi.fn();
 vi.mock('../supabase', () => ({
   supabase: {
     auth: {
       signInWithOAuth: mockSignInWithOAuth,
+      exchangeCodeForSession: mockExchangeCodeForSession,
+      getSession: mockGetSession,
     },
   },
 }));
@@ -26,18 +30,26 @@ const mockLocalStorage = {
 };
 vi.stubGlobal('localStorage', mockLocalStorage);
 
+// Mock sessionStorage (needed by api.ts tier override check)
+vi.stubGlobal('sessionStorage', {
+  getItem: vi.fn(() => null),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+});
+
 // Mock window with location, history
 const mockReplaceState = vi.fn();
 const mockLocation = {
   origin: 'http://localhost:3000',
   hash: '',
-  pathname: '/dashboard',
+  pathname: '/login',
   search: '',
   href: '',
 };
 vi.stubGlobal('window', {
   location: mockLocation,
   localStorage: mockLocalStorage,
+  sessionStorage: { getItem: vi.fn(() => null) },
   history: { replaceState: mockReplaceState },
 });
 
@@ -46,13 +58,15 @@ import { loginWithOAuth, handleOAuthCallback } from '../auth';
 describe('OAuth utilities', () => {
   beforeEach(() => {
     mockSignInWithOAuth.mockReset();
+    mockExchangeCodeForSession.mockReset();
+    mockGetSession.mockReset();
     mockFetch.mockReset();
     mockLocalStorage.setItem.mockClear();
     mockReplaceState.mockClear();
     Object.keys(storage).forEach(k => delete storage[k]);
     mockLocation.origin = 'http://localhost:3000';
     mockLocation.hash = '';
-    mockLocation.pathname = '/dashboard';
+    mockLocation.pathname = '/login';
     mockLocation.search = '';
     mockLocation.href = '';
   });
@@ -66,7 +80,7 @@ describe('OAuth utilities', () => {
       expect(mockSignInWithOAuth).toHaveBeenCalledWith({
         provider: 'google',
         options: {
-          redirectTo: expect.stringContaining('/dashboard'),
+          redirectTo: 'http://localhost:3000/login',
         },
       });
     });
@@ -79,7 +93,7 @@ describe('OAuth utilities', () => {
       expect(mockSignInWithOAuth).toHaveBeenCalledWith({
         provider: 'github',
         options: {
-          redirectTo: expect.stringContaining('/dashboard'),
+          redirectTo: 'http://localhost:3000/login',
         },
       });
     });
@@ -94,46 +108,89 @@ describe('OAuth utilities', () => {
   });
 
   describe('handleOAuthCallback', () => {
-    it('should extract access_token from URL hash and return it', async () => {
-      mockLocation.hash = '#access_token=test-oauth-token-123&token_type=bearer';
-
-      const token = await handleOAuthCallback();
-
-      expect(token).toBe('test-oauth-token-123');
-    });
-
-    it('should store the extracted token in localStorage', async () => {
-      mockLocation.hash = '#access_token=stored-token-456&token_type=bearer';
-
-      await handleOAuthCallback();
-
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('zerotoship_token', 'stored-token-456');
-    });
-
-    it('should return null when no access_token is in the hash', async () => {
+    it('should return null when no OAuth params are in the URL', async () => {
       mockLocation.hash = '';
+      mockLocation.search = '';
 
       const token = await handleOAuthCallback();
 
       expect(token).toBeNull();
     });
 
-    it('should return null when hash has other params but no access_token', async () => {
-      mockLocation.hash = '#token_type=bearer&expires_in=3600';
+    it('should exchange PKCE code for session when code= is present', async () => {
+      mockLocation.search = '?code=pkce-auth-code-123';
+      mockExchangeCodeForSession.mockResolvedValue({
+        data: { session: { access_token: 'exchanged-token-456' } },
+        error: null,
+      });
 
       const token = await handleOAuthCallback();
 
-      expect(token).toBeNull();
+      expect(mockExchangeCodeForSession).toHaveBeenCalledWith('pkce-auth-code-123');
+      expect(token).toBe('exchanged-token-456');
     });
 
-    it('should clean the URL hash after extracting the token', async () => {
-      mockLocation.hash = '#access_token=clean-me&token_type=bearer';
-      mockLocation.pathname = '/dashboard';
-      mockLocation.search = '?ref=oauth';
+    it('should store the token from PKCE exchange in localStorage', async () => {
+      mockLocation.search = '?code=pkce-code';
+      mockExchangeCodeForSession.mockResolvedValue({
+        data: { session: { access_token: 'stored-pkce-token' } },
+        error: null,
+      });
 
       await handleOAuthCallback();
 
-      expect(mockReplaceState).toHaveBeenCalledWith(null, '', '/dashboard?ref=oauth');
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('zerotoship_token', 'stored-pkce-token');
+    });
+
+    it('should return null when PKCE code exchange fails', async () => {
+      mockLocation.search = '?code=bad-code';
+      mockExchangeCodeForSession.mockResolvedValue({
+        data: { session: null },
+        error: { message: 'Invalid code' },
+      });
+
+      const token = await handleOAuthCallback();
+
+      expect(token).toBeNull();
+    });
+
+    it('should use getSession for implicit flow (access_token in hash)', async () => {
+      mockLocation.hash = '#access_token=implicit-token-789&token_type=bearer';
+      mockGetSession.mockResolvedValue({
+        data: { session: { access_token: 'implicit-token-789' } },
+        error: null,
+      });
+
+      const token = await handleOAuthCallback();
+
+      expect(mockGetSession).toHaveBeenCalled();
+      expect(mockExchangeCodeForSession).not.toHaveBeenCalled();
+      expect(token).toBe('implicit-token-789');
+    });
+
+    it('should return null when implicit flow getSession fails', async () => {
+      mockLocation.hash = '#access_token=bad-token&token_type=bearer';
+      mockGetSession.mockResolvedValue({
+        data: { session: null },
+        error: { message: 'Session expired' },
+      });
+
+      const token = await handleOAuthCallback();
+
+      expect(token).toBeNull();
+    });
+
+    it('should clean the URL after successful OAuth callback', async () => {
+      mockLocation.search = '?code=clean-me-code';
+      mockLocation.pathname = '/login';
+      mockExchangeCodeForSession.mockResolvedValue({
+        data: { session: { access_token: 'clean-token' } },
+        error: null,
+      });
+
+      await handleOAuthCallback();
+
+      expect(mockReplaceState).toHaveBeenCalledWith(null, '', '/login');
     });
   });
 });
