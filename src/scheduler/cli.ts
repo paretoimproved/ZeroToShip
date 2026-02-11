@@ -6,6 +6,7 @@
  * Command-line interface for running and managing the pipeline.
  */
 
+import http from 'http';
 import { runPipeline } from './orchestrator';
 import { startScheduler, stopScheduler } from './index';
 import { closeDatabase } from '../api/db/client';
@@ -212,16 +213,28 @@ async function main(): Promise<void> {
         },
       });
 
+      // Minimal HTTP server so Railway keeps the container alive
+      const port = parseInt(process.env.PORT || '8080', 10);
+      const server = http.createServer((_req, res) => {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'ok', service: 'scheduler' }));
+      });
+      server.listen(port, () => {
+        console.log(`Scheduler keepalive listening on port ${port}`);
+      });
+
       // Handle graceful shutdown
       process.on('SIGINT', () => {
         console.log('\nShutting down scheduler...');
         stopScheduler();
+        server.close();
         process.exit(0);
       });
 
       process.on('SIGTERM', () => {
         console.log('\nShutting down scheduler...');
         stopScheduler();
+        server.close();
         process.exit(0);
       });
 
