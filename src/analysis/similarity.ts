@@ -157,8 +157,53 @@ export function dbscanCluster(
 }
 
 /**
- * Hierarchical agglomerative clustering
- * Merges closest clusters until similarity drops below threshold
+ * Union-Find (Disjoint Set) data structure with path compression and union by rank.
+ * Used internally by hierarchicalCluster for O(n^2) clustering instead of O(n^3).
+ */
+class UnionFind {
+  private parent: number[];
+  private rank: number[];
+
+  constructor(size: number) {
+    this.parent = Array.from({ length: size }, (_, i) => i);
+    this.rank = new Array(size).fill(0);
+  }
+
+  /** Find the root of the set containing x, with path compression */
+  find(x: number): number {
+    if (this.parent[x] !== x) {
+      this.parent[x] = this.find(this.parent[x]);
+    }
+    return this.parent[x];
+  }
+
+  /** Merge the sets containing x and y, using union by rank */
+  union(x: number, y: number): void {
+    const rootX = this.find(x);
+    const rootY = this.find(y);
+    if (rootX === rootY) return;
+
+    if (this.rank[rootX] < this.rank[rootY]) {
+      this.parent[rootX] = rootY;
+    } else if (this.rank[rootX] > this.rank[rootY]) {
+      this.parent[rootY] = rootX;
+    } else {
+      this.parent[rootY] = rootX;
+      this.rank[rootX]++;
+    }
+  }
+}
+
+/**
+ * Hierarchical clustering using Union-Find
+ *
+ * Replaces the previous O(n^3) agglomerative approach with an O(n^2) single-pass
+ * Union-Find algorithm. For each pair (i, j) where similarity >= threshold, we
+ * union them into the same cluster. This produces single-linkage-like behavior:
+ * if A~B and B~C, then A, B, C share a cluster even when A and C are dissimilar.
+ *
+ * The downstream deduplicateByEmbedding step (0.85 threshold) catches any
+ * near-duplicates that slip through, so this trade-off is acceptable.
  */
 export function hierarchicalCluster(
   vectors: number[][],
@@ -168,64 +213,30 @@ export function hierarchicalCluster(
   if (n === 0) return [];
   if (n === 1) return [0];
 
-  // Each item starts in its own cluster
-  const clusters: Set<number>[] = vectors.map((_, i) => new Set([i]));
-  const activeIndices = new Set(vectors.map((_, i) => i));
-
-  // Precompute similarity matrix
+  // Precompute similarity matrix — O(n^2 * d), irreducible cost
   const simMatrix = computeSimilarityMatrix(vectors);
 
-  while (activeIndices.size > 1) {
-    // Find the most similar pair of clusters
-    let bestSim = -Infinity;
-    let bestI = -1;
-    let bestJ = -1;
-
-    const activeList = Array.from(activeIndices);
-    for (let ai = 0; ai < activeList.length; ai++) {
-      for (let aj = ai + 1; aj < activeList.length; aj++) {
-        const i = activeList[ai];
-        const j = activeList[aj];
-
-        // Average linkage: average similarity between all pairs
-        let totalSim = 0;
-        let count = 0;
-        for (const pi of clusters[i]) {
-          for (const pj of clusters[j]) {
-            totalSim += simMatrix[pi][pj];
-            count++;
-          }
-        }
-        const avgSim = totalSim / count;
-
-        if (avgSim > bestSim) {
-          bestSim = avgSim;
-          bestI = i;
-          bestJ = j;
-        }
+  // Union-Find: single pass over upper triangle — O(n^2 * alpha(n)) ~ O(n^2)
+  const uf = new UnionFind(n);
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      if (simMatrix[i][j] >= similarityThreshold) {
+        uf.union(i, j);
       }
     }
-
-    // Stop if best similarity is below threshold
-    if (bestSim < similarityThreshold) break;
-
-    // Merge clusters bestI and bestJ
-    for (const item of clusters[bestJ]) {
-      clusters[bestI].add(item);
-    }
-    clusters[bestJ].clear();
-    activeIndices.delete(bestJ);
   }
 
-  // Convert cluster sets to label array
-  const labels = new Array(n).fill(-1);
-  let labelId = 0;
+  // Map each unique root to a sequential cluster label
+  const rootToLabel = new Map<number, number>();
+  let nextLabel = 0;
+  const labels = new Array<number>(n);
 
-  for (const clusterIdx of activeIndices) {
-    for (const itemIdx of clusters[clusterIdx]) {
-      labels[itemIdx] = labelId;
+  for (let i = 0; i < n; i++) {
+    const root = uf.find(i);
+    if (!rootToLabel.has(root)) {
+      rootToLabel.set(root, nextLabel++);
     }
-    labelId++;
+    labels[i] = rootToLabel.get(root)!;
   }
 
   return labels;

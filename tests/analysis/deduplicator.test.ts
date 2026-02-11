@@ -228,6 +228,80 @@ describe('Similarity Utils', () => {
       const uniqueLabels = new Set(labels);
       expect(uniqueLabels.size).toBe(3);
     });
+
+    it('merges all identical vectors into one cluster', () => {
+      const vectors = [
+        [1, 0, 0],
+        [1, 0, 0],
+        [1, 0, 0],
+        [1, 0, 0],
+      ];
+      const labels = hierarchicalCluster(vectors, 0.9);
+
+      // All should share the same label
+      const uniqueLabels = new Set(labels);
+      expect(uniqueLabels.size).toBe(1);
+    });
+
+    it('handles two items exactly at threshold', () => {
+      // Two identical vectors have similarity 1.0, which is >= any threshold <= 1.0
+      const vectors = [
+        [1, 0, 0],
+        [1, 0, 0],
+      ];
+      const labels = hierarchicalCluster(vectors, 1.0);
+      expect(labels[0]).toBe(labels[1]);
+    });
+
+    it('handles transitive chaining (single-linkage behavior)', () => {
+      // A~B and B~C but A and C may not be directly similar
+      // Union-Find should still cluster A, B, C together
+      const vectors = [
+        [1, 0, 0],
+        [0.8, 0.6, 0],   // similar to [1,0,0] and to [0.6,0.8,0]
+        [0.6, 0.8, 0],   // similar to middle but not to first
+      ];
+      // Use a low enough threshold that the chain connects
+      const labels = hierarchicalCluster(vectors, 0.7);
+
+      // All three should be in the same cluster via transitivity
+      expect(labels[0]).toBe(labels[1]);
+      expect(labels[1]).toBe(labels[2]);
+    });
+
+    it('produces sequential labels starting from 0', () => {
+      const vectors = [
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1],
+      ];
+      const labels = hierarchicalCluster(vectors, 0.9);
+
+      // Labels should be 0, 1, 2 (in order since each is its own cluster)
+      expect(labels).toEqual([0, 1, 2]);
+    });
+
+    it('completes quickly for 200 items (performance sanity)', () => {
+      // Generate 200 random 128-dimensional vectors
+      const vectors: number[][] = [];
+      for (let i = 0; i < 200; i++) {
+        const vec = Array.from({ length: 128 }, () => Math.random() - 0.5);
+        const mag = Math.sqrt(vec.reduce((s, v) => s + v * v, 0));
+        vectors.push(vec.map(v => v / mag));
+      }
+
+      const start = performance.now();
+      const labels = hierarchicalCluster(vectors, 0.95);
+      const elapsed = performance.now() - start;
+
+      // Should complete in well under 1 second
+      expect(elapsed).toBeLessThan(1000);
+      expect(labels.length).toBe(200);
+      // Every element should have a non-negative label
+      for (const label of labels) {
+        expect(label).toBeGreaterThanOrEqual(0);
+      }
+    });
   });
 
   describe('groupByCluster', () => {
