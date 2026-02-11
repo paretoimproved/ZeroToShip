@@ -29,32 +29,51 @@ describe('GitHub Scraper', () => {
   });
 
   describe('DEFAULT_GITHUB_QUERIES', () => {
-    it('should have queries for help wanted label', () => {
-      const helpWantedQuery = DEFAULT_GITHUB_QUERIES.find(q => 
-        q.query.includes('help wanted')
-      );
-      expect(helpWantedQuery).toBeDefined();
+    it('should have 8 queries', () => {
+      expect(DEFAULT_GITHUB_QUERIES).toHaveLength(8);
     });
 
-    it('should have queries for feature requests', () => {
-      const featureQuery = DEFAULT_GITHUB_QUERIES.find(q => 
-        q.query.includes('feature request')
+    it('should have a query for pain points', () => {
+      const query = DEFAULT_GITHUB_QUERIES.find(q =>
+        q.query.includes('pain point')
       );
-      expect(featureQuery).toBeDefined();
+      expect(query).toBeDefined();
     });
 
-    it('should have queries for high-reaction issues', () => {
-      const reactionsQuery = DEFAULT_GITHUB_QUERIES.find(q => 
-        q.query.includes('reactions:>')
+    it('should have a query for self-hosted alternatives', () => {
+      const query = DEFAULT_GITHUB_QUERIES.find(q =>
+        q.query.includes('self-hosted') && q.query.includes('alternative')
       );
-      expect(reactionsQuery).toBeDefined();
+      expect(query).toBeDefined();
     });
 
-    it('should include pain point phrase searches', () => {
-      const painPointQuery = DEFAULT_GITHUB_QUERIES.find(q => 
-        q.query.includes('would be nice if') || q.query.includes('wish this had')
+    it('should have a query for willingness to pay', () => {
+      const query = DEFAULT_GITHUB_QUERIES.find(q =>
+        q.query.includes('would pay for')
       );
-      expect(painPointQuery).toBeDefined();
+      expect(query).toBeDefined();
+    });
+
+    it('should have a query for wishful thinking', () => {
+      const query = DEFAULT_GITHUB_QUERIES.find(q =>
+        q.query.includes('I wish there was')
+      );
+      expect(query).toBeDefined();
+    });
+
+    it('should have a query for market gaps', () => {
+      const query = DEFAULT_GITHUB_QUERIES.find(q =>
+        q.query.includes('no good tool')
+      );
+      expect(query).toBeDefined();
+    });
+
+    it('should all target open issues with body search', () => {
+      for (const q of DEFAULT_GITHUB_QUERIES) {
+        expect(q.query).toContain('in:body');
+        expect(q.query).toContain('is:issue');
+        expect(q.query).toContain('is:open');
+      }
     });
   });
 

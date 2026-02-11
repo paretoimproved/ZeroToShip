@@ -103,8 +103,8 @@ export async function runScrapePhase(
   if (config.scrapers.github) {
     scraperPromises.push(
       runScraper('github', () =>
-        // GitHub needs at least 1 week of data
-        scrapeGitHub(undefined, Math.max(config.hoursBack, 168))
+        // GitHub needs at least 90 days of data
+        scrapeGitHub(undefined, Math.max(config.hoursBack, 2160))
       )
     );
   }

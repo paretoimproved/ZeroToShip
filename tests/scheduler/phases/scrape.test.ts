@@ -242,7 +242,7 @@ describe('Scrape Phase', () => {
       expect(scrapeHackerNews).toHaveBeenCalledWith(undefined, 48);
     });
 
-    it('should enforce minimum 168 hours for GitHub scraper', async () => {
+    it('should enforce minimum 2160 hours for GitHub scraper', async () => {
       const { scrapeGitHub } = await import('../../../src/scrapers/github');
 
       vi.mocked(scrapeGitHub).mockResolvedValue([makePost({ source: 'github' })]);
@@ -254,7 +254,7 @@ describe('Scrape Phase', () => {
 
       await runScrapePhase('test-run-gh-min', config);
 
-      expect(scrapeGitHub).toHaveBeenCalledWith(undefined, 168);
+      expect(scrapeGitHub).toHaveBeenCalledWith(undefined, 2160);
     });
   });
 });

@@ -4,8 +4,8 @@ import { detectSignals } from './signals';
 import logger from '../lib/logger';
 import { getCutoffDate, wrapScraperError, truncateResults } from './shared';
 
-/** Default lookback window for GitHub scraping (7 days in hours) */
-const DEFAULT_HOURS_BACK = 168;
+/** Default lookback window for GitHub scraping (90 days in hours) */
+const DEFAULT_HOURS_BACK = 2160;
 
 /** Default max issues to collect per search query */
 const DEFAULT_MAX_PER_QUERY = 50;
@@ -30,24 +30,36 @@ const INITIAL_RATE_LIMIT_BUDGET = 5000;
  */
 export const DEFAULT_GITHUB_QUERIES: GitHubSearchQuery[] = [
   {
-    query: 'label:"help wanted" is:open is:issue stars:>500',
-    description: 'Open issues with help wanted label in popular repos',
+    query: '"pain point" in:body is:issue is:open',
+    description: 'Users describing pain points',
   },
   {
-    query: 'label:"feature request" is:open is:issue reactions:>10',
-    description: 'Popular feature requests with high engagement',
+    query: '"self-hosted" "alternative" in:body is:issue is:open',
+    description: 'Demand for self-hosted alternatives',
   },
   {
-    query: 'label:enhancement is:open is:issue reactions:>5 stars:>500',
-    description: 'Enhancement requests in popular repos',
+    query: '"needs a better" in:body is:issue is:open',
+    description: 'Calls for better tooling',
   },
   {
-    query: '"would be nice if" in:body is:issue is:open',
-    description: 'Issues expressing wishes for features',
+    query: '"hacky workaround" in:body is:issue is:open',
+    description: 'Frustration with current solutions',
   },
   {
-    query: '"wish this had" in:body is:issue is:open',
-    description: 'Issues wishing for missing features',
+    query: '"built a script" in:body is:issue is:open',
+    description: 'DIY solutions indicating gaps',
+  },
+  {
+    query: '"would pay for" in:body is:issue is:open',
+    description: 'Willingness to pay signals',
+  },
+  {
+    query: '"I wish there was" in:body is:issue is:open',
+    description: 'Wishful thinking / unmet needs',
+  },
+  {
+    query: '"no good tool" in:body is:issue is:open',
+    description: 'Market gap signals',
   },
 ];
 
