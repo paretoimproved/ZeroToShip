@@ -166,7 +166,7 @@ export const enterpriseRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, reply) => {
       const { id } = request.params;
-      const status = await getValidationStatus(id);
+      const status = await getValidationStatus(id, request.userId!);
 
       if (!status) {
         return reply.status(404).send({
