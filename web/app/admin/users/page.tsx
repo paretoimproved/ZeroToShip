@@ -88,10 +88,10 @@ export default function UsersPage() {
                           ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
                           : user.tier === "pro"
                           ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                          : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                          : "bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300"
                       }`}
                     >
-                      {user.tier}
+                      {user.tier || "free"}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">

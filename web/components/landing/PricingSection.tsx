@@ -25,7 +25,7 @@ interface Plan {
 
 const plans: Plan[] = [
   {
-    name: "Starter",
+    name: "Free",
     monthlyPrice: 0,
     annualPrice: 0,
     annualTotal: 0,
@@ -46,9 +46,9 @@ const plans: Plan[] = [
   {
     name: "Builder",
     monthlyPrice: 19,
-    annualPrice: 12.42,
-    annualTotal: 149,
-    annualSavingsPercent: 35,
+    annualPrice: 15.83,
+    annualTotal: 190,
+    annualSavingsPercent: 17,
     description: "Full briefs for every idea, every day",
     features: [
       { text: "10 full briefs per day", included: true },
@@ -64,7 +64,7 @@ const plans: Plan[] = [
     highlighted: true,
   },
   {
-    name: "Team",
+    name: "Enterprise",
     monthlyPrice: 99,
     annualPrice: 82.5,
     annualTotal: 990,
@@ -208,7 +208,7 @@ export default function PricingSection() {
             >
               Annual
               <span className="bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 text-xs px-2 py-0.5 rounded-full">
-                Save up to 35%
+                Save 2 months
               </span>
             </button>
           </div>
@@ -246,7 +246,7 @@ export default function PricingSection() {
                   </h3>
                   {showAnnualBadge && (
                     <span className="bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 text-xs px-2 py-0.5 rounded-full">
-                      Save {plan.annualSavingsPercent}%
+                      Save 2 months
                     </span>
                   )}
                 </div>

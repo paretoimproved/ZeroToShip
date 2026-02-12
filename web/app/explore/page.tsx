@@ -128,7 +128,7 @@ export default async function ExplorePage() {
                       >
                         {getEffortLabel(idea.effortEstimate)}
                       </span>
-                      <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300 truncate min-w-0">
+                      <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300 line-clamp-1 min-w-0" title={idea.revenueEstimate}>
                         {idea.revenueEstimate}
                       </span>
                     </div>

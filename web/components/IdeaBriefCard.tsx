@@ -99,7 +99,7 @@ export default function IdeaBriefCard({
             <EffortBadge effort={brief.effortEstimate} size="sm" />
             <span
               title={brief.revenueEstimate}
-              className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 max-w-[180px] truncate"
+              className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 line-clamp-2"
             >
               {brief.revenueEstimate}
             </span>

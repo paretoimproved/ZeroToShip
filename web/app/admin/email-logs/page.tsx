@@ -118,15 +118,15 @@ export default function EmailLogsPage() {
             <p className="text-gray-500 dark:text-gray-400">No email logs found</p>
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <table className="min-w-[800px] w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-                <th className="px-4 py-3 font-medium">Recipient</th>
-                <th className="px-4 py-3 font-medium">Subject</th>
+                <th className="px-4 py-3 font-medium sticky left-0 z-10 bg-gray-50 dark:bg-gray-800">Recipient</th>
+                <th className="px-4 py-3 font-medium hidden lg:table-cell">Subject</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Sent At</th>
-                <th className="px-4 py-3 font-medium">Delivered At</th>
-                <th className="px-4 py-3 font-medium">Opened At</th>
+                <th className="px-4 py-3 font-medium hidden lg:table-cell">Delivered At</th>
+                <th className="px-4 py-3 font-medium hidden lg:table-cell">Opened At</th>
                 <th className="px-4 py-3 font-medium">Run ID</th>
               </tr>
             </thead>
@@ -138,8 +138,8 @@ export default function EmailLogsPage() {
                     key={log.id}
                     className="hover:bg-gray-50 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300"
                   >
-                    <td className="px-4 py-3">{log.recipientEmail}</td>
-                    <td className="px-4 py-3 max-w-xs truncate" title={log.subject}>
+                    <td className="px-4 py-3 sticky left-0 z-10 bg-inherit">{log.recipientEmail}</td>
+                    <td className="px-4 py-3 max-w-xs truncate hidden lg:table-cell" title={log.subject}>
                       {log.subject}
                     </td>
                     <td className="px-4 py-3">
@@ -152,10 +152,10 @@ export default function EmailLogsPage() {
                     <td className="px-4 py-3 whitespace-nowrap">
                       {formatDate(log.sentAt)}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="px-4 py-3 whitespace-nowrap hidden lg:table-cell">
                       {log.deliveredAt ? formatDate(log.deliveredAt) : "\u2014"}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="px-4 py-3 whitespace-nowrap hidden lg:table-cell">
                       {log.openedAt ? formatDate(log.openedAt) : "\u2014"}
                     </td>
                     <td className="px-4 py-3">

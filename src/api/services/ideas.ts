@@ -467,6 +467,8 @@ export async function getTodaysIdeasForTier(
     allIdeas = await getRecentIdeas(20);
   }
 
+  allIdeas.sort((a, b) => (b.priorityScore ?? 0) - (a.priorityScore ?? 0));
+
   const { ideas: filtered, total } = filterIdeasForTier(allIdeas, tier);
   return { ideas: filtered, total };
 }

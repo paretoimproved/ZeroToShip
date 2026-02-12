@@ -55,7 +55,7 @@ export default function RootLayout({
       <body className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <ClientProviders>
           <NavBar />
-          <main>{children}</main>
+          <main className="pb-16">{children}</main>
           <TierSwitcher />
         </ClientProviders>
       </body>

@@ -189,7 +189,7 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
         db.select({ count: count() }).from(users),
         db.select({ count: count() }).from(subscriptions).where(eq(subscriptions.status, 'active')),
         db.select({ count: count() }).from(ideas),
-        db.select({ count: count() }).from(ideas).where(sql`DATE(${ideas.generatedAt}) = CURRENT_DATE`),
+        db.select({ count: count() }).from(ideas).where(sql`DATE(${ideas.publishedAt}) = CURRENT_DATE`),
         db.select({ runId: pipelineRuns.runId, startedAt: pipelineRuns.startedAt })
           .from(pipelineRuns).orderBy(desc(pipelineRuns.startedAt)).limit(1),
       ]);
