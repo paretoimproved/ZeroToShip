@@ -22,6 +22,7 @@ import type { FastifyInstance } from 'fastify';
 // Mock Supabase client
 const mockSignUp = vi.fn();
 const mockSignInWithPassword = vi.fn();
+const mockSignInWithIdToken = vi.fn();
 const mockGetUser = vi.fn();
 
 vi.mock('@supabase/supabase-js', () => ({
@@ -29,6 +30,7 @@ vi.mock('@supabase/supabase-js', () => ({
     auth: {
       signUp: mockSignUp,
       signInWithPassword: mockSignInWithPassword,
+      signInWithIdToken: mockSignInWithIdToken,
       getUser: mockGetUser,
     },
   }),
@@ -141,6 +143,8 @@ vi.mock('../../src/config/env', () => ({
     SUPABASE_DB_URL: '',
     SUPABASE_URL: 'https://test.supabase.co',
     SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
+    GOOGLE_CLIENT_ID: 'test-google-client-id',
+    GOOGLE_CLIENT_SECRET: 'test-google-client-secret',
     ANTHROPIC_API_KEY: '',
     OPENAI_API_KEY: '',
     RESEND_API_KEY: '',
@@ -221,6 +225,10 @@ vi.mock('../../src/api/routes/admin', () => ({
   adminRoutes: vi.fn().mockImplementation(async () => {}),
 }));
 
+// Mock global fetch for Google token exchange
+const originalFetch = globalThis.fetch;
+const mockGlobalFetch = vi.fn();
+
 // ============================================================================
 // Test Helpers
 // ============================================================================
@@ -258,6 +266,24 @@ describe('Auth Routes E2E', () => {
   beforeEach(async () => {
     // Reset all mocks
     vi.clearAllMocks();
+    mockGlobalFetch.mockReset();
+
+    // Install fetch mock for Google token exchange
+    globalThis.fetch = mockGlobalFetch;
+
+    // Default: let Fastify's own inject pass through, only mock external calls
+    mockGlobalFetch.mockImplementation((...args: Parameters<typeof fetch>) => {
+      const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url;
+      if (url.includes('oauth2.googleapis.com')) {
+        // Return mock response — individual tests override this
+        return Promise.resolve({
+          ok: false,
+          json: () => Promise.resolve({ error: 'not_configured' }),
+        });
+      }
+      // Fallback to original fetch for non-Google calls
+      return originalFetch(...args);
+    });
 
     // Default: getUserTierById returns 'free'
     mockGetUserTierById.mockResolvedValue('free');
@@ -272,6 +298,7 @@ describe('Auth Routes E2E', () => {
     if (server) {
       await server.close();
     }
+    globalThis.fetch = originalFetch;
   });
 
   // ==========================================================================
@@ -801,6 +828,191 @@ describe('Auth Routes E2E', () => {
       expect(response.statusCode).toBe(401);
       const body = JSON.parse(response.payload);
       expect(body.message).not.toMatch(/[\x00-\x1F\x7F]/);
+    });
+  });
+
+  // ==========================================================================
+  // POST /api/v1/auth/google
+  // ==========================================================================
+
+  describe('POST /api/v1/auth/google', () => {
+    it('should exchange Google auth code and return token + user', async () => {
+      // Mock Google token exchange
+      mockGlobalFetch.mockImplementation((...args: Parameters<typeof fetch>) => {
+        const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url;
+        if (url.includes('oauth2.googleapis.com')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ id_token: 'google-id-token-123' }),
+          });
+        }
+        return originalFetch(...args);
+      });
+
+      // Mock Supabase signInWithIdToken
+      mockSignInWithIdToken.mockResolvedValue({
+        data: {
+          user: {
+            ...supabaseUser(),
+            user_metadata: { full_name: 'Google User' },
+          },
+          session: { access_token: TEST_SESSION.access_token },
+        },
+        error: null,
+      });
+
+      mockGetOrCreateUser.mockResolvedValue(TEST_USER);
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/api/v1/auth/google',
+        payload: { code: 'google-auth-code-456' },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.payload);
+      expect(body.token).toBe(TEST_SESSION.access_token);
+      expect(body.user.id).toBe(TEST_USER.id);
+      expect(body.user.email).toBe(TEST_USER.email);
+      expect(body.user.tier).toBe('free');
+    });
+
+    it('should call Google token endpoint with correct parameters', async () => {
+      mockGlobalFetch.mockImplementation((...args: Parameters<typeof fetch>) => {
+        const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url;
+        if (url.includes('oauth2.googleapis.com')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ id_token: 'google-id-token' }),
+          });
+        }
+        return originalFetch(...args);
+      });
+
+      mockSignInWithIdToken.mockResolvedValue({
+        data: {
+          user: { ...supabaseUser(), user_metadata: {} },
+          session: { access_token: 'token' },
+        },
+        error: null,
+      });
+      mockGetOrCreateUser.mockResolvedValue(TEST_USER);
+
+      await server.inject({
+        method: 'POST',
+        url: '/api/v1/auth/google',
+        payload: { code: 'test-code' },
+      });
+
+      // Verify Google was called with the right body
+      const googleCall = mockGlobalFetch.mock.calls.find(
+        (call: Parameters<typeof fetch>) => {
+          const url = typeof call[0] === 'string' ? call[0] : (call[0] as Request).url;
+          return url.includes('oauth2.googleapis.com');
+        }
+      );
+      expect(googleCall).toBeDefined();
+      const requestBody = JSON.parse((googleCall![1] as RequestInit).body as string);
+      expect(requestBody.code).toBe('test-code');
+      expect(requestBody.client_id).toBe('test-google-client-id');
+      expect(requestBody.client_secret).toBe('test-google-client-secret');
+      expect(requestBody.redirect_uri).toBe('postmessage');
+      expect(requestBody.grant_type).toBe('authorization_code');
+    });
+
+    it('should return 400 when Google code exchange fails', async () => {
+      mockGlobalFetch.mockImplementation((...args: Parameters<typeof fetch>) => {
+        const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url;
+        if (url.includes('oauth2.googleapis.com')) {
+          return Promise.resolve({
+            ok: false,
+            json: () => Promise.resolve({ error: 'invalid_grant' }),
+          });
+        }
+        return originalFetch(...args);
+      });
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/api/v1/auth/google',
+        payload: { code: 'expired-code' },
+      });
+
+      expect(response.statusCode).toBe(400);
+      const body = JSON.parse(response.payload);
+      expect(body.code).toBe('GOOGLE_EXCHANGE_FAILED');
+    });
+
+    it('should return 400 when Supabase signInWithIdToken fails', async () => {
+      mockGlobalFetch.mockImplementation((...args: Parameters<typeof fetch>) => {
+        const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url;
+        if (url.includes('oauth2.googleapis.com')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ id_token: 'google-id-token' }),
+          });
+        }
+        return originalFetch(...args);
+      });
+
+      mockSignInWithIdToken.mockResolvedValue({
+        data: { user: null, session: null },
+        error: { message: 'Invalid ID token' },
+      });
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/api/v1/auth/google',
+        payload: { code: 'valid-code' },
+      });
+
+      expect(response.statusCode).toBe(400);
+      const body = JSON.parse(response.payload);
+      expect(body.code).toBe('GOOGLE_LOGIN_FAILED');
+      expect(body.message).toBe('Invalid ID token');
+    });
+
+    it('should return 400 for missing code field', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/api/v1/auth/google',
+        payload: {},
+      });
+
+      expect(response.statusCode).toBe(400);
+    });
+
+    it('should call signInWithIdToken with the Google id_token', async () => {
+      mockGlobalFetch.mockImplementation((...args: Parameters<typeof fetch>) => {
+        const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url;
+        if (url.includes('oauth2.googleapis.com')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ id_token: 'specific-id-token' }),
+          });
+        }
+        return originalFetch(...args);
+      });
+
+      mockSignInWithIdToken.mockResolvedValue({
+        data: {
+          user: { ...supabaseUser(), user_metadata: {} },
+          session: { access_token: 'token' },
+        },
+        error: null,
+      });
+      mockGetOrCreateUser.mockResolvedValue(TEST_USER);
+
+      await server.inject({
+        method: 'POST',
+        url: '/api/v1/auth/google',
+        payload: { code: 'code-123' },
+      });
+
+      expect(mockSignInWithIdToken).toHaveBeenCalledWith({
+        provider: 'google',
+        token: 'specific-id-token',
+      });
     });
   });
 

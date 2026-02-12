@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { login as authLogin, signup as authSignup, logout as authLogout, initAuth, getToken, handleOAuthCallback, loginWithOAuth, loginWithGoogleToken as authLoginWithGoogleToken } from "@/lib/auth";
+import { login as authLogin, signup as authSignup, logout as authLogout, initAuth, getToken, handleOAuthCallback, loginWithOAuth, loginWithGoogleCode as authLoginWithGoogleCode } from "@/lib/auth";
 import type { OAuthProvider } from "@/lib/auth";
 import type { User } from "@/lib/types";
 
@@ -12,7 +12,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<User>;
   signup: (email: string, password: string, name: string) => Promise<User>;
   loginWithOAuth: (provider: OAuthProvider) => Promise<void>;
-  loginWithGoogleToken: (credential: string) => Promise<void>;
+  loginWithGoogleCode: (code: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -80,8 +80,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await loginWithOAuth(provider);
   }, []);
 
-  const loginWithGoogleTokenHandler = useCallback(async (credential: string) => {
-    const result = await authLoginWithGoogleToken(credential);
+  const loginWithGoogleCodeHandler = useCallback(async (code: string) => {
+    const result = await authLoginWithGoogleCode(code);
     setUser(result.user);
 
     // Fetch full profile (tier, isAdmin) in background
@@ -108,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         signup,
         loginWithOAuth: loginWithOAuthHandler,
-        loginWithGoogleToken: loginWithGoogleTokenHandler,
+        loginWithGoogleCode: loginWithGoogleCodeHandler,
         logout,
       }}
     >

@@ -10,7 +10,7 @@ import AuthForm from "@/components/AuthForm";
 function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { loginWithGoogleToken } = useAuth();
+  const { loginWithGoogleCode } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [defaultEmail, setDefaultEmail] = useState("");
@@ -28,10 +28,10 @@ function SignupForm() {
     await loginWithOAuth(provider);
   };
 
-  const handleGoogleSuccess = async (credential: string) => {
+  const handleGoogleSuccess = async (code: string) => {
     setError(null);
     trackSignupCompleted("google");
-    await loginWithGoogleToken(credential);
+    await loginWithGoogleCode(code);
     router.push("/dashboard");
   };
 

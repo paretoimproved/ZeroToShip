@@ -55,7 +55,7 @@ vi.stubGlobal('window', {
   history: { replaceState: mockReplaceState },
 });
 
-import { loginWithOAuth, loginWithGoogleToken, handleOAuthCallback } from '../auth';
+import { loginWithOAuth, loginWithGoogleCode, handleOAuthCallback } from '../auth';
 
 describe('OAuth utilities', () => {
   beforeEach(() => {
@@ -207,65 +207,72 @@ describe('OAuth utilities', () => {
     });
   });
 
-  describe('loginWithGoogleToken', () => {
-    const mockSupabaseUser = {
-      id: 'google-user-456',
-      email: 'google@example.com',
-      user_metadata: { full_name: 'Google User' },
-      created_at: '2026-01-15T00:00:00Z',
-    };
-
-    it('should call signInWithIdToken with the Google credential', async () => {
-      mockSignInWithIdToken.mockResolvedValue({
-        data: {
-          session: { access_token: 'supabase-session-token' },
-          user: mockSupabaseUser,
-        },
-        error: null,
+  describe('loginWithGoogleCode', () => {
+    it('should POST code to backend /auth/google endpoint', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          token: 'backend-session-token',
+          user: {
+            id: 'google-user-456',
+            email: 'google@example.com',
+            name: 'Google User',
+            tier: 'free',
+          },
+        }),
       });
 
-      const result = await loginWithGoogleToken('google-jwt-credential');
+      const result = await loginWithGoogleCode('google-auth-code-123');
 
-      expect(mockSignInWithIdToken).toHaveBeenCalledWith({
-        provider: 'google',
-        token: 'google-jwt-credential',
-      });
-      expect(result.token).toBe('supabase-session-token');
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/auth/google'),
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: 'google-auth-code-123' }),
+        })
+      );
+      expect(result.token).toBe('backend-session-token');
       expect(result.user.id).toBe('google-user-456');
       expect(result.user.email).toBe('google@example.com');
       expect(result.user.name).toBe('Google User');
     });
 
-    it('should store the Supabase session token in localStorage', async () => {
-      mockSignInWithIdToken.mockResolvedValue({
-        data: {
-          session: { access_token: 'stored-google-token' },
-          user: mockSupabaseUser,
-        },
-        error: null,
+    it('should store the token from backend in localStorage', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          token: 'stored-backend-token',
+          user: {
+            id: 'google-user-456',
+            email: 'google@example.com',
+            name: 'Google User',
+            tier: 'free',
+          },
+        }),
       });
 
-      await loginWithGoogleToken('google-jwt');
+      await loginWithGoogleCode('google-auth-code');
 
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('zerotoship_token', 'stored-google-token');
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('zerotoship_token', 'stored-backend-token');
     });
 
-    it('should throw when signInWithIdToken returns an error', async () => {
-      mockSignInWithIdToken.mockResolvedValue({
-        data: { session: null, user: null },
-        error: { message: 'Invalid ID token' },
+    it('should throw when backend returns an error response', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        json: () => Promise.resolve({ message: 'Invalid authorization code' }),
       });
 
-      await expect(loginWithGoogleToken('bad-token')).rejects.toThrow('Invalid ID token');
+      await expect(loginWithGoogleCode('bad-code')).rejects.toThrow('Invalid authorization code');
     });
 
-    it('should throw when no session is returned', async () => {
-      mockSignInWithIdToken.mockResolvedValue({
-        data: { session: null, user: mockSupabaseUser },
-        error: null,
+    it('should throw a default message when backend error has no message', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        json: () => Promise.reject(new Error('parse error')),
       });
 
-      await expect(loginWithGoogleToken('no-session-token')).rejects.toThrow('Google sign-in failed');
+      await expect(loginWithGoogleCode('bad-code')).rejects.toThrow('Google sign-in failed');
     });
   });
 });

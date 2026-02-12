@@ -108,34 +108,35 @@ export async function loginWithOAuth(provider: OAuthProvider): Promise<void> {
 }
 
 /**
- * Complete Google sign-in using an ID token from Google Identity Services.
- * This avoids the Supabase redirect — the user only sees Google's popup.
+ * Complete Google sign-in by sending an authorization code to the backend.
+ * The backend exchanges the code with Google and returns a Supabase session.
  */
-export async function loginWithGoogleToken(credential: string): Promise<OAuthCallbackResult> {
-  const { supabase } = await import("./supabase");
+export async function loginWithGoogleCode(code: string): Promise<OAuthCallbackResult> {
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1"}/auth/google`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code }),
+    }
+  );
 
-  const { data, error } = await supabase.auth.signInWithIdToken({
-    provider: "google",
-    token: credential,
-  });
-
-  if (error || !data.session) {
-    throw new Error(error?.message || "Google sign-in failed");
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: "Google sign-in failed" }));
+    throw new Error(error.message);
   }
 
-  const accessToken = data.session.access_token;
-  setToken(accessToken);
-
-  const meta = data.user.user_metadata || {};
+  const { token, user } = await response.json();
+  setToken(token);
   return {
-    token: accessToken,
+    token,
     user: {
-      id: data.user.id,
-      email: data.user.email || "",
-      name: (meta.full_name as string) || (meta.name as string) || "",
-      tier: "free",
+      id: user.id,
+      email: user.email,
+      name: user.name || "",
+      tier: user.tier || "free",
       preferences: { emailFrequency: "daily" },
-      createdAt: data.user.created_at || new Date().toISOString(),
+      createdAt: new Date().toISOString(),
     },
   };
 }

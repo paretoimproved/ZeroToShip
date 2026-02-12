@@ -1,27 +1,46 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
 import Link from "next/link";
-import type { CredentialResponse } from "@react-oauth/google";
+import { useGoogleLogin } from "@react-oauth/google";
 import { Spinner, GoogleIcon, GitHubIcon } from "@/components/icons";
 
 const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
-const GoogleLogin = googleClientId
-  ? dynamic(
-      () => import("@react-oauth/google").then((mod) => mod.GoogleLogin),
-      { ssr: false }
-    )
-  : null;
-
 type OAuthProvider = "google" | "github";
+
+interface GoogleAuthButtonProps {
+  isLogin: boolean;
+  onSuccess: (code: string) => void;
+  onError: () => void;
+  disabled: boolean;
+}
+
+function GoogleAuthButton({ isLogin, onSuccess, onError, disabled }: GoogleAuthButtonProps) {
+  const login = useGoogleLogin({
+    flow: "auth-code",
+    onSuccess: (response) => onSuccess(response.code),
+    onError: () => onError(),
+  });
+
+  return (
+    <button
+      type="button"
+      onClick={() => login()}
+      disabled={disabled}
+      className="w-full flex items-center justify-center gap-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-6 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50"
+    >
+      <GoogleIcon />
+      {isLogin ? "Sign in with Google" : "Sign up with Google"}
+    </button>
+  );
+}
 
 interface AuthFormProps {
   mode: "login" | "signup";
   onSubmit: (data: { email: string; password: string; name?: string }) => Promise<void>;
   onOAuth: (provider: OAuthProvider) => Promise<void>;
-  onGoogleSuccess: (credential: string) => Promise<void>;
+  onGoogleSuccess: (code: string) => Promise<void>;
   error?: string | null;
   isLoading?: boolean;
   defaultEmail?: string;
@@ -104,43 +123,28 @@ export default function AuthForm({
       )}
 
       <div className="space-y-3">
-        {oauthLoading === "google" ? (
-          <div className="w-full flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-6 py-3">
-            <Spinner className="h-5 w-5" />
-          </div>
-        ) : GoogleLogin ? (
-          <div className="flex justify-center [&>div]:w-full">
-            <GoogleLogin
-              onSuccess={(response: CredentialResponse) => {
-                if (response.credential) {
-                  setOauthLoading("google");
-                  setSubmitError(null);
-                  onGoogleSuccess(response.credential).catch((err) => {
-                    setSubmitError(err instanceof Error ? err.message : "Google login failed");
-                    setOauthLoading(null);
-                  });
-                }
+        {googleClientId && (
+          oauthLoading === "google" ? (
+            <div className="w-full flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-6 py-3">
+              <Spinner className="h-5 w-5" />
+            </div>
+          ) : (
+            <GoogleAuthButton
+              isLogin={isLogin}
+              disabled={oauthLoading !== null}
+              onSuccess={(code) => {
+                setOauthLoading("google");
+                setSubmitError(null);
+                onGoogleSuccess(code).catch((err) => {
+                  setSubmitError(err instanceof Error ? err.message : "Google login failed");
+                  setOauthLoading(null);
+                });
               }}
               onError={() => {
                 setSubmitError("Google sign-in was cancelled or failed");
               }}
-              text={isLogin ? "signin_with" : "signup_with"}
-              shape="rectangular"
-              size="large"
-              width="400"
-              theme="outline"
             />
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => handleOAuth("google")}
-            disabled={oauthLoading !== null}
-            className="w-full flex items-center justify-center gap-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-6 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50"
-          >
-            <GoogleIcon />
-            Continue with Google
-          </button>
+          )
         )}
 
         <button
