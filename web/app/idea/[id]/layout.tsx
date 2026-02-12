@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { JsonLd } from "@/components/JsonLd";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
@@ -8,6 +9,7 @@ interface IdeaMetadata {
   tagline: string;
   priorityScore: number;
   effortEstimate: string;
+  generatedAt?: string;
 }
 
 async function fetchIdea(id: string): Promise<IdeaMetadata | null> {
@@ -59,10 +61,36 @@ export async function generateMetadata({
   };
 }
 
-export default function IdeaLayout({
+export default async function IdeaLayout({
   children,
+  params,
 }: {
   children: React.ReactNode;
+  params: Promise<{ id: string }>;
 }) {
-  return children;
+  const { id } = await params;
+  const idea = await fetchIdea(id);
+
+  return (
+    <>
+      {idea && (
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "CreativeWork",
+            name: idea.name,
+            description: idea.tagline,
+            datePublished: idea.generatedAt,
+            author: {
+              "@type": "Organization",
+              name: "ZeroToShip",
+              url: "https://zerotoship.dev",
+            },
+            url: `https://zerotoship.dev/idea/${id}`,
+          }}
+        />
+      )}
+      {children}
+    </>
+  );
 }

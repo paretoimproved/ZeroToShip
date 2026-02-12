@@ -9,6 +9,7 @@ const productLinks = [
 
 const resourceLinks = [
   { label: "Dashboard", href: "/dashboard" },
+  { label: "Explore", href: "/explore" },
   { label: "Archive", href: "/archive" },
   { label: "Blog", href: "/blog" },
 ] as const;
