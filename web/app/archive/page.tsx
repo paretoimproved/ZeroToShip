@@ -5,6 +5,7 @@ import Link from "next/link";
 import IdeaBriefCard from "@/components/IdeaBriefCard";
 import BookmarkButton from "@/components/BookmarkButton";
 import { Spinner } from "@/components/icons";
+import { PlatformIcon } from "@/components/ui";
 import { useAuth } from "@/components/AuthProvider";
 import { api } from "@/lib/api";
 import { normalizeIdeas } from "@/lib/normalize";
@@ -117,16 +118,7 @@ function relativeTime(dateStr: string): string {
 }
 
 function MiniPlatformBadge({ platform }: { platform: Platform }) {
-  const config = platformConfig[platform];
-  if (!config) return null;
-  return (
-    <span
-      className={`inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold ${config.activeColor}`}
-      title={config.label}
-    >
-      {config.letter}
-    </span>
-  );
+  return <PlatformIcon platform={platform} size="sm" />;
 }
 
 function SourceToggle({
@@ -144,13 +136,13 @@ function SourceToggle({
       type="button"
       onClick={onToggle}
       aria-pressed={active}
-      className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-xs font-medium transition-colors ${
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors ${
         active
           ? config.activeColor
           : "bg-gray-100 text-gray-400 border-gray-200 dark:bg-gray-800 dark:text-gray-500 dark:border-gray-700"
       }`}
     >
-      <span className="font-bold">{config.letter}</span>
+      <PlatformIcon platform={platform} size="sm" />
       <span className="hidden sm:inline">{config.label}</span>
     </button>
   );
