@@ -511,7 +511,7 @@ export default function ArchivePage() {
       </header>
 
       {/* Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 mb-6 space-y-4">
+      <div className={`bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 mb-6 space-y-4 ${preview ? "opacity-50 pointer-events-none select-none" : ""}`} aria-disabled={preview || undefined}>
         {/* Row 1: Search (full width) */}
         <div>
           <label
@@ -877,8 +877,8 @@ export default function ArchivePage() {
 
             <IdeaBriefCard
               brief={selectedIdea}
-              gated={!isAuthenticated || user?.tier === "free"}
-              gatedAction={isAuthenticated ? "upgrade" : "signup"}
+              gated={!isAuthenticated}
+              gatedAction="signup"
               defaultTab="problem"
             />
           </div>

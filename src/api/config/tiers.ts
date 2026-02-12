@@ -64,7 +64,7 @@ export const FEATURE_ACCESS: Record<string, { minTier: UserTier; description: st
   'ideas.today': { minTier: 'anonymous', description: "Get today's ideas" },
   'ideas.detail': { minTier: 'anonymous', description: 'Get idea details' },
   'ideas.archive': { minTier: 'anonymous', description: 'Access idea archive' },
-  'ideas.fullBrief': { minTier: 'pro', description: 'View full business briefs' },
+  'ideas.fullBrief': { minTier: 'free', description: 'View full business briefs' },
   'ideas.search': { minTier: 'pro', description: 'Full-text search' },
   'ideas.export': { minTier: 'enterprise', description: 'Export ideas' },
   'validate': { minTier: 'pro', description: 'Request idea validation' },

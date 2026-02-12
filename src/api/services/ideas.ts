@@ -483,8 +483,9 @@ export async function getArchivedIdeasForTier(
   const isPreview = tier === 'anonymous' || tier === 'free';
 
   if (isPreview) {
-    // Override pagination to return only the preview set
-    const previewQuery: ArchiveQuery = { ...query, page: 1, pageSize: ARCHIVE_PREVIEW_LIMIT };
+    // Override pagination AND filters to return a fixed preview set.
+    // Free users always see the same 6 newest ideas — sort/filter params are ignored.
+    const previewQuery: ArchiveQuery = { page: 1, pageSize: ARCHIVE_PREVIEW_LIMIT, sort: 'newest' };
     const { ideas: allIdeas, total } = await getArchivedIdeas(previewQuery);
     const filtered = allIdeas.map((idea) => filterIdeaForTier(idea, tier));
     return { ideas: filtered, total, hasMore: false, preview: true };

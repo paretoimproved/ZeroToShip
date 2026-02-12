@@ -157,8 +157,8 @@ describe('Feature Access', () => {
       expect(hasAccess('free', 'user.preferences')).toBe(true);
     });
 
-    it('should deny free tier access to pro features', () => {
-      expect(hasAccess('free', 'ideas.fullBrief')).toBe(false);
+    it('should allow free tier access to full briefs but deny pro features', () => {
+      expect(hasAccess('free', 'ideas.fullBrief')).toBe(true);
       expect(hasAccess('free', 'ideas.archive')).toBe(true);
       expect(hasAccess('free', 'ideas.search')).toBe(false);
       expect(hasAccess('free', 'validate')).toBe(false);
@@ -244,8 +244,8 @@ describe('Tier Gate Middleware', () => {
     });
 
     it('should deny access with 403 when user tier is below minimum', async () => {
-      const gate = createTierGate('ideas.fullBrief'); // minTier: 'pro'
-      const request = createMockRequest({ userTier: 'free' });
+      const gate = createTierGate('ideas.fullBrief'); // minTier: 'free'
+      const request = createMockRequest({ userTier: 'anonymous' });
       const reply = createMockReply();
 
       await gate(request, reply);
@@ -302,16 +302,14 @@ describe('Tier Gate Middleware', () => {
       expect(reply.sent).toBe(false);
     });
 
-    it('should deny access to pro features for free users', async () => {
-      const gate = createTierGate('ideas.fullBrief'); // minTier: 'pro'
+    it('should allow free users access to full briefs', async () => {
+      const gate = createTierGate('ideas.fullBrief'); // minTier: 'free'
       const request = createMockRequest({ userTier: 'free' });
       const reply = createMockReply();
 
       await gate(request, reply);
 
-      expect(reply.sent).toBe(true);
-      expect(reply.statusCode).toBe(403);
-      expect(reply._body.details.requiredTier).toBe('pro');
+      expect(reply.sent).toBe(false);
     });
 
     it('should include upgrade URL in 403 response', async () => {

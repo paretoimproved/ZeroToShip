@@ -38,10 +38,11 @@ describe('Tier Filtering', () => {
       expect(result.brief).toBeUndefined();
     });
 
-    it('should return summary without brief for free tier', () => {
+    it('should include full brief for free tier', () => {
       const result = filterIdeaForTier(mockIdea, 'free');
 
-      expect(result.brief).toBeUndefined();
+      expect(result.brief).toBeDefined();
+      expect(result.brief?.problemStatement).toBe(mockIdea.problemStatement);
     });
 
     it('should include full brief for pro tier', () => {
@@ -120,8 +121,8 @@ describe('Access Control Functions', () => {
       expect(canAccessFullBrief('anonymous')).toBe(false);
     });
 
-    it('should return false for free', () => {
-      expect(canAccessFullBrief('free')).toBe(false);
+    it('should return true for free', () => {
+      expect(canAccessFullBrief('free')).toBe(true);
     });
 
     it('should return true for pro', () => {
@@ -166,8 +167,8 @@ describe('Upgrade Prompts', () => {
     it('should return correct prompt for fullBrief feature', () => {
       const prompt = getUpgradePrompt('ideas.fullBrief');
 
-      expect(prompt.requiredTier).toBe('pro');
-      expect(prompt.message).toContain('Builder');
+      expect(prompt.requiredTier).toBe('free');
+      expect(prompt.message).toContain('Free');
       expect(prompt.upgradeUrl).toBe('https://zerotoship.dev/pricing');
     });
 

@@ -73,8 +73,8 @@ export function filterIdeaForTier(idea: IdeaBrief, tier: UserTier): IdeaSummary 
     generatedAt: idea.generatedAt,
   };
 
-  // Pro and Enterprise get full briefs
-  if (tier === 'pro' || tier === 'enterprise') {
+  // Free, Pro, and Enterprise get full briefs (anonymous must sign up)
+  if (canAccessFullBrief(tier)) {
     summary.brief = idea;
   }
 

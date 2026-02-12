@@ -92,9 +92,9 @@ describe('hasAccess', () => {
       expect(hasAccess('enterprise', 'ideas.archive')).toBe(true);
     });
 
-    it('should gate fullBrief at pro tier', () => {
+    it('should gate fullBrief at free tier', () => {
       expect(hasAccess('anonymous', 'ideas.fullBrief')).toBe(false);
-      expect(hasAccess('free', 'ideas.fullBrief')).toBe(false);
+      expect(hasAccess('free', 'ideas.fullBrief')).toBe(true);
       expect(hasAccess('pro', 'ideas.fullBrief')).toBe(true);
       expect(hasAccess('enterprise', 'ideas.fullBrief')).toBe(true);
     });
@@ -179,10 +179,10 @@ describe('Helper functions', () => {
 });
 
 describe('getUpgradePrompt', () => {
-  it('should return correct prompt for pro-gated features', () => {
+  it('should return correct prompt for free-gated features', () => {
     const prompt = getUpgradePrompt('ideas.fullBrief');
-    expect(prompt.requiredTier).toBe('pro');
-    expect(prompt.message).toContain('Builder');
+    expect(prompt.requiredTier).toBe('free');
+    expect(prompt.message).toContain('Free');
     expect(prompt.upgradeUrl).toBeTruthy();
   });
 

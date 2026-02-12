@@ -5,7 +5,7 @@
  */
 
 import type { UserTier } from './tiers';
-import { getIdeasLimit } from './tiers';
+import { getIdeasLimit, canAccessFullBrief } from './tiers';
 
 /**
  * Idea summary type (minimal version for filtering)
@@ -83,8 +83,8 @@ export function filterIdeaForTier(idea: IdeaBrief, tier: UserTier): IdeaSummary 
     generatedAt: idea.generatedAt,
   };
 
-  // Pro and Enterprise get full briefs
-  if (tier === 'pro' || tier === 'enterprise') {
+  // Free, Pro, and Enterprise get full briefs (anonymous must sign up)
+  if (canAccessFullBrief(tier)) {
     summary.brief = idea;
   }
 

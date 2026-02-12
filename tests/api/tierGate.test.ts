@@ -21,7 +21,7 @@ import { makeIdeaBrief } from '../fixtures';
 describe('filterIdeaForTier', () => {
   const fullBrief = makeIdeaBrief();
 
-  describe('anonymous and free tiers', () => {
+  describe('anonymous tier', () => {
     it('should return summary without brief for anonymous', () => {
       const result = filterIdeaForTier(fullBrief, 'anonymous');
       expect(result.id).toBe(fullBrief.id);
@@ -33,14 +33,15 @@ describe('filterIdeaForTier', () => {
       expect(result.generatedAt).toBe(fullBrief.generatedAt);
       expect(result.brief).toBeUndefined();
     });
-
-    it('should return summary without brief for free', () => {
-      const result = filterIdeaForTier(fullBrief, 'free');
-      expect(result.brief).toBeUndefined();
-    });
   });
 
-  describe('pro and enterprise tiers', () => {
+  describe('free, pro, and enterprise tiers', () => {
+    it('should include full brief for free', () => {
+      const result = filterIdeaForTier(fullBrief, 'free');
+      expect(result.brief).toBeDefined();
+      expect(result.brief?.problemStatement).toBe(fullBrief.problemStatement);
+    });
+
     it('should include full brief for pro', () => {
       const result = filterIdeaForTier(fullBrief, 'pro');
       expect(result.brief).toBeDefined();
@@ -106,10 +107,17 @@ describe('filterIdeasForTier', () => {
   });
 
   describe('brief inclusion based on tier', () => {
-    it('should not include briefs for free tier', () => {
-      const result = filterIdeasForTier(ideas, 'free');
+    it('should not include briefs for anonymous tier', () => {
+      const result = filterIdeasForTier(ideas, 'anonymous');
       for (const idea of result.ideas) {
         expect(idea.brief).toBeUndefined();
+      }
+    });
+
+    it('should include briefs for free tier', () => {
+      const result = filterIdeasForTier(ideas, 'free');
+      for (const idea of result.ideas) {
+        expect(idea.brief).toBeDefined();
       }
     });
 
@@ -146,7 +154,7 @@ describe('tierGate helper re-exports', () => {
   it('should re-export hasAccess from tiers config', () => {
     expect(typeof hasAccess).toBe('function');
     expect(hasAccess('pro', 'ideas.fullBrief')).toBe(true);
-    expect(hasAccess('free', 'ideas.fullBrief')).toBe(false);
+    expect(hasAccess('free', 'ideas.fullBrief')).toBe(true);
   });
 
   it('should re-export canAccessArchive', () => {
