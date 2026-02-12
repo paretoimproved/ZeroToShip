@@ -90,14 +90,11 @@ export type OAuthProvider = "google" | "github";
 
 /**
  * Initiate OAuth login/signup with a social provider.
- * Redirects the browser to the provider's OAuth consent screen.
+ * Used for GitHub (redirect flow). Google uses loginWithGoogleToken() instead.
  */
 export async function loginWithOAuth(provider: OAuthProvider): Promise<void> {
   const { supabase } = await import("./supabase");
 
-  // Redirect back to /login (not /dashboard) so the OAuth callback
-  // lands on a page WITHOUT ProtectedLayout. AuthProvider processes
-  // the token, then the login page redirects to /dashboard.
   const { error } = await supabase.auth.signInWithOAuth({
     provider,
     options: {
@@ -108,6 +105,39 @@ export async function loginWithOAuth(provider: OAuthProvider): Promise<void> {
   if (error) {
     throw new Error(error.message);
   }
+}
+
+/**
+ * Complete Google sign-in using an ID token from Google Identity Services.
+ * This avoids the Supabase redirect — the user only sees Google's popup.
+ */
+export async function loginWithGoogleToken(credential: string): Promise<OAuthCallbackResult> {
+  const { supabase } = await import("./supabase");
+
+  const { data, error } = await supabase.auth.signInWithIdToken({
+    provider: "google",
+    token: credential,
+  });
+
+  if (error || !data.session) {
+    throw new Error(error?.message || "Google sign-in failed");
+  }
+
+  const accessToken = data.session.access_token;
+  setToken(accessToken);
+
+  const meta = data.user.user_metadata || {};
+  return {
+    token: accessToken,
+    user: {
+      id: data.user.id,
+      email: data.user.email || "",
+      name: (meta.full_name as string) || (meta.name as string) || "",
+      tier: "free",
+      preferences: { emailFrequency: "daily" },
+      createdAt: data.user.created_at || new Date().toISOString(),
+    },
+  };
 }
 
 /** Result of a successful OAuth callback */

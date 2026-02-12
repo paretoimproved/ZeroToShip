@@ -2,12 +2,14 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // Mock supabase module (dynamic import target)
 const mockSignInWithOAuth = vi.fn();
+const mockSignInWithIdToken = vi.fn();
 const mockExchangeCodeForSession = vi.fn();
 const mockGetSession = vi.fn();
 vi.mock('../supabase', () => ({
   supabase: {
     auth: {
       signInWithOAuth: mockSignInWithOAuth,
+      signInWithIdToken: mockSignInWithIdToken,
       exchangeCodeForSession: mockExchangeCodeForSession,
       getSession: mockGetSession,
     },
@@ -53,11 +55,12 @@ vi.stubGlobal('window', {
   history: { replaceState: mockReplaceState },
 });
 
-import { loginWithOAuth, handleOAuthCallback } from '../auth';
+import { loginWithOAuth, loginWithGoogleToken, handleOAuthCallback } from '../auth';
 
 describe('OAuth utilities', () => {
   beforeEach(() => {
     mockSignInWithOAuth.mockReset();
+    mockSignInWithIdToken.mockReset();
     mockExchangeCodeForSession.mockReset();
     mockGetSession.mockReset();
     mockFetch.mockReset();
@@ -201,6 +204,68 @@ describe('OAuth utilities', () => {
       await handleOAuthCallback();
 
       expect(mockReplaceState).toHaveBeenCalledWith(null, '', '/login');
+    });
+  });
+
+  describe('loginWithGoogleToken', () => {
+    const mockSupabaseUser = {
+      id: 'google-user-456',
+      email: 'google@example.com',
+      user_metadata: { full_name: 'Google User' },
+      created_at: '2026-01-15T00:00:00Z',
+    };
+
+    it('should call signInWithIdToken with the Google credential', async () => {
+      mockSignInWithIdToken.mockResolvedValue({
+        data: {
+          session: { access_token: 'supabase-session-token' },
+          user: mockSupabaseUser,
+        },
+        error: null,
+      });
+
+      const result = await loginWithGoogleToken('google-jwt-credential');
+
+      expect(mockSignInWithIdToken).toHaveBeenCalledWith({
+        provider: 'google',
+        token: 'google-jwt-credential',
+      });
+      expect(result.token).toBe('supabase-session-token');
+      expect(result.user.id).toBe('google-user-456');
+      expect(result.user.email).toBe('google@example.com');
+      expect(result.user.name).toBe('Google User');
+    });
+
+    it('should store the Supabase session token in localStorage', async () => {
+      mockSignInWithIdToken.mockResolvedValue({
+        data: {
+          session: { access_token: 'stored-google-token' },
+          user: mockSupabaseUser,
+        },
+        error: null,
+      });
+
+      await loginWithGoogleToken('google-jwt');
+
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('zerotoship_token', 'stored-google-token');
+    });
+
+    it('should throw when signInWithIdToken returns an error', async () => {
+      mockSignInWithIdToken.mockResolvedValue({
+        data: { session: null, user: null },
+        error: { message: 'Invalid ID token' },
+      });
+
+      await expect(loginWithGoogleToken('bad-token')).rejects.toThrow('Invalid ID token');
+    });
+
+    it('should throw when no session is returned', async () => {
+      mockSignInWithIdToken.mockResolvedValue({
+        data: { session: null, user: mockSupabaseUser },
+        error: null,
+      });
+
+      await expect(loginWithGoogleToken('no-session-token')).rejects.toThrow('Google sign-in failed');
     });
   });
 });

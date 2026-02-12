@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Spinner, GoogleIcon, GitHubIcon } from "@/components/icons";
+import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
+import { Spinner, GitHubIcon } from "@/components/icons";
 
 type OAuthProvider = "google" | "github";
 
@@ -10,6 +11,7 @@ interface AuthFormProps {
   mode: "login" | "signup";
   onSubmit: (data: { email: string; password: string; name?: string }) => Promise<void>;
   onOAuth: (provider: OAuthProvider) => Promise<void>;
+  onGoogleSuccess: (credential: string) => Promise<void>;
   error?: string | null;
   isLoading?: boolean;
   defaultEmail?: string;
@@ -19,6 +21,7 @@ export default function AuthForm({
   mode,
   onSubmit,
   onOAuth,
+  onGoogleSuccess,
   error,
   isLoading = false,
   defaultEmail = "",
@@ -91,19 +94,34 @@ export default function AuthForm({
       )}
 
       <div className="space-y-3">
-        <button
-          type="button"
-          onClick={() => handleOAuth("google")}
-          disabled={oauthLoading !== null}
-          className="w-full flex items-center justify-center gap-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-6 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50"
-        >
-          {oauthLoading === "google" ? (
+        {oauthLoading === "google" ? (
+          <div className="w-full flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-6 py-3">
             <Spinner className="h-5 w-5" />
-          ) : (
-            <GoogleIcon />
-          )}
-          Continue with Google
-        </button>
+          </div>
+        ) : (
+          <div className="flex justify-center [&>div]:w-full">
+            <GoogleLogin
+              onSuccess={(response: CredentialResponse) => {
+                if (response.credential) {
+                  setOauthLoading("google");
+                  setSubmitError(null);
+                  onGoogleSuccess(response.credential).catch((err) => {
+                    setSubmitError(err instanceof Error ? err.message : "Google login failed");
+                    setOauthLoading(null);
+                  });
+                }
+              }}
+              onError={() => {
+                setSubmitError("Google sign-in was cancelled or failed");
+              }}
+              text={isLogin ? "signin_with" : "signup_with"}
+              shape="rectangular"
+              size="large"
+              width="400"
+              theme="outline"
+            />
+          </div>
+        )}
 
         <button
           type="button"

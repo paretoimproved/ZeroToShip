@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { login as authLogin, signup as authSignup, logout as authLogout, initAuth, getToken, handleOAuthCallback, loginWithOAuth } from "@/lib/auth";
+import { login as authLogin, signup as authSignup, logout as authLogout, initAuth, getToken, handleOAuthCallback, loginWithOAuth, loginWithGoogleToken as authLoginWithGoogleToken } from "@/lib/auth";
 import type { OAuthProvider } from "@/lib/auth";
 import type { User } from "@/lib/types";
 
@@ -12,6 +12,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<User>;
   signup: (email: string, password: string, name: string) => Promise<User>;
   loginWithOAuth: (provider: OAuthProvider) => Promise<void>;
+  loginWithGoogleToken: (credential: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -79,6 +80,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await loginWithOAuth(provider);
   }, []);
 
+  const loginWithGoogleTokenHandler = useCallback(async (credential: string) => {
+    const result = await authLoginWithGoogleToken(credential);
+    setUser(result.user);
+
+    // Fetch full profile (tier, isAdmin) in background
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
+    fetch(`${apiUrl}/auth/me`, {
+      headers: { Authorization: `Bearer ${result.token}` },
+    })
+      .then((r) => r.ok ? r.json() : null)
+      .then((userData) => { if (userData) setUser(userData); })
+      .catch(() => {});
+  }, []);
+
   const logout = useCallback(() => {
     authLogout();
     setUser(null);
@@ -93,6 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         signup,
         loginWithOAuth: loginWithOAuthHandler,
+        loginWithGoogleToken: loginWithGoogleTokenHandler,
         logout,
       }}
     >

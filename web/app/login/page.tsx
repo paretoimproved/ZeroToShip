@@ -10,7 +10,7 @@ import { Spinner } from "@/components/icons";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, loginWithGoogleToken } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -41,6 +41,13 @@ export default function LoginPage() {
     setError(null);
     trackLoginCompleted(provider);
     await loginWithOAuth(provider);
+  };
+
+  const handleGoogleSuccess = async (credential: string) => {
+    setError(null);
+    trackLoginCompleted("google");
+    await loginWithGoogleToken(credential);
+    router.push("/dashboard");
   };
 
   const handleSubmit = async (data: { email: string; password: string }) => {
@@ -81,6 +88,7 @@ export default function LoginPage() {
           mode="login"
           onSubmit={handleSubmit}
           onOAuth={handleOAuth}
+          onGoogleSuccess={handleGoogleSuccess}
           error={error}
           isLoading={loading}
         />

@@ -4,11 +4,13 @@ import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signup, loginWithOAuth } from "@/lib/auth";
 import { trackSignupCompleted } from "@/lib/analytics";
+import { useAuth } from "@/components/AuthProvider";
 import AuthForm from "@/components/AuthForm";
 
 function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { loginWithGoogleToken } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [defaultEmail, setDefaultEmail] = useState("");
@@ -24,6 +26,13 @@ function SignupForm() {
     setError(null);
     trackSignupCompleted(provider);
     await loginWithOAuth(provider);
+  };
+
+  const handleGoogleSuccess = async (credential: string) => {
+    setError(null);
+    trackSignupCompleted("google");
+    await loginWithGoogleToken(credential);
+    router.push("/dashboard");
   };
 
   const handleSubmit = async (data: { email: string; password: string; name?: string }) => {
@@ -46,6 +55,7 @@ function SignupForm() {
       mode="signup"
       onSubmit={handleSubmit}
       onOAuth={handleOAuth}
+      onGoogleSuccess={handleGoogleSuccess}
       error={error}
       isLoading={loading}
       defaultEmail={defaultEmail}
