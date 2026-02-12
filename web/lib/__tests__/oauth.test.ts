@@ -108,32 +108,42 @@ describe('OAuth utilities', () => {
   });
 
   describe('handleOAuthCallback', () => {
+    const mockSupabaseUser = {
+      id: 'user-123',
+      email: 'test@example.com',
+      user_metadata: { full_name: 'Test User' },
+      created_at: '2026-01-01T00:00:00Z',
+    };
+
     it('should return null when no OAuth params are in the URL', async () => {
       mockLocation.hash = '';
       mockLocation.search = '';
 
-      const token = await handleOAuthCallback();
+      const result = await handleOAuthCallback();
 
-      expect(token).toBeNull();
+      expect(result).toBeNull();
     });
 
     it('should exchange PKCE code for session when code= is present', async () => {
       mockLocation.search = '?code=pkce-auth-code-123';
       mockExchangeCodeForSession.mockResolvedValue({
-        data: { session: { access_token: 'exchanged-token-456' } },
+        data: { session: { access_token: 'exchanged-token-456', user: mockSupabaseUser } },
         error: null,
       });
 
-      const token = await handleOAuthCallback();
+      const result = await handleOAuthCallback();
 
       expect(mockExchangeCodeForSession).toHaveBeenCalledWith('pkce-auth-code-123');
-      expect(token).toBe('exchanged-token-456');
+      expect(result?.token).toBe('exchanged-token-456');
+      expect(result?.user.id).toBe('user-123');
+      expect(result?.user.email).toBe('test@example.com');
+      expect(result?.user.name).toBe('Test User');
     });
 
     it('should store the token from PKCE exchange in localStorage', async () => {
       mockLocation.search = '?code=pkce-code';
       mockExchangeCodeForSession.mockResolvedValue({
-        data: { session: { access_token: 'stored-pkce-token' } },
+        data: { session: { access_token: 'stored-pkce-token', user: mockSupabaseUser } },
         error: null,
       });
 
@@ -149,23 +159,23 @@ describe('OAuth utilities', () => {
         error: { message: 'Invalid code' },
       });
 
-      const token = await handleOAuthCallback();
+      const result = await handleOAuthCallback();
 
-      expect(token).toBeNull();
+      expect(result).toBeNull();
     });
 
     it('should use getSession for implicit flow (access_token in hash)', async () => {
       mockLocation.hash = '#access_token=implicit-token-789&token_type=bearer';
       mockGetSession.mockResolvedValue({
-        data: { session: { access_token: 'implicit-token-789' } },
+        data: { session: { access_token: 'implicit-token-789', user: mockSupabaseUser } },
         error: null,
       });
 
-      const token = await handleOAuthCallback();
+      const result = await handleOAuthCallback();
 
       expect(mockGetSession).toHaveBeenCalled();
       expect(mockExchangeCodeForSession).not.toHaveBeenCalled();
-      expect(token).toBe('implicit-token-789');
+      expect(result?.token).toBe('implicit-token-789');
     });
 
     it('should return null when implicit flow getSession fails', async () => {
@@ -175,16 +185,16 @@ describe('OAuth utilities', () => {
         error: { message: 'Session expired' },
       });
 
-      const token = await handleOAuthCallback();
+      const result = await handleOAuthCallback();
 
-      expect(token).toBeNull();
+      expect(result).toBeNull();
     });
 
     it('should clean the URL after successful OAuth callback', async () => {
       mockLocation.search = '?code=clean-me-code';
       mockLocation.pathname = '/login';
       mockExchangeCodeForSession.mockResolvedValue({
-        data: { session: { access_token: 'clean-token' } },
+        data: { session: { access_token: 'clean-token', user: mockSupabaseUser } },
         error: null,
       });
 

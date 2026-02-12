@@ -110,18 +110,27 @@ export async function loginWithOAuth(provider: OAuthProvider): Promise<void> {
   }
 }
 
+/** Result of a successful OAuth callback */
+export interface OAuthCallbackResult {
+  token: string;
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    tier: "free" | "pro" | "enterprise";
+    preferences: { emailFrequency: "daily" };
+    createdAt: string;
+  };
+}
+
 /**
  * Handle the OAuth callback after Supabase redirects back to our app.
  * Called by AuthProvider on mount to detect OAuth redirects.
  *
- * The Supabase client automatically detects PKCE `?code=` params and
- * implicit `#access_token=` fragments during initialization and exchanges
- * them for a session internally. We just need to call getSession() which
- * waits for that initialization to complete, then grab the access token.
- *
- * Returns the access token if an OAuth session was found, null otherwise.
+ * Returns the access token and a minimal user object from the Supabase
+ * session so the UI can redirect immediately without waiting for /auth/me.
  */
-export async function handleOAuthCallback(): Promise<string | null> {
+export async function handleOAuthCallback(): Promise<OAuthCallbackResult | null> {
   if (typeof window === "undefined") return null;
 
   // Only run when OAuth callback indicators are present in the URL
@@ -154,5 +163,18 @@ export async function handleOAuthCallback(): Promise<string | null> {
   // Clean OAuth params from URL
   window.history.replaceState(null, "", window.location.pathname);
 
-  return accessToken;
+  // Extract minimal user from Supabase session for instant redirect.
+  // The full profile (tier, isAdmin) is fetched in the background by AuthProvider.
+  const meta = session.user.user_metadata || {};
+  return {
+    token: accessToken,
+    user: {
+      id: session.user.id,
+      email: session.user.email || "",
+      name: meta.full_name || meta.name || meta.user_name || "",
+      tier: "free",
+      preferences: { emailFrequency: "daily" },
+      createdAt: session.user.created_at || new Date().toISOString(),
+    },
+  };
 }

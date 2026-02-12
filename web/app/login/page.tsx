@@ -6,6 +6,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { login, loginWithOAuth } from "@/lib/auth";
 import { trackLoginCompleted } from "@/lib/analytics";
 import AuthForm from "@/components/AuthForm";
+import { Spinner } from "@/components/icons";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,12 +14,28 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Detect OAuth callback (URL has ?code= or #access_token after provider redirect)
+  const [isOAuthCallback, setIsOAuthCallback] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return (
+      window.location.search.includes("code=") ||
+      window.location.hash.includes("access_token")
+    );
+  });
+
   // Redirect to dashboard if already authenticated (e.g. after OAuth callback)
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
       router.replace("/dashboard");
     }
   }, [isLoading, isAuthenticated, router]);
+
+  // If OAuth callback failed (loading done, not authenticated), show the form
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated && isOAuthCallback) {
+      setIsOAuthCallback(false);
+    }
+  }, [isLoading, isAuthenticated, isOAuthCallback]);
 
   const handleOAuth = async (provider: "google" | "github") => {
     setError(null);
@@ -40,6 +57,18 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  // Show transition screen while processing OAuth callback
+  if (isOAuthCallback) {
+    return (
+      <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4">
+        <Spinner className="h-8 w-8 text-primary-500" />
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Signing you in...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4">

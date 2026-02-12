@@ -131,7 +131,19 @@ describe("AuthProvider", () => {
   });
 
   it("handles OAuth callback when token is in URL", async () => {
-    vi.mocked(handleOAuthCallback).mockResolvedValue("oauth-token");
+    const oauthUser = {
+      id: "user-1",
+      email: "test@example.com",
+      name: "Test User",
+      tier: "free" as const,
+      preferences: { emailFrequency: "daily" as const },
+      createdAt: "2026-01-01T00:00:00Z",
+    };
+    vi.mocked(handleOAuthCallback).mockResolvedValue({
+      token: "oauth-token",
+      user: oauthUser,
+    });
+    // Background /auth/me fetch for full profile
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
       json: async () => mockUser,
@@ -141,14 +153,10 @@ describe("AuthProvider", () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.user).toEqual(mockUser);
+    // User is set immediately from OAuth session data
     expect(result.current.isAuthenticated).toBe(true);
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/auth/me"),
-      expect.objectContaining({
-        headers: { Authorization: "Bearer oauth-token" },
-      }),
-    );
+    expect(result.current.user?.id).toBe("user-1");
+    expect(result.current.user?.email).toBe("test@example.com");
   });
 });
 

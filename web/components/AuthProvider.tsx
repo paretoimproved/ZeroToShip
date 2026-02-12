@@ -22,22 +22,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    async function fetchUserProfile(token: string): Promise<void> {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
+      const response = await fetch(`${apiUrl}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+      }
+    }
+
     async function restoreAuth() {
       try {
-        // Check for OAuth callback first (tokens in URL hash)
-        const oauthToken = await handleOAuthCallback();
+        // Check for OAuth callback first (code or token in URL)
+        const oauthResult = await handleOAuthCallback();
 
+        if (oauthResult) {
+          // OAuth callback: set a minimal user immediately from Supabase
+          // session data so the redirect to /dashboard happens fast.
+          // Then fetch the full profile (tier, isAdmin) in the background.
+          setUser(oauthResult.user);
+          setIsLoading(false);
+          fetchUserProfile(oauthResult.token).catch(() => {});
+          return;
+        }
+
+        // Normal page load: check for existing token in localStorage
         initAuth();
-        const token = oauthToken || getToken();
+        const token = getToken();
         if (token) {
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
-          const response = await fetch(`${apiUrl}/auth/me`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (response.ok) {
-            const userData = await response.json();
-            setUser(userData);
-          }
+          await fetchUserProfile(token);
         }
       } catch {
         // Token invalid or expired, stay logged out
