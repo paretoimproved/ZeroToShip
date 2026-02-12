@@ -4,12 +4,16 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { CredentialResponse } from "@react-oauth/google";
-import { Spinner, GitHubIcon } from "@/components/icons";
+import { Spinner, GoogleIcon, GitHubIcon } from "@/components/icons";
 
-const GoogleLogin = dynamic(
-  () => import("@react-oauth/google").then((mod) => mod.GoogleLogin),
-  { ssr: false }
-);
+const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+
+const GoogleLogin = googleClientId
+  ? dynamic(
+      () => import("@react-oauth/google").then((mod) => mod.GoogleLogin),
+      { ssr: false }
+    )
+  : null;
 
 type OAuthProvider = "google" | "github";
 
@@ -104,7 +108,7 @@ export default function AuthForm({
           <div className="w-full flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-6 py-3">
             <Spinner className="h-5 w-5" />
           </div>
-        ) : (
+        ) : GoogleLogin ? (
           <div className="flex justify-center [&>div]:w-full">
             <GoogleLogin
               onSuccess={(response: CredentialResponse) => {
@@ -127,6 +131,16 @@ export default function AuthForm({
               theme="outline"
             />
           </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => handleOAuth("google")}
+            disabled={oauthLoading !== null}
+            className="w-full flex items-center justify-center gap-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-6 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50"
+          >
+            <GoogleIcon />
+            Continue with Google
+          </button>
         )}
 
         <button
