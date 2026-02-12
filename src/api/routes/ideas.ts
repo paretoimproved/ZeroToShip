@@ -28,6 +28,7 @@ import {
   ArchiveQuerySchema,
   PaginationQuerySchema,
   PaginatedIdeasResponseSchema,
+  ApiErrorSchema,
 } from '../schemas';
 
 export const ideasRoutes: FastifyPluginAsync = async (fastify) => {
@@ -189,10 +190,7 @@ export const ideasRoutes: FastifyPluginAsync = async (fastify) => {
               url: z.string(),
             }).optional(),
           }),
-          404: z.object({
-            code: z.string(),
-            message: z.string(),
-          }),
+          404: ApiErrorSchema,
         },
       },
     },
@@ -229,10 +227,7 @@ export const ideasRoutes: FastifyPluginAsync = async (fastify) => {
             success: z.boolean(),
             message: z.string(),
           }),
-          404: z.object({
-            code: z.string(),
-            message: z.string(),
-          }),
+          404: ApiErrorSchema,
         },
       },
     },

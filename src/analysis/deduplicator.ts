@@ -10,6 +10,7 @@ import type { RawPost } from '../scrapers/types';
 import { EmbeddingClient, prepareTextForEmbedding } from './embeddings';
 import { config } from '../config/env';
 import logger from '../lib/logger';
+import { extractJsonArray } from '../lib/json-parser';
 import {
   hierarchicalCluster,
   groupByCluster,
@@ -231,11 +232,9 @@ async function generateProblemStatementsBatch(
       batchSize: clusters.length,
     });
 
-    // Parse JSON response - extract array from response
-    const jsonMatch = result.text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) throw new Error('No JSON array in response');
-
-    const parsed = JSON.parse(jsonMatch[0]) as Array<{ id: string; statement: string }>;
+    // Parse JSON response
+    const parsed = extractJsonArray<{ id: string; statement: string }>(result.text);
+    if (!parsed) throw new Error('No JSON array in response');
 
     const results = new Map<string, string>();
     for (const item of parsed) {

@@ -12,6 +12,7 @@ import { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
 import { rateLimitMiddleware } from '../middleware/rateLimit';
+import { ApiErrorSchema } from '../schemas';
 import {
   initiateCheckout,
   initiateBillingPortal,
@@ -44,11 +45,6 @@ const PricesResponseSchema = z.object({
   prices: z.array(PriceSchema),
 });
 
-const ErrorResponseSchema = z.object({
-  code: z.string(),
-  message: z.string(),
-});
-
 export const billingRoutes: FastifyPluginAsync = async (fastify) => {
   const app = fastify.withTypeProvider<ZodTypeProvider>();
 
@@ -64,8 +60,8 @@ export const billingRoutes: FastifyPluginAsync = async (fastify) => {
         body: CheckoutRequestSchema,
         response: {
           200: CheckoutResponseSchema,
-          400: ErrorResponseSchema,
-          404: ErrorResponseSchema,
+          400: ApiErrorSchema,
+          404: ApiErrorSchema,
         },
       },
     },
@@ -95,8 +91,8 @@ export const billingRoutes: FastifyPluginAsync = async (fastify) => {
       schema: {
         response: {
           200: PortalResponseSchema,
-          400: ErrorResponseSchema,
-          404: ErrorResponseSchema,
+          400: ApiErrorSchema,
+          404: ApiErrorSchema,
         },
       },
     },

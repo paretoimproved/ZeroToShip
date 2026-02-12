@@ -20,7 +20,7 @@ import {
 import { getRecommendedStack, type EffortLevel, type TechStackRecommendation } from './tech-stacks';
 import { getBriefModel, type UserTier } from '../config/models';
 import { callAnthropicApi } from '../lib/anthropic';
-import { sleep } from '../scrapers/shared';
+import { sleep } from '../lib/utils';
 
 /**
  * Complete business brief for a startup idea

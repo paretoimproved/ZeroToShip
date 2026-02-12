@@ -1304,7 +1304,7 @@ describe('Data assembly', () => {
     expect(result.text).toContain('#4 Idea 4');
   });
 
-  it('orders ideas by their original array position', () => {
+  it('orders ideas by priority score (highest first)', () => {
     const briefs = [
       createMockBrief({ name: 'First', priorityScore: 5 }),
       createMockBrief({ name: 'Second', priorityScore: 10 }),
@@ -1312,11 +1312,11 @@ describe('Data assembly', () => {
     ];
     const result = buildDailyEmail(briefs, 'pro');
 
-    // Hero should be "First" (array position 0), not highest score
-    expect(result.html).toContain('First');
-    // Second should be at rank #2
-    expect(result.text).toContain('#2 Second');
-    expect(result.text).toContain('#3 Third');
+    // Hero should be "Second" (highest score 10)
+    expect(result.html).toContain('Second');
+    // Remaining sorted by score
+    expect(result.text).toContain('#2 Third');
+    expect(result.text).toContain('#3 First');
   });
 
   it('includes hero idea details in HTML', () => {

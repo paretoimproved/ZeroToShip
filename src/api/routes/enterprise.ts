@@ -25,6 +25,7 @@ import {
   SearchQuerySchema,
   ExportQuerySchema,
   ValidationRequestSchema,
+  ApiErrorSchema,
 } from '../schemas';
 
 export const enterpriseRoutes: FastifyPluginAsync = async (fastify) => {
@@ -106,10 +107,7 @@ export const enterpriseRoutes: FastifyPluginAsync = async (fastify) => {
             message: z.string(),
             estimatedCompletionTime: z.string(),
           }),
-          400: z.object({
-            code: z.string(),
-            message: z.string(),
-          }),
+          400: ApiErrorSchema,
         },
       },
     },
@@ -157,10 +155,7 @@ export const enterpriseRoutes: FastifyPluginAsync = async (fastify) => {
             result: z.unknown().nullable(),
             completedAt: z.string().nullable(),
           }),
-          404: z.object({
-            code: z.string(),
-            message: z.string(),
-          }),
+          404: ApiErrorSchema,
         },
       },
     },

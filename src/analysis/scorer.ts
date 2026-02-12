@@ -22,7 +22,7 @@ import {
 import { getBatchModel } from '../config/models';
 import { ScoreCache, type ScoreCacheOptions } from './score-cache';
 import { callAnthropicApi } from '../lib/anthropic';
-import { sleep } from '../scrapers/shared';
+import { sleep } from '../lib/utils';
 
 /**
  * Batch size for batch scoring API calls
@@ -236,40 +236,11 @@ async function scoreBatch(
 }
 
 /**
- * Calculate frequency score (normalized 1-10)
+ * Build a ScoredProblem from a cluster and AI scores.
+ * Shared by both scoreProblem() and scoreAll().
  */
-function calculateFrequencyScore(frequency: number): number {
-  // Log scale normalization:
-  // 1 mention = 1, 3 mentions = 3, 10 mentions = 5, 30 mentions = 7, 100+ = 10
-  if (frequency <= 1) return 1;
-  if (frequency >= FREQUENCY_HIGH_THRESHOLD) return 10;
-  return Math.min(10, Math.max(1, Math.ceil(Math.log10(frequency) * 4 + 1)));
-}
-
-/**
- * Score a single problem cluster using AI
- */
-export async function scoreProblem(
-  cluster: ProblemCluster,
-  options: ScoringOptions = {}
-): Promise<ScoredProblem> {
-  const opts = { ...DEFAULT_OPTIONS, ...options };
-  const apiKey = opts.anthropicApiKey || config.ANTHROPIC_API_KEY;
-
-  // Calculate frequency score from cluster data
+function buildScoredProblem(cluster: ProblemCluster, aiScores: ScoreResponse): ScoredProblem {
   const frequencyScore = calculateFrequencyScore(cluster.frequency);
-
-  let aiScores: ScoreResponse;
-
-  if (opts.useAI && apiKey) {
-    const prompt = buildScoringPrompt(cluster);
-    const response = await callAnthropic(prompt, apiKey, opts.model);
-    aiScores = response || createDefaultScores(cluster);
-  } else {
-    aiScores = createDefaultScores(cluster);
-  }
-
-  // Calculate composite scores
   const engagementScore = calculateEngagementScore(cluster.totalScore, cluster.frequency);
 
   const impact = calculateImpact(
@@ -305,6 +276,40 @@ export async function scoreProblem(
       technicalComplexity: aiScores.technicalComplexity.reasoning,
     },
   };
+}
+
+/**
+ * Calculate frequency score (normalized 1-10)
+ */
+function calculateFrequencyScore(frequency: number): number {
+  // Log scale normalization:
+  // 1 mention = 1, 3 mentions = 3, 10 mentions = 5, 30 mentions = 7, 100+ = 10
+  if (frequency <= 1) return 1;
+  if (frequency >= FREQUENCY_HIGH_THRESHOLD) return 10;
+  return Math.min(10, Math.max(1, Math.ceil(Math.log10(frequency) * 4 + 1)));
+}
+
+/**
+ * Score a single problem cluster using AI
+ */
+export async function scoreProblem(
+  cluster: ProblemCluster,
+  options: ScoringOptions = {}
+): Promise<ScoredProblem> {
+  const opts = { ...DEFAULT_OPTIONS, ...options };
+  const apiKey = opts.anthropicApiKey || config.ANTHROPIC_API_KEY;
+
+  let aiScores: ScoreResponse;
+
+  if (opts.useAI && apiKey) {
+    const prompt = buildScoringPrompt(cluster);
+    const response = await callAnthropic(prompt, apiKey, opts.model);
+    aiScores = response || createDefaultScores(cluster);
+  } else {
+    aiScores = createDefaultScores(cluster);
+  }
+
+  return buildScoredProblem(cluster, aiScores);
 }
 
 /**
@@ -365,45 +370,8 @@ export async function scoreAll(
 
       // Convert batch results to ScoredProblems
       for (const cluster of batch) {
-        // Use AI score if available, otherwise fall back to defaults
         const aiScores = batchScores.get(cluster.id) || createDefaultScores(cluster);
-        const frequencyScore = calculateFrequencyScore(cluster.frequency);
-        const engagementScore = calculateEngagementScore(cluster.totalScore, cluster.frequency);
-
-        const impact = calculateImpact(
-          frequencyScore,
-          aiScores.severity.score,
-          aiScores.marketSize.score,
-          engagementScore
-        );
-
-        const effort = calculateEffort(
-          aiScores.technicalComplexity.score,
-          aiScores.timeToMvp.score
-        );
-
-        const priority = normalizePriority(calculatePriority(impact, effort));
-
-        const scored: ScoredProblem = {
-          ...cluster,
-          scores: {
-            frequency: frequencyScore,
-            severity: aiScores.severity.score,
-            marketSize: aiScores.marketSize.score,
-            technicalComplexity: aiScores.technicalComplexity.score,
-            timeToMvp: aiScores.timeToMvp.score,
-            engagement: engagementScore,
-            impact,
-            effort,
-            priority,
-          },
-          reasoning: {
-            severity: aiScores.severity.reasoning,
-            marketSize: aiScores.marketSize.reasoning,
-            technicalComplexity: aiScores.technicalComplexity.reasoning,
-          },
-        };
-
+        const scored = buildScoredProblem(cluster, aiScores);
         results.push(scored);
         cache.set(scored);
       }

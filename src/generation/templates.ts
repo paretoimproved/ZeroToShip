@@ -8,7 +8,7 @@
 import type { ScoredProblem } from '../analysis/scorer';
 import type { GapAnalysis } from '../analysis/gap-analyzer';
 import type { TechStackRecommendation, EffortLevel } from './tech-stacks';
-import logger from '../lib/logger';
+import { extractJson } from '../lib/json-parser';
 
 /**
  * System prompt for brief generation
@@ -251,89 +251,11 @@ Return JSON array: [{"category": "...", "risk": "...", "likelihood": "...", "imp
 }
 
 /**
- * Parse GPT response as JSON
+ * Parse GPT response as JSON.
+ * Delegates to the shared extractJson utility.
  */
 export function parseJsonResponse<T>(response: string): T | null {
-  try {
-    // Remove markdown code blocks if present
-    let cleaned = response.trim();
-    if (cleaned.startsWith('```json')) {
-      cleaned = cleaned.slice(7);
-    } else if (cleaned.startsWith('```')) {
-      cleaned = cleaned.slice(3);
-    }
-    if (cleaned.endsWith('```')) {
-      cleaned = cleaned.slice(0, -3);
-    }
-    cleaned = cleaned.trim();
-
-    return JSON.parse(cleaned) as T;
-  } catch (firstError) {
-    // Attempt to fix truncated JSON by closing unclosed brackets/braces
-    try {
-      let cleaned = response.trim();
-      if (cleaned.startsWith('```json')) {
-        cleaned = cleaned.slice(7);
-      } else if (cleaned.startsWith('```')) {
-        cleaned = cleaned.slice(3);
-      }
-      if (cleaned.endsWith('```')) {
-        cleaned = cleaned.slice(0, -3);
-      }
-      cleaned = cleaned.trim();
-
-      // Remove any trailing comma before we close brackets
-      cleaned = cleaned.replace(/,\s*$/, '');
-
-      // Count unclosed brackets and braces
-      let openBraces = 0;
-      let openBrackets = 0;
-      let inString = false;
-      let escapeNext = false;
-
-      for (const char of cleaned) {
-        if (escapeNext) {
-          escapeNext = false;
-          continue;
-        }
-        if (char === '\\' && inString) {
-          escapeNext = true;
-          continue;
-        }
-        if (char === '"') {
-          inString = !inString;
-          continue;
-        }
-        if (inString) continue;
-        if (char === '{') openBraces++;
-        if (char === '}') openBraces--;
-        if (char === '[') openBrackets++;
-        if (char === ']') openBrackets--;
-      }
-
-      // If we're inside a string, close it
-      if (inString) {
-        cleaned += '"';
-      }
-
-      // Close any unclosed braces/brackets
-      for (let i = 0; i < openBraces; i++) cleaned += '}';
-      for (let i = 0; i < openBrackets; i++) cleaned += ']';
-
-      if (openBraces > 0 || openBrackets > 0 || inString) {
-        const result = JSON.parse(cleaned) as T;
-        logger.info({ fixedBraces: openBraces, fixedBrackets: openBrackets }, 'Recovered truncated JSON response');
-        return result;
-      }
-
-      // If no structural fixes were needed, the JSON is truly invalid
-      logger.warn({ err: firstError, rawResponse: response.slice(0, 200) }, 'Failed to parse JSON response');
-      return null;
-    } catch (recoveryError) {
-      logger.warn({ err: firstError, rawResponse: response.slice(0, 200) }, 'Failed to parse JSON response');
-      return null;
-    }
-  }
+  return extractJson<T>(response);
 }
 
 /**

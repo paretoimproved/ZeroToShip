@@ -8,6 +8,7 @@
 import type { ProblemCluster } from './deduplicator';
 import type { RawPost } from '../scrapers/types';
 import logger from '../lib/logger';
+import { extractJson, extractJsonArray } from '../lib/json-parser';
 
 /**
  * Response format expected from the AI scoring
@@ -146,33 +147,22 @@ Always respond with valid JSON matching the requested format.`;
  * Parse the AI response into a structured ScoreResponse
  */
 export function parseScoreResponse(response: string): ScoreResponse | null {
-  try {
-    // Extract JSON from the response (handle markdown code blocks)
-    const jsonMatch = response.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      logger.warn('No JSON found in response');
+  const parsed = extractJson<Record<string, { score: number; reasoning?: string }>>(response);
+  if (!parsed) return null;
+
+  // Validate structure
+  const required = ['severity', 'marketSize', 'technicalComplexity', 'timeToMvp'];
+  for (const field of required) {
+    if (!parsed[field] || typeof parsed[field].score !== 'number') {
+      logger.warn({ field }, 'Missing or invalid field');
       return null;
     }
-
-    const parsed = JSON.parse(jsonMatch[0]);
-
-    // Validate structure
-    const required = ['severity', 'marketSize', 'technicalComplexity', 'timeToMvp'];
-    for (const field of required) {
-      if (!parsed[field] || typeof parsed[field].score !== 'number') {
-        logger.warn({ field }, 'Missing or invalid field');
-        return null;
-      }
-      // Clamp scores to valid range
-      parsed[field].score = Math.max(1, Math.min(10, Math.round(parsed[field].score)));
-      parsed[field].reasoning = parsed[field].reasoning || '';
-    }
-
-    return parsed as ScoreResponse;
-  } catch (error) {
-    logger.warn({ err: error }, 'Failed to parse score response');
-    return null;
+    // Clamp scores to valid range
+    parsed[field].score = Math.max(1, Math.min(10, Math.round(parsed[field].score)));
+    parsed[field].reasoning = parsed[field].reasoning || '';
   }
+
+  return parsed as unknown as ScoreResponse;
 }
 
 /**
@@ -291,21 +281,10 @@ export function parseBatchScoreResponse(
 ): Map<string, ScoreResponse> {
   const results = new Map<string, ScoreResponse>();
 
+  const parsed = extractJsonArray<BatchScoreItem>(content);
+  if (!parsed) return results;
+
   try {
-    // Extract JSON array from response (handle markdown code blocks)
-    const jsonMatch = content.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) {
-      logger.warn('No JSON array found in batch response');
-      return results;
-    }
-
-    const parsed = JSON.parse(jsonMatch[0]) as BatchScoreItem[];
-
-    if (!Array.isArray(parsed)) {
-      logger.warn('Batch response is not an array');
-      return results;
-    }
-
     // Process each item in the response
     for (const item of parsed) {
       if (!item.id) {

@@ -7,6 +7,7 @@ import { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
 import { supabase } from '../middleware/auth';
+import { ApiErrorSchema } from '../schemas';
 import { getOrCreateUser, getUserById } from '../services/users';
 
 const SignupRequestSchema = z.object({
@@ -38,11 +39,6 @@ const UserResponseSchema = z.object({
   isAdmin: z.boolean(),
 });
 
-const ErrorResponseSchema = z.object({
-  code: z.string(),
-  message: z.string(),
-});
-
 /**
  * Sanitize error message for safe JSON serialization
  */
@@ -63,8 +59,8 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
         body: SignupRequestSchema,
         response: {
           200: AuthResponseSchema,
-          400: ErrorResponseSchema,
-          500: ErrorResponseSchema,
+          400: ApiErrorSchema,
+          500: ApiErrorSchema,
         },
       },
     },
@@ -140,8 +136,8 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
         body: LoginRequestSchema,
         response: {
           200: AuthResponseSchema,
-          401: ErrorResponseSchema,
-          500: ErrorResponseSchema,
+          401: ApiErrorSchema,
+          500: ApiErrorSchema,
         },
       },
     },
@@ -201,7 +197,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
       schema: {
         response: {
           200: UserResponseSchema,
-          401: ErrorResponseSchema,
+          401: ApiErrorSchema,
         },
       },
     },

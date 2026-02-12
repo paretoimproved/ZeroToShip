@@ -141,9 +141,8 @@ export class EmbeddingClient {
 
     const embedding = data.data[0].embedding;
 
-    // Update cache
+    // Update in-memory cache (call flush() to persist)
     this.cache[hash] = embedding;
-    this.saveCache();
 
     return { embedding, cached: false };
   }
@@ -214,6 +213,14 @@ export class EmbeddingClient {
     }
 
     return results;
+  }
+
+  /**
+   * Persist the in-memory cache to disk.
+   * Call after a batch of embed() calls to avoid per-call disk writes.
+   */
+  flush(): void {
+    this.saveCache();
   }
 
   /**

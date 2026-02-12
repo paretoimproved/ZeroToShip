@@ -20,19 +20,24 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
     { preHandler: [requireAdmin] },
     async (request, reply) => {
       try {
-        const latestRun = await db.select().from(pipelineRuns).orderBy(desc(pipelineRuns.startedAt)).limit(1);
+        const latestRun = await db
+          .select({
+            runId: pipelineRuns.runId,
+            startedAt: pipelineRuns.startedAt,
+            phases: pipelineRuns.phases,
+            phaseStats: pipelineRuns.phaseStats,
+            lastCompletedPhase: pipelineRuns.lastCompletedPhase,
+            success: pipelineRuns.success,
+            completedAt: pipelineRuns.completedAt,
+            updatedAt: pipelineRuns.updatedAt,
+          })
+          .from(pipelineRuns)
+          .orderBy(desc(pipelineRuns.startedAt))
+          .limit(1);
         if (latestRun.length > 0) {
-          const run = latestRun[0];
           return reply.send({
             status: 'ok',
-            runId: run.runId,
-            startedAt: run.startedAt,
-            phases: run.phases,
-            phaseStats: run.phaseStats,
-            lastCompletedPhase: run.lastCompletedPhase,
-            success: run.success,
-            completedAt: run.completedAt,
-            updatedAt: run.updatedAt,
+            ...latestRun[0],
           });
         }
       } catch {
@@ -53,51 +58,26 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
     '/system-health',
     { preHandler: [requireAdmin] },
     async (request, reply) => {
-      // Get counts from database
-      let subscriberCount = 0;
-      let ideaCount = 0;
+      const [subsResult, ideasResult, runResult] = await Promise.allSettled([
+        db.select({ count: count() }).from(subscriptions).where(eq(subscriptions.status, 'active')),
+        db.select({ count: count() }).from(ideas),
+        db.select({
+          runId: pipelineRuns.runId,
+          startedAt: pipelineRuns.startedAt,
+          phases: pipelineRuns.phases,
+        }).from(pipelineRuns).orderBy(desc(pipelineRuns.startedAt)).limit(1),
+      ]);
 
-      try {
-        const subResult = await db
-          .select({ count: count() })
-          .from(subscriptions)
-          .where(eq(subscriptions.status, 'active'));
-        subscriberCount = subResult[0]?.count || 0;
-      } catch {
-        // DB query failed
-      }
-
-      try {
-        const ideaResult = await db
-          .select({ count: count() })
-          .from(ideas);
-        ideaCount = ideaResult[0]?.count || 0;
-      } catch {
-        // DB query failed
-      }
-
-      // Get latest run info from DB
-      let lastRunId: string | null = null;
-      let lastRunAt: Date | null = null;
-      let lastRunPhases: unknown = null;
-
-      try {
-        const latestRun = await db.select().from(pipelineRuns).orderBy(desc(pipelineRuns.startedAt)).limit(1);
-        if (latestRun.length > 0) {
-          lastRunId = latestRun[0].runId;
-          lastRunAt = latestRun[0].startedAt;
-          lastRunPhases = latestRun[0].phases;
-        }
-      } catch {
-        // DB query failed
-      }
+      const subscriberCount = subsResult.status === 'fulfilled' ? subsResult.value[0]?.count || 0 : 0;
+      const ideaCount = ideasResult.status === 'fulfilled' ? ideasResult.value[0]?.count || 0 : 0;
+      const latestRun = runResult.status === 'fulfilled' ? runResult.value[0] : null;
 
       return reply.send({
         status: 'ok',
         pipeline: {
-          lastRunId,
-          lastRunAt,
-          lastRunPhases,
+          lastRunId: latestRun?.runId || null,
+          lastRunAt: latestRun?.startedAt || null,
+          lastRunPhases: latestRun?.phases || null,
         },
         counts: {
           activeSubscribers: subscriberCount,
@@ -204,57 +184,20 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
     '/stats/overview',
     { preHandler: [requireAdmin] },
     async (request, reply) => {
-      let totalUsers = 0;
-      let activeSubscribers = 0;
-      let totalIdeas = 0;
-      let ideasToday = 0;
+      const [usersResult, subsResult, ideasResult, todayResult, runResult] = await Promise.allSettled([
+        db.select({ count: count() }).from(users),
+        db.select({ count: count() }).from(subscriptions).where(eq(subscriptions.status, 'active')),
+        db.select({ count: count() }).from(ideas),
+        db.select({ count: count() }).from(ideas).where(sql`DATE(${ideas.generatedAt}) = CURRENT_DATE`),
+        db.select({ runId: pipelineRuns.runId, startedAt: pipelineRuns.startedAt })
+          .from(pipelineRuns).orderBy(desc(pipelineRuns.startedAt)).limit(1),
+      ]);
 
-      try {
-        const userResult = await db.select({ count: count() }).from(users);
-        totalUsers = userResult[0]?.count || 0;
-      } catch {
-        // DB query failed
-      }
-
-      try {
-        const subResult = await db
-          .select({ count: count() })
-          .from(subscriptions)
-          .where(eq(subscriptions.status, 'active'));
-        activeSubscribers = subResult[0]?.count || 0;
-      } catch {
-        // DB query failed
-      }
-
-      try {
-        const ideaResult = await db.select({ count: count() }).from(ideas);
-        totalIdeas = ideaResult[0]?.count || 0;
-      } catch {
-        // DB query failed
-      }
-
-      try {
-        const todayResult = await db
-          .select({ count: count() })
-          .from(ideas)
-          .where(sql`DATE(${ideas.generatedAt}) = CURRENT_DATE`);
-        ideasToday = todayResult[0]?.count || 0;
-      } catch {
-        // DB query failed
-      }
-
-      let lastRunId: string | null = null;
-      let lastRunAt: Date | null = null;
-
-      try {
-        const latestRun = await db.select().from(pipelineRuns).orderBy(desc(pipelineRuns.startedAt)).limit(1);
-        if (latestRun.length > 0) {
-          lastRunId = latestRun[0].runId;
-          lastRunAt = latestRun[0].startedAt;
-        }
-      } catch {
-        // DB query failed
-      }
+      const totalUsers = usersResult.status === 'fulfilled' ? usersResult.value[0]?.count || 0 : 0;
+      const activeSubscribers = subsResult.status === 'fulfilled' ? subsResult.value[0]?.count || 0 : 0;
+      const totalIdeas = ideasResult.status === 'fulfilled' ? ideasResult.value[0]?.count || 0 : 0;
+      const ideasToday = todayResult.status === 'fulfilled' ? todayResult.value[0]?.count || 0 : 0;
+      const latestRun = runResult.status === 'fulfilled' ? runResult.value[0] : null;
 
       return reply.send({
         totalUsers,
@@ -262,8 +205,8 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
         totalIdeas,
         ideasToday,
         pipeline: {
-          lastRunId,
-          lastRunAt,
+          lastRunId: latestRun?.runId || null,
+          lastRunAt: latestRun?.startedAt || null,
         },
       });
     }
@@ -279,6 +222,26 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
     const limit = Math.min(100, Math.max(1, parseInt(query.limit || '20')));
     const offset = (page - 1) * limit;
 
+    // Select all columns except phaseResults (large JSONB)
+    const runListColumns = {
+      id: pipelineRuns.id,
+      runId: pipelineRuns.runId,
+      status: pipelineRuns.status,
+      startedAt: pipelineRuns.startedAt,
+      completedAt: pipelineRuns.completedAt,
+      config: pipelineRuns.config,
+      phases: pipelineRuns.phases,
+      stats: pipelineRuns.stats,
+      phaseStats: pipelineRuns.phaseStats,
+      lastCompletedPhase: pipelineRuns.lastCompletedPhase,
+      success: pipelineRuns.success,
+      totalDuration: pipelineRuns.totalDuration,
+      errors: pipelineRuns.errors,
+      apiMetrics: pipelineRuns.apiMetrics,
+      briefSummaries: pipelineRuns.briefSummaries,
+      updatedAt: pipelineRuns.updatedAt,
+    };
+
     const statusFilter = query.status === 'completed'
       ? eq(pipelineRuns.success, true)
       : query.status === 'failed'
@@ -286,8 +249,8 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
         : undefined;
 
     const baseQuery = statusFilter
-      ? db.select().from(pipelineRuns).where(statusFilter)
-      : db.select().from(pipelineRuns);
+      ? db.select(runListColumns).from(pipelineRuns).where(statusFilter)
+      : db.select(runListColumns).from(pipelineRuns);
 
     const countQuery = statusFilter
       ? db.select({ count: count() }).from(pipelineRuns).where(statusFilter)

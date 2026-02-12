@@ -421,7 +421,7 @@ describe('EmbeddingClient', () => {
   });
 
   describe('cache persistence', () => {
-    it('saves cache to file after embed', async () => {
+    it('saves cache to file after flush', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -431,6 +431,9 @@ describe('EmbeddingClient', () => {
 
       const client = new EmbeddingClient(TEST_API_KEY, TEST_CACHE_DIR);
       await client.embed('test text');
+
+      // embed() no longer auto-saves; must call flush() explicitly
+      client.flush();
 
       const cacheFile = path.join(TEST_CACHE_DIR, 'embeddings-cache.json');
       expect(fs.existsSync(cacheFile)).toBe(true);
@@ -447,9 +450,10 @@ describe('EmbeddingClient', () => {
         }),
       });
 
-      // First client - cache the embedding
+      // First client - cache the embedding and flush to disk
       const client1 = new EmbeddingClient(TEST_API_KEY, TEST_CACHE_DIR);
       await client1.embed('persistent text');
+      client1.flush();
 
       // Second client - should load from cache
       const client2 = new EmbeddingClient(TEST_API_KEY, TEST_CACHE_DIR);

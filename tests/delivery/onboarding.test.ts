@@ -379,27 +379,12 @@ describe('Onboarding Email Service', () => {
     });
 
     it('handles mixed success and failure in a single run', async () => {
-      // Window 1 (welcome): 2 users
+      // Window 1 (welcome): 2 users (drip query now returns full user data)
       selectReturnValues.push(
-        [{ id: 'user_a' }, { id: 'user_b' }], // welcome window query
-        [], // user_a: check if already sent
         [
-          {
-            id: 'user_a',
-            email: 'a@test.com',
-            name: 'User A',
-            tier: 'free',
-          },
-        ], // user_a: fetch user
-        [], // user_b: check if already sent
-        [
-          {
-            id: 'user_b',
-            email: 'b@test.com',
-            name: 'User B',
-            tier: 'free',
-          },
-        ], // user_b: fetch user
+          { id: 'user_a', email: 'a@test.com', name: 'User A', tier: 'free' },
+          { id: 'user_b', email: 'b@test.com', name: 'User B', tier: 'free' },
+        ], // welcome window query (includes user data)
         [], // day1 window query
         [], // day3 window query
         [] // day7 window query
@@ -424,11 +409,11 @@ describe('Onboarding Email Service', () => {
       expect(failDetail?.error).toContain('Resend API error');
     });
 
-    it('skips users who already received the email', async () => {
-      // Window 1 (welcome): 1 user eligible from DB query
+    it('skips users filtered by LEFT JOIN (already received)', async () => {
+      // The LEFT JOIN + isNull filter in the drip query already excludes
+      // users who received the email, so an empty result means no sends.
       selectReturnValues.push(
-        [{ id: 'user_already_sent' }], // welcome window query
-        [{ id: 'existing_tracking_record' }], // check if already sent -> yes
+        [], // welcome window query (no eligible users after LEFT JOIN filter)
         [], // day1 window query
         [], // day3 window query
         [] // day7 window query
@@ -436,9 +421,9 @@ describe('Onboarding Email Service', () => {
 
       const result = await processOnboardingDrip();
 
-      expect(result.processed).toBe(1);
+      expect(result.processed).toBe(0);
       expect(result.sent).toBe(0);
-      expect(result.skipped).toBe(1);
+      expect(result.skipped).toBe(0);
       expect(result.failed).toBe(0);
 
       // Resend should NOT have been called

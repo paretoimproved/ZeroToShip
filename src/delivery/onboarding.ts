@@ -393,6 +393,72 @@ export async function sendOnboardingEmail(
 }
 
 /**
+ * Send an onboarding email with pre-fetched user data.
+ * Avoids N+1 queries by accepting user data from the drip query.
+ * The LEFT JOIN in processOnboardingDrip already ensures the email hasn't been sent.
+ */
+async function sendOnboardingEmailDirect(
+  user: { id: string; email: string; name: string | null; tier: string },
+  emailType: OnboardingEmailType
+): Promise<OnboardingEmailResult> {
+  const result: OnboardingEmailResult = {
+    userId: user.id,
+    emailType,
+    sent: false,
+    skipped: false,
+  };
+
+  const apiKey = envConfig.RESEND_API_KEY;
+  if (!apiKey) {
+    result.error = 'No Resend API key configured';
+    logger.warn({ emailType }, 'Onboarding email skipped: no Resend API key');
+    return result;
+  }
+
+  const subject = SUBJECT_LINES[emailType];
+  const { html, text } = buildOnboardingHtml(emailType, user.name || '', user.tier);
+
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'ZeroToShip <briefs@zerotoship.dev>',
+        to: [user.email],
+        reply_to: 'hello@zerotoship.dev',
+        subject,
+        html,
+        text,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorBody = (await response.json()) as ResendErrorResponse;
+      const errorMsg = `Resend API error (${response.status}): ${errorBody.message}`;
+      result.error = errorMsg;
+      logger.error({ userId: user.id, emailType, statusCode: response.status }, errorMsg);
+      return result;
+    }
+
+    const data = (await response.json()) as ResendSuccessResponse;
+    result.sent = true;
+    result.messageId = data.id;
+
+    await recordEmailSent(user.id, emailType);
+    logger.info({ userId: user.id, emailType, messageId: data.id }, 'Onboarding email sent successfully');
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error sending onboarding email';
+    result.error = errorMsg;
+    logger.error({ userId: user.id, emailType, error: errorMsg }, 'Failed to send onboarding email');
+  }
+
+  return result;
+}
+
+/**
  * Process the onboarding email drip for all eligible users.
  *
  * Queries users whose createdAt falls within each drip window
@@ -418,9 +484,13 @@ export async function processOnboardingDrip(): Promise<DripProcessingResult> {
     // Find users who:
     // 1. Were created within the time window
     // 2. Haven't received this email type yet
+    // Includes user data to avoid N+1 queries in sendOnboardingEmail
     const eligibleUsers = await db
       .select({
         id: users.id,
+        email: users.email,
+        name: users.name,
+        tier: users.tier,
       })
       .from(users)
       .leftJoin(
@@ -450,7 +520,7 @@ export async function processOnboardingDrip(): Promise<DripProcessingResult> {
 
     for (const user of eligibleUsers) {
       result.processed++;
-      const emailResult = await sendOnboardingEmail(user.id, entry.emailType);
+      const emailResult = await sendOnboardingEmailDirect(user, entry.emailType);
       result.details.push(emailResult);
 
       if (emailResult.sent) {

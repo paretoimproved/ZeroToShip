@@ -10,6 +10,7 @@ import { getBatchModel } from '../config/models';
 import { config } from '../config/env';
 import logger from '../lib/logger';
 import { callAnthropicApi } from '../lib/anthropic';
+import { extractJson, extractJsonArray } from '../lib/json-parser';
 
 /**
  * A competitor identified from search results
@@ -157,13 +158,7 @@ Respond with valid JSON matching this structure:
  * Parse AI response into CompetitorAnalysis
  */
 function parseAnalysisResponse(responseText: string): CompetitorAnalysis {
-  // Try to extract JSON from the response
-  const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    throw new Error('No JSON found in response');
-  }
-
-  const parsed = JSON.parse(jsonMatch[0]) as {
+  const parsed = extractJson<{
     competitors?: Array<{
       name?: string;
       url?: string;
@@ -176,7 +171,11 @@ function parseAnalysisResponse(responseText: string): CompetitorAnalysis {
     marketOpportunity?: string;
     differentiationAngles?: string[];
     analysisNotes?: string;
-  };
+  }>(responseText);
+
+  if (!parsed) {
+    throw new Error('No JSON found in response');
+  }
 
   // Validate and normalize
   const competitors: Competitor[] = (parsed.competitors || []).map(c => ({
@@ -383,13 +382,7 @@ function parseBatchCompetitorResponse(
   const results = new Map<string, CompetitorAnalysis>();
 
   try {
-    // Try to extract JSON array from the response
-    const jsonMatch = responseText.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) {
-      throw new Error('No JSON array found in response');
-    }
-
-    const parsed = JSON.parse(jsonMatch[0]) as Array<{
+    const parsed = extractJsonArray<{
       problemIndex?: number;
       competitors?: Array<{
         name?: string;
@@ -403,7 +396,11 @@ function parseBatchCompetitorResponse(
       marketOpportunity?: string;
       differentiationAngles?: string[];
       analysisNotes?: string;
-    }>;
+    }>(responseText);
+
+    if (!parsed) {
+      throw new Error('No JSON array found in response');
+    }
 
     for (const item of parsed) {
       const index = item.problemIndex ?? -1;

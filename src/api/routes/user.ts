@@ -33,6 +33,7 @@ import {
   UpdatePreferencesRequestSchema,
   SubscriptionResponseSchema,
   UserHistoryResponseSchema,
+  ApiErrorSchema,
 } from '../schemas';
 
 export const userRoutes: FastifyPluginAsync = async (fastify) => {
@@ -49,10 +50,7 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
       schema: {
         response: {
           200: UserPreferencesSchema,
-          404: z.object({
-            code: z.string(),
-            message: z.string(),
-          }),
+          404: ApiErrorSchema,
         },
       },
     },
@@ -82,10 +80,7 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
         body: UpdatePreferencesRequestSchema,
         response: {
           200: UserPreferencesSchema,
-          400: z.object({
-            code: z.string(),
-            message: z.string(),
-          }),
+          400: ApiErrorSchema,
         },
       },
     },
@@ -115,10 +110,7 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
       schema: {
         response: {
           200: SubscriptionResponseSchema,
-          404: z.object({
-            code: z.string(),
-            message: z.string(),
-          }),
+          404: ApiErrorSchema,
         },
       },
     },
@@ -245,10 +237,7 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
             name: z.string(),
             message: z.string(),
           }),
-          400: z.object({
-            code: z.string(),
-            message: z.string(),
-          }),
+          400: ApiErrorSchema,
         },
       },
     },
@@ -288,10 +277,7 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
             success: z.boolean(),
             message: z.string(),
           }),
-          404: z.object({
-            code: z.string(),
-            message: z.string(),
-          }),
+          404: ApiErrorSchema,
         },
       },
     },
@@ -330,10 +316,7 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
             success: z.boolean(),
             message: z.string(),
           }),
-          404: z.object({
-            code: z.string(),
-            message: z.string(),
-          }),
+          404: ApiErrorSchema,
         },
       },
     },

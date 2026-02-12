@@ -7,6 +7,18 @@
 import { config } from '../config/env';
 
 /**
+ * Escape HTML special characters to prevent injection
+ */
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
  * Send a pipeline failure alert email
  */
 export async function sendPipelineFailureAlert(
@@ -44,11 +56,11 @@ export async function sendPipelineFailureAlert(
         html: `
           <h2>Pipeline Failure Alert</h2>
           <table style="border-collapse: collapse; width: 100%;">
-            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Run ID</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${runId}</td></tr>
-            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Phase</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${phase}</td></tr>
-            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Severity</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${severity}</td></tr>
-            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Error</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${error}</td></tr>
-            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Timestamp</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${timestamp}</td></tr>
+            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Run ID</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(runId)}</td></tr>
+            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Phase</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(phase)}</td></tr>
+            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Severity</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(severity)}</td></tr>
+            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Error</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(error)}</td></tr>
+            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Timestamp</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(timestamp)}</td></tr>
           </table>
         `,
         text: `Pipeline Failure Alert\n\nRun ID: ${runId}\nPhase: ${phase}\nSeverity: ${severity}\nError: ${error}\nTimestamp: ${timestamp}`,

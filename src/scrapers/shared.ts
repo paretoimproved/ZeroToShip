@@ -61,10 +61,9 @@ export function generateSourceId(source: string, id: string | number): string {
 
 /**
  * Sleep for specified milliseconds (rate limiting between requests)
+ * Re-exported from src/lib/utils.ts for backwards compatibility.
  */
-export function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+export { sleep } from '../lib/utils';
 
 /**
  * Calculate a cutoff timestamp for filtering posts by age
