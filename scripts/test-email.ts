@@ -64,20 +64,23 @@ async function main() {
     generatedAt: row.generated_at || new Date(),
   }));
 
-  // Send as "pro" tier so all briefs are visible
-  const subscriber = createTestSubscriber(email, 'pro');
+  // Send both pro and free tier emails to compare
+  const tiers = ['pro', 'free'] as const;
 
-  console.log(`Sending test email to ${email}...`);
+  for (const tier of tiers) {
+    const subscriber = createTestSubscriber(email, tier);
+    console.log(`Sending ${tier} tier test email to ${email}...`);
 
-  const result = await sendDailyBrief(subscriber, briefs, {
-    fromEmail: 'onboarding@resend.dev',
-    fromName: 'ZeroToShip',
-  });
+    const result = await sendDailyBrief(subscriber, briefs, {
+      fromEmail: 'onboarding@resend.dev',
+      fromName: 'ZeroToShip',
+    });
 
-  if (result.status === 'sent') {
-    console.log(`Email sent successfully! Message ID: ${result.messageId}`);
-  } else {
-    console.error(`Email failed: ${result.error}`);
+    if (result.status === 'sent') {
+      console.log(`  [${tier}] Sent! Message ID: ${result.messageId}`);
+    } else {
+      console.error(`  [${tier}] Failed: ${result.error}`);
+    }
   }
 
   await sql.end();
