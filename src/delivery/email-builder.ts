@@ -2,14 +2,12 @@
  * Email Builder for ZeroToShip
  *
  * Generates HTML emails from daily briefs for different subscriber tiers.
+ * Strategy: emails are teasers that drive users to the website for full briefs.
  */
 
 import type { IdeaBrief } from '../generation/brief-generator';
 import logger from '../lib/logger';
 
-/**
- * Subscriber tier definitions
- */
 export type SubscriberTier = 'free' | 'pro';
 
 export const TIER_LIMITS: Record<SubscriberTier, number> = {
@@ -17,30 +15,16 @@ export const TIER_LIMITS: Record<SubscriberTier, number> = {
   pro: 10,
 };
 
-/** Max ideas shown in the "other ideas" section of the email */
 const MAX_EMAIL_IDEAS = 10;
-
-/** Max hero features shown in the top idea section */
-const MAX_HERO_FEATURES = 4;
-
-/** Max tagline length before truncation */
-const TAGLINE_TRUNCATE_LENGTH = 60;
-
-/** Max revenue estimate display length */
+const TAGLINE_TRUNCATE_LENGTH = 80;
 const REVENUE_DISPLAY_LENGTH = 20;
 
-/**
- * Email content structure
- */
 export interface EmailContent {
   subject: string;
   html: string;
   text: string;
 }
 
-/**
- * Configuration for email building
- */
 export interface EmailBuilderConfig {
   baseUrl?: string;
   unsubscribeUrl?: string;
@@ -53,9 +37,8 @@ const DEFAULT_CONFIG: Required<EmailBuilderConfig> = {
   upgradeUrl: 'https://zerotoship.dev/upgrade',
 };
 
-/**
- * Escape HTML special characters
- */
+const FONT_STACK = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+
 function escapeHtml(text: string): string {
   const htmlEscapes: Record<string, string> = {
     '&': '&amp;',
@@ -67,367 +50,319 @@ function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, char => htmlEscapes[char]);
 }
 
-/**
- * Format priority score for display
- */
-function formatScore(score: number): string {
-  return score.toFixed(1);
+function formatScore(score: number | string): string {
+  return Number(score).toFixed(1);
 }
 
-/**
- * Generate CSS styles for the email
- */
-function getEmailStyles(): string {
-  return `
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      line-height: 1.6;
-      color: #1a1a1a;
-      background-color: #f5f5f5;
-      margin: 0;
-      padding: 0;
-    }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      background-color: #ffffff;
-    }
-    .header {
-      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-      color: white;
-      padding: 32px 24px;
-      text-align: center;
-    }
-    .header h1 {
-      margin: 0;
-      font-size: 24px;
-      font-weight: 600;
-    }
-    .header .date {
-      margin-top: 8px;
-      opacity: 0.9;
-      font-size: 14px;
-    }
-    .hero {
-      padding: 32px 24px;
-      background-color: #fafafa;
-      border-bottom: 1px solid #eee;
-    }
-    .hero-badge {
-      display: inline-block;
-      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
-      color: white;
-      padding: 4px 12px;
-      border-radius: 16px;
-      font-size: 12px;
-      font-weight: 600;
-      margin-bottom: 16px;
-    }
-    .hero h2 {
-      margin: 0 0 8px 0;
-      font-size: 28px;
-      color: #1a1a1a;
-    }
-    .hero .tagline {
-      color: #666;
-      font-size: 16px;
-      margin-bottom: 16px;
-    }
-    .score-bar {
-      display: flex;
-      gap: 16px;
-      margin: 16px 0;
-    }
-    .score-item {
-      background: #fff;
-      padding: 12px 16px;
-      border-radius: 8px;
-      border: 1px solid #e0e0e0;
-    }
-    .score-label {
-      font-size: 11px;
-      color: #888;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .score-value {
-      font-size: 20px;
-      font-weight: 700;
-      color: #6366f1;
-    }
-    .brief-section {
-      padding: 24px;
-      border-bottom: 1px solid #eee;
-    }
-    .brief-section h3 {
-      margin: 0 0 12px 0;
-      font-size: 14px;
-      color: #888;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .brief-section p {
-      margin: 0;
-      color: #333;
-    }
-    .features-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-    .features-list li {
-      padding: 8px 0;
-      padding-left: 24px;
-      position: relative;
-    }
-    .features-list li:before {
-      content: '\\2713';
-      position: absolute;
-      left: 0;
-      color: #22c55e;
-      font-weight: bold;
-    }
-    .other-ideas {
-      padding: 24px;
-    }
-    .other-ideas h3 {
-      margin: 0 0 16px 0;
-      font-size: 18px;
-    }
-    .idea-row {
-      display: flex;
-      align-items: center;
-      padding: 16px;
-      background: #fafafa;
-      border-radius: 8px;
-      margin-bottom: 12px;
-    }
-    .idea-rank {
-      width: 32px;
-      height: 32px;
-      background: #6366f1;
-      color: white;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 600;
-      margin-right: 16px;
-      flex-shrink: 0;
-    }
-    .idea-content {
-      flex: 1;
-    }
-    .idea-name {
-      font-weight: 600;
-      color: #1a1a1a;
-      margin-bottom: 4px;
-    }
-    .idea-tagline {
-      font-size: 14px;
-      color: #666;
-    }
-    .idea-score {
-      font-weight: 600;
-      color: #6366f1;
-      font-size: 18px;
-    }
-    .locked-idea {
-      opacity: 0.5;
-      filter: blur(2px);
-    }
-    .cta-section {
-      padding: 32px 24px;
-      text-align: center;
-      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-    }
-    .cta-section h3 {
-      color: white;
-      margin: 0 0 8px 0;
-      font-size: 20px;
-    }
-    .cta-section p {
-      color: rgba(255,255,255,0.9);
-      margin: 0 0 16px 0;
-    }
-    .cta-button {
-      display: inline-block;
-      background: white;
-      color: #6366f1;
-      padding: 14px 32px;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 16px;
-    }
-    .footer {
-      padding: 24px;
-      text-align: center;
-      background: #1a1a1a;
-      color: #888;
-      font-size: 12px;
-    }
-    .footer a {
-      color: #888;
-      text-decoration: underline;
-    }
-  `;
+function firstSentence(text: string): string {
+  const match = text.match(/^[^.!?]+[.!?]/);
+  return match ? match[0].trim() : text.slice(0, 150);
 }
 
-/**
- * Build the hero section for the top idea
- */
-function buildHeroSection(brief: IdeaBrief): string {
-  const features = brief.keyFeatures.slice(0, MAX_HERO_FEATURES);
+function getEffortBadgeStyle(effort: string): { bg: string; text: string } {
+  const lower = effort.toLowerCase();
+  if (lower === 'weekend') return { bg: '#ecfdf5', text: '#059669' };
+  if (lower === 'week') return { bg: '#fef3c7', text: '#d97706' };
+  return { bg: '#fee2e2', text: '#dc2626' };
+}
+
+function truncateRevenue(estimate: string): string {
+  if (!estimate) return '';
+  const cleaned = estimate.replace(/^Year\s*\d+:\s*/i, '').trim();
+  return cleaned.length > REVENUE_DISPLAY_LENGTH
+    ? cleaned.slice(0, REVENUE_DISPLAY_LENGTH) + '...'
+    : cleaned;
+}
+
+function generateSubjectLine(topIdea: IdeaBrief, ideaCount: number): string {
+  const score = formatScore(topIdea.priorityScore);
+  const effort = topIdea.effortEstimate.toLowerCase();
+  const revenue = truncateRevenue(topIdea.revenueEstimate);
+
+  const templates = [
+    `${topIdea.name}: ${effort} build, ${revenue}`,
+    `A ${effort} project worth ${revenue}`,
+    `Today's top idea scored ${score}/100`,
+    `${ideaCount} ideas today. #1 is a ${effort} build.`,
+    `Could you build this in a ${effort}?`,
+  ];
+
+  // Deterministic daily selection based on date
+  const dateHash = new Date().toISOString().slice(0, 10).split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  const subject = templates[dateHash % templates.length];
+
+  return subject.length > 60 ? subject.slice(0, 57) + '...' : subject;
+}
+
+function generatePreviewText(topIdea: IdeaBrief, ideaCount: number): string {
+  const remaining = ideaCount - 1;
+  return `Plus ${remaining} more ideas scored and ready to explore.`;
+}
+
+function buildPreheader(text: string): string {
+  const spacer = '&#847;&zwnj;&nbsp;'.repeat(15);
+  return `<span style="display:none;font-size:0;line-height:0;max-height:0;max-width:0;mso-hide:all;overflow:hidden;">${escapeHtml(text)}${spacer}</span>`;
+}
+
+function buildHeader(dateStr: string): string {
+  return `
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-bottom: 2px solid #6366f1;">
+      <tr>
+        <td style="padding: 16px 24px; font-family: ${FONT_STACK};">
+          <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+            <tr>
+              <td style="font-size: 20px; font-weight: 700; color: #111827;">ZeroToShip</td>
+              <td style="text-align: right; font-size: 13px; color: #9ca3af;">${escapeHtml(dateStr)}</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>`;
+}
+
+function buildStatBar(ideaCount: number, topScore: string): string {
+  return `
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #f9fafb;">
+      <tr>
+        <td style="padding: 12px 24px; font-family: ${FONT_STACK}; font-size: 13px; color: #6b7280; text-align: center;">
+          <strong style="color: #111827;">${ideaCount}</strong> ideas found &nbsp;&middot;&nbsp;
+          <strong style="color: #111827;">4</strong> communities scraped &nbsp;&middot;&nbsp;
+          Top score: <strong style="color: #6366f1;">${topScore}</strong>
+        </td>
+      </tr>
+    </table>`;
+}
+
+function buildHeroSection(brief: IdeaBrief, config: Required<EmailBuilderConfig>): string {
+  const effortStyle = getEffortBadgeStyle(brief.effortEstimate);
+  const hook = firstSentence(brief.problemStatement);
+  const revenue = truncateRevenue(brief.revenueEstimate);
+  const ideaUrl = `${config.baseUrl}/idea/${brief.id || ''}`;
 
   return `
-    <div class="hero">
-      <span class="hero-badge">#1 TODAY'S TOP IDEA</span>
-      <h2>${escapeHtml(brief.name)}</h2>
-      <p class="tagline">${escapeHtml(brief.tagline)}</p>
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+      <tr>
+        <td style="padding: 24px; font-family: ${FONT_STACK};">
+          <span style="display: inline-block; background-color: #6366f1; color: #ffffff; padding: 4px 12px; border-radius: 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Today's #1 Idea</span>
+          <h2 style="margin: 12px 0 4px 0; font-size: 24px; font-weight: 700; color: #111827; line-height: 1.3;">${escapeHtml(brief.name)}</h2>
+          <p style="margin: 0 0 16px 0; font-size: 16px; color: #6b7280; font-style: italic;">${escapeHtml(brief.tagline)}</p>
 
-      <table width="100%" cellpadding="0" cellspacing="0" style="margin: 16px 0;">
+          <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 0 20px 0;">
+            <tr>
+              <td width="31%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
+                <div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Priority</div>
+                <div style="font-size: 18px; font-weight: 700; color: #6366f1; margin-top: 2px;">${formatScore(brief.priorityScore)}</div>
+              </td>
+              <td width="3%"></td>
+              <td width="31%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
+                <div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Effort</div>
+                <div style="font-size: 18px; font-weight: 700; color: #111827; margin-top: 2px;">${escapeHtml(brief.effortEstimate)}</div>
+              </td>
+              <td width="3%"></td>
+              <td width="31%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
+                <div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Revenue</div>
+                <div style="font-size: 14px; font-weight: 700; color: #111827; margin-top: 2px;">${escapeHtml(revenue)}</div>
+              </td>
+            </tr>
+          </table>
+
+          <p style="margin: 0 0 20px 0; font-size: 16px; color: #374151; line-height: 1.6;">${escapeHtml(hook)} We found a gap in how ${escapeHtml(brief.targetAudience || 'developers')} handle this &#8212; and a clear path to ${escapeHtml(revenue || 'revenue')}.</p>
+
+          <table cellpadding="0" cellspacing="0" role="presentation">
+            <tr>
+              <td style="background-color: #6366f1; border-radius: 8px;">
+                <a href="${escapeHtml(ideaUrl)}" style="display: inline-block; padding: 14px 28px; color: #ffffff; font-family: ${FONT_STACK}; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px;">Read the full brief &#8594;</a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>`;
+}
+
+function buildInlineUpgradeBanner(
+  briefs: IdeaBrief[],
+  config: Required<EmailBuilderConfig>
+): string {
+  const ideaCount = Math.min(briefs.length, MAX_EMAIL_IDEAS);
+
+  // Rotate copy based on day
+  const dateHash = new Date().toISOString().slice(0, 10).split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  const variants = [
+    `You're seeing 1 of today's ${ideaCount} ideas. Pro members get the full brief for every one.`,
+    `Today's lineup has ${ideaCount - 1} more ideas just like this one.`,
+    briefs.length >= 3
+      ? `Today's #3 idea scored ${formatScore(briefs[2].priorityScore)} &#8212; and it's a ${briefs[2].effortEstimate.toLowerCase()} build.`
+      : `There are ${ideaCount - 1} more ideas waiting for you today.`,
+  ];
+  const copy = variants[dateHash % variants.length];
+
+  return `
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+      <tr>
+        <td style="padding: 0 24px;">
+          <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #f5f3ff; border-left: 3px solid #6366f1; border-radius: 0 8px 8px 0;">
+            <tr>
+              <td style="padding: 14px 20px; font-family: ${FONT_STACK}; font-size: 14px; color: #374151; line-height: 1.5;">
+                ${copy}
+                <a href="${escapeHtml(config.upgradeUrl)}" style="color: #6366f1; font-weight: 600; text-decoration: none;"> Unlock all ideas &#8594;</a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>`;
+}
+
+function buildIdeaCard(
+  brief: IdeaBrief,
+  rank: number,
+  locked: boolean,
+  config: Required<EmailBuilderConfig>
+): string {
+  const effortStyle = getEffortBadgeStyle(brief.effortEstimate);
+  const ideaUrl = `${config.baseUrl}/idea/${brief.id || ''}`;
+  const tagline = brief.tagline.length > TAGLINE_TRUNCATE_LENGTH
+    ? brief.tagline.slice(0, TAGLINE_TRUNCATE_LENGTH) + '...'
+    : brief.tagline;
+
+  if (locked) {
+    return `
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom: 8px;">
         <tr>
-          <td width="33%" style="background: #fff; padding: 12px 16px; border-radius: 8px; border: 1px solid #e0e0e0; text-align: center;">
-            <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px;">Priority</div>
-            <div style="font-size: 20px; font-weight: 700; color: #6366f1;">${formatScore(brief.priorityScore)}</div>
-          </td>
-          <td width="4%"></td>
-          <td width="33%" style="background: #fff; padding: 12px 16px; border-radius: 8px; border: 1px solid #e0e0e0; text-align: center;">
-            <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px;">Effort</div>
-            <div style="font-size: 20px; font-weight: 700; color: #6366f1;">${escapeHtml(brief.effortEstimate)}</div>
-          </td>
-          <td width="4%"></td>
-          <td width="33%" style="background: #fff; padding: 12px 16px; border-radius: 8px; border: 1px solid #e0e0e0; text-align: center;">
-            <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px;">Revenue</div>
-            <div style="font-size: 14px; font-weight: 700; color: #6366f1;">${escapeHtml(brief.revenueEstimate.slice(0, REVENUE_DISPLAY_LENGTH))}</div>
+          <td style="background-color: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; padding: 14px 16px; font-family: ${FONT_STACK}; opacity: 0.6;">
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+              <tr>
+                <td width="28" style="vertical-align: top; font-size: 14px; font-weight: 700; color: #6366f1;">#${rank}</td>
+                <td style="vertical-align: top; padding-left: 12px;">
+                  <div style="font-size: 15px; font-weight: 600; color: #111827;">${escapeHtml(brief.name)}</div>
+                  <div style="background-color: #d1d5db; border-radius: 4px; height: 12px; width: 70%; margin-top: 6px;"></div>
+                </td>
+                <td width="48" style="vertical-align: top; text-align: right;">
+                  <span style="display: inline-block; background-color: #6366f1; color: #ffffff; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">PRO</span>
+                </td>
+              </tr>
+            </table>
           </td>
         </tr>
-      </table>
-    </div>
-
-    <div class="brief-section">
-      <h3>The Problem</h3>
-      <p>${escapeHtml(brief.problemStatement)}</p>
-    </div>
-
-    <div class="brief-section">
-      <h3>Target Audience</h3>
-      <p>${escapeHtml(brief.targetAudience)}</p>
-    </div>
-
-    <div class="brief-section">
-      <h3>Proposed Solution</h3>
-      <p>${escapeHtml(brief.proposedSolution)}</p>
-    </div>
-
-    <div class="brief-section">
-      <h3>Key Features</h3>
-      <ul class="features-list">
-        ${features.map(f => `<li>${escapeHtml(f)}</li>`).join('\n        ')}
-      </ul>
-    </div>
-
-    <div class="brief-section">
-      <h3>Go-to-Market</h3>
-      <p><strong>Strategy:</strong> ${escapeHtml(brief.goToMarket.launchStrategy)}</p>
-      <p><strong>First Customers:</strong> ${escapeHtml(brief.goToMarket.firstCustomers)}</p>
-    </div>
-  `;
-}
-
-/**
- * Build a row for secondary ideas
- */
-function buildIdeaRow(brief: IdeaBrief, rank: number, locked: boolean = false): string {
-  const lockedClass = locked ? 'locked-idea' : '';
-  const lockedOverlay = locked ? '<div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.8);"><span style="font-size: 20px;">&#128274;</span></div>' : '';
+      </table>`;
+  }
 
   return `
-    <div class="idea-row ${lockedClass}" style="position: relative;">
-      ${lockedOverlay}
-      <div class="idea-rank">${rank}</div>
-      <div class="idea-content">
-        <div class="idea-name">${escapeHtml(brief.name)}</div>
-        <div class="idea-tagline">${escapeHtml(brief.tagline.slice(0, TAGLINE_TRUNCATE_LENGTH))}${brief.tagline.length > TAGLINE_TRUNCATE_LENGTH ? '...' : ''}</div>
-      </div>
-      <div class="idea-score">${formatScore(brief.priorityScore)}</div>
-    </div>
-  `;
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom: 8px;">
+      <tr>
+        <td style="background-color: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; padding: 14px 16px; font-family: ${FONT_STACK};">
+          <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+            <tr>
+              <td width="28" style="vertical-align: top; font-size: 14px; font-weight: 700; color: #6366f1;">#${rank}</td>
+              <td style="vertical-align: top; padding-left: 12px;">
+                <div style="font-size: 15px; font-weight: 600; color: #111827; margin-bottom: 2px;">${escapeHtml(brief.name)}</div>
+                <div style="font-size: 13px; color: #6b7280; margin-bottom: 6px;">${escapeHtml(tagline)}</div>
+                <span style="display: inline-block; background-color: ${effortStyle.bg}; color: ${effortStyle.text}; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">${escapeHtml(brief.effortEstimate)}</span>
+              </td>
+              <td width="48" style="vertical-align: top; text-align: right;">
+                <div style="font-size: 18px; font-weight: 700; color: #6366f1;">${formatScore(brief.priorityScore)}</div>
+              </td>
+            </tr>
+            <tr>
+              <td></td>
+              <td colspan="2" style="padding-top: 8px;">
+                <a href="${escapeHtml(ideaUrl)}" style="color: #6366f1; font-size: 14px; font-weight: 600; text-decoration: none;">Read brief &#8594;</a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>`;
 }
 
-/**
- * Build the other ideas section
- */
 function buildOtherIdeasSection(
   briefs: IdeaBrief[],
   tier: SubscriberTier,
   config: Required<EmailBuilderConfig>
 ): string {
-  if (briefs.length <= 1) {
-    return '';
-  }
+  if (briefs.length <= 1) return '';
 
   const limit = TIER_LIMITS[tier];
   const otherBriefs = briefs.slice(1, MAX_EMAIL_IDEAS);
+  const lockedCount = Math.max(0, otherBriefs.length - (limit - 1));
+  const weekendBuilds = otherBriefs
+    .filter((b, i) => i + 2 > limit && b.effortEstimate.toLowerCase() === 'weekend')
+    .length;
 
   const rows = otherBriefs.map((brief, index) => {
     const rank = index + 2;
     const locked = rank > limit;
-    return buildIdeaRow(brief, rank, locked);
+    return buildIdeaCard(brief, rank, locked, config);
   }).join('\n');
 
-  const lockedCount = Math.max(0, otherBriefs.length - (limit - 1));
+  const lockedFooter = lockedCount > 0 && tier === 'free'
+    ? `
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top: 8px;">
+        <tr>
+          <td style="text-align: center; padding: 12px 0; font-family: ${FONT_STACK};">
+            <span style="font-size: 14px; color: #6b7280;">+${lockedCount} more ideas waiting for you${weekendBuilds > 0 ? ` &#8212; including ${weekendBuilds} weekend build${weekendBuilds > 1 ? 's' : ''}` : ''}</span><br/>
+            <a href="${escapeHtml(config.upgradeUrl)}" style="color: #6366f1; font-size: 14px; font-weight: 600; text-decoration: none;">See all ideas &#8594;</a>
+          </td>
+        </tr>
+      </table>`
+    : '';
 
   return `
-    <div class="other-ideas">
-      <h3>More Ideas Today</h3>
-      ${rows}
-      ${lockedCount > 0 && tier === 'free' ? `
-        <p style="text-align: center; color: #888; margin-top: 16px;">
-          ${lockedCount} more idea${lockedCount > 1 ? 's' : ''} available with Builder
-        </p>
-      ` : ''}
-    </div>
-  `;
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+      <tr>
+        <td style="padding: 24px; font-family: ${FONT_STACK};">
+          <div style="font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px;">Today's Other Ideas</div>
+          ${rows}
+          ${lockedFooter}
+        </td>
+      </tr>
+    </table>`;
 }
 
-/**
- * Build the CTA section for free tier users
- */
-function buildCtaSection(tier: SubscriberTier, config: Required<EmailBuilderConfig>): string {
-  if (tier === 'pro') {
-    return '';
-  }
+function buildBottomCta(
+  tier: SubscriberTier,
+  freeCount: number,
+  totalCount: number,
+  config: Required<EmailBuilderConfig>
+): string {
+  if (tier === 'pro') return '';
 
   return `
-    <div class="cta-section">
-      <h3>Every Brief. Every Day.</h3>
-      <p>You're seeing 1 featured brief per email. Builder members get the full brief for every idea, plus archive access and search.</p>
-      <a href="${escapeHtml(config.upgradeUrl)}" class="cta-button">Unlock Every Brief</a>
-    </div>
-  `;
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #111827;">
+      <tr>
+        <td style="padding: 32px 24px; text-align: center; font-family: ${FONT_STACK};">
+          <div style="font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 8px;">You saw ${freeCount} ideas today. Pro members saw ${totalCount}.</div>
+          <div style="font-size: 16px; color: rgba(255,255,255,0.7); margin-bottom: 20px;">Every idea. Every brief. Every day.</div>
+          <table cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 auto;">
+            <tr>
+              <td style="background-color: #ffffff; border-radius: 8px;">
+                <a href="${escapeHtml(config.upgradeUrl)}" style="display: inline-block; padding: 14px 32px; color: #111827; font-family: ${FONT_STACK}; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px;">Unlock Pro &#8594;</a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>`;
 }
 
-/**
- * Build the email footer
- */
 function buildFooter(config: Required<EmailBuilderConfig>): string {
   return `
-    <div class="footer">
-      <p>You're receiving this because you subscribed to ZeroToShip daily briefs.</p>
-      <p>
-        <a href="${escapeHtml(config.unsubscribeUrl)}">Unsubscribe</a> |
-        <a href="${escapeHtml(config.baseUrl)}">View in browser</a>
-      </p>
-      <p>&copy; ${new Date().getFullYear()} ZeroToShip. All rights reserved.</p>
-    </div>
-  `;
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #f9fafb;">
+      <tr>
+        <td style="padding: 24px; text-align: center; font-family: ${FONT_STACK};">
+          <p style="margin: 0 0 8px 0; font-size: 13px; color: #9ca3af;">You're receiving this because you signed up at zerotoship.dev.</p>
+          <p style="margin: 0 0 8px 0; font-size: 13px;">
+            <a href="${escapeHtml(config.baseUrl)}/settings" style="color: #6b7280; text-decoration: underline;">Manage preferences</a>
+            &nbsp;&middot;&nbsp;
+            <a href="${escapeHtml(config.unsubscribeUrl)}" style="color: #6b7280; text-decoration: underline;">Unsubscribe</a>
+          </p>
+          <p style="margin: 0; font-size: 12px; color: #9ca3af;">ZeroToShip ${new Date().getFullYear()}</p>
+        </td>
+      </tr>
+    </table>`;
 }
 
-/**
- * Build the complete HTML email
- */
 export function buildDailyEmail(
   briefs: IdeaBrief[],
   tier: SubscriberTier,
@@ -443,51 +378,63 @@ export function buildDailyEmail(
     };
   }
 
+  // Sort by priority score descending so the best idea is always #1
+  briefs = [...briefs].sort((a, b) => Number(b.priorityScore) - Number(a.priorityScore));
+
   const topIdea = briefs[0];
+  const ideaCount = Math.min(briefs.length, MAX_EMAIL_IDEAS);
+  const freeCount = Math.min(briefs.length, TIER_LIMITS.free);
   const dateStr = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
+    weekday: 'short',
+    month: 'short',
     day: 'numeric',
   });
 
-  const subject = `Today's Top Startup Idea: ${topIdea.name}`;
+  const subject = generateSubjectLine(topIdea, ideaCount);
+  const previewText = generatePreviewText(topIdea, ideaCount);
 
-  const html = `
-<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
   <title>${escapeHtml(subject)}</title>
-  <style>
-    ${getEmailStyles()}
+  <!--[if mso]>
+  <style type="text/css">
+    table { border-collapse: collapse; }
+    td { font-family: Arial, sans-serif; }
   </style>
+  <![endif]-->
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>ZeroToShip</h1>
-      <p class="date">${escapeHtml(dateStr)}</p>
-    </div>
-
-    ${buildHeroSection(topIdea)}
-    ${buildOtherIdeasSection(briefs, tier, opts)}
-    ${buildCtaSection(tier, opts)}
-    ${buildFooter(opts)}
-  </div>
+<body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: ${FONT_STACK};">
+  ${buildPreheader(previewText)}
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #f5f5f5;">
+    <tr>
+      <td align="center" style="padding: 16px 0;">
+        <table width="600" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 8px; overflow: hidden;">
+          <tr><td>
+            ${buildHeader(dateStr)}
+            ${buildStatBar(ideaCount, formatScore(topIdea.priorityScore))}
+            ${buildHeroSection(topIdea, opts)}
+            ${tier === 'free' ? buildInlineUpgradeBanner(briefs, opts) : ''}
+            ${buildOtherIdeasSection(briefs, tier, opts)}
+            ${buildBottomCta(tier, freeCount, ideaCount, opts)}
+            ${buildFooter(opts)}
+          </td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
-</html>
-  `.trim();
+</html>`.trim();
 
   const text = buildPlainTextEmail(briefs, tier, opts);
 
   return { subject, html, text };
 }
 
-/**
- * Build plain text version of the email
- */
 function buildPlainTextEmail(
   briefs: IdeaBrief[],
   tier: SubscriberTier,
@@ -499,72 +446,77 @@ function buildPlainTextEmail(
 
   const limit = TIER_LIMITS[tier];
   const topIdea = briefs[0];
+  const ideaCount = Math.min(briefs.length, MAX_EMAIL_IDEAS);
+  const dateStr = new Date().toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
   const lines: string[] = [];
 
-  lines.push('ZEROTOSHIP DAILY BRIEF');
-  lines.push('='.repeat(50));
+  lines.push(`ZEROTOSHIP | ${dateStr}`);
+  lines.push(`${ideaCount} ideas found | 4 communities scraped | Top score: ${formatScore(topIdea.priorityScore)}`);
+  lines.push('='.repeat(60));
   lines.push('');
 
-  lines.push(`#1 TODAY'S TOP IDEA`);
-  lines.push(`${topIdea.name}`);
+  lines.push("#1 TODAY'S TOP IDEA");
+  lines.push('');
+  lines.push(topIdea.name);
   lines.push(`"${topIdea.tagline}"`);
   lines.push('');
-  lines.push(`Priority Score: ${formatScore(topIdea.priorityScore)} | Effort: ${topIdea.effortEstimate}`);
+  lines.push(`Priority: ${formatScore(topIdea.priorityScore)}/100 | Effort: ${topIdea.effortEstimate} | Revenue: ${truncateRevenue(topIdea.revenueEstimate)}`);
   lines.push('');
-
-  lines.push('THE PROBLEM');
-  lines.push('-'.repeat(30));
-  lines.push(topIdea.problemStatement);
+  lines.push(firstSentence(topIdea.problemStatement));
+  lines.push(`We found a gap in how ${topIdea.targetAudience || 'developers'} handle this.`);
   lines.push('');
-
-  lines.push('TARGET AUDIENCE');
-  lines.push('-'.repeat(30));
-  lines.push(topIdea.targetAudience);
+  lines.push(`Read the full brief: ${config.baseUrl}/idea/${topIdea.id || ''}`);
   lines.push('');
-
-  lines.push('PROPOSED SOLUTION');
-  lines.push('-'.repeat(30));
-  lines.push(topIdea.proposedSolution);
-  lines.push('');
-
-  lines.push('KEY FEATURES');
-  lines.push('-'.repeat(30));
-  topIdea.keyFeatures.forEach(f => lines.push(`- ${f}`));
+  lines.push('-'.repeat(60));
   lines.push('');
 
   if (briefs.length > 1) {
+    lines.push("TODAY'S OTHER IDEAS");
     lines.push('');
-    lines.push('MORE IDEAS TODAY');
-    lines.push('='.repeat(50));
 
     briefs.slice(1, MAX_EMAIL_IDEAS).forEach((brief, index) => {
       const rank = index + 2;
       const locked = rank > limit;
-      const lockIcon = locked ? ' [LOCKED]' : '';
-      lines.push(`#${rank} ${brief.name}${lockIcon} - Score: ${formatScore(brief.priorityScore)}`);
-      if (!locked) {
-        lines.push(`   ${brief.tagline}`);
+
+      if (locked) {
+        lines.push(`#${rank} ${brief.name} [PRO]`);
+      } else {
+        lines.push(`#${rank} ${brief.name} — Score: ${formatScore(brief.priorityScore)} [${brief.effortEstimate}]`);
+        lines.push(`   "${brief.tagline}"`);
+        lines.push(`   Read brief: ${config.baseUrl}/idea/${brief.id || ''}`);
       }
+      lines.push('');
     });
   }
 
   if (tier === 'free') {
+    const lockedCount = Math.max(0, Math.min(briefs.length, MAX_EMAIL_IDEAS) - TIER_LIMITS.free);
+    if (lockedCount > 0) {
+      lines.push('-'.repeat(60));
+      lines.push(`+${lockedCount} more ideas with full briefs available on Pro.`);
+      lines.push(`Unlock all ideas: ${config.upgradeUrl}`);
+      lines.push('');
+    }
+
+    lines.push('-'.repeat(60));
+    lines.push(`You saw ${Math.min(briefs.length, TIER_LIMITS.free)} ideas today. Pro members saw ${Math.min(briefs.length, MAX_EMAIL_IDEAS)}.`);
+    lines.push('Every idea. Every brief. Every day.');
+    lines.push(`Unlock Pro: ${config.upgradeUrl}`);
     lines.push('');
-    lines.push('-'.repeat(50));
-    lines.push('Upgrade to Builder for every full brief, plus archive & search:');
-    lines.push(config.upgradeUrl);
   }
 
-  lines.push('');
-  lines.push('-'.repeat(50));
+  lines.push('-'.repeat(60));
+  lines.push(`Manage preferences: ${config.baseUrl}/settings`);
   lines.push(`Unsubscribe: ${config.unsubscribeUrl}`);
+  lines.push(`ZeroToShip ${new Date().getFullYear()}`);
 
   return lines.join('\n');
 }
 
-/**
- * Preview email in console (for debugging)
- */
 export function previewEmail(content: EmailContent): void {
   logger.info({ subject: content.subject }, 'Email preview');
   logger.info(content.text);

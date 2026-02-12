@@ -75,7 +75,8 @@ class ApiClient {
   }
 
   async getIdea(id: string): Promise<IdeaBrief> {
-    return this.request<IdeaBrief>(`/ideas/${id}`);
+    const res = await this.request<{ idea: IdeaBrief }>(`/ideas/${id}`);
+    return res.idea;
   }
 
   async searchIdeas(params: {

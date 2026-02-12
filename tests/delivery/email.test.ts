@@ -32,14 +32,15 @@ global.fetch = mockFetch;
 
 /** Normalize HTML for stable snapshot comparison:
  *  - Strip leading whitespace (indentation varies across environments)
- *  - Replace dynamic date with placeholder (changes daily) */
+ *  - Replace dynamic date with placeholder (changes daily)
+ *  - Replace dynamic year in footer with placeholder */
 const normalizeForSnapshot = (s: string) =>
   s.replace(/^[ \t]+/gm, '')
    .replace(
-     /\b(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday), \w+ \d{1,2}, \d{4}\b/g,
+     /\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun), (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}\b/g,
      'DATE_PLACEHOLDER',
    )
-   .replace(/&copy; \d{4}/g, '&copy; YEAR');
+   .replace(/ZeroToShip \d{4}/g, 'ZeroToShip YEAR');
 
 // ---------------------------------------------------------------------------
 // Test data factories
@@ -165,11 +166,13 @@ describe('Email Builder', () => {
       expect(result.text).toContain('No startup ideas found today');
     });
 
-    it('generates correct subject with top idea name', () => {
+    it('generates a subject line referencing top idea', () => {
       const briefs = [createMockBrief({ name: 'SuperApp' })];
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.subject).toBe("Today's Top Startup Idea: SuperApp");
+      // Subject lines rotate daily; just verify it's non-empty and ≤60 chars
+      expect(result.subject.length).toBeGreaterThan(0);
+      expect(result.subject.length).toBeLessThanOrEqual(60);
     });
 
     it('includes hero section with top idea details', () => {
@@ -194,39 +197,31 @@ describe('Email Builder', () => {
       expect(result.html).toContain('Users need better testing tools');
     });
 
-    it('includes target audience section', () => {
+    it('includes target audience in hero copy', () => {
       const brief = createMockBrief({
         targetAudience: 'Senior DevOps engineers at mid-size companies',
       });
       const result = buildDailyEmail([brief], 'pro');
 
-      expect(result.html).toContain('Target Audience');
+      // New template weaves target audience into hero paragraph
       expect(result.html).toContain('Senior DevOps engineers at mid-size companies');
     });
 
-    it('includes proposed solution section', () => {
+    it('includes problem statement hook in hero', () => {
       const brief = createMockBrief({
-        proposedSolution: 'A CLI tool that auto-deploys with zero config',
+        problemStatement: 'A CLI tool that auto-deploys with zero config.',
       });
       const result = buildDailyEmail([brief], 'pro');
 
-      expect(result.html).toContain('Proposed Solution');
-      expect(result.html).toContain('A CLI tool that auto-deploys with zero config');
+      // Hero uses firstSentence() of problemStatement
+      expect(result.html).toContain('A CLI tool that auto-deploys with zero config.');
     });
 
-    it('includes go-to-market section with strategy and first customers', () => {
-      const brief = createMockBrief({
-        goToMarket: {
-          launchStrategy: 'Product Hunt launch + beta program',
-          channels: ['Twitter', 'Reddit'],
-          firstCustomers: 'Early-stage SaaS founders',
-        },
-      });
+    it('includes CTA to read full brief', () => {
+      const brief = createMockBrief();
       const result = buildDailyEmail([brief], 'pro');
 
-      expect(result.html).toContain('Go-to-Market');
-      expect(result.html).toContain('Product Hunt launch + beta program');
-      expect(result.html).toContain('Early-stage SaaS founders');
+      expect(result.html).toContain('Read the full brief');
     });
 
     it('includes effort estimate in score bar', () => {
@@ -248,34 +243,22 @@ describe('Email Builder', () => {
       expect(result.html).toContain('$50K-$100K MRR withi');
     });
 
-    it('includes key features list', () => {
+    it('includes idea name and tagline in hero', () => {
       const brief = createMockBrief({
-        keyFeatures: ['Auto-testing', 'CI integration', 'Reports'],
+        name: 'AutoTester',
+        tagline: 'CI integration for everyone',
       });
       const result = buildDailyEmail([brief], 'free');
 
-      expect(result.html).toContain('Auto-testing');
-      expect(result.html).toContain('CI integration');
-      expect(result.html).toContain('Reports');
-    });
-
-    it('limits hero features to 4 items', () => {
-      const brief = createMockBrief({
-        keyFeatures: ['F1', 'F2', 'F3', 'F4', 'F5', 'F6'],
-      });
-      const result = buildDailyEmail([brief], 'free');
-
-      expect(result.html).toContain('F1');
-      expect(result.html).toContain('F4');
-      expect(result.html).not.toContain('>F5<');
-      expect(result.html).not.toContain('>F6<');
+      expect(result.html).toContain('AutoTester');
+      expect(result.html).toContain('CI integration for everyone');
     });
 
     it('shows other ideas section when multiple briefs', () => {
       const briefs = createMockBriefs(5);
       const result = buildDailyEmail(briefs, 'pro');
 
-      expect(result.html).toContain('More Ideas Today');
+      expect(result.html).toContain("Today's Other Ideas");
       expect(result.html).toContain('Idea 2');
       expect(result.html).toContain('Idea 3');
     });
@@ -284,7 +267,7 @@ describe('Email Builder', () => {
       const briefs = [createMockBrief()];
       const result = buildDailyEmail(briefs, 'pro');
 
-      expect(result.html).not.toContain('More Ideas Today');
+      expect(result.html).not.toContain("Today's Other Ideas");
     });
 
     it('caps other ideas to max 9 (ranks 2-10)', () => {
@@ -300,15 +283,15 @@ describe('Email Builder', () => {
       const briefs = createMockBriefs(5);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.html).toContain('Every Brief. Every Day.');
-      expect(result.html).toContain('Unlock Every Brief');
+      expect(result.html).toContain('Every idea. Every brief. Every day.');
+      expect(result.html).toContain('Unlock Pro');
     });
 
     it('hides upgrade CTA for pro tier users', () => {
       const briefs = createMockBriefs(5);
       const result = buildDailyEmail(briefs, 'pro');
 
-      expect(result.html).not.toContain('Every Brief. Every Day.');
+      expect(result.html).not.toContain('Unlock Pro');
     });
 
     it('includes unsubscribe link in footer', () => {
@@ -323,14 +306,14 @@ describe('Email Builder', () => {
       const briefs = [createMockBrief()];
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.html).toContain('<h1>ZeroToShip</h1>');
+      expect(result.html).toContain('ZeroToShip');
     });
 
-    it('includes copyright in footer', () => {
+    it('includes year in footer', () => {
       const briefs = [createMockBrief()];
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.html).toContain('ZeroToShip. All rights reserved.');
+      expect(result.html).toContain(`ZeroToShip ${new Date().getFullYear()}`);
     });
 
     it('generates valid HTML document', () => {
@@ -393,17 +376,17 @@ describe('Email Builder', () => {
       expect(result.html).toContain('https://zerotoship.dev/upgrade');
     });
 
-    it('truncates long taglines in secondary idea rows to 60 chars', () => {
+    it('truncates long taglines in secondary idea rows to 80 chars', () => {
       const briefs = [
         createMockBrief({ name: 'Top Idea' }),
         createMockBrief({
           name: 'Secondary Idea',
-          tagline: 'A'.repeat(80),
+          tagline: 'A'.repeat(100),
         }),
       ];
       const result = buildDailyEmail(briefs, 'pro');
 
-      // Should truncate and add ellipsis
+      // Should truncate and add ellipsis (TAGLINE_TRUNCATE_LENGTH = 80)
       expect(result.html).toContain('...');
     });
 
@@ -430,12 +413,9 @@ describe('Email Builder', () => {
       const brief = createMockBrief({ name: 'PlainTextIdea' });
       const result = buildDailyEmail([brief], 'free');
 
-      expect(result.text).toContain('ZEROTOSHIP DAILY BRIEF');
+      expect(result.text).toContain('ZEROTOSHIP');
       expect(result.text).toContain('PlainTextIdea');
-      expect(result.text).toContain('THE PROBLEM');
-      expect(result.text).toContain('TARGET AUDIENCE');
-      expect(result.text).toContain('PROPOSED SOLUTION');
-      expect(result.text).toContain('KEY FEATURES');
+      expect(result.text).toContain("TODAY'S TOP IDEA");
     });
 
     it('includes priority score and effort in plain text', () => {
@@ -445,7 +425,7 @@ describe('Email Builder', () => {
       });
       const result = buildDailyEmail([brief], 'free');
 
-      expect(result.text).toContain('Priority Score: 7.3');
+      expect(result.text).toContain('7.3');
       expect(result.text).toContain('Effort: weekend');
     });
 
@@ -456,22 +436,20 @@ describe('Email Builder', () => {
       expect(result.text).toContain('"My awesome tagline"');
     });
 
-    it('lists key features with dash prefix in plain text', () => {
+    it('includes problem statement in plain text', () => {
       const brief = createMockBrief({
-        keyFeatures: ['Alpha', 'Beta', 'Gamma'],
+        problemStatement: 'Alpha testing is painful.',
       });
       const result = buildDailyEmail([brief], 'free');
 
-      expect(result.text).toContain('- Alpha');
-      expect(result.text).toContain('- Beta');
-      expect(result.text).toContain('- Gamma');
+      expect(result.text).toContain('Alpha testing is painful.');
     });
 
-    it('includes MORE IDEAS TODAY header for multiple briefs', () => {
+    it('includes OTHER IDEAS header for multiple briefs', () => {
       const briefs = createMockBriefs(4);
       const result = buildDailyEmail(briefs, 'pro');
 
-      expect(result.text).toContain('MORE IDEAS TODAY');
+      expect(result.text).toContain("TODAY'S OTHER IDEAS");
     });
 
     it('includes unsubscribe URL in plain text', () => {
@@ -616,7 +594,8 @@ describe('Email Service', () => {
 
       const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(callBody.to).toEqual(['test@example.com']);
-      expect(callBody.subject).toContain('TestPayload');
+      // Subject lines rotate daily; just check it's populated
+      expect(callBody.subject.length).toBeGreaterThan(0);
       expect(callBody.html).toBeDefined();
       expect(callBody.text).toBeDefined();
       expect(callBody.reply_to).toBe('hello@zerotoship.dev');
@@ -992,7 +971,7 @@ describe('Email Service', () => {
       const briefs = [createMockBrief({ name: 'PreviewIdea' })];
       const result = previewDailyBrief('free', briefs);
 
-      expect(result.subject).toContain('PreviewIdea');
+      // Subject lines rotate, just verify content includes the idea name
       expect(result.html).toContain('PreviewIdea');
       expect(result.text).toContain('PreviewIdea');
       expect(mockFetch).not.toHaveBeenCalled();
@@ -1004,8 +983,8 @@ describe('Email Service', () => {
       const freeResult = previewDailyBrief('free', briefs);
       const proResult = previewDailyBrief('pro', briefs);
 
-      expect(freeResult.html).toContain('Unlock Every Brief');
-      expect(proResult.html).not.toContain('Unlock Every Brief');
+      expect(freeResult.html).toContain('Unlock Pro');
+      expect(proResult.html).not.toContain('Unlock Pro');
     });
 
     it('accepts custom config', () => {
@@ -1159,12 +1138,12 @@ describe('Tier-based content', () => {
       expect(result.text).toContain('Tagline for idea 3');
     });
 
-    it('marks ideas beyond limit as LOCKED in plain text', () => {
+    it('marks ideas beyond limit as PRO in plain text', () => {
       const briefs = createMockBriefs(10);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.text).toContain('#4 Idea 4 [LOCKED]');
-      expect(result.text).toContain('#10 Idea 10 [LOCKED]');
+      expect(result.text).toContain('#4 Idea 4 [PRO]');
+      expect(result.text).toContain('#10 Idea 10 [PRO]');
     });
 
     it('does not show taglines for locked ideas in plain text', () => {
@@ -1172,27 +1151,27 @@ describe('Tier-based content', () => {
       const result = buildDailyEmail(briefs, 'free');
 
       // Idea 4 is locked (rank 4 > limit 3)
-      expect(result.text).toContain('[LOCKED]');
+      expect(result.text).toContain('[PRO]');
       // The locked idea's tagline should not appear on the line after it
       const lines = result.text.split('\n');
-      const lockedLineIdx = lines.findIndex(l => l.includes('Idea 4 [LOCKED]'));
+      const lockedLineIdx = lines.findIndex(l => l.includes('Idea 4 [PRO]'));
       expect(lockedLineIdx).toBeGreaterThan(-1);
       // Next line should not have the tagline
       expect(lines[lockedLineIdx + 1]).not.toContain('Tagline for idea 4');
     });
 
-    it('shows locked class on HTML ideas beyond tier limit', () => {
+    it('shows PRO badge on HTML ideas beyond tier limit', () => {
       const briefs = createMockBriefs(6);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.html).toContain('locked-idea');
+      expect(result.html).toContain('PRO</span>');
     });
 
-    it('shows "available with Builder" message for free tier', () => {
+    it('shows "more ideas waiting" message for free tier', () => {
       const briefs = createMockBriefs(10);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.html).toContain('available with Builder');
+      expect(result.html).toContain('more ideas waiting for you');
     });
 
     it('shows correct locked count for free tier', () => {
@@ -1201,14 +1180,14 @@ describe('Tier-based content', () => {
       const briefs = createMockBriefs(10);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.html).toContain('7 more ideas available with Builder');
+      expect(result.html).toContain('+7 more ideas waiting for you');
     });
 
     it('shows upgrade URL in plain text', () => {
       const briefs = createMockBriefs(10);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.text).toContain('Upgrade to Builder for every full brief, plus archive & search:');
+      expect(result.text).toContain('Unlock Pro:');
     });
   });
 
@@ -1224,24 +1203,23 @@ describe('Tier-based content', () => {
       const briefs = createMockBriefs(10);
       const result = buildDailyEmail(briefs, 'pro');
 
-      expect(result.html).not.toContain('Unlock All Ideas');
-      expect(result.html).not.toContain('Upgrade to Builder</a>');
+      expect(result.html).not.toContain('Unlock Pro');
+      expect(result.html).not.toContain('Unlock all ideas');
     });
 
     it('does not show upgrade message in plain text', () => {
       const briefs = createMockBriefs(10);
       const result = buildDailyEmail(briefs, 'pro');
 
-      expect(result.text).not.toContain('Upgrade to Builder');
+      expect(result.text).not.toContain('Unlock Pro');
     });
 
-    it('does not apply locked-idea class to any idea rows', () => {
+    it('does not show PRO badge for any idea rows', () => {
       const briefs = createMockBriefs(10);
       const result = buildDailyEmail(briefs, 'pro');
 
-      // The CSS class definition exists in the style block, but no idea row
-      // should have the locked-idea class applied in the HTML body
-      expect(result.html).not.toContain('class="idea-row locked-idea"');
+      // Pro tier sees all ideas unlocked - no PRO badges
+      expect(result.html).not.toContain('>PRO</span>');
     });
 
     it('shows taglines for all secondary ideas in plain text', () => {
@@ -1260,8 +1238,8 @@ describe('Tier-based content', () => {
       const briefs = createMockBriefs(3);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.text).not.toContain('[LOCKED]');
-      expect(result.html).not.toContain('class="idea-row locked-idea"');
+      expect(result.text).not.toContain('[PRO]');
+      expect(result.html).not.toContain('>PRO</span>');
     });
 
     it('one above tier limit shows exactly 1 locked idea', () => {
@@ -1270,7 +1248,7 @@ describe('Tier-based content', () => {
       const briefs = createMockBriefs(4);
       const result = buildDailyEmail(briefs, 'free');
 
-      const lockedMatches = result.text.match(/\[LOCKED\]/g);
+      const lockedMatches = result.text.match(/\[PRO\]/g);
       expect(lockedMatches).toHaveLength(1);
     });
 
@@ -1280,8 +1258,8 @@ describe('Tier-based content', () => {
       const freeResult = buildDailyEmail(briefs, 'free');
       const proResult = buildDailyEmail(briefs, 'pro');
 
-      expect(freeResult.html).not.toContain('More Ideas Today');
-      expect(proResult.html).not.toContain('More Ideas Today');
+      expect(freeResult.html).not.toContain("Today's Other Ideas");
+      expect(proResult.html).not.toContain("Today's Other Ideas");
     });
 
     it('two briefs shows 1 other idea, no locked indicators for free', () => {
@@ -1289,8 +1267,8 @@ describe('Tier-based content', () => {
       const briefs = createMockBriefs(2);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.html).toContain('More Ideas Today');
-      expect(result.text).not.toContain('[LOCKED]');
+      expect(result.html).toContain("Today's Other Ideas");
+      expect(result.text).not.toContain('[PRO]');
     });
   });
 });
@@ -1335,34 +1313,23 @@ describe('Data assembly', () => {
     const result = buildDailyEmail(briefs, 'pro');
 
     // Hero should be "First" (array position 0), not highest score
-    expect(result.subject).toContain('First');
+    expect(result.html).toContain('First');
     // Second should be at rank #2
     expect(result.text).toContain('#2 Second');
     expect(result.text).toContain('#3 Third');
   });
 
-  it('includes all brief sections in HTML for hero idea', () => {
+  it('includes hero idea details in HTML', () => {
     const brief = createMockBrief({
-      problemStatement: 'Big problem here',
+      problemStatement: 'Big problem here.',
       targetAudience: 'Small business owners',
-      proposedSolution: 'An elegant solution',
-      goToMarket: {
-        launchStrategy: 'Viral launch',
-        channels: ['Twitter'],
-        firstCustomers: 'Early adopters',
-      },
     });
     const result = buildDailyEmail([brief], 'pro');
 
-    expect(result.html).toContain('The Problem');
-    expect(result.html).toContain('Big problem here');
-    expect(result.html).toContain('Target Audience');
+    // New template shows problem hook and target audience in hero paragraph
+    expect(result.html).toContain('Big problem here.');
     expect(result.html).toContain('Small business owners');
-    expect(result.html).toContain('Proposed Solution');
-    expect(result.html).toContain('An elegant solution');
-    expect(result.html).toContain('Go-to-Market');
-    expect(result.html).toContain('Viral launch');
-    expect(result.html).toContain('Early adopters');
+    expect(result.html).toContain('Read the full brief');
   });
 
   it('displays score for each secondary idea in HTML', () => {
