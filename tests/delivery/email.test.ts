@@ -197,14 +197,15 @@ describe('Email Builder', () => {
       expect(result.html).toContain('Users need better testing tools');
     });
 
-    it('includes target audience in hero copy', () => {
+    it('includes full key features in pro hero', () => {
       const brief = createMockBrief({
-        targetAudience: 'Senior DevOps engineers at mid-size companies',
+        keyFeatures: ['automated deployment pipelines', 'zero-config setup'],
       });
       const result = buildDailyEmail([brief], 'pro');
 
-      // New template weaves target audience into hero paragraph
-      expect(result.html).toContain('Senior DevOps engineers at mid-size companies');
+      expect(result.html).toContain('automated deployment pipelines');
+      expect(result.html).toContain('zero-config setup');
+      expect(result.html).toContain('Key Features');
     });
 
     it('includes problem statement hook in hero', () => {
@@ -217,11 +218,11 @@ describe('Email Builder', () => {
       expect(result.html).toContain('A CLI tool that auto-deploys with zero config.');
     });
 
-    it('includes CTA to read full brief', () => {
+    it('includes CTA to view brief on dashboard for pro', () => {
       const brief = createMockBrief();
       const result = buildDailyEmail([brief], 'pro');
 
-      expect(result.html).toContain('Read the full brief');
+      expect(result.html).toContain('View full brief on dashboard');
     });
 
     it('includes effort estimate in score bar', () => {
@@ -1167,11 +1168,11 @@ describe('Tier-based content', () => {
       expect(result.html).toContain('PRO</span>');
     });
 
-    it('shows "more ideas waiting" message for free tier', () => {
+    it('shows "available with Pro" message for free tier', () => {
       const briefs = createMockBriefs(10);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.html).toContain('more ideas waiting for you');
+      expect(result.html).toContain('available with Pro');
     });
 
     it('shows correct locked count for free tier', () => {
@@ -1180,7 +1181,7 @@ describe('Tier-based content', () => {
       const briefs = createMockBriefs(10);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.html).toContain('+7 more ideas waiting for you');
+      expect(result.html).toContain('+7 more ideas available with Pro');
     });
 
     it('shows upgrade URL in plain text', () => {
@@ -1322,14 +1323,14 @@ describe('Data assembly', () => {
   it('includes hero idea details in HTML', () => {
     const brief = createMockBrief({
       problemStatement: 'Big problem here.',
-      targetAudience: 'Small business owners',
+      keyFeatures: ['automated testing', 'CI/CD integration'],
     });
     const result = buildDailyEmail([brief], 'pro');
 
-    // New template shows problem hook and target audience in hero paragraph
+    // New template shows problem hook and key features teaser
     expect(result.html).toContain('Big problem here.');
-    expect(result.html).toContain('Small business owners');
-    expect(result.html).toContain('Read the full brief');
+    expect(result.html).toContain('automated testing');
+    expect(result.html).toContain('View full brief on dashboard');
   });
 
   it('displays score for each secondary idea in HTML', () => {
