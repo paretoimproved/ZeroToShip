@@ -160,10 +160,11 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
             id: users.id,
             email: users.email,
             name: users.name,
-            tier: users.tier,
+            tier: subscriptions.plan,
             createdAt: users.createdAt,
           })
           .from(users)
+          .leftJoin(subscriptions, eq(subscriptions.userId, users.id))
           .orderBy(users.createdAt);
 
         return reply.send({ users: userList });

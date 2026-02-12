@@ -9,22 +9,22 @@ import { db } from './client';
 import { users, userPreferences, apiKeys, ideas, subscriptions } from './schema';
 import { eq } from 'drizzle-orm';
 
-// Test users for each tier
+// Test users for each tier (tier is stored in subscriptions, not users)
 const seedUsers = [
   {
     email: 'free@test.zerotoship.dev',
     name: 'Free Test User',
-    tier: 'free' as const,
+    plan: 'free' as const,
   },
   {
     email: 'pro@test.zerotoship.dev',
     name: 'Pro Test User',
-    tier: 'pro' as const,
+    plan: 'pro' as const,
   },
   {
     email: 'enterprise@test.zerotoship.dev',
     name: 'Enterprise Test User',
-    tier: 'enterprise' as const,
+    plan: 'enterprise' as const,
   },
 ];
 
@@ -333,7 +333,7 @@ export async function seed(): Promise<void> {
   try {
     // 1. Insert test users
     console.log('Inserting test users...');
-    const insertedUsers: Array<{ id: string; email: string; tier: string }> = [];
+    const insertedUsers: Array<{ id: string; email: string; plan: string }> = [];
 
     for (const userData of seedUsers) {
       // Check if user already exists
@@ -345,17 +345,17 @@ export async function seed(): Promise<void> {
 
       if (existing.length > 0) {
         console.log(`  User ${userData.email} already exists, skipping`);
-        insertedUsers.push({ id: existing[0].id, email: existing[0].email, tier: existing[0].tier });
+        insertedUsers.push({ id: existing[0].id, email: existing[0].email, plan: userData.plan });
         continue;
       }
 
       const [user] = await db
         .insert(users)
-        .values(userData)
-        .returning({ id: users.id, email: users.email, tier: users.tier });
+        .values({ email: userData.email, name: userData.name })
+        .returning({ id: users.id, email: users.email });
 
-      console.log(`  Created user: ${user.email} (${user.tier})`);
-      insertedUsers.push(user);
+      console.log(`  Created user: ${user.email} (${userData.plan})`);
+      insertedUsers.push({ ...user, plan: userData.plan });
     }
 
     // 2. Create preferences for each user
@@ -382,11 +382,9 @@ export async function seed(): Promise<void> {
       console.log(`  Created preferences for ${user.email}`);
     }
 
-    // 3. Create subscriptions for pro and enterprise users
+    // 3. Create subscriptions for all users
     console.log('Creating subscriptions...');
     for (const user of insertedUsers) {
-      if (user.tier === 'free') continue;
-
       const existing = await db
         .select()
         .from(subscriptions)
@@ -403,17 +401,17 @@ export async function seed(): Promise<void> {
 
       await db.insert(subscriptions).values({
         userId: user.id,
-        plan: user.tier,
+        plan: user.plan,
         status: 'active',
         currentPeriodStart: now,
         currentPeriodEnd: periodEnd,
       });
-      console.log(`  Created ${user.tier} subscription for ${user.email}`);
+      console.log(`  Created ${user.plan} subscription for ${user.email}`);
     }
 
     // 4. Create API key for enterprise user
     console.log('Creating API keys...');
-    const enterpriseUser = insertedUsers.find((u) => u.tier === 'enterprise');
+    const enterpriseUser = insertedUsers.find((u) => u.plan === 'enterprise');
     if (enterpriseUser) {
       const existing = await db
         .select()
@@ -422,14 +420,15 @@ export async function seed(): Promise<void> {
         .limit(1);
 
       if (existing.length > 0) {
-        console.log(`  API key for ${enterpriseUser.email} already exists: ${existing[0].key.substring(0, 20)}...`);
+        console.log(`  API key for ${enterpriseUser.email} already exists: ${existing[0].keyPrefix}`);
       } else {
         const key = generateApiKey();
         const keyHash = createHash('sha256').update(key).digest('hex');
+        const keyPrefix = key.slice(0, 4) + '...' + key.slice(-4);
         await db.insert(apiKeys).values({
           userId: enterpriseUser.id,
-          key,
           keyHash,
+          keyPrefix,
           name: 'Test API Key',
           isActive: true,
         });

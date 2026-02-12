@@ -15,6 +15,7 @@ import { runGeneratePhase } from './phases/generate';
 import { runDeliverPhase } from './phases/deliver';
 import { initMonitoring, captureException } from '../lib/monitoring';
 import { sendPipelineFailureAlert } from '../lib/alerts';
+import { acquirePipelineLock, releasePipelineLock } from '../lib/pipeline-lock';
 import {
   initRunStatus,
   savePhaseResult,
@@ -178,6 +179,24 @@ export async function runPipeline(
   }
 
   const logger = createRunLogger(runId);
+
+  // Acquire distributed lock to prevent concurrent pipeline runs
+  const lockAcquired = await acquirePipelineLock(runId);
+  if (!lockAcquired) {
+    logger.warn('Pipeline lock is held by another run — skipping');
+    const now = new Date();
+    return buildResult(runId, now, fullConfig, {}, [
+      {
+        phase: 'scrape',
+        message: 'Pipeline lock held by another run',
+        timestamp: now,
+        recoverable: true,
+        severity: 'degraded',
+      },
+    ]);
+  }
+
+  try {
   const metrics = new MetricsCollector(runId);
   const errors: PipelineError[] = [];
 
@@ -473,4 +492,7 @@ export async function runPipeline(
   );
 
   return result;
+  } finally {
+    await releasePipelineLock(runId);
+  }
 }

@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
 import { supabase } from '../middleware/auth';
 import { ApiErrorSchema } from '../schemas';
-import { getOrCreateUser, getUserById } from '../services/users';
+import { getOrCreateUser, getUserById, getUserTierById } from '../services/users';
 
 const SignupRequestSchema = z.object({
   email: z.string().email(),
@@ -109,19 +109,21 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
         if (signIn.error || !signIn.data.session) {
           // User created but can't sign in yet — return with a placeholder token
           const user = await getOrCreateUser(data.user.id, email, name);
+          const tier = await getUserTierById(data.user.id);
           return reply.send({
             token: '',
-            user,
+            user: { ...user, tier },
           });
         }
         token = signIn.data.session.access_token;
       }
 
       const user = await getOrCreateUser(data.user.id, email, name);
+      const tier = await getUserTierById(data.user.id);
 
       return reply.send({
         token,
-        user,
+        user: { ...user, tier },
       });
     }
   );
@@ -179,10 +181,11 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       const user = await getOrCreateUser(data.user.id, email);
+      const tier = await getUserTierById(data.user.id);
 
       return reply.send({
         token: data.session.access_token,
-        user,
+        user: { ...user, tier },
       });
     }
   );
@@ -218,7 +221,8 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
         user = await getOrCreateUser(request.userId!, request.userEmail!, name);
       }
 
-      return reply.send({ ...user, isAdmin: user.isAdmin });
+      const tier = await getUserTierById(request.userId!);
+      return reply.send({ ...user, tier, isAdmin: user.isAdmin });
     }
   );
 };

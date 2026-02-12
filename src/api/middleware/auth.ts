@@ -146,8 +146,8 @@ async function verifyApiKey(
 /**
  * Get user's subscription tier (with 60s TTL cache)
  *
- * Cache invalidation: Stripe webhooks (billing.ts) call updateUserTier()
- * which is the only way tiers change. We accept up to 60s of staleness
+ * Cache invalidation: Stripe webhooks (billing.ts) call updateSubscription()
+ * which invalidates the cache. We accept up to 60s of staleness
  * because tier changes are rare (~once/month per user).
  */
 async function getUserTier(userId: string): Promise<UserTier> {
@@ -379,6 +379,7 @@ export async function createApiKeyForUser(
 
     const key = generateApiKey();
     const keyHash = hashApiKey(key);
+    const keyPrefix = key.slice(0, 4) + '...' + key.slice(-4);
     const expiresAt = expiresInDays
       ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000)
       : null;
@@ -387,8 +388,8 @@ export async function createApiKeyForUser(
       .insert(apiKeys)
       .values({
         userId,
-        key,
         keyHash,
+        keyPrefix,
         name,
         expiresAt,
       })

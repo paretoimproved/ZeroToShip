@@ -49,7 +49,7 @@ vi.mock('../../src/api/db/client', () => ({
     execute: vi.fn().mockResolvedValue([]),
     onConflictDoNothing: vi.fn().mockReturnThis(),
   },
-  users: { id: 'id', email: 'email', name: 'name', tier: 'tier', isAdmin: 'isAdmin' },
+  users: { id: 'id', email: 'email', name: 'name', isAdmin: 'isAdmin' },
   userPreferences: { userId: 'userId' },
   subscriptions: {
     userId: 'userId',
@@ -59,8 +59,8 @@ vi.mock('../../src/api/db/client', () => ({
   apiKeys: {
     id: 'id',
     userId: 'userId',
-    key: 'key',
     keyHash: 'keyHash',
+    keyPrefix: 'keyPrefix',
     isActive: 'isActive',
     expiresAt: 'expiresAt',
     lastUsedAt: 'lastUsedAt',
@@ -75,10 +75,12 @@ vi.mock('../../src/api/db/client', () => ({
 // Mock user services
 const mockGetOrCreateUser = vi.fn();
 const mockGetUserById = vi.fn();
+const mockGetUserTierById = vi.fn();
 
 vi.mock('../../src/api/services/users', () => ({
   getOrCreateUser: (...args: unknown[]) => mockGetOrCreateUser(...args),
   getUserById: (...args: unknown[]) => mockGetUserById(...args),
+  getUserTierById: (...args: unknown[]) => mockGetUserTierById(...args),
   getUserPreferences: vi.fn().mockResolvedValue(null),
   updateUserPreferences: vi.fn().mockResolvedValue(null),
   getUserSubscription: vi.fn().mockResolvedValue(null),
@@ -227,7 +229,6 @@ const TEST_USER = {
   id: 'user-uuid-123',
   email: 'test@zerotoship.dev',
   name: 'Test User',
-  tier: 'free',
   isAdmin: false,
 };
 
@@ -257,6 +258,9 @@ describe('Auth Routes E2E', () => {
   beforeEach(async () => {
     // Reset all mocks
     vi.clearAllMocks();
+
+    // Default: getUserTierById returns 'free'
+    mockGetUserTierById.mockResolvedValue('free');
 
     // Import server factory fresh (mocks are already in place)
     const { createServer } = await import('../../src/api/server');

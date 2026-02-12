@@ -51,7 +51,7 @@ vi.mock('../../src/api/db/client', () => ({
   userPreferences: { userId: 'userId' },
   subscriptions: { userId: 'userId', plan: 'plan', status: 'status' },
   apiKeys: {
-    id: 'id', userId: 'userId', key: 'key', keyHash: 'keyHash',
+    id: 'id', userId: 'userId', keyHash: 'keyHash', keyPrefix: 'keyPrefix',
     isActive: 'isActive', expiresAt: 'expiresAt', lastUsedAt: 'lastUsedAt',
   },
   ideas: { id: 'id', generatedAt: 'generatedAt' },

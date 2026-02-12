@@ -40,7 +40,6 @@ export const users = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     email: varchar('email', { length: 255 }).notNull().unique(),
     name: varchar('name', { length: 255 }),
-    tier: varchar('tier', { length: 20 }).notNull().default('free'),
     isAdmin: boolean('is_admin').notNull().default(false),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
@@ -77,8 +76,8 @@ export const apiKeys = pgTable(
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    key: varchar('key', { length: 64 }).notNull(),
     keyHash: text('key_hash').notNull(),
+    keyPrefix: varchar('key_prefix', { length: 12 }).notNull(),
     name: varchar('name', { length: 100 }).notNull(),
     lastUsedAt: timestamp('last_used_at'),
     expiresAt: timestamp('expires_at'),

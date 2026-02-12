@@ -31,7 +31,7 @@ import logger from '../../lib/logger';
  */
 export async function getUserById(
   userId: string
-): Promise<{ id: string; email: string; name: string | null; tier: string; isAdmin: boolean } | null> {
+): Promise<{ id: string; email: string; name: string | null; isAdmin: boolean } | null> {
   const rows = await db.select().from(users).where(eq(users.id, userId)).limit(1);
 
   if (rows.length === 0) {
@@ -42,13 +42,24 @@ export async function getUserById(
 }
 
 /**
+ * Get user's tier from their subscription (single source of truth)
+ */
+export async function getUserTierById(userId: string): Promise<UserTier> {
+  const result = await db.select({ plan: subscriptions.plan, status: subscriptions.status })
+    .from(subscriptions).where(eq(subscriptions.userId, userId)).limit(1);
+  const sub = result[0];
+  if (!sub || sub.status !== 'active') return 'free';
+  return (sub.plan as UserTier) || 'free';
+}
+
+/**
  * Get or create user from Supabase auth
  */
 export async function getOrCreateUser(
   id: string,
   email: string,
   name?: string
-): Promise<{ id: string; email: string; name: string | null; tier: string; isAdmin: boolean }> {
+): Promise<{ id: string; email: string; name: string | null; isAdmin: boolean }> {
   // Try to get existing user
   const existing = await getUserById(id);
   if (existing) {
@@ -224,6 +235,7 @@ export async function getUserApiKeys(
   Array<{
     id: string;
     name: string;
+    keyPrefix: string;
     lastUsedAt: Date | null;
     expiresAt: Date | null;
     isActive: boolean;
@@ -234,6 +246,7 @@ export async function getUserApiKeys(
     .select({
       id: apiKeys.id,
       name: apiKeys.name,
+      keyPrefix: apiKeys.keyPrefix,
       lastUsedAt: apiKeys.lastUsedAt,
       expiresAt: apiKeys.expiresAt,
       isActive: apiKeys.isActive,
@@ -257,6 +270,7 @@ export async function createApiKey(
   try {
     const key = generateApiKey();
     const keyHash = hashApiKey(key);
+    const keyPrefix = key.slice(0, 4) + '...' + key.slice(-4);
     const expiresAt = expiresInDays
       ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000)
       : null;
@@ -265,8 +279,8 @@ export async function createApiKey(
       .insert(apiKeys)
       .values({
         userId,
-        key,
         keyHash,
+        keyPrefix,
         name,
         expiresAt,
       })
@@ -304,20 +318,6 @@ export async function deactivateApiKey(userId: string, keyId: string): Promise<b
       .where(and(eq(apiKeys.id, keyId), eq(apiKeys.userId, userId)))
       .returning({ id: apiKeys.id });
     return result.length > 0;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Update user tier (called from Stripe webhook)
- */
-export async function updateUserTier(userId: string, tier: UserTier): Promise<boolean> {
-  try {
-    await db.update(users).set({ tier, updatedAt: new Date() }).where(eq(users.id, userId));
-    // Invalidate the tier cache so the new tier takes effect immediately
-    invalidateTierCache(userId);
-    return true;
   } catch {
     return false;
   }
@@ -368,9 +368,9 @@ export async function updateSubscription(
       .set(updateData)
       .where(eq(subscriptions.userId, userId));
 
-    // Also update user tier
-    if (data.plan) {
-      await updateUserTier(userId, data.plan as UserTier);
+    // Invalidate the tier cache so the new tier takes effect immediately
+    if (data.plan || data.status) {
+      invalidateTierCache(userId);
     }
 
     return true;

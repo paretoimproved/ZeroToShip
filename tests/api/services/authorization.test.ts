@@ -44,8 +44,8 @@ vi.mock('../../../src/api/db/client', () => ({
   apiKeys: {
     id: 'id',
     userId: 'userId',
-    key: 'key',
     keyHash: 'keyHash',
+    keyPrefix: 'keyPrefix',
     name: 'name',
     isActive: 'isActive',
     expiresAt: 'expiresAt',

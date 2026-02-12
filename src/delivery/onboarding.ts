@@ -6,7 +6,7 @@
  */
 
 import { eq, and, sql, isNull } from 'drizzle-orm';
-import { db, users, onboardingEmails } from '../api/db/client';
+import { db, users, subscriptions, onboardingEmails } from '../api/db/client';
 import type { OnboardingEmailType } from '../api/db/schema';
 import { config as envConfig } from '../config/env';
 import { DeliveryError } from '../lib/errors';
@@ -305,15 +305,16 @@ export async function sendOnboardingEmail(
     return result;
   }
 
-  // Fetch user data
+  // Fetch user data with tier from subscriptions
   const userRows = await db
     .select({
       id: users.id,
       email: users.email,
       name: users.name,
-      tier: users.tier,
+      tier: subscriptions.plan,
     })
     .from(users)
+    .leftJoin(subscriptions, eq(subscriptions.userId, users.id))
     .where(eq(users.id, userId))
     .limit(1);
 
@@ -337,7 +338,7 @@ export async function sendOnboardingEmail(
   const { html, text } = buildOnboardingHtml(
     emailType,
     user.name || '',
-    user.tier
+    user.tier || 'free'
   );
 
   // Send via Resend
@@ -398,7 +399,7 @@ export async function sendOnboardingEmail(
  * The LEFT JOIN in processOnboardingDrip already ensures the email hasn't been sent.
  */
 async function sendOnboardingEmailDirect(
-  user: { id: string; email: string; name: string | null; tier: string },
+  user: { id: string; email: string; name: string | null; tier: string | null },
   emailType: OnboardingEmailType
 ): Promise<OnboardingEmailResult> {
   const result: OnboardingEmailResult = {
@@ -416,7 +417,7 @@ async function sendOnboardingEmailDirect(
   }
 
   const subject = SUBJECT_LINES[emailType];
-  const { html, text } = buildOnboardingHtml(emailType, user.name || '', user.tier);
+  const { html, text } = buildOnboardingHtml(emailType, user.name || '', user.tier || 'free');
 
   try {
     const response = await fetch('https://api.resend.com/emails', {
@@ -490,9 +491,10 @@ export async function processOnboardingDrip(): Promise<DripProcessingResult> {
         id: users.id,
         email: users.email,
         name: users.name,
-        tier: users.tier,
+        tier: subscriptions.plan,
       })
       .from(users)
+      .leftJoin(subscriptions, eq(subscriptions.userId, users.id))
       .leftJoin(
         onboardingEmails,
         and(

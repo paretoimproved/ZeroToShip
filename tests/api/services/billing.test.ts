@@ -36,7 +36,6 @@ const {
   mockDbSelect,
   mockDbUpdate,
   mockUpdateSubscription,
-  mockUpdateUserTier,
   mockGetUserById,
 } = vi.hoisted(() => ({
   mockCustomersCreate: vi.fn(),
@@ -48,7 +47,6 @@ const {
   mockDbSelect: vi.fn(),
   mockDbUpdate: vi.fn(),
   mockUpdateSubscription: vi.fn(),
-  mockUpdateUserTier: vi.fn(),
   mockGetUserById: vi.fn(),
 }));
 
@@ -162,7 +160,6 @@ vi.mock('../../../src/api/db/client', () => {
 // ---------------------------------------------------------------------------
 vi.mock('../../../src/api/services/users', () => ({
   updateSubscription: (...args: unknown[]) => mockUpdateSubscription(...args),
-  updateUserTier: (...args: unknown[]) => mockUpdateUserTier(...args),
   getUserById: (...args: unknown[]) => mockGetUserById(...args),
 }));
 
@@ -286,7 +283,6 @@ beforeEach(() => {
 
   // Default: user service calls succeed
   mockUpdateSubscription.mockResolvedValue(true);
-  mockUpdateUserTier.mockResolvedValue(true);
 });
 
 // ============================================================================

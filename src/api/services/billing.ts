@@ -18,7 +18,7 @@ import {
   BILLING_PORTAL_RETURN_URL,
   STRIPE_WEBHOOK_SECRET,
 } from '../config/stripe';
-import { updateSubscription, updateUserTier, getUserById } from './users';
+import { updateSubscription, getUserById } from './users';
 import type { UserTier } from '../schemas';
 
 /**

@@ -74,8 +74,12 @@ vi.mock('../../src/api/db/client', () => ({
     id: 'users.id',
     email: 'users.email',
     name: 'users.name',
-    tier: 'users.tier',
     createdAt: 'users.created_at',
+  },
+  subscriptions: {
+    userId: 'subscriptions.user_id',
+    plan: 'subscriptions.plan',
+    status: 'subscriptions.status',
   },
   onboardingEmails: {
     id: 'onboarding_emails.id',
