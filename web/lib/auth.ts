@@ -175,9 +175,20 @@ export async function handleOAuthCallback(): Promise<OAuthCallbackResult | null>
   let session;
 
   if (hasCode) {
-    // PKCE flow: exchange the authorization code for a session
-    const code = new URLSearchParams(window.location.search).get("code");
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
     if (!code) return null;
+
+    // Google OAuth redirects include a "scope" param; Supabase PKCE does not.
+    // On mobile, useGoogleLogin falls back to a redirect flow, so the Google
+    // auth code lands here. Route it to our backend instead of Supabase.
+    if (params.has("scope")) {
+      const result = await loginWithGoogleCode(code);
+      window.history.replaceState(null, "", window.location.pathname);
+      return result;
+    }
+
+    // Supabase PKCE flow: exchange the authorization code for a session
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (error || !data.session) return null;
     session = data.session;

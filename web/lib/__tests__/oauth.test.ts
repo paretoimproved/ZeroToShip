@@ -205,6 +205,41 @@ describe('OAuth utilities', () => {
 
       expect(mockReplaceState).toHaveBeenCalledWith(null, '', '/login');
     });
+
+    it('should route Google redirect codes (with scope param) to backend instead of Supabase', async () => {
+      mockLocation.search = '?code=google-redirect-code&scope=email+profile';
+      mockLocation.pathname = '/login';
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          token: 'google-backend-token',
+          user: {
+            id: 'google-user-789',
+            email: 'mobile@example.com',
+            name: 'Mobile User',
+            tier: 'free',
+          },
+        }),
+      });
+
+      const result = await handleOAuthCallback();
+
+      // Should NOT call Supabase exchangeCodeForSession
+      expect(mockExchangeCodeForSession).not.toHaveBeenCalled();
+      // Should call our backend
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/auth/google'),
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ code: 'google-redirect-code' }),
+        })
+      );
+      expect(result?.token).toBe('google-backend-token');
+      expect(result?.user.id).toBe('google-user-789');
+      // Should clean URL
+      expect(mockReplaceState).toHaveBeenCalledWith(null, '', '/login');
+    });
   });
 
   describe('loginWithGoogleCode', () => {
