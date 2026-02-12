@@ -1,9 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
+import type { CredentialResponse } from "@react-oauth/google";
 import { Spinner, GitHubIcon } from "@/components/icons";
+
+const GoogleLogin = dynamic(
+  () => import("@react-oauth/google").then((mod) => mod.GoogleLogin),
+  { ssr: false }
+);
 
 type OAuthProvider = "google" | "github";
 
