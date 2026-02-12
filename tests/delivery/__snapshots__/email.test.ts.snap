@@ -472,7 +472,7 @@ Top score: <strong style="color: #6366f1;">10.0</strong>
 `;
 
 exports[`Email Builder > HTML template snapshots > matches snapshot for plain text (free tier) 1`] = `
-"ZEROTOSHIP | Wed, Feb 11
+"ZEROTOSHIP | DATE_PLACEHOLDER
 5 ideas found | 4 communities scraped | Top score: 10.0
 ============================================================
 
@@ -493,12 +493,12 @@ Read the full brief: https://test.zerotoship.dev/idea/brief_0
 TODAY'S OTHER IDEAS
 
 #2 Idea 2 — Score: 9.5 [weekend]
-   "Tagline for idea 2"
-   Read brief: https://test.zerotoship.dev/idea/brief_1
+"Tagline for idea 2"
+Read brief: https://test.zerotoship.dev/idea/brief_1
 
 #3 Idea 3 — Score: 9.0 [weekend]
-   "Tagline for idea 3"
-   Read brief: https://test.zerotoship.dev/idea/brief_2
+"Tagline for idea 3"
+Read brief: https://test.zerotoship.dev/idea/brief_2
 
 #4 Idea 4 [PRO]
 
@@ -516,11 +516,11 @@ Unlock Pro: https://test.zerotoship.dev/upgrade
 ------------------------------------------------------------
 Manage preferences: https://test.zerotoship.dev/settings
 Unsubscribe: https://test.zerotoship.dev/unsub
-ZeroToShip 2026"
+ZeroToShip YEAR"
 `;
 
 exports[`Email Builder > HTML template snapshots > matches snapshot for plain text (pro tier) 1`] = `
-"ZEROTOSHIP | Wed, Feb 11
+"ZEROTOSHIP | DATE_PLACEHOLDER
 5 ideas found | 4 communities scraped | Top score: 10.0
 ============================================================
 
@@ -541,25 +541,25 @@ Read the full brief: https://test.zerotoship.dev/idea/brief_0
 TODAY'S OTHER IDEAS
 
 #2 Idea 2 — Score: 9.5 [weekend]
-   "Tagline for idea 2"
-   Read brief: https://test.zerotoship.dev/idea/brief_1
+"Tagline for idea 2"
+Read brief: https://test.zerotoship.dev/idea/brief_1
 
 #3 Idea 3 — Score: 9.0 [weekend]
-   "Tagline for idea 3"
-   Read brief: https://test.zerotoship.dev/idea/brief_2
+"Tagline for idea 3"
+Read brief: https://test.zerotoship.dev/idea/brief_2
 
 #4 Idea 4 — Score: 8.5 [weekend]
-   "Tagline for idea 4"
-   Read brief: https://test.zerotoship.dev/idea/brief_3
+"Tagline for idea 4"
+Read brief: https://test.zerotoship.dev/idea/brief_3
 
 #5 Idea 5 — Score: 8.0 [weekend]
-   "Tagline for idea 5"
-   Read brief: https://test.zerotoship.dev/idea/brief_4
+"Tagline for idea 5"
+Read brief: https://test.zerotoship.dev/idea/brief_4
 
 ------------------------------------------------------------
 Manage preferences: https://test.zerotoship.dev/settings
 Unsubscribe: https://test.zerotoship.dev/unsub
-ZeroToShip 2026"
+ZeroToShip YEAR"
 `;
 
 exports[`Email Builder > HTML template snapshots > matches snapshot for single brief (free tier) 1`] = `

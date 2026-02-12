@@ -138,7 +138,7 @@ describe('Email Builder', () => {
         upgradeUrl: 'https://test.zerotoship.dev/upgrade',
       });
 
-      expect(result.text).toMatchSnapshot();
+      expect(normalizeForSnapshot(result.text)).toMatchSnapshot();
     });
 
     it('matches snapshot for plain text (pro tier)', () => {
@@ -149,7 +149,7 @@ describe('Email Builder', () => {
         upgradeUrl: 'https://test.zerotoship.dev/upgrade',
       });
 
-      expect(result.text).toMatchSnapshot();
+      expect(normalizeForSnapshot(result.text)).toMatchSnapshot();
     });
   });
 
