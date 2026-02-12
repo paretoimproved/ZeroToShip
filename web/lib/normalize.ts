@@ -22,14 +22,30 @@ export function normalizeIdeas(data: unknown): IdeaBrief[] {
 
   return rawItems.map((d) => {
     const brief = d.brief || d;
+    const tagline = d.tagline || brief.tagline || "";
     return {
       ...brief,
       id: d.id || brief.id,
       name: d.name || brief.name,
-      tagline: d.tagline || brief.tagline,
+      tagline,
       priorityScore: d.priorityScore ?? brief.priorityScore,
       effortEstimate: d.effortEstimate || brief.effortEstimate || "week",
+      revenueEstimate: brief.revenueEstimate || "",
       generatedAt: d.generatedAt || brief.generatedAt,
+      // Defaults for detailed fields stripped by tier gating
+      problemStatement: brief.problemStatement || tagline,
+      targetAudience: brief.targetAudience || "",
+      marketSize: brief.marketSize || "",
+      existingSolutions: brief.existingSolutions || "",
+      gaps: brief.gaps || "",
+      proposedSolution: brief.proposedSolution || tagline,
+      keyFeatures: brief.keyFeatures || [],
+      mvpScope: brief.mvpScope || "",
+      technicalSpec: brief.technicalSpec || { stack: [], architecture: "", estimatedEffort: "" },
+      businessModel: brief.businessModel || { pricing: "", revenueProjection: "", monetizationPath: "" },
+      goToMarket: brief.goToMarket || { launchStrategy: "", channels: [], firstCustomers: "" },
+      risks: brief.risks || [],
+      sources: brief.sources || [],
     };
   });
 }
