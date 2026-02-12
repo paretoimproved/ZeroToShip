@@ -1,40 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useGoogleLogin } from "@react-oauth/google";
-import { Spinner, GoogleIcon, GitHubIcon } from "@/components/icons";
+import { Spinner, GitHubIcon } from "@/components/icons";
 
 const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
+const GoogleAuthButton = googleClientId
+  ? dynamic(() => import("./GoogleAuthButton"), { ssr: false })
+  : null;
+
 type OAuthProvider = "google" | "github";
-
-interface GoogleAuthButtonProps {
-  isLogin: boolean;
-  onSuccess: (code: string) => void;
-  onError: () => void;
-  disabled: boolean;
-}
-
-function GoogleAuthButton({ isLogin, onSuccess, onError, disabled }: GoogleAuthButtonProps) {
-  const login = useGoogleLogin({
-    flow: "auth-code",
-    onSuccess: (response) => onSuccess(response.code),
-    onError: () => onError(),
-  });
-
-  return (
-    <button
-      type="button"
-      onClick={() => login()}
-      disabled={disabled}
-      className="w-full flex items-center justify-center gap-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-6 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50"
-    >
-      <GoogleIcon />
-      {isLogin ? "Sign in with Google" : "Sign up with Google"}
-    </button>
-  );
-}
 
 interface AuthFormProps {
   mode: "login" | "signup";
@@ -123,29 +100,27 @@ export default function AuthForm({
       )}
 
       <div className="space-y-3">
-        {googleClientId && (
-          oauthLoading === "google" ? (
-            <div className="w-full flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-6 py-3">
-              <Spinner className="h-5 w-5" />
-            </div>
-          ) : (
-            <GoogleAuthButton
-              isLogin={isLogin}
-              disabled={oauthLoading !== null}
-              onSuccess={(code) => {
-                setOauthLoading("google");
-                setSubmitError(null);
-                onGoogleSuccess(code).catch((err) => {
-                  setSubmitError(err instanceof Error ? err.message : "Google login failed");
-                  setOauthLoading(null);
-                });
-              }}
-              onError={() => {
-                setSubmitError("Google sign-in was cancelled or failed");
-              }}
-            />
-          )
-        )}
+        {oauthLoading === "google" ? (
+          <div className="w-full flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-6 py-3">
+            <Spinner className="h-5 w-5" />
+          </div>
+        ) : GoogleAuthButton ? (
+          <GoogleAuthButton
+            isLogin={isLogin}
+            disabled={oauthLoading !== null}
+            onSuccess={(code: string) => {
+              setOauthLoading("google");
+              setSubmitError(null);
+              onGoogleSuccess(code).catch((err) => {
+                setSubmitError(err instanceof Error ? err.message : "Google login failed");
+                setOauthLoading(null);
+              });
+            }}
+            onError={() => {
+              setSubmitError("Google sign-in was cancelled or failed");
+            }}
+          />
+        ) : null}
 
         <button
           type="button"
