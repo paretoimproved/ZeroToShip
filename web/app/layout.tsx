@@ -18,6 +18,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://zerotoship.dev"),
   title: "ZeroToShip — Ship Ideas, Not Guesses",
   description:
     "Every morning, ZeroToShip scrapes 300+ posts from Reddit, HN, and GitHub, clusters real pain points, and delivers 10 scored startup ideas with full business briefs. Wake up to signal, not noise.",

@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { trackUpgradeClicked } from "@/lib/analytics";
+import { JsonLd } from "@/components/JsonLd";
 
 /* ------------------------------------------------------------------ */
 /*  Types & data                                                      */
@@ -633,6 +634,48 @@ export default function PricingPageContent() {
           </div>
         </div>
       </footer>
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "Product",
+          name: "ZeroToShip Starter",
+          description: "Perfect for exploring what's possible",
+          offers: {
+            "@type": "Offer",
+            price: "0",
+            priceCurrency: "USD",
+            availability: "https://schema.org/InStock",
+          },
+        }}
+      />
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "Product",
+          name: "ZeroToShip Builder",
+          description: "Full briefs for every idea, every day",
+          offers: {
+            "@type": "Offer",
+            price: "19",
+            priceCurrency: "USD",
+            availability: "https://schema.org/InStock",
+          },
+        }}
+      />
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "Product",
+          name: "ZeroToShip Team",
+          description: "For agencies and serial builders",
+          offers: {
+            "@type": "Offer",
+            price: "99",
+            priceCurrency: "USD",
+            availability: "https://schema.org/InStock",
+          },
+        }}
+      />
     </div>
   );
 }

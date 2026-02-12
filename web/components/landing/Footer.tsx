@@ -10,6 +10,7 @@ const productLinks = [
 const resourceLinks = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "Archive", href: "/archive" },
+  { label: "Blog", href: "/blog" },
 ] as const;
 
 const companyLinks = [
