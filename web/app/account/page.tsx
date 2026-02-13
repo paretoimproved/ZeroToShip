@@ -21,6 +21,8 @@ interface Subscription {
   cancelAtPeriodEnd: boolean;
 }
 
+type EmailFrequency = "daily" | "weekly" | "never";
+
 const plans = [
   {
     id: "free",
@@ -98,6 +100,8 @@ function AccountPageContent() {
   const searchParams = useSearchParams();
   const [showSuccess, setShowSuccess] = useState(false);
   const [successPlan, setSuccessPlan] = useState("");
+  const [emailFrequency, setEmailFrequency] = useState<EmailFrequency>("daily");
+  const [emailPreferenceUpdating, setEmailPreferenceUpdating] = useState(false);
 
   // Fetch subscription on mount
   useEffect(() => {
@@ -118,6 +122,21 @@ function AccountPageContent() {
       }
     }
     fetchSubscription();
+  }, []);
+
+  useEffect(() => {
+    async function fetchEmailFrequency() {
+      try {
+        const user = await api.getCurrentUser();
+        if (user.preferences?.emailFrequency) {
+          setEmailFrequency(user.preferences.emailFrequency as EmailFrequency);
+        }
+      } catch {
+        // Keep default if user fetch fails
+      }
+    }
+
+    fetchEmailFrequency();
   }, []);
 
   // Detect checkout success and poll for subscription update
@@ -182,6 +201,29 @@ function AccountPageContent() {
     }
   };
 
+  const handleEmailSubscriptionToggle = async () => {
+    const nextFrequency: EmailFrequency =
+      emailFrequency === "never" ? "daily" : "never";
+
+    setError(null);
+    setEmailPreferenceUpdating(true);
+
+    try {
+      const updatedUser = await api.updatePreferences({
+        emailFrequency: nextFrequency,
+      });
+      const savedFrequency =
+        updatedUser.preferences?.emailFrequency ?? nextFrequency;
+      setEmailFrequency(savedFrequency as EmailFrequency);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to update email preferences"
+      );
+    } finally {
+      setEmailPreferenceUpdating(false);
+    }
+  };
+
   if (loading) {
     return (
       <ProtectedLayout>
@@ -221,6 +263,7 @@ function AccountPageContent() {
 
   const currentPlan = effectiveTier as "free" | "pro" | "enterprise";
   const currentPlanLabel = getTierLabel(currentPlan);
+  const isEmailUnsubscribed = emailFrequency === "never";
 
   return (
     <ProtectedLayout>
@@ -479,6 +522,50 @@ function AccountPageContent() {
           </button>
         </section>
       )}
+
+      {/* Email Subscription */}
+      <section className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 mt-8">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          Email Subscription
+        </h2>
+
+        <p className="text-gray-600 dark:text-gray-400 mb-2">
+          Stop all ZeroToShip digest emails. You can turn them back on anytime.
+        </p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          Status: {isEmailUnsubscribed ? "Unsubscribed" : "Subscribed"}
+        </p>
+
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={handleEmailSubscriptionToggle}
+            disabled={emailPreferenceUpdating}
+            className={`rounded-lg px-6 py-3 text-sm font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-60 ${
+              isEmailUnsubscribed
+                ? "bg-green-600 text-white hover:bg-green-700 focus:ring-green-500"
+                : "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500"
+            }`}
+          >
+            {emailPreferenceUpdating ? (
+              <span className="flex items-center gap-2">
+                <Spinner className="h-4 w-4" />
+                Saving...
+              </span>
+            ) : isEmailUnsubscribed ? (
+              "Resume Emails"
+            ) : (
+              "Unsubscribe from Emails"
+            )}
+          </button>
+
+          <a
+            href="/settings"
+            className="rounded-lg bg-gray-100 px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+          >
+            Manage in Settings
+          </a>
+        </div>
+      </section>
 
       {/* API Keys */}
       <section

@@ -18,6 +18,22 @@ vi.mock('@/lib/api', () => ({
       status: 'active',
       cancelAtPeriodEnd: false,
     }),
+    getCurrentUser: vi.fn().mockResolvedValue({
+      id: 'user_1',
+      email: 'test@example.com',
+      name: 'Test User',
+      tier: 'free',
+      preferences: { emailFrequency: 'daily' },
+      createdAt: new Date().toISOString(),
+    }),
+    updatePreferences: vi.fn().mockResolvedValue({
+      id: 'user_1',
+      email: 'test@example.com',
+      name: 'Test User',
+      tier: 'free',
+      preferences: { emailFrequency: 'never' },
+      createdAt: new Date().toISOString(),
+    }),
   },
 }));
 
@@ -140,5 +156,24 @@ describe('Account Page - Checkout Success', () => {
     expect(currentPlanSection).not.toBeNull();
     expect(within(currentPlanSection as HTMLElement).getByText('Builder')).toBeInTheDocument();
     expect(within(currentPlanSection as HTMLElement).queryByText(/^pro$/i)).not.toBeInTheDocument();
+  });
+
+  it('updates email preference when unsubscribe button is clicked', async () => {
+    await act(async () => {
+      render(<AccountPage />);
+    });
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 100));
+    });
+
+    const button = screen.getByRole('button', { name: 'Unsubscribe from Emails' });
+    fireEvent.click(button);
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    expect(api.updatePreferences).toHaveBeenCalledWith({ emailFrequency: 'never' });
   });
 });
