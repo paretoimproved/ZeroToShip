@@ -45,11 +45,6 @@ vi.mock('@/components/icons', () => ({
   Spinner: () => <div data-testid="spinner">Loading...</div>,
 }));
 
-const mockEffectiveTier = { value: 'free' };
-vi.mock('@/components/AdminProvider', () => ({
-  useAdmin: () => ({ effectiveTier: mockEffectiveTier.value }),
-}));
-
 vi.mock('@/lib/billing', () => ({
   createCheckoutSession: vi.fn(),
   openBillingPortal: vi.fn(),
@@ -66,7 +61,6 @@ import { api } from '@/lib/api';
 describe('Account Page - Checkout Success', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockEffectiveTier.value = 'free';
     mockGet.mockReturnValue(null);
     // Mock window.history.replaceState
     vi.spyOn(window.history, 'replaceState').mockImplementation(() => {});
@@ -139,7 +133,12 @@ describe('Account Page - Checkout Success', () => {
   });
 
   it('shows Builder label for pro current plan', async () => {
-    mockEffectiveTier.value = 'pro';
+    vi.mocked(api.getSubscription).mockResolvedValueOnce({
+      id: 'sub_pro',
+      plan: 'pro',
+      status: 'active',
+      cancelAtPeriodEnd: false,
+    });
 
     await act(async () => {
       render(<AccountPage />);

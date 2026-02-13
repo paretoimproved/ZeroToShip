@@ -67,7 +67,7 @@ export const billingRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, reply) => {
       const { priceKey } = request.body;
-      const result = await initiateCheckout(request.userId!, priceKey);
+      const result = await initiateCheckout(request.userId!, priceKey, request.userEmail);
 
       if ('error' in result) {
         return reply.status(result.error.status).send({
@@ -97,7 +97,7 @@ export const billingRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request, reply) => {
-      const result = await initiateBillingPortal(request.userId!);
+      const result = await initiateBillingPortal(request.userId!, request.userEmail);
 
       if ('error' in result) {
         return reply.status(result.error.status).send({

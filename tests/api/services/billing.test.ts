@@ -1043,6 +1043,45 @@ describe('initiateCheckout', () => {
     });
   });
 
+  it('should use JWT email fallback when user row is missing', async () => {
+    mockGetUserById.mockResolvedValue(null);
+
+    mockDbSelect.mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue([]),
+        }),
+      }),
+    });
+
+    mockCustomersCreate.mockResolvedValue({ id: 'cus_checkout_fallback' });
+    mockDbUpdate.mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue(undefined),
+      }),
+    });
+
+    mockCheckoutSessionsCreate.mockResolvedValue({
+      id: 'cs_checkout_fallback',
+      url: 'https://checkout.stripe.com/pay/cs_checkout_fallback',
+    });
+
+    const result = await initiateCheckout(
+      'user_missing_row',
+      'pro_monthly',
+      'admin@example.com'
+    );
+
+    expect(mockCustomersCreate).toHaveBeenCalledWith({
+      email: 'admin@example.com',
+      metadata: { userId: 'user_missing_row' },
+    });
+    expect(result).toEqual({
+      url: 'https://checkout.stripe.com/pay/cs_checkout_fallback',
+      sessionId: 'cs_checkout_fallback',
+    });
+  });
+
   it('should return INVALID_PRICE error for unconfigured price key', async () => {
     mockGetUserById.mockResolvedValue({
       id: 'user_1',
@@ -1178,6 +1217,39 @@ describe('initiateBillingPortal', () => {
         message: 'User not found',
         status: 404,
       },
+    });
+  });
+
+  it('should use JWT email fallback when user row is missing', async () => {
+    mockGetUserById.mockResolvedValue(null);
+
+    mockDbSelect.mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue([]),
+        }),
+      }),
+    });
+
+    mockCustomersCreate.mockResolvedValue({ id: 'cus_portal_fallback' });
+    mockDbUpdate.mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue(undefined),
+      }),
+    });
+
+    mockBillingPortalSessionsCreate.mockResolvedValue({
+      url: 'https://billing.stripe.com/session/bp_fallback',
+    });
+
+    const result = await initiateBillingPortal('ghost_user', 'admin@example.com');
+
+    expect(mockCustomersCreate).toHaveBeenCalledWith({
+      email: 'admin@example.com',
+      metadata: { userId: 'ghost_user' },
+    });
+    expect(result).toEqual({
+      url: 'https://billing.stripe.com/session/bp_fallback',
     });
   });
 

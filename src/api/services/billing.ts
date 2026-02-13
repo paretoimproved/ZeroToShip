@@ -605,13 +605,16 @@ export async function getAvailablePricesWithFallback(): Promise<
  */
 export async function initiateCheckout(
   userId: string,
-  priceKey: string
+  priceKey: string,
+  userEmail?: string
 ): Promise<
   | { url: string; sessionId: string }
   | { error: { code: string; message: string; status: number } }
 > {
   const user = await getUserById(userId);
-  if (!user) {
+  const email = user?.email ?? userEmail;
+
+  if (!email) {
     return { error: { code: 'USER_NOT_FOUND', message: 'User not found', status: 404 } };
   }
 
@@ -627,7 +630,7 @@ export async function initiateCheckout(
   }
 
   try {
-    return await createCheckoutSession(userId, user.email, priceKey as StripePriceKey);
+    return await createCheckoutSession(userId, email, priceKey as StripePriceKey);
   } catch (error) {
     logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Checkout session error');
     return {
@@ -645,18 +648,21 @@ export async function initiateCheckout(
  * Returns an error object if the user is not found.
  */
 export async function initiateBillingPortal(
-  userId: string
+  userId: string,
+  userEmail?: string
 ): Promise<
   | { url: string }
   | { error: { code: string; message: string; status: number } }
 > {
   const user = await getUserById(userId);
-  if (!user) {
+  const email = user?.email ?? userEmail;
+
+  if (!email) {
     return { error: { code: 'USER_NOT_FOUND', message: 'User not found', status: 404 } };
   }
 
   try {
-    return await createBillingPortalSession(userId, user.email);
+    return await createBillingPortalSession(userId, email);
   } catch (error) {
     logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Portal session error');
     return {

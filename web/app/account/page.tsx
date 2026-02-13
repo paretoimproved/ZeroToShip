@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import ProtectedLayout from "@/components/ProtectedLayout";
 import { Spinner } from "@/components/icons";
-import { useAdmin } from "@/components/AdminProvider";
 import {
   createCheckoutSession,
   openBillingPortal,
@@ -88,7 +87,6 @@ function getTierLabel(plan: Subscription["plan"]): string {
 }
 
 function AccountPageContent() {
-  const { effectiveTier } = useAdmin();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -176,8 +174,12 @@ function AccountPageContent() {
     setError(null);
     try {
       const toTier = priceKey.startsWith("pro") ? "pro" : "enterprise";
+      const fromTier = (subscription?.plan ?? "free") as
+        | "free"
+        | "pro"
+        | "enterprise";
       trackUpgradeClicked({
-        from_tier: effectiveTier,
+        from_tier: fromTier,
         to_tier: toTier,
         location: "account_page",
       });
@@ -261,7 +263,10 @@ function AccountPageContent() {
     );
   }
 
-  const currentPlan = effectiveTier as "free" | "pro" | "enterprise";
+  const currentPlan = (subscription?.plan ?? "free") as
+    | "free"
+    | "pro"
+    | "enterprise";
   const currentPlanLabel = getTierLabel(currentPlan);
   const isEmailUnsubscribed = emailFrequency === "never";
 
