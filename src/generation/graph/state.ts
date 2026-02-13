@@ -28,8 +28,10 @@ export interface SingleBriefGraphState {
   problem: ScoredProblem;
   gapAnalyses: Map<string, GapAnalysis>;
   config: GraphRunConfig;
+  modelCascade: string[];
   attempt: number;
   maxAttempts: number;
+  modelsUsed: string[];
   latestBrief: IdeaBrief | null;
   latestValidation: GraphCriticAssessment | null;
   failedSections: GraphSection[];
@@ -41,6 +43,7 @@ export interface SingleBriefGraphResult {
   attemptsUsed: number;
   retried: boolean;
   passedQuality: boolean;
+  modelsUsed: string[];
   failedSections: GraphSection[];
   sectionRetryCounts: Record<GraphSection, number>;
   reasons: string[];

@@ -35,6 +35,7 @@ export interface BriefGenerationMeta {
   fallbackReason?: FallbackReason;
   providerMode?: 'legacy' | 'graph';
   graphAttemptCount?: number;
+  graphModelsUsed?: string[];
   graphFailedSections?: string[];
   graphRetriedSections?: string[];
 }

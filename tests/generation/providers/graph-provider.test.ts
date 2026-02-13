@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ScoredProblem } from '../../../src/analysis/scorer';
+import { CLAUDE_MODELS } from '../../../src/config/models';
 import { makeGenerationBrief } from '../../fixtures';
 import { GraphGenerationProvider } from '../../../src/generation/providers/graph-provider';
 import { LegacyGenerationProvider } from '../../../src/generation/providers/legacy-provider';
@@ -60,6 +61,7 @@ describe('GraphGenerationProvider', () => {
       attemptsUsed: 2,
       retried: true,
       passedQuality: true,
+      modelsUsed: [CLAUDE_MODELS.HAIKU, CLAUDE_MODELS.SONNET],
       failedSections: [],
       reasons: [],
       sectionRetryCounts: {
@@ -86,6 +88,10 @@ describe('GraphGenerationProvider', () => {
     expect(result[0].id).toBe('graph_success_brief');
     expect(result[0].generationMeta?.providerMode).toBe('graph');
     expect(result[0].generationMeta?.graphAttemptCount).toBe(2);
+    expect(result[0].generationMeta?.graphModelsUsed).toEqual([
+      CLAUDE_MODELS.HAIKU,
+      CLAUDE_MODELS.SONNET,
+    ]);
     expect(result[0].generationMeta?.graphRetriedSections).toContain('core');
   });
 

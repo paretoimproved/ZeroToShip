@@ -10,10 +10,10 @@
  */
 export const CLAUDE_MODELS = {
   // Haiku 4.5 - Fast, cost-effective for batch operations
-  HAIKU: 'claude-3-5-haiku-latest',
+  HAIKU: 'claude-haiku-4-5-20251001',
 
   // Sonnet 4.5 - Balanced quality/cost for Pro briefs
-  SONNET: 'claude-sonnet-4-20250514',
+  SONNET: 'claude-sonnet-4-5-20250929',
 
   // Opus 4.5 - Highest quality for Enterprise briefs
   OPUS: 'claude-opus-4-5-20251101',

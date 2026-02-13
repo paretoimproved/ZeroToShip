@@ -13,6 +13,7 @@ export class LegacyGenerationProvider implements GenerationProvider {
         fallbackReason: brief.generationMeta?.fallbackReason,
         providerMode: 'legacy' as const,
         graphAttemptCount: brief.generationMeta?.graphAttemptCount,
+        graphModelsUsed: brief.generationMeta?.graphModelsUsed,
         graphFailedSections: brief.generationMeta?.graphFailedSections,
         graphRetriedSections: brief.generationMeta?.graphRetriedSections,
       },

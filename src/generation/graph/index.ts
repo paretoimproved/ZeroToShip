@@ -1,4 +1,5 @@
 import logger from '../../lib/logger';
+import { buildGraphModelCascade } from './model-cascade';
 import { runEvaluateBriefNode } from './nodes/evaluate-brief';
 import { runGenerateBriefNode } from './nodes/generate-brief';
 import { synthesizeBriefForRetry } from './nodes/synthesize-brief';
@@ -28,14 +29,24 @@ function createSectionRetryCounter(): Record<GraphSection, number> {
 export async function runSingleBriefGraph(
   initialState: Omit<
     SingleBriefGraphState,
-    'attempt' | 'latestBrief' | 'latestValidation' | 'maxAttempts' | 'failedSections' | 'sectionRetryCounts'
+    | 'attempt'
+    | 'latestBrief'
+    | 'latestValidation'
+    | 'maxAttempts'
+    | 'modelCascade'
+    | 'modelsUsed'
+    | 'failedSections'
+    | 'sectionRetryCounts'
   >,
 ): Promise<SingleBriefGraphResult> {
   const maxAttempts = Math.max(1, initialState.config.maxAttempts ?? DEFAULT_GRAPH_MAX_ATTEMPTS);
+  const modelCascade = buildGraphModelCascade(initialState.config.model);
 
   let state: SingleBriefGraphState = {
     ...initialState,
     maxAttempts,
+    modelCascade,
+    modelsUsed: [],
     attempt: 1,
     latestBrief: null,
     latestValidation: null,
@@ -64,6 +75,7 @@ export async function runSingleBriefGraph(
         attemptsUsed: state.attempt,
         retried: state.attempt > 1,
         passedQuality: true,
+        modelsUsed: state.modelsUsed,
         failedSections: [],
         sectionRetryCounts: state.sectionRetryCounts,
         reasons: [],
@@ -106,6 +118,7 @@ export async function runSingleBriefGraph(
     attemptsUsed: state.attempt,
     retried: state.attempt > 1,
     passedQuality: false,
+    modelsUsed: state.modelsUsed,
     failedSections: state.failedSections,
     sectionRetryCounts: state.sectionRetryCounts,
     reasons: state.latestValidation?.reasons ?? [],

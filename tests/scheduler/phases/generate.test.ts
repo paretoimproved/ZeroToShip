@@ -17,7 +17,7 @@ vi.mock('../../../src/generation/brief-generator', () => ({
 
 // Mock config
 vi.mock('../../../src/config/models', () => ({
-  getPipelineBriefModel: vi.fn().mockReturnValue('claude-sonnet-4-20250514'),
+  getPipelineBriefModel: vi.fn().mockReturnValue('claude-sonnet-4-5-20250929'),
 }));
 
 // Mock similarity (used for deduplication)
@@ -184,7 +184,7 @@ describe('Generate Phase', () => {
       expect(generateAllBriefs).toHaveBeenCalledWith(
         expect.any(Array),
         gapAnalyses,
-        expect.objectContaining({ model: 'claude-sonnet-4-20250514' })
+        expect.objectContaining({ model: 'claude-sonnet-4-5-20250929' })
       );
     });
 

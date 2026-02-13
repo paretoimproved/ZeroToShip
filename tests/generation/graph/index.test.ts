@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ScoredProblem } from '../../../src/analysis/scorer';
+import { CLAUDE_MODELS } from '../../../src/config/models';
 import { runSingleBriefGraph } from '../../../src/generation/graph';
 import { makeGenerationBrief } from '../../fixtures';
 
@@ -73,9 +74,15 @@ describe('runSingleBriefGraph', () => {
     expect(result.attemptsUsed).toBe(1);
     expect(result.retried).toBe(false);
     expect(result.passedQuality).toBe(true);
+    expect(result.modelsUsed).toEqual([CLAUDE_MODELS.HAIKU]);
     expect(result.failedSections).toEqual([]);
     expect(result.reasons).toEqual([]);
     expect(result.sectionRetryCounts.core).toBe(0);
+    expect(generateAllBriefs).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.any(Map),
+      expect.objectContaining({ model: CLAUDE_MODELS.HAIKU }),
+    );
   });
 
   it('retries once when critic fails first attempt', async () => {
@@ -101,6 +108,7 @@ describe('runSingleBriefGraph', () => {
     expect(result.attemptsUsed).toBe(2);
     expect(result.retried).toBe(true);
     expect(result.passedQuality).toBe(true);
+    expect(result.modelsUsed).toEqual([CLAUDE_MODELS.HAIKU, CLAUDE_MODELS.SONNET]);
     expect(result.sectionRetryCounts.core).toBe(1);
     expect(generateAllBriefs).toHaveBeenCalledTimes(2);
   });
@@ -144,5 +152,53 @@ describe('runSingleBriefGraph', () => {
 
     expect(result.brief.name).toBe('Improved Name');
     expect(result.brief.technicalSpec.architecture).toBe('keep-original-arch');
+  });
+
+  it('uses full cascade when target model is Opus', async () => {
+    const { generateAllBriefs, validateBriefQuality } = await import('../../../src/generation/brief-generator');
+    const first = makeGenerationBrief({ id: 'graph_brief_1' });
+    const second = makeGenerationBrief({ id: 'graph_brief_2' });
+    const third = makeGenerationBrief({ id: 'graph_brief_3' });
+
+    vi.mocked(generateAllBriefs)
+      .mockResolvedValueOnce([first])
+      .mockResolvedValueOnce([second])
+      .mockResolvedValueOnce([third]);
+
+    vi.mocked(validateBriefQuality)
+      .mockReturnValueOnce({ valid: false, reasons: ['name too short (< 2 chars)'] })
+      .mockReturnValueOnce({ valid: false, reasons: ['name too short (< 2 chars)'] })
+      .mockReturnValueOnce({ valid: true, reasons: [] });
+
+    const result = await runSingleBriefGraph({
+      problem: makeScoredProblem(),
+      gapAnalyses: new Map(),
+      config: { maxAttempts: 3, model: CLAUDE_MODELS.OPUS },
+    });
+
+    expect(result.attemptsUsed).toBe(3);
+    expect(result.modelsUsed).toEqual([
+      CLAUDE_MODELS.HAIKU,
+      CLAUDE_MODELS.SONNET,
+      CLAUDE_MODELS.OPUS,
+    ]);
+    expect(generateAllBriefs).toHaveBeenNthCalledWith(
+      1,
+      expect.any(Array),
+      expect.any(Map),
+      expect.objectContaining({ model: CLAUDE_MODELS.HAIKU }),
+    );
+    expect(generateAllBriefs).toHaveBeenNthCalledWith(
+      2,
+      expect.any(Array),
+      expect.any(Map),
+      expect.objectContaining({ model: CLAUDE_MODELS.SONNET }),
+    );
+    expect(generateAllBriefs).toHaveBeenNthCalledWith(
+      3,
+      expect.any(Array),
+      expect.any(Map),
+      expect.objectContaining({ model: CLAUDE_MODELS.OPUS }),
+    );
   });
 });

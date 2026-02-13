@@ -17,11 +17,11 @@ import {
 describe('Model Configuration', () => {
   describe('CLAUDE_MODELS constants', () => {
     it('should define Haiku model', () => {
-      expect(CLAUDE_MODELS.HAIKU).toBe('claude-3-5-haiku-latest');
+      expect(CLAUDE_MODELS.HAIKU).toBe('claude-haiku-4-5-20251001');
     });
 
     it('should define Sonnet model', () => {
-      expect(CLAUDE_MODELS.SONNET).toBe('claude-sonnet-4-20250514');
+      expect(CLAUDE_MODELS.SONNET).toBe('claude-sonnet-4-5-20250929');
     });
 
     it('should define Opus model', () => {
