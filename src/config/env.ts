@@ -51,6 +51,24 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().default(''),
   RESEND_WEBHOOK_SECRET: z.string().default(''),
 
+  // Monitoring and alerting
+  SENTRY_DSN: z.string().optional(),
+  ALERT_EMAIL: z.string().default(''),
+  ALERT_SLACK_WEBHOOK: z.string().optional(),
+  ALERT_COOLDOWN_MINUTES: z.preprocess(
+    (val) => (val === '' || val === undefined ? undefined : val),
+    z.coerce.number().int().positive().default(60)
+  ),
+  PAGERDUTY_ROUTING_KEY: z.string().optional(),
+  ALERT_SMS_TO: z.string().default(''),
+  ALERT_SMS_FROM: z.string().default(''),
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  WATCHDOG_MAX_SUCCESS_AGE_HOURS: z.preprocess(
+    (val) => (val === '' || val === undefined ? undefined : val),
+    z.coerce.number().positive().default(30)
+  ),
+
   // Scrapers
   GITHUB_TOKEN: z.string().optional(),
   TWITTER_BEARER_TOKEN: z.string().optional(),
@@ -92,6 +110,7 @@ const envSchema = z.object({
     .string()
     .default('true')
     .transform((val) => val !== 'false'),
+  GENERATION_MODE: z.enum(['legacy', 'graph']).default('legacy'),
 });
 
 // --- Typed config object ---

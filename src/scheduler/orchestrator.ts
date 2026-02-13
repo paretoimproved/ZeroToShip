@@ -14,6 +14,7 @@ import { runScrapePhase } from './phases/scrape';
 import { runAnalyzePhase } from './phases/analyze';
 import { runGeneratePhase } from './phases/generate';
 import { runDeliverPhase } from './phases/deliver';
+import { getConfiguredGenerationMode } from '../generation/providers';
 import { initMonitoring, captureException } from '../lib/monitoring';
 import { sendPipelineFailureAlert } from '../lib/alerts';
 import {
@@ -262,6 +263,7 @@ export async function runPipeline(
   preGeneratedRunId?: string
 ): Promise<PipelineResult> {
   const fullConfig = { ...DEFAULT_PIPELINE_CONFIG, ...config };
+  const requestedGenerationMode = getConfiguredGenerationMode();
 
   // Determine run ID and resume state
   let runId: string;
@@ -346,11 +348,11 @@ export async function runPipeline(
 
   if (resumePhase) {
     logger.info(
-      { config: fullConfig, resumePhase },
+      { config: fullConfig, resumePhase, requestedGenerationMode },
       'Pipeline resuming from previous run'
     );
   } else {
-    logger.info({ config: fullConfig }, 'Pipeline started');
+    logger.info({ config: fullConfig, requestedGenerationMode }, 'Pipeline started');
     await initRunStatus(runId, fullConfig);
   }
 
@@ -504,7 +506,8 @@ export async function runPipeline(
           runId,
           fullConfig,
           analyzeResult.data.scoredProblems,
-          analyzeResult.data.gapAnalyses
+          analyzeResult.data.gapAnalyses,
+          requestedGenerationMode,
         )
       : { success: false, data: null, error: 'No scored problems from analyze phase', severity: 'fatal' as const, duration: 0, phase: 'generate' as const, timestamp: new Date() };
     metrics.completePhase('generate', generateResult.success, generateResult.data?.briefCount || 0);
@@ -642,7 +645,7 @@ export async function runPipeline(
         errors: result.errors,
         apiMetrics: result.apiMetrics || null,
         briefSummaries,
-        generationMode: 'legacy',
+        generationMode: result.phases.generate.data?.generationMode ?? 'legacy',
         generationDiagnostics,
         updatedAt: new Date(),
       })

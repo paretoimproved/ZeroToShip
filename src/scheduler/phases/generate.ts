@@ -4,13 +4,15 @@
  * Creates business briefs from scored problems and gap analyses.
  */
 
-import { generateAllBriefs, validateBriefQuality } from '../../generation/brief-generator';
+import { validateBriefQuality } from '../../generation/brief-generator';
 import type { ScoredProblem } from '../../analysis/scorer';
 import type { GapAnalysis } from '../../analysis/gap-analyzer';
 import { cosineSimilarity } from '../../analysis/similarity';
+import { selectGenerationProvider } from '../../generation/providers';
 import { createPhaseLogger } from '../utils/logger';
 import { AnalysisError, wrapError } from '../../lib/errors';
 import type {
+  GenerationMode,
   FallbackReasonCode,
   GeneratePhaseDiagnostics,
   PhaseResult,
@@ -175,12 +177,19 @@ export async function runGeneratePhase(
   config: PipelineConfig,
   scoredProblems: ScoredProblem[],
   gapAnalyses: Map<string, GapAnalysis>,
+  requestedGenerationMode: GenerationMode = 'legacy',
 ): Promise<PhaseResult<GeneratePhaseOutput>> {
   const logger = createPhaseLogger(runId, 'generate');
   const startTime = Date.now();
+  const selection = selectGenerationProvider(requestedGenerationMode);
 
   logger.info(
-    { problemCount: scoredProblems.length, maxBriefs: config.maxBriefs },
+    {
+      problemCount: scoredProblems.length,
+      maxBriefs: config.maxBriefs,
+      requestedGenerationMode: selection.requestedMode,
+      generationMode: selection.effectiveMode,
+    },
     'Starting generate phase'
   );
 
@@ -217,8 +226,12 @@ export async function runGeneratePhase(
     }
 
     // Generate briefs with tier-appropriate model
-    const briefs = await generateAllBriefs(filteredProblems, gapAnalyses, {
-      model: getPipelineBriefModel(),
+    const briefs = await selection.provider.generate({
+      scoredProblems: filteredProblems,
+      gapAnalyses,
+      config: {
+        model: getPipelineBriefModel(),
+      },
     });
 
     const validatedBriefs = briefs.map(brief => {
@@ -300,6 +313,7 @@ export async function runGeneratePhase(
         briefCount: briefs.length,
         briefs,
         diagnostics,
+        generationMode: selection.effectiveMode,
       },
       duration,
       phase: 'generate',

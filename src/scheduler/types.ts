@@ -130,6 +130,7 @@ export interface GeneratePhaseOutput {
   briefCount: number;
   briefs: IdeaBrief[];
   diagnostics?: GeneratePhaseDiagnostics;
+  generationMode?: GenerationMode;
 }
 
 /**

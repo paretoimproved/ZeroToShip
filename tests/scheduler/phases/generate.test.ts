@@ -145,8 +145,30 @@ describe('Generate Phase', () => {
       expect(result.data!.briefCount).toBe(1);
       expect(result.data!.briefs).toHaveLength(1);
       expect(result.data!.briefs[0].name).toBe('TestApp');
+      expect(result.data!.generationMode).toBe('legacy');
       expect(result.duration).toBeGreaterThanOrEqual(0);
       expect(result.timestamp).toBeInstanceOf(Date);
+    });
+
+    it('should fall back to legacy mode when graph mode is requested', async () => {
+      const { generateAllBriefs } = await import('../../../src/generation/brief-generator');
+
+      const scoredProblems = [makeScoredProblem({ id: 'sp-graph' })];
+      const gapAnalyses = new Map<string, GapAnalysis>([['sp-graph', makeGap('sp-graph')]]);
+
+      vi.mocked(generateAllBriefs).mockResolvedValue([makeGenerationBrief({ name: 'GraphFallback' })]);
+
+      const result = await runGeneratePhase(
+        'test-run-graph-fallback',
+        makeConfig(),
+        scoredProblems,
+        gapAnalyses,
+        'graph'
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.data?.generationMode).toBe('legacy');
+      expect(generateAllBriefs).toHaveBeenCalledTimes(1);
     });
 
     it('should pass gap analyses and model config to generateAllBriefs', async () => {
