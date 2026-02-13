@@ -5,6 +5,17 @@ export class LegacyGenerationProvider implements GenerationProvider {
   readonly mode = 'legacy' as const;
 
   async generate(input: GenerationProviderInput) {
-    return generateAllBriefs(input.scoredProblems, input.gapAnalyses, input.config);
+    const briefs = await generateAllBriefs(input.scoredProblems, input.gapAnalyses, input.config);
+    return briefs.map((brief) => ({
+      ...brief,
+      generationMeta: {
+        isFallback: brief.generationMeta?.isFallback ?? false,
+        fallbackReason: brief.generationMeta?.fallbackReason,
+        providerMode: 'legacy' as const,
+        graphAttemptCount: brief.generationMeta?.graphAttemptCount,
+        graphFailedSections: brief.generationMeta?.graphFailedSections,
+        graphRetriedSections: brief.generationMeta?.graphRetriedSections,
+      },
+    }));
   }
 }

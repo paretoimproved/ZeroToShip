@@ -73,6 +73,9 @@ describe('runSingleBriefGraph', () => {
     expect(result.attemptsUsed).toBe(1);
     expect(result.retried).toBe(false);
     expect(result.passedQuality).toBe(true);
+    expect(result.failedSections).toEqual([]);
+    expect(result.reasons).toEqual([]);
+    expect(result.sectionRetryCounts.core).toBe(0);
   });
 
   it('retries once when critic fails first attempt', async () => {
@@ -94,10 +97,52 @@ describe('runSingleBriefGraph', () => {
       config: { maxAttempts: 2 },
     });
 
-    expect(result.brief.id).toBe('graph_brief_second');
+    expect(result.brief.id).toBe('graph_brief_first');
     expect(result.attemptsUsed).toBe(2);
     expect(result.retried).toBe(true);
     expect(result.passedQuality).toBe(true);
+    expect(result.sectionRetryCounts.core).toBe(1);
     expect(generateAllBriefs).toHaveBeenCalledTimes(2);
+  });
+
+  it('replaces only failed sections during retry synthesis', async () => {
+    const { generateAllBriefs, validateBriefQuality } = await import('../../../src/generation/brief-generator');
+
+    const first = makeGenerationBrief({
+      id: 'graph_first',
+      name: 'A',
+      technicalSpec: {
+        stack: ['TypeScript', 'Node.js'],
+        architecture: 'keep-original-arch',
+        estimatedEffort: 'weekend',
+      },
+    });
+
+    const second = makeGenerationBrief({
+      id: 'graph_second',
+      name: 'Improved Name',
+      technicalSpec: {
+        stack: ['Rust', 'Postgres'],
+        architecture: 'new-arch-should-not-replace',
+        estimatedEffort: 'month',
+      },
+    });
+
+    vi.mocked(generateAllBriefs)
+      .mockResolvedValueOnce([first])
+      .mockResolvedValueOnce([second]);
+
+    vi.mocked(validateBriefQuality)
+      .mockReturnValueOnce({ valid: false, reasons: ['name too short (< 2 chars)'] })
+      .mockReturnValueOnce({ valid: true, reasons: [] });
+
+    const result = await runSingleBriefGraph({
+      problem: makeScoredProblem(),
+      gapAnalyses: new Map(),
+      config: { maxAttempts: 2 },
+    });
+
+    expect(result.brief.name).toBe('Improved Name');
+    expect(result.brief.technicalSpec.architecture).toBe('keep-original-arch');
   });
 });

@@ -33,11 +33,27 @@ export class GraphGenerationProvider implements GenerationProvider {
             attemptsUsed: graphResult.attemptsUsed,
             retried: graphResult.retried,
             passedQuality: graphResult.passedQuality,
+            failedSections: graphResult.failedSections,
+            reasons: graphResult.reasons,
           },
           'Graph provider generated single brief'
         );
 
-        results.push(graphResult.brief);
+        const retriedSections = Object.entries(graphResult.sectionRetryCounts)
+          .filter(([, count]) => count > 0)
+          .map(([section]) => section);
+
+        results.push({
+          ...graphResult.brief,
+          generationMeta: {
+            isFallback: graphResult.brief.generationMeta?.isFallback ?? false,
+            fallbackReason: graphResult.brief.generationMeta?.fallbackReason,
+            providerMode: 'graph' as const,
+            graphAttemptCount: graphResult.attemptsUsed,
+            graphFailedSections: graphResult.failedSections,
+            graphRetriedSections: retriedSections,
+          },
+        });
       } catch (error) {
         logger.warn(
           {
@@ -53,7 +69,19 @@ export class GraphGenerationProvider implements GenerationProvider {
           config: input.config,
         });
 
-        results.push(...fallbackBriefs);
+        results.push(
+          ...fallbackBriefs.map((brief) => ({
+            ...brief,
+            generationMeta: {
+              isFallback: brief.generationMeta?.isFallback ?? false,
+              fallbackReason: brief.generationMeta?.fallbackReason,
+              providerMode: 'legacy' as const,
+              graphAttemptCount: brief.generationMeta?.graphAttemptCount,
+              graphFailedSections: brief.generationMeta?.graphFailedSections,
+              graphRetriedSections: brief.generationMeta?.graphRetriedSections,
+            },
+          }))
+        );
       }
     }
 

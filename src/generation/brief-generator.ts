@@ -33,6 +33,10 @@ export type FallbackReason =
 export interface BriefGenerationMeta {
   isFallback: boolean;
   fallbackReason?: FallbackReason;
+  providerMode?: 'legacy' | 'graph';
+  graphAttemptCount?: number;
+  graphFailedSections?: string[];
+  graphRetriedSections?: string[];
 }
 
 /**

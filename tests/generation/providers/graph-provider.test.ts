@@ -52,6 +52,43 @@ function makeScoredProblem(overrides: Partial<ScoredProblem> = {}): ScoredProble
 }
 
 describe('GraphGenerationProvider', () => {
+  it('annotates generation metadata when graph succeeds', async () => {
+    const { runSingleBriefGraph } = await import('../../../src/generation/graph');
+
+    vi.mocked(runSingleBriefGraph).mockResolvedValue({
+      brief: makeGenerationBrief({ id: 'graph_success_brief' }),
+      attemptsUsed: 2,
+      retried: true,
+      passedQuality: true,
+      failedSections: [],
+      reasons: [],
+      sectionRetryCounts: {
+        core: 1,
+        problem: 0,
+        audience: 0,
+        market: 0,
+        solution: 0,
+        features: 0,
+        technical: 0,
+        business_model: 0,
+        gtm: 0,
+        risks: 0,
+      },
+    });
+
+    const provider = new GraphGenerationProvider();
+    const result = await provider.generate({
+      scoredProblems: [makeScoredProblem()],
+      gapAnalyses: new Map(),
+      config: {},
+    });
+
+    expect(result[0].id).toBe('graph_success_brief');
+    expect(result[0].generationMeta?.providerMode).toBe('graph');
+    expect(result[0].generationMeta?.graphAttemptCount).toBe(2);
+    expect(result[0].generationMeta?.graphRetriedSections).toContain('core');
+  });
+
   it('falls back to legacy provider when graph execution throws', async () => {
     const { runSingleBriefGraph } = await import('../../../src/generation/graph');
     const legacySpy = vi.spyOn(LegacyGenerationProvider.prototype, 'generate')
@@ -69,6 +106,7 @@ describe('GraphGenerationProvider', () => {
     expect(legacySpy).toHaveBeenCalledTimes(1);
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe('legacy_fallback_brief');
+    expect(result[0].generationMeta?.providerMode).toBe('legacy');
 
     legacySpy.mockRestore();
   });

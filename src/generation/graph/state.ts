@@ -2,8 +2,26 @@ import type { GapAnalysis } from '../../analysis/gap-analyzer';
 import type { ScoredProblem } from '../../analysis/scorer';
 import type { BriefGeneratorConfig, IdeaBrief } from '../brief-generator';
 
+export type GraphSection =
+  | 'core'
+  | 'problem'
+  | 'audience'
+  | 'market'
+  | 'solution'
+  | 'features'
+  | 'technical'
+  | 'business_model'
+  | 'gtm'
+  | 'risks';
+
 export interface GraphRunConfig extends BriefGeneratorConfig {
   maxAttempts?: number;
+}
+
+export interface GraphCriticAssessment {
+  valid: boolean;
+  reasons: string[];
+  failedSections: GraphSection[];
 }
 
 export interface SingleBriefGraphState {
@@ -13,10 +31,9 @@ export interface SingleBriefGraphState {
   attempt: number;
   maxAttempts: number;
   latestBrief: IdeaBrief | null;
-  latestValidation: {
-    valid: boolean;
-    reasons: string[];
-  } | null;
+  latestValidation: GraphCriticAssessment | null;
+  failedSections: GraphSection[];
+  sectionRetryCounts: Record<GraphSection, number>;
 }
 
 export interface SingleBriefGraphResult {
@@ -24,4 +41,7 @@ export interface SingleBriefGraphResult {
   attemptsUsed: number;
   retried: boolean;
   passedQuality: boolean;
+  failedSections: GraphSection[];
+  sectionRetryCounts: Record<GraphSection, number>;
+  reasons: string[];
 }
