@@ -3,7 +3,10 @@ import { test, expect } from '@playwright/test';
 test.describe('Landing Page — Pricing Section', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.locator('#pricing').scrollIntoViewIfNeeded();
+    await page.locator('#pricing').waitFor({ state: 'visible' });
+    await page.evaluate(() => {
+      document.querySelector('#pricing')?.scrollIntoView({ block: 'start' });
+    });
   });
 
   test('should display three plan cards', async ({ page }) => {

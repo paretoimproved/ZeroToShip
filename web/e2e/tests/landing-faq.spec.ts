@@ -3,7 +3,10 @@ import { test, expect } from '@playwright/test';
 test.describe('Landing Page — FAQ Section', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.locator('#faq').scrollIntoViewIfNeeded();
+    await page.locator('#faq').waitFor({ state: 'visible' });
+    await page.evaluate(() => {
+      document.querySelector('#faq')?.scrollIntoView({ block: 'start' });
+    });
   });
 
   test('should display FAQ heading', async ({ page }) => {
