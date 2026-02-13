@@ -6,10 +6,10 @@ import { useAuth } from "@/components/AuthProvider";
 import Logo from "@/components/Logo";
 
 const NAV_LINKS = [
-  { href: "#features", label: "Features" },
+  { href: "/#features", label: "Features" },
   { href: "/explore", label: "Explore" },
-  { href: "#pricing", label: "Pricing" },
-  { href: "#faq", label: "FAQ" },
+  { href: "/#pricing", label: "Pricing" },
+  { href: "/#faq", label: "FAQ" },
   { href: "/blog", label: "Blog" },
 ] as const;
 

@@ -2,9 +2,9 @@ import Link from "next/link";
 import Logo from "@/components/Logo";
 
 const productLinks = [
-  { label: "Features", href: "#features" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "FAQ", href: "#faq" },
+  { label: "Features", href: "/#features" },
+  { label: "Pricing", href: "/#pricing" },
+  { label: "FAQ", href: "/#faq" },
 ] as const;
 
 const resourceLinks = [
