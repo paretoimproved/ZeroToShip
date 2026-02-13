@@ -6,7 +6,9 @@
 
 import Stripe from 'stripe';
 import { eq } from 'drizzle-orm';
-import { db, subscriptions, users } from '../db/client';
+import { db, subscriptions, users, webhookEvents } from '../db/client';
+import logger from '../../lib/logger';
+import { config } from '../../config/env';
 import {
   stripe,
   STRIPE_PRICES,
@@ -20,6 +22,143 @@ import {
 } from '../config/stripe';
 import { updateSubscription, getUserById } from './users';
 import type { UserTier } from '../schemas';
+
+const PLAN_NAMES: Record<'pro' | 'enterprise', string> = {
+  pro: 'Builder',
+  enterprise: 'Enterprise',
+};
+
+function formatUsdAmount(cents: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(cents / 100);
+}
+
+function getPriceDescription(priceId?: string): string | null {
+  if (!priceId) return null;
+
+  const matchedKey = (Object.entries(STRIPE_PRICES).find(
+    ([, id]) => id === priceId
+  )?.[0] ?? null) as StripePriceKey | null;
+
+  if (!matchedKey) return null;
+  const info = PRICE_INFO[matchedKey];
+  if (!info) return null;
+
+  return `${formatUsdAmount(info.amount)}/${info.interval}`;
+}
+
+async function sendSubscriptionConfirmationEmail(params: {
+  userId: string;
+  email?: string | null;
+  name?: string | null;
+  tier: 'pro' | 'enterprise';
+  priceId?: string;
+  currentPeriodEnd?: Date;
+}): Promise<void> {
+  if (config.isTest) return;
+  if (!config.RESEND_API_KEY) return;
+  if (!params.email) {
+    logger.warn({ userId: params.userId }, 'Skipping subscription confirmation email: no recipient email');
+    return;
+  }
+
+  const planName = PLAN_NAMES[params.tier];
+  const priceDescription = getPriceDescription(params.priceId);
+  const renewalDate = params.currentPeriodEnd
+    ? params.currentPeriodEnd.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    : null;
+  const subject = `Your ZeroToShip ${planName} subscription is active`;
+
+  const greeting = params.name ? `Hi ${params.name},` : 'Hi there,';
+  const html = `
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #111827; max-width: 640px; margin: 0 auto;">
+  <h1 style="margin: 0 0 12px; font-size: 24px;">Welcome to ${planName}</h1>
+  <p style="margin: 0 0 14px;">${greeting}</p>
+  <p style="margin: 0 0 14px;">Your subscription is now active.</p>
+  <ul style="margin: 0 0 16px; padding-left: 20px;">
+    ${priceDescription ? `<li><strong>Plan:</strong> ${planName} (${priceDescription})</li>` : `<li><strong>Plan:</strong> ${planName}</li>`}
+    ${renewalDate ? `<li><strong>Renews on:</strong> ${renewalDate}</li>` : ''}
+  </ul>
+  <p style="margin: 0 0 16px;">Manage billing any time from your account:</p>
+  <p style="margin: 0 0 24px;"><a href="${BILLING_PORTAL_RETURN_URL}" style="color: #2563eb;">${BILLING_PORTAL_RETURN_URL}</a></p>
+  <p style="margin: 0;">Thanks for subscribing.</p>
+  <p style="margin: 12px 0 0;">- ZeroToShip</p>
+</div>`;
+
+  const textLines = [
+    greeting,
+    '',
+    `Your ZeroToShip ${planName} subscription is now active.`,
+    priceDescription ? `Plan: ${planName} (${priceDescription})` : `Plan: ${planName}`,
+    renewalDate ? `Renews on: ${renewalDate}` : null,
+    '',
+    `Manage billing: ${BILLING_PORTAL_RETURN_URL}`,
+    '',
+    'Thanks for subscribing.',
+    '- ZeroToShip',
+  ].filter(Boolean);
+  const text = textLines.join('\n');
+
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${config.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'ZeroToShip <briefs@zerotoship.dev>',
+        to: [params.email],
+        reply_to: 'hello@zerotoship.dev',
+        subject,
+        html,
+        text,
+      }),
+    });
+
+    if (!response.ok) {
+      let errorMessage = `Resend API error (${response.status})`;
+      try {
+        const body = (await response.json()) as { message?: string };
+        if (body.message) errorMessage = `${errorMessage}: ${body.message}`;
+      } catch {
+        // Keep default fallback message when body isn't JSON.
+      }
+      logger.error(
+        { userId: params.userId, tier: params.tier, statusCode: response.status },
+        errorMessage
+      );
+      return;
+    }
+
+    const data = (await response.json()) as { id?: string };
+    logger.info(
+      {
+        userId: params.userId,
+        tier: params.tier,
+        recipient: params.email,
+        messageId: data.id,
+      },
+      'Subscription confirmation email sent'
+    );
+  } catch (error) {
+    logger.error(
+      {
+        userId: params.userId,
+        tier: params.tier,
+        error: error instanceof Error ? error.message : String(error),
+      },
+      'Failed to send subscription confirmation email'
+    );
+  }
+}
 
 /**
  * Get or create a Stripe customer for a user
@@ -143,13 +282,13 @@ async function handleCheckoutCompleted(
 ): Promise<void> {
   const userId = session.metadata?.userId;
   if (!userId) {
-    console.error('No userId in checkout session metadata');
+    logger.error({ sessionId: session.id }, 'No userId in checkout session metadata');
     return;
   }
 
   const subscriptionId = session.subscription as string;
   if (!subscriptionId) {
-    console.error('No subscription in checkout session');
+    logger.error({ sessionId: session.id }, 'No subscription in checkout session');
     return;
   }
 
@@ -159,7 +298,7 @@ async function handleCheckoutCompleted(
   const tier = priceId ? getTierFromPriceId(priceId) : null;
 
   if (!tier) {
-    console.error('Could not determine tier from price ID:', priceId);
+    logger.error({ sessionId: session.id, priceId }, 'Could not determine tier from price ID');
     return;
   }
 
@@ -177,7 +316,19 @@ async function handleCheckoutCompleted(
     cancelAtPeriodEnd: subscription.cancel_at_period_end,
   });
 
-  console.log(`Subscription created for user ${userId}: ${tier}`);
+  const user = await getUserById(userId);
+  const fallbackEmail = session.customer_details?.email ?? null;
+  const periodEndDate = new Date(periodEnd * 1000);
+  await sendSubscriptionConfirmationEmail({
+    userId,
+    email: user?.email ?? fallbackEmail,
+    name: user?.name,
+    tier,
+    priceId,
+    currentPeriodEnd: periodEndDate,
+  });
+
+  logger.info({ userId, tier }, 'Subscription created from checkout');
 }
 
 /**
@@ -197,7 +348,7 @@ async function handleSubscriptionUpdated(
       .limit(1);
 
     if (rows.length === 0) {
-      console.error('No user found for subscription:', subscription.id);
+      logger.error({ subscriptionId: subscription.id }, 'No user found for subscription');
       return;
     }
 
@@ -241,7 +392,7 @@ async function syncSubscription(
     cancelAtPeriodEnd: subscription.cancel_at_period_end,
   });
 
-  console.log(`Subscription updated for user ${userId}: ${tier}, status: ${status}`);
+  logger.info({ userId, tier, status }, 'Subscription synced');
 }
 
 /**
@@ -260,7 +411,7 @@ async function handleSubscriptionDeleted(
     .limit(1);
 
   if (rows.length === 0) {
-    console.error('No user found for deleted subscription:', subscription.id);
+    logger.error({ subscriptionId: subscription.id }, 'No user found for deleted subscription');
     return;
   }
 
@@ -276,7 +427,7 @@ async function handleSubscriptionDeleted(
     cancelAtPeriodEnd: false,
   });
 
-  console.log(`Subscription deleted for user ${userId}, downgraded to free`);
+  logger.info({ userId }, 'Subscription deleted, downgraded to free');
 }
 
 /**
@@ -298,7 +449,7 @@ async function handlePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
     .limit(1);
 
   if (rows.length === 0) {
-    console.error('No user found for failed payment, customer:', customerId);
+    logger.error({ customerId }, 'No user found for failed payment');
     return;
   }
 
@@ -309,32 +460,64 @@ async function handlePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
     status: 'past_due',
   });
 
-  console.log(`Payment failed for user ${userId}, marked as past_due`);
+  logger.warn({ userId }, 'Payment failed, marked past_due');
+}
+
+async function isEventAlreadyProcessed(eventId: string): Promise<boolean> {
+  const rows = await db
+    .select({ id: webhookEvents.id })
+    .from(webhookEvents)
+    .where(eq(webhookEvents.stripeEventId, eventId))
+    .limit(1);
+  return rows.length > 0;
+}
+
+async function recordProcessedEvent(
+  eventId: string,
+  eventType: string,
+  error?: string
+): Promise<void> {
+  await db.insert(webhookEvents).values({
+    stripeEventId: eventId,
+    eventType,
+    status: error ? 'error' : 'processed',
+    error: error ?? null,
+  }).onConflictDoNothing();
 }
 
 /**
  * Process Stripe webhook event
  */
 export async function handleWebhookEvent(event: Stripe.Event): Promise<void> {
-  switch (event.type) {
-    case 'checkout.session.completed':
-      await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
-      break;
+  if (await isEventAlreadyProcessed(event.id)) {
+    logger.info({ eventId: event.id, eventType: event.type }, 'Webhook event already processed, skipping');
+    return;
+  }
 
-    case 'customer.subscription.updated':
-      await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
-      break;
-
-    case 'customer.subscription.deleted':
-      await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
-      break;
-
-    case 'invoice.payment_failed':
-      await handlePaymentFailed(event.data.object as Stripe.Invoice);
-      break;
-
-    default:
-      console.log(`Unhandled webhook event type: ${event.type}`);
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed':
+        await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
+        break;
+      case 'customer.subscription.updated':
+        await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
+        break;
+      case 'customer.subscription.deleted':
+        await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
+        break;
+      case 'invoice.payment_failed':
+        await handlePaymentFailed(event.data.object as Stripe.Invoice);
+        break;
+      default:
+        logger.info({ eventId: event.id, eventType: event.type }, 'Unhandled webhook event type');
+    }
+    await recordProcessedEvent(event.id, event.type);
+    logger.info({ eventId: event.id, eventType: event.type }, 'Webhook event processed');
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    await recordProcessedEvent(event.id, event.type, msg);
+    logger.error({ eventId: event.id, eventType: event.type, error: msg }, 'Webhook event processing failed');
+    throw err;
   }
 }
 
@@ -381,7 +564,7 @@ export async function getAvailablePrices(): Promise<
         });
       }
     } catch (error) {
-      console.error(`Failed to retrieve price ${priceId}:`, error);
+      logger.error({ priceId, error: error instanceof Error ? error.message : String(error) }, 'Failed to retrieve price');
     }
   }
 
@@ -404,7 +587,7 @@ export async function getAvailablePricesWithFallback(): Promise<
   try {
     return await getAvailablePrices();
   } catch (error) {
-    console.error('Get prices error:', error);
+    logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Get prices error');
     return Object.entries(PRICE_INFO).map(([key, info]) => ({
       key,
       priceId: STRIPE_PRICES[key as StripePriceKey] || '',
@@ -446,7 +629,7 @@ export async function initiateCheckout(
   try {
     return await createCheckoutSession(userId, user.email, priceKey as StripePriceKey);
   } catch (error) {
-    console.error('Checkout session error:', error);
+    logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Checkout session error');
     return {
       error: {
         code: 'CHECKOUT_FAILED',
@@ -475,7 +658,7 @@ export async function initiateBillingPortal(
   try {
     return await createBillingPortalSession(userId, user.email);
   } catch (error) {
-    console.error('Portal session error:', error);
+    logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Portal session error');
     return {
       error: {
         code: 'PORTAL_FAILED',

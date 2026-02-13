@@ -55,7 +55,7 @@ export const webhookRoutes: FastifyPluginAsync = async (fastify) => {
         // Return success - Stripe expects 200 for acknowledged events
         return reply.send({ received: true });
       } catch (error) {
-        console.error('Webhook error:', error);
+        request.log.error({ err: error }, 'Webhook processing error');
 
         if (error instanceof Error && error.message.includes('signature')) {
           return reply.status(400).send({

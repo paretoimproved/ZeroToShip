@@ -6,6 +6,7 @@
 
 import Stripe from 'stripe';
 import { config } from '../../config/env';
+import logger from '../../lib/logger';
 
 /**
  * Stripe client instance (lazy — avoids crash when STRIPE_SECRET_KEY is not set)
@@ -108,3 +109,30 @@ export const PRICE_INFO = {
     tier: 'enterprise' as const,
   },
 };
+
+/**
+ * Validate Stripe configuration for production readiness
+ */
+export function validateStripeConfig(): void {
+  if (!config.isProduction) return;
+
+  const warn = (msg: string) => {
+    logger.warn({ component: 'stripe' }, `PRODUCTION: ${msg}`);
+  };
+
+  if (config.STRIPE_SECRET_KEY.startsWith('sk_test_'))
+    warn('STRIPE_SECRET_KEY is a test key');
+  if (!config.STRIPE_WEBHOOK_SECRET)
+    warn('STRIPE_WEBHOOK_SECRET is not set');
+  if (config.CHECKOUT_SUCCESS_URL.includes('localhost'))
+    warn('CHECKOUT_SUCCESS_URL contains localhost');
+  if (config.CHECKOUT_CANCEL_URL.includes('localhost'))
+    warn('CHECKOUT_CANCEL_URL contains localhost');
+  if (config.BILLING_PORTAL_RETURN_URL.includes('localhost'))
+    warn('BILLING_PORTAL_RETURN_URL contains localhost');
+
+  for (const key of ['STRIPE_PRICE_PRO_MONTHLY', 'STRIPE_PRICE_PRO_YEARLY',
+                       'STRIPE_PRICE_ENT_MONTHLY', 'STRIPE_PRICE_ENT_YEARLY'] as const) {
+    if (!config[key]) warn(`${key} is not set`);
+  }
+}

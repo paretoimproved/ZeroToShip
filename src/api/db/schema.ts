@@ -223,6 +223,18 @@ export const subscriptions = pgTable('subscriptions', {
 });
 
 /**
+ * Webhook events - idempotency tracking for Stripe webhooks
+ */
+export const webhookEvents = pgTable('webhook_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  stripeEventId: varchar('stripe_event_id', { length: 255 }).notNull().unique(),
+  eventType: varchar('event_type', { length: 100 }).notNull(),
+  processedAt: timestamp('processed_at').notNull().defaultNow(),
+  status: varchar('status', { length: 20 }).notNull().default('processed'),
+  error: text('error'),
+});
+
+/**
  * Rate limit tracking
  */
 export const rateLimits = pgTable(

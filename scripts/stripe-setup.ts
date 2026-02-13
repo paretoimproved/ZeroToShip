@@ -168,6 +168,22 @@ async function createProducts(): Promise<void> {
 }
 
 async function main(): Promise<void> {
+  const isLive = process.env.STRIPE_SECRET_KEY?.startsWith('sk_live_');
+  if (isLive) {
+    console.log('\n  WARNING: Running against LIVE Stripe (sk_live_*)');
+    console.log('  This will create real products and prices.\n');
+    const readline = await import('readline');
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    const answer = await new Promise<string>((resolve) => {
+      rl.question('  Continue? (yes/no): ', resolve);
+    });
+    rl.close();
+    if (answer.toLowerCase() !== 'yes') {
+      console.log('Aborted.');
+      process.exit(0);
+    }
+  }
+
   try {
     await createProducts();
   } catch (error) {

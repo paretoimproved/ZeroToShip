@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import ProtectedLayout from "@/components/ProtectedLayout";
 import { Spinner } from "@/components/icons";
@@ -74,7 +75,17 @@ const plans = [
   },
 ];
 
-export default function AccountPage() {
+const TIER_LABELS: Record<Subscription["plan"], string> = {
+  free: "Free",
+  pro: "Builder",
+  enterprise: "Enterprise",
+};
+
+function getTierLabel(plan: Subscription["plan"]): string {
+  return TIER_LABELS[plan];
+}
+
+function AccountPageContent() {
   const { effectiveTier } = useAdmin();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
@@ -84,6 +95,9 @@ export default function AccountPage() {
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
   const apiKeyDialogRef = useRef<HTMLDialogElement>(null);
+  const searchParams = useSearchParams();
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successPlan, setSuccessPlan] = useState("");
 
   // Fetch subscription on mount
   useEffect(() => {
@@ -105,6 +119,38 @@ export default function AccountPage() {
     }
     fetchSubscription();
   }, []);
+
+  // Detect checkout success and poll for subscription update
+  useEffect(() => {
+    const sessionId = searchParams.get("session_id");
+    if (!sessionId) return;
+
+    setShowSuccess(true);
+
+    // Poll for subscription update (handles webhook race condition)
+    let attempts = 0;
+    const poll = setInterval(async () => {
+      attempts++;
+      try {
+        const sub = await api.getSubscription();
+        if (sub.plan !== "free") {
+          setSubscription(sub);
+          setSuccessPlan(getTierLabel(sub.plan));
+          clearInterval(poll);
+        }
+      } catch {
+        /* ignore polling errors */
+      }
+      if (attempts >= 10) clearInterval(poll);
+    }, 2000);
+
+    // Clean session_id from URL
+    const url = new URL(window.location.href);
+    url.searchParams.delete("session_id");
+    window.history.replaceState({}, "", url.pathname + url.search);
+
+    return () => clearInterval(poll);
+  }, [searchParams]);
 
   const handleUpgrade = async (priceKey: PriceKey) => {
     setUpgradeLoading(priceKey);
@@ -174,6 +220,7 @@ export default function AccountPage() {
   }
 
   const currentPlan = effectiveTier as "free" | "pro" | "enterprise";
+  const currentPlanLabel = getTierLabel(currentPlan);
 
   return (
     <ProtectedLayout>
@@ -186,6 +233,33 @@ export default function AccountPage() {
           Manage your subscription and billing
         </p>
       </header>
+
+      {showSuccess && (
+        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
+          <div className="flex items-center gap-3">
+            <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <p className="font-semibold text-green-800 dark:text-green-200">
+                Welcome to {successPlan || "your new plan"}!
+              </p>
+              <p className="text-sm text-green-700 dark:text-green-300">
+                Your subscription is active. Enjoy your new features.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowSuccess(false)}
+              className="ml-auto text-green-500 hover:text-green-700"
+              aria-label="Dismiss"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
@@ -209,8 +283,8 @@ export default function AccountPage() {
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <div className="flex items-center gap-3">
-                <span className="text-2xl font-bold text-gray-900 dark:text-white capitalize">
-                  {currentPlan}
+                <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {currentPlanLabel}
                 </span>
                 {subscription && (
                   <span
@@ -515,5 +589,13 @@ export default function AccountPage() {
       </section>
     </div>
     </ProtectedLayout>
+  );
+}
+
+export default function AccountPage() {
+  return (
+    <Suspense fallback={<div className="mx-auto max-w-4xl px-4 sm:px-6 py-8"><Spinner /></div>}>
+      <AccountPageContent />
+    </Suspense>
   );
 }

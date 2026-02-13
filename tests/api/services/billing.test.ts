@@ -35,6 +35,7 @@ const {
   mockWebhooksConstructEvent,
   mockDbSelect,
   mockDbUpdate,
+  mockDbInsert,
   mockUpdateSubscription,
   mockGetUserById,
 } = vi.hoisted(() => ({
@@ -46,6 +47,7 @@ const {
   mockWebhooksConstructEvent: vi.fn(),
   mockDbSelect: vi.fn(),
   mockDbUpdate: vi.fn(),
+  mockDbInsert: vi.fn(),
   mockUpdateSubscription: vi.fn(),
   mockGetUserById: vi.fn(),
 }));
@@ -131,6 +133,16 @@ vi.mock('../../../src/api/config/stripe', () => {
 // ---------------------------------------------------------------------------
 // vi.mock -- Database client
 // ---------------------------------------------------------------------------
+// Idempotency check always returns "not processed" (empty).
+// Tests configure mockDbSelect for handler queries only.
+const idempotencyChain = () => ({
+  from: vi.fn().mockReturnValue({
+    where: vi.fn().mockReturnValue({
+      limit: vi.fn().mockResolvedValue([]),
+    }),
+  }),
+});
+
 vi.mock('../../../src/api/db/client', () => {
   const chain = {
     from: vi.fn().mockReturnThis(),
@@ -139,10 +151,27 @@ vi.mock('../../../src/api/db/client', () => {
     set: vi.fn().mockReturnThis(),
   };
 
+  const insertChain = {
+    values: vi.fn().mockReturnValue({
+      onConflictDoNothing: vi.fn().mockResolvedValue(undefined),
+    }),
+  };
+
+  // db.select dispatcher: idempotency queries (webhookEvents.id) get the
+  // empty idempotency chain; everything else is forwarded to mockDbSelect.
+  const selectDispatcher = (...args: unknown[]) => {
+    const arg = args[0] as Record<string, unknown> | undefined;
+    if (arg && 'id' in arg && arg.id === 'wh_id') {
+      return idempotencyChain();
+    }
+    return mockDbSelect(...args);
+  };
+
   return {
     db: {
-      select: mockDbSelect.mockReturnValue(chain),
+      select: selectDispatcher,
       update: mockDbUpdate.mockReturnValue(chain),
+      insert: mockDbInsert.mockReturnValue(insertChain),
     },
     subscriptions: {
       userId: 'userId',
@@ -152,8 +181,20 @@ vi.mock('../../../src/api/db/client', () => {
       id: 'id',
       email: 'email',
     },
+    webhookEvents: {
+      id: 'wh_id',
+      stripeEventId: 'stripeEventId',
+    },
   };
 });
+
+vi.mock('../../../src/lib/logger', () => ({
+  default: {
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+  },
+}));
 
 // ---------------------------------------------------------------------------
 // vi.mock -- User services
@@ -262,15 +303,27 @@ import {
 // ---------------------------------------------------------------------------
 // Reset all mocks before each test
 // ---------------------------------------------------------------------------
+// Helper: create a select chain returning given rows
+function selectChain(rows: unknown[] = []) {
+  return {
+    from: vi.fn().mockReturnValue({
+      where: vi.fn().mockReturnValue({
+        limit: vi.fn().mockResolvedValue(rows),
+      }),
+    }),
+  };
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
 
   // Default: DB select returns empty
-  mockDbSelect.mockReturnValue({
-    from: vi.fn().mockReturnValue({
-      where: vi.fn().mockReturnValue({
-        limit: vi.fn().mockResolvedValue([]),
-      }),
+  mockDbSelect.mockReturnValue(selectChain());
+
+  // Default: DB insert returns chain (for webhook idempotency recording)
+  mockDbInsert.mockReturnValue({
+    values: vi.fn().mockReturnValue({
+      onConflictDoNothing: vi.fn().mockResolvedValue(undefined),
     }),
   });
 
@@ -318,13 +371,7 @@ describe('handleWebhookEvent', () => {
 
   it('should route customer.subscription.deleted to handleSubscriptionDeleted', async () => {
     const sub = mockStripeSubscription();
-    mockDbSelect.mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue({
-          limit: vi.fn().mockResolvedValue([{ userId: 'user_abc123' }]),
-        }),
-      }),
-    });
+    mockDbSelect.mockReturnValue(selectChain([{ userId: 'user_abc123' }]));
 
     const event = stripeEvent('customer.subscription.deleted', sub);
     await handleWebhookEvent(event);
@@ -337,13 +384,7 @@ describe('handleWebhookEvent', () => {
 
   it('should route invoice.payment_failed to handlePaymentFailed', async () => {
     const invoice = mockInvoice();
-    mockDbSelect.mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue({
-          limit: vi.fn().mockResolvedValue([{ userId: 'user_abc123' }]),
-        }),
-      }),
-    });
+    mockDbSelect.mockReturnValue(selectChain([{ userId: 'user_abc123' }]));
 
     const event = stripeEvent('invoice.payment_failed', invoice);
     await handleWebhookEvent(event);
@@ -476,13 +517,7 @@ describe('handleSubscriptionUpdated', () => {
 
   it('should fall back to customer ID lookup when metadata.userId is missing', async () => {
     const sub = mockStripeSubscription({ metadata: {} });
-    mockDbSelect.mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue({
-          limit: vi.fn().mockResolvedValue([{ userId: 'user_from_db' }]),
-        }),
-      }),
-    });
+    mockDbSelect.mockReturnValue(selectChain([{ userId: 'user_from_db' }]));
 
     await handleWebhookEvent(stripeEvent('customer.subscription.updated', sub));
 
