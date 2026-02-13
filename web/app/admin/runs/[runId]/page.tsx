@@ -6,10 +6,15 @@ import { useParams } from "next/navigation";
 import { api } from "@/lib/api";
 import type { PipelineRunRow } from "@/lib/types";
 
-function formatDuration(seconds: number): string {
-  if (seconds < 60) return `${Math.round(seconds)}s`;
-  const m = Math.floor(seconds / 60);
-  const s = Math.round(seconds % 60);
+function formatDuration(durationMs: number): string {
+  const totalSeconds = Math.max(0, Math.round(durationMs / 1000));
+  if (totalSeconds < 60) return `${totalSeconds}s`;
+
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+
+  if (h > 0) return `${h}h ${m}m ${s}s`;
   return `${m}m ${s}s`;
 }
 
