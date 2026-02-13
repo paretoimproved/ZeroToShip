@@ -1,27 +1,37 @@
 /**
  * TypeScript types for ZeroToShip Web Dashboard
  *
- * Shared API contract types come from @zerotoship/shared.
- * This file only contains frontend-specific extensions.
+ * This file is self-contained so the web app can build independently
+ * in deployment environments that only install the `web` workspace.
  */
 
-import type {
-  EffortLevel,
-  PaginatedResponse,
-  ApiError,
-  IdeaSource,
-  EmailFrequency,
-  SubscriptionStatus,
-  UserTier,
-} from "@zerotoship/shared";
+export type EffortLevel = "weekend" | "week" | "month" | "quarter";
+export type UserTier = "anonymous" | "free" | "pro" | "enterprise";
+export type EmailFrequency = "daily" | "weekly" | "never";
+export type SubscriptionStatus = "active" | "canceled" | "past_due";
 
-export type {
-  EffortLevel,
-  PaginatedResponse,
-  ApiError,
-  IdeaSource,
-  EmailFrequency,
-};
+export interface IdeaSource {
+  platform: "reddit" | "hn" | "twitter" | "github";
+  title: string;
+  url: string;
+  score: number;
+  commentCount: number;
+  postedAt: string;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
+
+export interface ApiError {
+  code: string;
+  message: string;
+  details?: Record<string, unknown>;
+}
 
 type CustomerTier = Exclude<UserTier, "anonymous">;
 
