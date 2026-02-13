@@ -386,7 +386,7 @@ export default function RunDetailPage() {
             {run.errors.map((err, i) => (
               <div
                 key={i}
-                className="p-3 bg-gray-50 dark:bg-gray-750 rounded-lg border border-gray-200 dark:border-gray-700"
+                className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700"
               >
                 <div className="flex flex-wrap items-center gap-2 mb-2">
                   <span
@@ -425,7 +425,7 @@ export default function RunDetailPage() {
             {run.briefSummaries.map((brief, i) => (
               <div
                 key={i}
-                className="p-4 bg-gray-50 dark:bg-gray-750 rounded-lg border border-gray-200 dark:border-gray-700"
+                className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700"
               >
                 <p className="font-semibold text-gray-900 dark:text-gray-100">
                   {brief.name}
