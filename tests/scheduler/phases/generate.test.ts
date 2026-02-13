@@ -150,7 +150,7 @@ describe('Generate Phase', () => {
       expect(result.timestamp).toBeInstanceOf(Date);
     });
 
-    it('should fall back to legacy mode when graph mode is requested', async () => {
+    it('should report graph mode when graph mode is requested', async () => {
       const { generateAllBriefs } = await import('../../../src/generation/brief-generator');
 
       const scoredProblems = [makeScoredProblem({ id: 'sp-graph' })];
@@ -167,7 +167,7 @@ describe('Generate Phase', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.data?.generationMode).toBe('legacy');
+      expect(result.data?.generationMode).toBe('graph');
       expect(generateAllBriefs).toHaveBeenCalledTimes(1);
     });
 

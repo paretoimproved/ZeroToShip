@@ -5,6 +5,7 @@ import {
   resolveGenerationMode,
   selectGenerationProvider,
 } from '../../../src/generation/providers';
+import { GraphGenerationProvider } from '../../../src/generation/providers/graph-provider';
 import { LegacyGenerationProvider } from '../../../src/generation/providers/legacy-provider';
 
 describe('generation provider selector', () => {
@@ -38,11 +39,11 @@ describe('generation provider selector', () => {
     expect(selection.provider).toBeInstanceOf(LegacyGenerationProvider);
   });
 
-  it('falls back to legacy provider when graph mode is requested', () => {
+  it('returns graph provider when graph mode is requested', () => {
     const selection = selectGenerationProvider('graph');
 
     expect(selection.requestedMode).toBe('graph');
-    expect(selection.effectiveMode).toBe('legacy');
-    expect(selection.provider).toBeInstanceOf(LegacyGenerationProvider);
+    expect(selection.effectiveMode).toBe('graph');
+    expect(selection.provider).toBeInstanceOf(GraphGenerationProvider);
   });
 });

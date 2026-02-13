@@ -1,5 +1,5 @@
 import { config as envConfig } from '../../config/env';
-import logger from '../../lib/logger';
+import { GraphGenerationProvider } from './graph-provider';
 import { LegacyGenerationProvider } from './legacy-provider';
 import type { GenerationProviderMode, SelectedGenerationProvider } from './types';
 
@@ -22,15 +22,9 @@ export function selectGenerationProvider(
     };
   }
 
-  // Phase 1 seam: graph mode is selectable, but not implemented yet.
-  logger.warn(
-    { requestedMode },
-    'Graph generation mode requested before graph provider implementation; falling back to legacy mode'
-  );
-
   return {
     requestedMode,
-    effectiveMode: 'legacy',
-    provider: new LegacyGenerationProvider(),
+    effectiveMode: 'graph',
+    provider: new GraphGenerationProvider(),
   };
 }
