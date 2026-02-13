@@ -51,7 +51,7 @@ export class SettingsPage extends BasePage {
     this.emailSection = page.locator('section:has(h2:text("Email Notifications"))');
     this.dailyEmailRadio = page.locator('input[name="emailFrequency"][value="daily"]');
     this.weeklyEmailRadio = page.locator('input[name="emailFrequency"][value="weekly"]');
-    this.noEmailsRadio = page.locator('input[name="emailFrequency"][value="none"]');
+    this.noEmailsRadio = page.locator('input[name="emailFrequency"][value="never"]');
 
     // Categories
     this.categoriesSection = page.locator('section:has(h2:text("Preferred Categories"))');
@@ -96,7 +96,7 @@ export class SettingsPage extends BasePage {
   /**
    * Set email frequency preference
    */
-  async setEmailFrequency(frequency: 'daily' | 'weekly' | 'none'): Promise<void> {
+  async setEmailFrequency(frequency: 'daily' | 'weekly' | 'never'): Promise<void> {
     const radio = frequency === 'daily'
       ? this.dailyEmailRadio
       : frequency === 'weekly'
@@ -112,7 +112,7 @@ export class SettingsPage extends BasePage {
   async getEmailFrequency(): Promise<string> {
     if (await this.dailyEmailRadio.isChecked()) return 'daily';
     if (await this.weeklyEmailRadio.isChecked()) return 'weekly';
-    if (await this.noEmailsRadio.isChecked()) return 'none';
+    if (await this.noEmailsRadio.isChecked()) return 'never';
     return 'unknown';
   }
 

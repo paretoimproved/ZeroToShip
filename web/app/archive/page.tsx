@@ -20,6 +20,9 @@ const PAGE_SIZE = 24;
 
 type Platform = "reddit" | "hn" | "github";
 const ALL_PLATFORMS: Platform[] = ["reddit", "hn", "github"];
+function isPlatform(value: string): value is Platform {
+  return value === "reddit" || value === "hn" || value === "github";
+}
 
 type DateRange = "all" | "7d" | "30d" | "90d";
 
@@ -180,7 +183,7 @@ function CompactCard({
     if (!idea.sources || idea.sources.length === 0) return [];
     const seen = new Set<Platform>();
     return idea.sources.reduce<Platform[]>((acc, s) => {
-      if (!seen.has(s.platform)) {
+      if (isPlatform(s.platform) && !seen.has(s.platform)) {
         seen.add(s.platform);
         acc.push(s.platform);
       }
@@ -361,7 +364,7 @@ export default function ArchivePage() {
     if (selectedSources.size < ALL_PLATFORMS.length) {
       results = results.filter((idea) => {
         if (!idea.sources || idea.sources.length === 0) return true;
-        return idea.sources.some((s) => selectedSources.has(s.platform));
+        return idea.sources.some((s) => isPlatform(s.platform) && selectedSources.has(s.platform));
       });
     }
     return results;

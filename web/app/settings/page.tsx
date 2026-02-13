@@ -5,15 +5,16 @@ import { useTheme } from "next-themes";
 import ProtectedLayout from "@/components/ProtectedLayout";
 import { api } from "@/lib/api";
 import { trackEmailSettingsChanged } from "@/lib/analytics";
+import type { UserPreferences } from "@/lib/types";
 
-const emailFrequencyLabels: Record<string, { title: string; description: string }> = {
+const emailFrequencyLabels: Record<UserPreferences["emailFrequency"], { title: string; description: string }> = {
   daily: { title: "Daily digest", description: "Get a curated list of ideas every morning" },
   weekly: { title: "Weekly digest", description: "A weekly roundup of the best ideas" },
-  none: { title: "No emails", description: "Only check ideas on the dashboard" },
+  never: { title: "No emails", description: "Only check ideas on the dashboard" },
 };
 
 export default function SettingsPage() {
-  const [emailFrequency, setEmailFrequency] = useState<"daily" | "weekly" | "none">("daily");
+  const [emailFrequency, setEmailFrequency] = useState<UserPreferences["emailFrequency"]>("daily");
   const [saved, setSaved] = useState(false);
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -70,7 +71,7 @@ export default function SettingsPage() {
           </div>
 
           <div className="space-y-3">
-            {(["daily", "weekly", "none"] as const).map((frequency) => {
+            {(["daily", "weekly", "never"] as const).map((frequency) => {
               const isSelected = emailFrequency === frequency;
               const label = emailFrequencyLabels[frequency];
               return (

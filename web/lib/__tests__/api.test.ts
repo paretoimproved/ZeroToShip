@@ -105,14 +105,14 @@ describe('ApiClient', () => {
   });
 
   describe('Request formatting', () => {
-    it('should include Content-Type: application/json header', async () => {
+    it('should not include Content-Type header when there is no request body', async () => {
       mockFetch.mockReturnValue(jsonResponse({}));
 
       await api.getCurrentUser();
 
       const callArgs = mockFetch.mock.calls[0];
       const headers = callArgs[1].headers;
-      expect(headers['Content-Type']).toBe('application/json');
+      expect(headers).not.toHaveProperty('Content-Type');
     });
 
     it('should send POST with JSON body for createCheckoutSession', async () => {
@@ -193,7 +193,7 @@ describe('ApiClient', () => {
 
     it('getIdea should call /ideas/:id', async () => {
       const mockIdea = { id: 'abc-123', name: 'Specific Idea' };
-      mockFetch.mockReturnValue(jsonResponse(mockIdea));
+      mockFetch.mockReturnValue(jsonResponse({ idea: mockIdea }));
 
       const result = await api.getIdea('abc-123');
 
@@ -298,7 +298,7 @@ describe('ApiClient', () => {
   });
 
   describe('User endpoints', () => {
-    it('getCurrentUser should call /users/me', async () => {
+    it('getCurrentUser should call /auth/me', async () => {
       const mockUser = { id: '1', email: 'test@example.com', name: 'Test' };
       mockFetch.mockReturnValue(jsonResponse(mockUser));
 
@@ -306,7 +306,7 @@ describe('ApiClient', () => {
 
       expect(result).toEqual(mockUser);
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/users/me'),
+        expect.stringContaining('/auth/me'),
         expect.any(Object)
       );
     });

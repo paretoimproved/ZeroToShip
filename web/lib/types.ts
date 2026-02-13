@@ -1,38 +1,29 @@
 /**
  * TypeScript types for ZeroToShip Web Dashboard
  *
- * Shared API contract types are inlined here to allow independent
- * Vercel deployment without the workspace dependency.
- * Canonical source: packages/shared/src/index.ts
+ * Shared API contract types come from @zerotoship/shared.
+ * This file only contains frontend-specific extensions.
  */
 
-// ─── Shared types (inlined from @zerotoship/shared) ──────────────────────────
+import type {
+  EffortLevel,
+  PaginatedResponse,
+  ApiError,
+  IdeaSource,
+  EmailFrequency,
+  SubscriptionStatus,
+  UserTier,
+} from "@zerotoship/shared";
 
-export type EffortLevel = 'weekend' | 'week' | 'month' | 'quarter';
+export type {
+  EffortLevel,
+  PaginatedResponse,
+  ApiError,
+  IdeaSource,
+  EmailFrequency,
+};
 
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  pageSize: number;
-  hasMore: boolean;
-  preview?: boolean;
-}
-
-export interface ApiError {
-  code: string;
-  message: string;
-  details?: Record<string, unknown>;
-}
-
-export interface IdeaSource {
-  platform: 'reddit' | 'hn' | 'github';
-  title: string;
-  url: string;
-  score: number;
-  commentCount: number;
-  postedAt: string;
-}
+type CustomerTier = Exclude<UserTier, "anonymous">;
 
 // ─── Frontend-specific types ─────────────────────────────────────────────────
 // IdeaBrief: The frontend assumes all fields are populated (fully-loaded brief).
@@ -85,7 +76,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  tier: "free" | "pro" | "enterprise";
+  tier: CustomerTier;
   isAdmin?: boolean;
   preferences: UserPreferences;
   createdAt: string;
@@ -136,14 +127,14 @@ export interface PipelineStatus {
 }
 
 export interface UserPreferences {
-  emailFrequency: "daily" | "weekly" | "none";
+  emailFrequency: EmailFrequency;
 }
 
 export interface Subscription {
   id: string;
   userId: string;
-  plan: "free" | "pro" | "enterprise";
-  status: "active" | "canceled" | "past_due";
+  plan: CustomerTier;
+  status: SubscriptionStatus;
   currentPeriodEnd: string;
   cancelAtPeriodEnd: boolean;
 }
