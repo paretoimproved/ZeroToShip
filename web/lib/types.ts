@@ -114,6 +114,8 @@ export interface PipelineStatus {
   startedAt?: string;
   completedAt?: string;
   success?: boolean;
+  generationMode?: GenerationMode | null;
+  generationDiagnostics?: GenerationDiagnosticsSnapshot | null;
   phases?: Record<string, string>;
   phaseStats?: {
     scrape?: { totalPosts: number; reddit: number; hn: number; github: number };
@@ -168,12 +170,44 @@ export interface PipelineRunRow {
     estimatedCost: number;
     callsByModel: Record<string, number>;
   } | null;
+  generationMode?: GenerationMode | null;
+  generationDiagnostics?: GenerationDiagnosticsSnapshot | null;
   briefSummaries: Array<{
     name: string;
     tagline: string;
     priorityScore: number;
     effortEstimate: string;
   }> | null;
+}
+
+export type GenerationMode = "legacy" | "graph";
+
+export type FallbackReasonCode =
+  | "missing_gap_analysis"
+  | "missing_api_key"
+  | "single_call_failed"
+  | "batch_call_failed"
+  | "unknown";
+
+export type QualityFailureReasonCode =
+  | "placeholder_content"
+  | "length_too_short"
+  | "list_minimum_not_met"
+  | "nested_content_incomplete"
+  | "unknown";
+
+export interface GenerationDiagnosticsSnapshot {
+  taxonomyVersion: "v1";
+  generatedBriefCount: number;
+  qualityPassCount: number;
+  qualityFailCount: number;
+  qualityPassRate: number;
+  fallbackCount: number;
+  fallbackRate: number;
+  fallbackReasonCounts: Record<FallbackReasonCode, number>;
+  qualityFailureReasonCounts: Record<QualityFailureReasonCode, number>;
+  costPerBriefUsd: number | null;
+  latencyPerBriefMs: number | null;
 }
 
 export interface EmailLogRow {

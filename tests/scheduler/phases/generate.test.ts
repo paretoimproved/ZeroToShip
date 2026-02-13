@@ -336,4 +336,47 @@ describe('Generate Phase', () => {
       expect(result.data!.briefs).toHaveLength(0);
     });
   });
+
+  describe('diagnostics', () => {
+    it('should emit quality and fallback diagnostics with taxonomy counts', async () => {
+      const { generateAllBriefs, validateBriefQuality } = await import('../../../src/generation/brief-generator');
+
+      const primaryBrief = makeGenerationBrief({
+        name: 'PrimaryBrief',
+        generationMeta: { isFallback: false },
+      });
+      const fallbackBrief = makeGenerationBrief({
+        name: 'FallbackBrief',
+        generationMeta: { isFallback: true, fallbackReason: 'missing_api_key' },
+      });
+
+      vi.mocked(generateAllBriefs).mockResolvedValue([primaryBrief, fallbackBrief]);
+      vi.mocked(validateBriefQuality).mockImplementation((brief) => {
+        if (brief.name === 'FallbackBrief') {
+          return { valid: false, reasons: ['name too short (< 2 chars)'] };
+        }
+        return { valid: true, reasons: [] };
+      });
+
+      const result = await runGeneratePhase(
+        'test-run-diagnostics',
+        makeConfig(),
+        [makeScoredProblem({ id: 'sp_diag' })],
+        new Map()
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.data?.diagnostics).toMatchObject({
+        taxonomyVersion: 'v1',
+        generatedBriefCount: 2,
+        qualityPassCount: 1,
+        qualityFailCount: 1,
+        qualityPassRate: 0.5,
+        fallbackCount: 1,
+        fallbackRate: 0.5,
+      });
+      expect(result.data?.diagnostics?.fallbackReasonCounts.missing_api_key).toBe(1);
+      expect(result.data?.diagnostics?.qualityFailureReasonCounts.length_too_short).toBe(1);
+    });
+  });
 });

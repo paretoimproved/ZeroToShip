@@ -48,6 +48,7 @@ vi.mock('../../src/analysis/gap-analyzer', () => ({
 // Mock generation
 vi.mock('../../src/generation/brief-generator', () => ({
   generateAllBriefs: vi.fn(),
+  validateBriefQuality: vi.fn().mockReturnValue({ valid: true, reasons: [] }),
 }));
 
 // Mock delivery

@@ -21,6 +21,21 @@ function formatNumber(n: number): string {
   return n.toLocaleString();
 }
 
+function formatPercent(value?: number | null): string {
+  if (typeof value !== "number") return "N/A";
+  return `${(value * 100).toFixed(1)}%`;
+}
+
+function formatCurrency(value?: number | null): string {
+  if (typeof value !== "number") return "N/A";
+  return `$${value.toFixed(3)}`;
+}
+
+function formatLatencyMs(value?: number | null): string {
+  if (typeof value !== "number") return "N/A";
+  return `${formatNumber(Math.round(value))} ms`;
+}
+
 const PHASE_ORDER = ["scrape", "analyze", "generate", "deliver"];
 const PHASE_LABELS: Record<string, string> = {
   scrape: "Scrape",
@@ -89,6 +104,12 @@ function phaseColor(phase: string): string {
   return colors[phase] || "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300";
 }
 
+function modeColor(mode?: string | null): string {
+  if (mode === "graph") return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+  if (mode === "legacy") return "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300";
+  return "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300";
+}
+
 export default function RunDetailPage() {
   const params = useParams();
   const runId = params.runId as string;
@@ -137,6 +158,17 @@ export default function RunDetailPage() {
   if (!run) return null;
 
   const isDryRun = Boolean(run.config.dryRun);
+  const diagnostics = run.generationDiagnostics || null;
+  const qualityReasonRows = diagnostics
+    ? Object.entries(diagnostics.qualityFailureReasonCounts)
+      .filter(([, count]) => count > 0)
+      .sort((a, b) => b[1] - a[1])
+    : [];
+  const fallbackReasonRows = diagnostics
+    ? Object.entries(diagnostics.fallbackReasonCounts)
+      .filter(([, count]) => count > 0)
+      .sort((a, b) => b[1] - a[1])
+    : [];
 
   return (
     <div className="space-y-6">
@@ -178,6 +210,11 @@ export default function RunDetailPage() {
             >
               {run.success ? "Success" : "Failed"}
             </span>
+            <span
+              className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${modeColor(run.generationMode)}`}
+            >
+              Mode: {run.generationMode || "n/a"}
+            </span>
             {isDryRun && (
               <span className="inline-block px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
                 Dry Run
@@ -201,6 +238,83 @@ export default function RunDetailPage() {
         <StatCard label="Clusters Created" value={run.stats.clustersCreated} />
         <StatCard label="Ideas Generated" value={run.stats.ideasGenerated} />
         <StatCard label="Emails Sent" value={run.stats.emailsSent} />
+      </div>
+
+      {/* Generation Diagnostics */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+          Generation Diagnostics
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Quality Pass Rate</p>
+            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              {formatPercent(diagnostics?.qualityPassRate)}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Fallback Rate</p>
+            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              {formatPercent(diagnostics?.fallbackRate)}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Cost / Brief</p>
+            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              {diagnostics ? formatCurrency(diagnostics.costPerBriefUsd) : "N/A"}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Latency / Brief</p>
+            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              {diagnostics ? formatLatencyMs(diagnostics.latencyPerBriefMs) : "N/A"}
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Quality Failure Taxonomy
+            </h3>
+            {qualityReasonRows.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400">N/A</p>
+            ) : (
+              <div className="space-y-1">
+                {qualityReasonRows.map(([reason, count]) => (
+                  <div
+                    key={reason}
+                    className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400"
+                  >
+                    <span className="font-mono">{reason}</span>
+                    <span>{formatNumber(count)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Fallback Taxonomy
+            </h3>
+            {fallbackReasonRows.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400">N/A</p>
+            ) : (
+              <div className="space-y-1">
+                {fallbackReasonRows.map(([reason, count]) => (
+                  <div
+                    key={reason}
+                    className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400"
+                  >
+                    <span className="font-mono">{reason}</span>
+                    <span>{formatNumber(count)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* API Metrics */}

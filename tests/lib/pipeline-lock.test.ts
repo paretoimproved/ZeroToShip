@@ -14,6 +14,7 @@ vi.mock('../../src/lib/redis', () => ({
 import { getRedisClient } from '../../src/lib/redis';
 import {
   acquirePipelineLock,
+  extendPipelineLock,
   releasePipelineLock,
   getPipelineLockInfo,
 } from '../../src/lib/pipeline-lock';
@@ -126,6 +127,69 @@ describe('releasePipelineLock', () => {
 
     // Should not throw
     await releasePipelineLock('run_err');
+  });
+});
+
+describe('extendPipelineLock', () => {
+  it('extends lock TTL when runId still owns the lock', async () => {
+    const redis = createMockRedis();
+    redis.eval.mockResolvedValue(1);
+    mockGetRedisClient.mockReturnValue(redis as never);
+
+    const result = await extendPipelineLock('run_123');
+
+    expect(result).toBe(true);
+    expect(redis.eval).toHaveBeenCalledWith(
+      expect.stringContaining('redis.call("expire"'),
+      1,
+      'pipeline:lock',
+      'run_123',
+      '600',
+    );
+  });
+
+  it('returns false when lock ownership is lost', async () => {
+    const redis = createMockRedis();
+    redis.eval.mockResolvedValue(0);
+    mockGetRedisClient.mockReturnValue(redis as never);
+
+    const result = await extendPipelineLock('run_123');
+
+    expect(result).toBe(false);
+  });
+
+  it('uses custom TTL when provided', async () => {
+    const redis = createMockRedis();
+    redis.eval.mockResolvedValue(1);
+    mockGetRedisClient.mockReturnValue(redis as never);
+
+    await extendPipelineLock('run_123', 300);
+
+    expect(redis.eval).toHaveBeenCalledWith(
+      expect.any(String),
+      1,
+      'pipeline:lock',
+      'run_123',
+      '300',
+    );
+  });
+
+  it('returns true (graceful degradation) when Redis client is null', async () => {
+    mockGetRedisClient.mockReturnValue(null);
+
+    const result = await extendPipelineLock('run_abc');
+
+    expect(result).toBe(true);
+  });
+
+  it('returns true (graceful degradation) when Redis throws', async () => {
+    const redis = createMockRedis();
+    redis.eval.mockRejectedValue(new Error('Connection refused'));
+    mockGetRedisClient.mockReturnValue(redis as never);
+
+    const result = await extendPipelineLock('run_err');
+
+    expect(result).toBe(true);
   });
 });
 

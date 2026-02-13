@@ -306,6 +306,7 @@ export const pipelineRuns = pgTable('pipeline_runs', {
   id: serial('id').primaryKey(),
   runId: text('run_id').notNull().unique(),
   status: varchar('status', { length: 20 }).notNull().default('running'),
+  generationMode: varchar('generation_mode', { length: 20 }).notNull().default('legacy'),
   startedAt: timestamp('started_at').notNull(),
   completedAt: timestamp('completed_at'),
   config: jsonb('config').notNull(),
@@ -319,6 +320,7 @@ export const pipelineRuns = pgTable('pipeline_runs', {
   errors: jsonb('errors').default([]),
   apiMetrics: jsonb('api_metrics'),
   briefSummaries: jsonb('brief_summaries'),
+  generationDiagnostics: jsonb('generation_diagnostics'),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 

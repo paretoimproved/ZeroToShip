@@ -22,6 +22,19 @@ import { getBriefModel, type UserTier } from '../config/models';
 import { callAnthropicApi } from '../lib/anthropic';
 import { sleep } from '../lib/utils';
 
+/** Fallback reason taxonomy used for Phase 0 diagnostics (v1) */
+export type FallbackReason =
+  | 'missing_gap_analysis'
+  | 'missing_api_key'
+  | 'single_call_failed'
+  | 'batch_call_failed'
+  | 'unknown';
+
+export interface BriefGenerationMeta {
+  isFallback: boolean;
+  fallbackReason?: FallbackReason;
+}
+
 /**
  * Complete business brief for a startup idea
  */
@@ -72,6 +85,7 @@ export interface IdeaBrief {
     postedAt: string;
   }>;
   generatedAt: Date;
+  generationMeta?: BriefGenerationMeta;
 }
 
 /**
@@ -273,7 +287,8 @@ async function callClaudeBatch(
 function createFallbackBrief(
   problem: ScoredProblem,
   gaps: GapAnalysis,
-  effortLevel: EffortLevel
+  effortLevel: EffortLevel,
+  fallbackReason: FallbackReason
 ): IdeaBrief {
   const stack = getRecommendedStack(problem.problemStatement, effortLevel);
 
@@ -322,6 +337,10 @@ function createFallbackBrief(
 
     sources: extractSources(problem),
     generatedAt: new Date(),
+    generationMeta: {
+      isFallback: true,
+      fallbackReason,
+    },
   };
 }
 
@@ -438,6 +457,9 @@ function transformToBrief(
 
     sources: extractSources(problem),
     generatedAt: new Date(),
+    generationMeta: {
+      isFallback: false,
+    },
   };
 }
 
@@ -464,7 +486,7 @@ export async function generateBrief(
   // If no API key, return fallback
   if (!apiKey) {
     logger.warn('No Anthropic API key - returning fallback brief');
-    return createFallbackBrief(problem, gaps, effortLevel);
+    return createFallbackBrief(problem, gaps, effortLevel, 'missing_api_key');
   }
 
   // Build prompt
@@ -476,7 +498,7 @@ export async function generateBrief(
 
   if (!response) {
     logger.warn({ problemId: problem.id }, 'Brief generation failed, using fallback');
-    return createFallbackBrief(problem, gaps, effortLevel);
+    return createFallbackBrief(problem, gaps, effortLevel, 'single_call_failed');
   }
 
   return transformToBrief(response, problem, effortLevel, stackRec.stack);
@@ -529,7 +551,7 @@ export async function generateAllBriefs(
         competitionScore: 50,
         analysisNotes: 'Gap analysis not available',
         analyzedAt: new Date(),
-      }, effortLevel));
+      }, effortLevel, 'missing_gap_analysis'));
       continue;
     }
 
@@ -542,7 +564,7 @@ export async function generateAllBriefs(
   if (!apiKey) {
     logger.warn('No Anthropic API key - returning fallback briefs');
     for (const { problem, gaps, effortLevel } of problemsWithGaps) {
-      results.push(createFallbackBrief(problem, gaps, effortLevel));
+      results.push(createFallbackBrief(problem, gaps, effortLevel, 'missing_api_key'));
     }
     results.sort((a, b) => b.priorityScore - a.priorityScore);
     return results;
@@ -562,7 +584,7 @@ export async function generateAllBriefs(
         results.push(transformToBrief(response, problem, effortLevel, stackRec.stack));
       } else {
         logger.warn({ problemId: problem.id }, 'Single brief generation failed, using fallback');
-        results.push(createFallbackBrief(problem, gaps, effortLevel));
+        results.push(createFallbackBrief(problem, gaps, effortLevel, 'single_call_failed'));
       }
     } else {
       // Batch path (kept for future use but currently batch size is 1)
@@ -599,7 +621,7 @@ export async function generateAllBriefs(
       } else {
         logger.warn({ batchSize: batch.length }, 'Batch brief generation failed, using fallbacks');
         for (const { problem, gaps, effortLevel } of batch) {
-          results.push(createFallbackBrief(problem, gaps, effortLevel));
+          results.push(createFallbackBrief(problem, gaps, effortLevel, 'batch_call_failed'));
         }
       }
     }

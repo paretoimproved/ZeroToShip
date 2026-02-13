@@ -21,8 +21,23 @@ function formatDate(iso: string): string {
 }
 
 function formatCost(run: PipelineRunRow): string {
+  const costPerBrief = run.generationDiagnostics?.costPerBriefUsd;
+  if (typeof costPerBrief === "number") {
+    return `$${costPerBrief.toFixed(3)}/brief`;
+  }
   if (!run.apiMetrics) return "\u2014";
   return `$${run.apiMetrics.estimatedCost.toFixed(2)}`;
+}
+
+function formatPercent(value?: number | null): string {
+  if (typeof value !== "number") return "\u2014";
+  return `${(value * 100).toFixed(1)}%`;
+}
+
+function modeColor(mode?: string | null): string {
+  if (mode === "graph") return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+  if (mode === "legacy") return "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300";
+  return "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300";
 }
 
 const PHASE_ORDER = ["scrape", "analyze", "generate", "deliver"];
@@ -131,8 +146,11 @@ export default function RunHistoryPage() {
                 <th className="px-4 py-3 font-medium">Started</th>
                 <th className="px-4 py-3 font-medium">Duration</th>
                 <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Mode</th>
                 <th className="px-4 py-3 font-medium">Phases</th>
                 <th className="px-4 py-3 font-medium">Ideas</th>
+                <th className="px-4 py-3 font-medium">Quality</th>
+                <th className="px-4 py-3 font-medium">Fallback</th>
                 <th className="px-4 py-3 font-medium">Cost</th>
               </tr>
             </thead>
@@ -164,9 +182,22 @@ export default function RunHistoryPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
+                    <span
+                      className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${modeColor(run.generationMode)}`}
+                    >
+                      {run.generationMode || "n/a"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
                     <PhaseDots phases={run.phases} />
                   </td>
                   <td className="px-4 py-3">{run.stats.ideasGenerated}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    {formatPercent(run.generationDiagnostics?.qualityPassRate)}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    {formatPercent(run.generationDiagnostics?.fallbackRate)}
+                  </td>
                   <td className="px-4 py-3 whitespace-nowrap">{formatCost(run)}</td>
                 </tr>
               ))}

@@ -7,6 +7,49 @@ import type { ProblemCluster, ScoredProblem, GapAnalysis } from '../analysis';
 import type { IdeaBrief } from '../generation';
 import type { ApiMetricsSummary } from './utils/api-metrics';
 
+/** Generation execution mode for run-level diagnostics */
+export type GenerationMode = 'legacy' | 'graph';
+
+/** Normalized fallback reason taxonomy (v1) */
+export type FallbackReasonCode =
+  | 'missing_gap_analysis'
+  | 'missing_api_key'
+  | 'single_call_failed'
+  | 'batch_call_failed'
+  | 'unknown';
+
+/** Normalized quality failure taxonomy (v1) */
+export type QualityFailureReasonCode =
+  | 'placeholder_content'
+  | 'length_too_short'
+  | 'list_minimum_not_met'
+  | 'nested_content_incomplete'
+  | 'unknown';
+
+/**
+ * Generate-phase diagnostics emitted before run-level enrichment.
+ * Ratios are 0-1 decimals.
+ */
+export interface GeneratePhaseDiagnostics {
+  taxonomyVersion: 'v1';
+  generatedBriefCount: number;
+  qualityPassCount: number;
+  qualityFailCount: number;
+  qualityPassRate: number;
+  fallbackCount: number;
+  fallbackRate: number;
+  fallbackReasonCounts: Record<FallbackReasonCode, number>;
+  qualityFailureReasonCounts: Record<QualityFailureReasonCode, number>;
+}
+
+/**
+ * Persisted run-level diagnostics with cost/latency enrichment.
+ */
+export interface GenerationDiagnosticsSnapshot extends GeneratePhaseDiagnostics {
+  costPerBriefUsd: number | null;
+  latencyPerBriefMs: number | null;
+}
+
 /**
  * Phase names in the pipeline
  */
@@ -86,6 +129,7 @@ export interface AnalyzePhaseOutput {
 export interface GeneratePhaseOutput {
   briefCount: number;
   briefs: IdeaBrief[];
+  diagnostics?: GeneratePhaseDiagnostics;
 }
 
 /**

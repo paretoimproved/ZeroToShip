@@ -9,12 +9,23 @@ import { getRedisClient } from './redis';
 
 const LOCK_KEY = 'pipeline:lock';
 const DEFAULT_TTL_SECONDS = 600; // 10 minutes
+export const PIPELINE_LOCK_TTL_SECONDS = DEFAULT_TTL_SECONDS;
 
 // Lua script: DEL only when the stored value matches the caller's runId.
 // Prevents one run from accidentally releasing another run's lock.
 const RELEASE_SCRIPT = `
 if redis.call("get", KEYS[1]) == ARGV[1] then
   return redis.call("del", KEYS[1])
+else
+  return 0
+end
+`;
+
+// Lua script: EXPIRE only when the stored value matches the caller's runId.
+// Prevents one run from extending another run's lock.
+const EXTEND_SCRIPT = `
+if redis.call("get", KEYS[1]) == ARGV[1] then
+  return redis.call("expire", KEYS[1], ARGV[2])
 else
   return 0
 end
@@ -55,6 +66,34 @@ export async function releasePipelineLock(runId: string): Promise<void> {
     await redis.eval(RELEASE_SCRIPT, 1, LOCK_KEY, runId);
   } catch {
     // Best-effort release — TTL will expire anyway
+  }
+}
+
+/**
+ * Extend the pipeline lock TTL, but only if it is still owned by runId.
+ *
+ * @returns `true` if extended or Redis is unavailable (graceful degradation),
+ *          `false` if lock ownership is lost.
+ */
+export async function extendPipelineLock(
+  runId: string,
+  ttlSeconds: number = DEFAULT_TTL_SECONDS,
+): Promise<boolean> {
+  const redis = getRedisClient();
+  if (!redis) return true;
+
+  try {
+    const result = await redis.eval(
+      EXTEND_SCRIPT,
+      1,
+      LOCK_KEY,
+      runId,
+      String(ttlSeconds),
+    );
+    return Number(result) === 1;
+  } catch {
+    // Redis unreachable — degrade gracefully
+    return true;
   }
 }
 

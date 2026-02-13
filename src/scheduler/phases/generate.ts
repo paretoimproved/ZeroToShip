@@ -11,15 +11,121 @@ import { cosineSimilarity } from '../../analysis/similarity';
 import { createPhaseLogger } from '../utils/logger';
 import { AnalysisError, wrapError } from '../../lib/errors';
 import type {
+  FallbackReasonCode,
+  GeneratePhaseDiagnostics,
   PhaseResult,
   GeneratePhaseOutput,
   PipelineConfig,
+  QualityFailureReasonCode,
 } from '../types';
 import { getPipelineBriefModel } from '../../config/models';
 import { db, ideas } from '../../api/db/client';
 
 /** Similarity threshold for post-filter deduplication of scored problems */
 const BRIEF_DEDUP_THRESHOLD = 0.85;
+
+const FALLBACK_REASON_CODES: FallbackReasonCode[] = [
+  'missing_gap_analysis',
+  'missing_api_key',
+  'single_call_failed',
+  'batch_call_failed',
+  'unknown',
+];
+
+const QUALITY_FAILURE_REASON_CODES: QualityFailureReasonCode[] = [
+  'placeholder_content',
+  'length_too_short',
+  'list_minimum_not_met',
+  'nested_content_incomplete',
+  'unknown',
+];
+
+function initReasonCounter<T extends string>(codes: T[]): Record<T, number> {
+  const entries = codes.map((code) => [code, 0] as const);
+  return Object.fromEntries(entries) as Record<T, number>;
+}
+
+function classifyQualityReason(reason: string): QualityFailureReasonCode {
+  const normalized = reason.toLowerCase();
+
+  if (normalized.includes('placeholder content')) {
+    return 'placeholder_content';
+  }
+
+  if (normalized.includes('too short')) {
+    return 'length_too_short';
+  }
+
+  if (normalized.includes('need >=')) {
+    return 'list_minimum_not_met';
+  }
+
+  if (normalized.includes('tech stack')) {
+    return 'nested_content_incomplete';
+  }
+
+  return 'unknown';
+}
+
+function buildGenerateDiagnostics(
+  validatedBriefs: Array<{
+    brief: {
+      generationMeta?: {
+        isFallback?: boolean;
+        fallbackReason?: string;
+      };
+    };
+    quality: {
+      valid: boolean;
+      reasons: string[];
+    };
+  }>,
+): GeneratePhaseDiagnostics {
+  const total = validatedBriefs.length;
+  const fallbackReasonCounts = initReasonCounter(FALLBACK_REASON_CODES);
+  const qualityFailureReasonCounts = initReasonCounter(QUALITY_FAILURE_REASON_CODES);
+
+  let fallbackCount = 0;
+  let qualityPassCount = 0;
+  let qualityFailCount = 0;
+
+  for (const { brief, quality } of validatedBriefs) {
+    if (quality.valid) {
+      qualityPassCount++;
+    } else {
+      qualityFailCount++;
+      for (const reason of quality.reasons) {
+        const code = classifyQualityReason(reason);
+        qualityFailureReasonCounts[code] += 1;
+      }
+    }
+
+    if (brief.generationMeta?.isFallback) {
+      fallbackCount++;
+      const reason = brief.generationMeta.fallbackReason;
+      if (reason && reason in fallbackReasonCounts) {
+        fallbackReasonCounts[reason as FallbackReasonCode] += 1;
+      } else {
+        fallbackReasonCounts.unknown += 1;
+      }
+    }
+  }
+
+  const qualityPassRate = total > 0 ? qualityPassCount / total : 0;
+  const fallbackRate = total > 0 ? fallbackCount / total : 0;
+
+  return {
+    taxonomyVersion: 'v1',
+    generatedBriefCount: total,
+    qualityPassCount,
+    qualityFailCount,
+    qualityPassRate,
+    fallbackCount,
+    fallbackRate,
+    fallbackReasonCounts,
+    qualityFailureReasonCounts,
+  };
+}
 
 /**
  * Deduplicate scored problems by comparing cluster embeddings.
@@ -115,28 +221,33 @@ export async function runGeneratePhase(
       model: getPipelineBriefModel(),
     });
 
+    const validatedBriefs = briefs.map(brief => {
+      const quality = validateBriefQuality(brief);
+      if (!quality.valid) {
+        logger.warn(
+          { briefName: brief.name, reasons: quality.reasons },
+          'Brief failed quality validation — will not auto-publish'
+        );
+      }
+      return { brief, quality };
+    });
+
+    const publishableBriefs = validatedBriefs.filter(v => v.quality.valid);
+    const flaggedBriefs = validatedBriefs.filter(v => !v.quality.valid);
+    const diagnostics = buildGenerateDiagnostics(validatedBriefs);
+
+    logger.info(
+      {
+        publishable: publishableBriefs.length,
+        flagged: flaggedBriefs.length,
+        fallbackCount: diagnostics.fallbackCount,
+      },
+      'Brief quality validation results'
+    );
+
     // Persist generated briefs to database
     try {
       if (briefs.length > 0) {
-        const validatedBriefs = briefs.map(brief => {
-          const quality = validateBriefQuality(brief);
-          if (!quality.valid) {
-            logger.warn(
-              { briefName: brief.name, reasons: quality.reasons },
-              'Brief failed quality validation — will not auto-publish'
-            );
-          }
-          return { brief, quality };
-        });
-
-        const publishableBriefs = validatedBriefs.filter(v => v.quality.valid);
-        const flaggedBriefs = validatedBriefs.filter(v => !v.quality.valid);
-
-        logger.info(
-          { publishable: publishableBriefs.length, flagged: flaggedBriefs.length },
-          'Brief quality validation results'
-        );
-
         await db
           .insert(ideas)
           .values(
@@ -188,6 +299,7 @@ export async function runGeneratePhase(
       data: {
         briefCount: briefs.length,
         briefs,
+        diagnostics,
       },
       duration,
       phase: 'generate',

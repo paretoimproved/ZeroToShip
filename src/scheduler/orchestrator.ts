@@ -9,13 +9,19 @@ import { eq } from 'drizzle-orm';
 import { createRunLogger } from './utils/logger';
 import { MetricsCollector } from './utils/metrics';
 import { getGlobalMetrics, resetGlobalMetrics } from './utils/api-metrics';
+import type { ApiMetricsSummary } from './utils/api-metrics';
 import { runScrapePhase } from './phases/scrape';
 import { runAnalyzePhase } from './phases/analyze';
 import { runGeneratePhase } from './phases/generate';
 import { runDeliverPhase } from './phases/deliver';
 import { initMonitoring, captureException } from '../lib/monitoring';
 import { sendPipelineFailureAlert } from '../lib/alerts';
-import { acquirePipelineLock, releasePipelineLock } from '../lib/pipeline-lock';
+import {
+  acquirePipelineLock,
+  extendPipelineLock,
+  releasePipelineLock,
+  PIPELINE_LOCK_TTL_SECONDS,
+} from '../lib/pipeline-lock';
 import {
   initRunStatus,
   savePhaseResult,
@@ -28,6 +34,7 @@ import {
 import { db, pipelineRuns } from '../api/db/client';
 import { DEFAULT_SIMILARITY_THRESHOLD } from '../analysis/similarity';
 import type {
+  GenerationDiagnosticsSnapshot,
   PipelineConfig,
   PipelineResult,
   PhaseResult,
@@ -50,6 +57,9 @@ const DEFAULT_MAX_BRIEFS = 10;
 
 /** Minimum priority score for a problem to be included in brief generation */
 const DEFAULT_MIN_PRIORITY_SCORE = 5;
+
+/** Heartbeat interval for renewing the pipeline lock while a run is active */
+const PIPELINE_LOCK_HEARTBEAT_INTERVAL_MS = 60_000;
 
 /**
  * Default pipeline configuration
@@ -144,6 +154,103 @@ function shouldSkipPhase(
 }
 
 /**
+ * Build a run-level diagnostics snapshot that can be persisted to pipeline_runs.
+ */
+function buildGenerationDiagnosticsSnapshot(
+  generatePhase: PhaseResult<GeneratePhaseOutput>,
+  apiMetrics: ApiMetricsSummary,
+): GenerationDiagnosticsSnapshot {
+  const diagnostics = generatePhase.data?.diagnostics;
+  const generatedBriefCount = generatePhase.data?.briefCount ?? 0;
+  const costPerBriefUsd = generatedBriefCount > 0
+    ? Number((apiMetrics.estimatedCost / generatedBriefCount).toFixed(6))
+    : null;
+  const latencyPerBriefMs = generatedBriefCount > 0
+    ? Math.round(generatePhase.duration / generatedBriefCount)
+    : null;
+
+  if (!diagnostics) {
+    return {
+      taxonomyVersion: 'v1',
+      generatedBriefCount,
+      qualityPassCount: 0,
+      qualityFailCount: 0,
+      qualityPassRate: 0,
+      fallbackCount: 0,
+      fallbackRate: 0,
+      fallbackReasonCounts: {
+        missing_gap_analysis: 0,
+        missing_api_key: 0,
+        single_call_failed: 0,
+        batch_call_failed: 0,
+        unknown: 0,
+      },
+      qualityFailureReasonCounts: {
+        placeholder_content: 0,
+        length_too_short: 0,
+        list_minimum_not_met: 0,
+        nested_content_incomplete: 0,
+        unknown: 0,
+      },
+      costPerBriefUsd,
+      latencyPerBriefMs,
+    };
+  }
+
+  return {
+    ...diagnostics,
+    costPerBriefUsd,
+    latencyPerBriefMs,
+  };
+}
+
+/**
+ * Start periodic lock renewal so long-running pipeline runs keep lock ownership.
+ * Returns a function that stops the heartbeat timer.
+ */
+function startPipelineLockHeartbeat(
+  runId: string,
+  logger: ReturnType<typeof createRunLogger>,
+  onLockLost: () => void,
+): () => void {
+  let timer: NodeJS.Timeout | null = null;
+  let inFlight = false;
+
+  const tick = async () => {
+    if (inFlight) return;
+    inFlight = true;
+
+    try {
+      const renewed = await extendPipelineLock(runId, PIPELINE_LOCK_TTL_SECONDS);
+      if (!renewed) {
+        logger.error(
+          { runId },
+          'Pipeline lock ownership lost during run'
+        );
+        onLockLost();
+        if (timer) {
+          clearInterval(timer);
+          timer = null;
+        }
+      }
+    } finally {
+      inFlight = false;
+    }
+  };
+
+  timer = setInterval(() => {
+    void tick();
+  }, PIPELINE_LOCK_HEARTBEAT_INTERVAL_MS);
+
+  return () => {
+    if (timer) {
+      clearInterval(timer);
+      timer = null;
+    }
+  };
+}
+
+/**
  * Run the complete ZeroToShip pipeline
  *
  * Supports resuming from a previous failed run via `config.resumeRunId`.
@@ -181,7 +288,7 @@ export async function runPipeline(
   const logger = createRunLogger(runId);
 
   // Acquire distributed lock to prevent concurrent pipeline runs
-  const lockAcquired = await acquirePipelineLock(runId);
+  const lockAcquired = await acquirePipelineLock(runId, PIPELINE_LOCK_TTL_SECONDS);
   if (!lockAcquired) {
     logger.warn('Pipeline lock is held by another run — skipping');
     const now = new Date();
@@ -196,6 +303,9 @@ export async function runPipeline(
     ]);
   }
 
+  let lockLost = false;
+  let stopLockHeartbeat: (() => void) | null = null;
+
   try {
   const metrics = new MetricsCollector(runId);
   const errors: PipelineError[] = [];
@@ -204,9 +314,35 @@ export async function runPipeline(
   resetGlobalMetrics();
 
   const startedAt = new Date();
+  stopLockHeartbeat = startPipelineLockHeartbeat(runId, logger, () => {
+    lockLost = true;
+  });
 
   // Initialize monitoring
   initMonitoring();
+
+  const abortForLockLoss = (
+    phase: PhaseName,
+    phases: {
+      scrape?: PhaseResult<ScrapePhaseOutput>;
+      analyze?: PhaseResult<AnalyzePhaseOutput>;
+      generate?: PhaseResult<GeneratePhaseOutput>;
+      deliver?: PhaseResult<DeliverPhaseOutput>;
+    },
+  ): PipelineResult | null => {
+    if (!lockLost) return null;
+
+    errors.push({
+      phase,
+      message: 'Pipeline lock ownership lost during run',
+      timestamp: new Date(),
+      recoverable: false,
+      severity: 'fatal',
+    });
+
+    logger.error({ phase }, 'Aborting pipeline run after lock ownership loss');
+    return buildResult(runId, startedAt, fullConfig, phases, errors);
+  };
 
   if (resumePhase) {
     logger.info(
@@ -274,6 +410,9 @@ export async function runPipeline(
     }
   }
 
+  const lockLossAfterScrape = abortForLockLoss('scrape', { scrape: scrapeResult });
+  if (lockLossAfterScrape) return lockLossAfterScrape;
+
   // Phase 2: Analyze (requires scrape data)
   let analyzeResult: PhaseResult<AnalyzePhaseOutput>;
 
@@ -335,6 +474,12 @@ export async function runPipeline(
       );
     }
   }
+
+  const lockLossAfterAnalyze = abortForLockLoss('analyze', {
+    scrape: scrapeResult,
+    analyze: analyzeResult,
+  });
+  if (lockLossAfterAnalyze) return lockLossAfterAnalyze;
 
   // Phase 3: Generate (requires analyze data)
   let generateResult: PhaseResult<GeneratePhaseOutput>;
@@ -405,6 +550,13 @@ export async function runPipeline(
     }
   }
 
+  const lockLossAfterGenerate = abortForLockLoss('generate', {
+    scrape: scrapeResult,
+    analyze: analyzeResult,
+    generate: generateResult,
+  });
+  if (lockLossAfterGenerate) return lockLossAfterGenerate;
+
   // Phase 4: Deliver (degraded by default — delivery failures don't stop pipeline)
   metrics.startPhase('deliver');
   const deliverResult = generateResult.data?.briefs?.length
@@ -438,6 +590,18 @@ export async function runPipeline(
     sendPipelineFailureAlert(runId, 'deliver', deliverResult.error || 'Unknown error', deliverResult.severity ?? 'degraded');
   }
 
+  const lockLossAfterDeliver = abortForLockLoss('deliver', {
+    scrape: scrapeResult,
+    analyze: analyzeResult,
+    generate: generateResult,
+    deliver: {
+      ...deliverResult,
+      success: false,
+      error: 'Pipeline lock ownership lost during run',
+    },
+  });
+  if (lockLossAfterDeliver) return lockLossAfterDeliver;
+
   const result = buildResult(
     runId,
     startedAt,
@@ -452,7 +616,12 @@ export async function runPipeline(
   );
 
   // Attach API metrics to result
-  result.apiMetrics = getGlobalMetrics().getSummary();
+  const apiMetrics = getGlobalMetrics().getSummary();
+  result.apiMetrics = apiMetrics;
+  const generationDiagnostics = buildGenerationDiagnosticsSnapshot(
+    result.phases.generate,
+    apiMetrics
+  );
 
   // Update the pipeline run row with final results
   try {
@@ -473,6 +642,8 @@ export async function runPipeline(
         errors: result.errors,
         apiMetrics: result.apiMetrics || null,
         briefSummaries,
+        generationMode: 'legacy',
+        generationDiagnostics,
         updatedAt: new Date(),
       })
       .where(eq(pipelineRuns.runId, runId));
@@ -493,6 +664,7 @@ export async function runPipeline(
 
   return result;
   } finally {
+    stopLockHeartbeat?.();
     await releasePipelineLock(runId);
   }
 }
