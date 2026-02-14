@@ -75,8 +75,11 @@ class ApiClient {
   }
 
   async getIdea(id: string): Promise<IdeaBrief> {
-    const res = await this.request<{ idea: IdeaBrief }>(`/ideas/${id}`);
-    return res.idea;
+    const res = await this.request<{ idea: IdeaBrief & { brief?: IdeaBrief } }>(`/ideas/${id}`);
+    // Backend returns IdeaSummary for some tiers: { ...summary, brief?: IdeaBrief }
+    // Unwrap so pages always get a flat IdeaBrief shape.
+    const idea = (res as unknown as { idea: IdeaBrief & { brief?: IdeaBrief } }).idea;
+    return idea.brief ?? idea;
   }
 
   async searchIdeas(params: {

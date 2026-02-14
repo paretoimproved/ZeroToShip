@@ -90,22 +90,23 @@ function truncateRevenue(estimate: string): string {
 
 function generateSubjectLine(topIdea: IdeaBrief, ideaCount: number): string {
   const score = formatScore(topIdea.priorityScore);
-  const effort = formatEffortLabel(topIdea.effortEstimate).toLowerCase();
-  const revenue = truncateRevenue(topIdea.revenueEstimate);
+  const name = topIdea.name.trim();
 
+  // Keep subjects short and factual. Avoid hypey templates (revenue / "could you build this").
   const templates = [
-    `${topIdea.name}: ${effort} build, ${revenue}`,
-    `A ${effort} project worth ${revenue}`,
-    `Today's top idea scored ${score}/100`,
-    `${ideaCount} ideas today. #1 is a ${effort} build.`,
-    `Could you build this in ${effort}?`,
+    `ZeroToShip: ${name}`,
+    `Today's ideas: ${name}`,
+    `${ideaCount} ideas today: ${name}`,
+    `Top idea: ${name} (${score}/100)`,
+    `ZeroToShip: ${ideaCount} ideas, top score ${score}/100`,
   ];
 
   // Deterministic daily selection based on date
   const dateHash = new Date().toISOString().slice(0, 10).split('').reduce((a, c) => a + c.charCodeAt(0), 0);
   const subject = templates[dateHash % templates.length];
 
-  return subject.length > 60 ? subject.slice(0, 57) + '...' : subject;
+  // Most inboxes truncate around ~50 chars. Target a tighter ceiling.
+  return subject.length > 52 ? subject.slice(0, 49) + '...' : subject;
 }
 
 function generatePreviewText(topIdea: IdeaBrief, ideaCount: number): string {
