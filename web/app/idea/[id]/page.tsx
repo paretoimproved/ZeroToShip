@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import IdeaBriefCard from "@/components/IdeaBriefCard";
+import ProtectedLayout from "@/components/ProtectedLayout";
 import { useAuth } from "@/components/AuthProvider";
 import { api } from "@/lib/api";
 import { trackIdeaViewed } from "@/lib/analytics";
@@ -81,31 +82,14 @@ export default function IdeaPage() {
 
   useEffect(() => {
     async function fetchIdea() {
+      if (!isAuthenticated) return;
       try {
         const data = await api.getIdea(id);
-        const idea: IdeaBrief = {
-          ...data,
-          effortEstimate: data.effortEstimate || "week",
-          revenueEstimate: data.revenueEstimate || "TBD",
-          problemStatement: data.problemStatement || data.tagline || "TBD",
-          targetAudience: data.targetAudience || "TBD",
-          marketSize: data.marketSize || "TBD",
-          existingSolutions: data.existingSolutions || "TBD",
-          gaps: data.gaps || "TBD",
-          proposedSolution: data.proposedSolution || data.tagline || "TBD",
-          keyFeatures: data.keyFeatures || [],
-          mvpScope: data.mvpScope || "TBD",
-          technicalSpec: data.technicalSpec || { stack: [], architecture: "TBD", estimatedEffort: "TBD" },
-          businessModel: data.businessModel || { pricing: "TBD", revenueProjection: "TBD", monetizationPath: "TBD" },
-          goToMarket: data.goToMarket || { launchStrategy: "TBD", channels: [], firstCustomers: "TBD" },
-          risks: data.risks || [],
-          sources: data.sources || [],
-        };
-        setBrief(idea);
+        setBrief(data);
         trackIdeaViewed({
-          ideaId: idea.id,
+          ideaId: data.id,
           source: "detail_page",
-          score: idea.priorityScore,
+          score: data.priorityScore,
         });
       } catch (error) {
         console.log("API unavailable, using mock data:", error);
@@ -116,74 +100,74 @@ export default function IdeaPage() {
     }
 
     fetchIdea();
-  }, [id]);
-
-  if (loading) {
-    return (
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8">
-        {/* Back link skeleton */}
-        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-40 mb-6 animate-pulse" />
-
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden animate-pulse">
-          {/* Header skeleton */}
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-start gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-2" />
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
-              </div>
-              <div className="flex gap-2">
-                <div className="h-6 w-12 bg-gray-200 dark:bg-gray-700 rounded-full" />
-                <div className="h-6 w-16 bg-gray-200 dark:bg-gray-700 rounded-full" />
-                <div className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded-full" />
-              </div>
-            </div>
-          </div>
-          {/* Tab bar skeleton */}
-          <div className="flex border-b border-gray-200 dark:border-gray-700 px-4 gap-4">
-            {[1, 2, 3, 4, 5].map((j) => (
-              <div key={j} className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded my-3" />
-            ))}
-          </div>
-          {/* Panel skeleton */}
-          <div className="p-6 space-y-4">
-            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-24" />
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full" />
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6" />
-            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-24 mt-6" />
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full" />
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-4/6" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!brief) return null;
+  }, [id, isAuthenticated]);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8">
-      <Link
-        href="/dashboard"
-        className="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200 mb-6 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
-      >
-        <svg
-          className="w-4 h-4 mr-1"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 19l-7-7 7-7"
-          />
-        </svg>
-        Back to Today&apos;s Ideas
-      </Link>
+    <ProtectedLayout>
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8">
+        {loading ? (
+          <>
+            {/* Back link skeleton */}
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-40 mb-6 animate-pulse" />
 
-      <IdeaBriefCard brief={brief} gated={!isAuthenticated} />
-    </div>
+            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden animate-pulse">
+              {/* Header skeleton */}
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-2" />
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="h-6 w-12 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                    <div className="h-6 w-16 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                    <div className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                  </div>
+                </div>
+              </div>
+              {/* Tab bar skeleton */}
+              <div className="flex border-b border-gray-200 dark:border-gray-700 px-4 gap-4">
+                {[1, 2, 3, 4, 5].map((j) => (
+                  <div key={j} className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded my-3" />
+                ))}
+              </div>
+              {/* Panel skeleton */}
+              <div className="p-6 space-y-4">
+                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-24" />
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6" />
+                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-24 mt-6" />
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-4/6" />
+              </div>
+            </div>
+          </>
+        ) : !brief ? null : (
+          <>
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200 mb-6 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+            >
+              <svg
+                className="w-4 h-4 mr-1"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+              Back to Today&apos;s Ideas
+            </Link>
+
+            <IdeaBriefCard brief={brief} gated={!isAuthenticated} />
+          </>
+        )}
+      </div>
+    </ProtectedLayout>
   );
 }
