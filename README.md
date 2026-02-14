@@ -2,6 +2,38 @@
 
 Automated SaaS that scrapes the web for technical pain points and generates prioritized entrepreneurial ideas.
 
+## Career Demo Docs
+
+For interview-ready project evidence, start here:
+
+1. `reviews/career/README.md`
+2. `reviews/career/impact-scoreboard.md`
+3. `reviews/career/experiment-log.md`
+4. `reviews/career/decision-log.md`
+5. `reviews/career/weekly-build-log.md`
+6. `demos/README.md`
+
+## Current MVP Surface (2026-02-13)
+
+This repository now runs as a monorepo with:
+
+1. API (`src/api`)
+2. Scheduler and pipeline orchestration (`src/scheduler`)
+3. Web app (`web/`)
+
+Common commands:
+
+```bash
+# API
+npm run dev:api
+
+# Scheduler
+npm run scheduler:run
+
+# Web
+npm run web:dev
+```
+
 ## Features
 
 - **Reddit Scraper**: Collects posts from entrepreneurship and developer subreddits
@@ -117,11 +149,23 @@ tests/
 Create a `.env` file (optional):
 
 ```env
-# Custom user agent (recommended)
-REDDIT_USER_AGENT=MyApp/1.0
+# Use `.env.example` as the canonical reference; these are the most common knobs.
 
-# Request delay in ms (default: 1000)
-REQUEST_DELAY=1000
+# Scheduler: run daily at 5:00 AM PST (example)
+SCHEDULER_CRON=0 5 * * *
+SCHEDULER_TIMEZONE=America/Los_Angeles
+SCHEDULER_ENABLED=true
+
+# Generation mode: `graph` enables the LangGraph-style generation provider.
+# Scheduler can override the mode independently.
+GENERATION_MODE=legacy
+SCHEDULER_GENERATION_MODE=graph
+
+# Email delivery (Resend)
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxx
+# Optional sender identity (recommended in production; must be verified in Resend)
+RESEND_FROM_EMAIL=briefs@zerotoship.dev
+RESEND_FROM_NAME=ZeroToShip
 ```
 
 ## Output Schema

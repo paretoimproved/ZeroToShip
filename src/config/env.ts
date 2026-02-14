@@ -52,7 +52,6 @@ const envSchema = z.object({
   RESEND_WEBHOOK_SECRET: z.string().default(''),
   RESEND_FROM_EMAIL: z.string().default(''),
   RESEND_FROM_NAME: z.string().default(''),
-  RESEND_REPLY_TO: z.string().default(''),
 
   // Monitoring and alerting
   SENTRY_DSN: z.string().optional(),
