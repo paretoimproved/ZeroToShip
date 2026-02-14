@@ -5,6 +5,7 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import { AuthProvider } from "./AuthProvider";
 import { AdminProvider } from "./AdminProvider";
 import PostHogProvider from "./PostHogProvider";
+import { ToastProvider } from "./ToastProvider";
 
 const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
@@ -13,7 +14,9 @@ export default function ClientProviders({ children }: { children: React.ReactNod
     <ThemeProvider attribute="class" defaultTheme="system">
       <AuthProvider>
         <PostHogProvider>
-          <AdminProvider>{children}</AdminProvider>
+          <ToastProvider>
+            <AdminProvider>{children}</AdminProvider>
+          </ToastProvider>
         </PostHogProvider>
       </AuthProvider>
     </ThemeProvider>
