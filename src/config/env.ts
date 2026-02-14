@@ -111,6 +111,28 @@ const envSchema = z.object({
     .default('true')
     .transform((val) => val !== 'false'),
   GENERATION_MODE: z.enum(['legacy', 'graph']).default('legacy'),
+
+  // Graph generation (Phase 3 controls)
+  GRAPH_MAX_ATTEMPTS: z.preprocess(
+    (val) => (val === '' || val === undefined ? undefined : val),
+    z.coerce.number().int().positive().default(2)
+  ),
+  GRAPH_MAX_SECTION_RETRIES: z.preprocess(
+    (val) => (val === '' || val === undefined ? undefined : val),
+    z.coerce.number().int().nonnegative().default(1)
+  ),
+  GRAPH_MAX_CONCURRENT_BRIEFS: z.preprocess(
+    (val) => (val === '' || val === undefined ? undefined : val),
+    z.coerce.number().int().positive().default(2)
+  ),
+  GRAPH_RUN_BUDGET_USD: z.preprocess(
+    (val) => (val === '' || val === undefined ? undefined : val),
+    z.coerce.number().nonnegative().optional()
+  ),
+  GRAPH_RUN_BUDGET_TOKENS: z.preprocess(
+    (val) => (val === '' || val === undefined ? undefined : val),
+    z.coerce.number().int().nonnegative().optional()
+  ),
 });
 
 // --- Typed config object ---

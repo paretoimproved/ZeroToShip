@@ -182,7 +182,7 @@ describe('runSingleBriefGraph', () => {
     const result = await runSingleBriefGraph({
       problem: makeScoredProblem(),
       gapAnalyses: new Map(),
-      config: { maxAttempts: 3, model: CLAUDE_MODELS.OPUS },
+      config: { maxAttempts: 3, maxSectionRetries: 2, model: CLAUDE_MODELS.OPUS },
     });
 
     expect(result.attemptsUsed).toBe(3);
@@ -211,5 +211,24 @@ describe('runSingleBriefGraph', () => {
       expect.any(Map),
       expect.objectContaining({ model: CLAUDE_MODELS.OPUS }),
     );
+  });
+
+  it('stops retrying when section retry cap would be exceeded', async () => {
+    const { generateAllBriefs, validateBriefQuality } = await import('../../../src/generation/brief-generator');
+    const first = makeGenerationBrief({ id: 'graph_brief_first' });
+
+    vi.mocked(generateAllBriefs).mockResolvedValue([first]);
+    vi.mocked(validateBriefQuality).mockReturnValue({ valid: false, reasons: ['name too short (< 2 chars)'] });
+
+    const result = await runSingleBriefGraph({
+      problem: makeScoredProblem(),
+      gapAnalyses: new Map(),
+      config: { maxAttempts: 3, maxSectionRetries: 0 },
+    });
+
+    expect(result.attemptsUsed).toBe(1);
+    expect(result.passedQuality).toBe(false);
+    expect(result.failedSections).toContain('core');
+    expect(generateAllBriefs).toHaveBeenCalledTimes(1);
   });
 });

@@ -6,6 +6,7 @@ import { synthesizeBriefForRetry } from './nodes/synthesize-brief';
 import type { GraphSection, SingleBriefGraphResult, SingleBriefGraphState } from './state';
 
 const DEFAULT_GRAPH_MAX_ATTEMPTS = 2;
+const DEFAULT_MAX_SECTION_RETRIES = 1;
 const ALL_GRAPH_SECTIONS: GraphSection[] = [
   'core',
   'problem',
@@ -107,6 +108,27 @@ export async function runSingleBriefGraph(
     }
 
     if (state.attempt >= state.maxAttempts) {
+      break;
+    }
+
+    const maxSectionRetries = Math.max(0, state.config.maxSectionRetries ?? DEFAULT_MAX_SECTION_RETRIES);
+    const willExceedSectionRetries = state.failedSections.some((section) => {
+      const current = state.sectionRetryCounts[section] ?? 0;
+      return (current + 1) > maxSectionRetries;
+    });
+
+    if (willExceedSectionRetries) {
+      logger.info(
+        {
+          problemId: state.problem.id,
+          attempt: state.attempt,
+          maxAttempts: state.maxAttempts,
+          maxSectionRetries,
+          failedSections: state.failedSections,
+          sectionRetryCounts: state.sectionRetryCounts,
+        },
+        'Graph retry blocked by section retry cap'
+      );
       break;
     }
 

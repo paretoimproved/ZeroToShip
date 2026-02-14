@@ -21,6 +21,7 @@ import type {
   QualityFailureReasonCode,
 } from '../types';
 import { getPipelineBriefModel } from '../../config/models';
+import { config as envConfig } from '../../config/env';
 import { db, ideas } from '../../api/db/client';
 
 /** Similarity threshold for post-filter deduplication of scored problems */
@@ -241,6 +242,11 @@ export async function runGeneratePhase(
       gapAnalyses,
       config: {
         model: getPipelineBriefModel(),
+        maxAttempts: envConfig.GRAPH_MAX_ATTEMPTS,
+        maxSectionRetries: envConfig.GRAPH_MAX_SECTION_RETRIES,
+        maxConcurrent: envConfig.GRAPH_MAX_CONCURRENT_BRIEFS,
+        runBudgetUsd: envConfig.GRAPH_RUN_BUDGET_USD,
+        runBudgetTokens: envConfig.GRAPH_RUN_BUDGET_TOKENS,
       },
     });
 

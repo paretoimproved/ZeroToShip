@@ -162,15 +162,30 @@ export interface BriefGeneratorConfig {
   maxConcurrent?: number;
   delayBetweenCalls?: number;
   temperature?: number;
+
+  // Graph-mode controls (Phase 3)
+  /** Max generation attempts per brief when using graph provider (default handled in graph runner). */
+  maxAttempts?: number;
+  /** Cap retries for any single section within a brief (default handled in graph runner). */
+  maxSectionRetries?: number;
+  /** Optional run-level budget in USD for brief generation calls. */
+  runBudgetUsd?: number;
+  /** Optional run-level budget in total tokens (input+output) for brief generation calls. */
+  runBudgetTokens?: number;
 }
 
-const DEFAULT_CONFIG: Required<BriefGeneratorConfig> = {
+const DEFAULT_CONFIG: Required<Omit<BriefGeneratorConfig, 'runBudgetUsd' | 'runBudgetTokens'>>
+  & Pick<BriefGeneratorConfig, 'runBudgetUsd' | 'runBudgetTokens'> = {
   anthropicApiKey: '',
   model: '',
   userTier: 'pro',
   maxConcurrent: DEFAULT_MAX_CONCURRENT,
   delayBetweenCalls: DEFAULT_DELAY_BETWEEN_CALLS_MS,
   temperature: DEFAULT_TEMPERATURE,
+  maxAttempts: 2,
+  maxSectionRetries: 1,
+  runBudgetUsd: undefined,
+  runBudgetTokens: undefined,
 };
 
 /**

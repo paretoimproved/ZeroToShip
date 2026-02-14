@@ -121,6 +121,69 @@ describe('GraphGenerationProvider', () => {
     expect(result[0].generationMeta?.graphTrace?.[0]?.model).toBe(CLAUDE_MODELS.HAIKU);
   });
 
+  it('respects maxConcurrent by running graphs in a small pool', async () => {
+    const { runSingleBriefGraph } = await import('../../../src/generation/graph');
+
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const defer: Array<() => void> = [];
+
+    vi.mocked(runSingleBriefGraph).mockImplementation(async () => {
+      inFlight += 1;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await new Promise<void>((resolve) => defer.push(resolve));
+      inFlight -= 1;
+      return {
+        brief: makeGenerationBrief({ id: `graph_${Date.now()}` }),
+        attemptsUsed: 1,
+        retried: false,
+        passedQuality: true,
+        modelsUsed: [CLAUDE_MODELS.HAIKU],
+        failedSections: [],
+        reasons: [],
+        trace: [],
+        sectionRetryCounts: {
+          core: 0,
+          problem: 0,
+          audience: 0,
+          market: 0,
+          solution: 0,
+          features: 0,
+          technical: 0,
+          business_model: 0,
+          gtm: 0,
+          risks: 0,
+        },
+      };
+    });
+
+    const provider = new GraphGenerationProvider();
+    const generatePromise = provider.generate({
+      scoredProblems: [makeScoredProblem({ id: 'p1' }), makeScoredProblem({ id: 'p2' }), makeScoredProblem({ id: 'p3' })],
+      gapAnalyses: new Map(),
+      config: { maxConcurrent: 2 },
+    });
+
+    // Let two tasks start.
+    while (defer.length < 2) {
+      await Promise.resolve();
+    }
+    expect(maxInFlight).toBe(2);
+
+    // Release two, allow third to start.
+    defer.shift()?.();
+    defer.shift()?.();
+    while (defer.length < 1) {
+      await Promise.resolve();
+    }
+
+    // Release last.
+    defer.shift()?.();
+    const result = await generatePromise;
+    expect(result.length).toBe(3);
+    expect(maxInFlight).toBe(2);
+  });
+
   it('falls back to legacy provider when graph execution throws', async () => {
     const { runSingleBriefGraph } = await import('../../../src/generation/graph');
     const legacySpy = vi.spyOn(LegacyGenerationProvider.prototype, 'generate')

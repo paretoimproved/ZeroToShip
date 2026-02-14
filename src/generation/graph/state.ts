@@ -15,7 +15,6 @@ export type GraphSection =
   | 'risks';
 
 export interface GraphRunConfig extends BriefGeneratorConfig {
-  maxAttempts?: number;
 }
 
 export interface GraphCriticAssessment {

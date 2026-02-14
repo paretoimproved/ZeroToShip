@@ -1,9 +1,43 @@
 import type { GapAnalysis } from '../../analysis/gap-analyzer';
 import logger from '../../lib/logger';
+import { GraphBudgetManager } from '../graph/budget';
 import { runSingleBriefGraph } from '../graph';
 import type { IdeaBrief } from '../brief-generator';
 import { LegacyGenerationProvider } from './legacy-provider';
 import type { GenerationProvider, GenerationProviderInput } from './types';
+
+async function runInPool<T, R>(
+  items: T[],
+  maxConcurrent: number,
+  canStartNext: () => boolean,
+  worker: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = [];
+  let nextIndex = 0;
+  let active = 0;
+
+  return await new Promise<R[]>((resolve, reject) => {
+    const launch = () => {
+      while (active < maxConcurrent && nextIndex < items.length && canStartNext()) {
+        const item = items[nextIndex++];
+        active += 1;
+        worker(item)
+          .then((res) => {
+            results.push(res);
+            active -= 1;
+            launch();
+          })
+          .catch((err) => reject(err));
+      }
+
+      if ((nextIndex >= items.length || !canStartNext()) && active === 0) {
+        resolve(results);
+      }
+    };
+
+    launch();
+  });
+}
 
 export class GraphGenerationProvider implements GenerationProvider {
   readonly mode = 'graph' as const;
@@ -11,20 +45,23 @@ export class GraphGenerationProvider implements GenerationProvider {
   private readonly legacyProvider = new LegacyGenerationProvider();
 
   async generate(input: GenerationProviderInput): Promise<IdeaBrief[]> {
-    const results: IdeaBrief[] = [];
+    const cfg = input.config ?? {};
+    const maxConcurrent = Math.max(1, cfg.maxConcurrent ?? 2);
+    const budget = new GraphBudgetManager({
+      runBudgetUsd: cfg.runBudgetUsd,
+      runBudgetTokens: cfg.runBudgetTokens,
+    });
 
-    for (const problem of input.scoredProblems) {
+    const worker = async (problem: (typeof input.scoredProblems)[number]): Promise<IdeaBrief> => {
       const perProblemGaps = new Map<string, GapAnalysis>();
       const gap = input.gapAnalyses.get(problem.id);
-      if (gap) {
-        perProblemGaps.set(problem.id, gap);
-      }
+      if (gap) perProblemGaps.set(problem.id, gap);
 
       try {
         const graphResult = await runSingleBriefGraph({
           problem,
           gapAnalyses: perProblemGaps,
-          config: input.config ?? {},
+          config: cfg,
         });
 
         logger.info(
@@ -44,7 +81,7 @@ export class GraphGenerationProvider implements GenerationProvider {
           .filter(([, count]) => count > 0)
           .map(([section]) => section);
 
-        results.push({
+        return {
           ...graphResult.brief,
           generationMeta: {
             isFallback: graphResult.brief.generationMeta?.isFallback ?? false,
@@ -56,7 +93,7 @@ export class GraphGenerationProvider implements GenerationProvider {
             graphRetriedSections: retriedSections,
             graphTrace: graphResult.trace,
           },
-        });
+        };
       } catch (error) {
         logger.warn(
           {
@@ -69,26 +106,43 @@ export class GraphGenerationProvider implements GenerationProvider {
         const fallbackBriefs = await this.legacyProvider.generate({
           scoredProblems: [problem],
           gapAnalyses: perProblemGaps,
-          config: input.config,
+          config: cfg,
         });
 
-        results.push(
-          ...fallbackBriefs.map((brief) => ({
-            ...brief,
-            generationMeta: {
-              isFallback: brief.generationMeta?.isFallback ?? false,
-              fallbackReason: brief.generationMeta?.fallbackReason,
-              providerMode: 'legacy' as const,
-              graphAttemptCount: brief.generationMeta?.graphAttemptCount,
-              graphModelsUsed: brief.generationMeta?.graphModelsUsed,
-              graphFailedSections: brief.generationMeta?.graphFailedSections,
-              graphRetriedSections: brief.generationMeta?.graphRetriedSections,
-              graphTrace: brief.generationMeta?.graphTrace,
-            },
-          }))
-        );
+        const brief = fallbackBriefs[0];
+        if (!brief) {
+          throw new Error(`Legacy fallback produced no brief for problem "${problem.id}"`);
+        }
+
+        return {
+          ...brief,
+          generationMeta: {
+            isFallback: brief.generationMeta?.isFallback ?? false,
+            fallbackReason: brief.generationMeta?.fallbackReason,
+            providerMode: 'legacy' as const,
+            graphAttemptCount: brief.generationMeta?.graphAttemptCount,
+            graphModelsUsed: brief.generationMeta?.graphModelsUsed,
+            graphFailedSections: brief.generationMeta?.graphFailedSections,
+            graphRetriedSections: brief.generationMeta?.graphRetriedSections,
+            graphTrace: brief.generationMeta?.graphTrace,
+          },
+        };
       }
-    }
+    };
+
+    const results = await runInPool(
+      input.scoredProblems,
+      maxConcurrent,
+      () => {
+        const ok = budget.canStartNextBrief();
+        if (!ok) {
+          const reason = budget.getBlockReason();
+          logger.warn({ reason, spent: budget.getSpent() }, 'Graph run halted due to budget cap');
+        }
+        return ok;
+      },
+      worker,
+    );
 
     results.sort((a, b) => b.priorityScore - a.priorityScore);
     return results;
