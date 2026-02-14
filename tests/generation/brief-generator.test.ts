@@ -341,7 +341,7 @@ describe('Brief Generator', () => {
       const brief = await generateBrief(problem, gaps, { anthropicApiKey: '' });
 
       expect(brief).toBeDefined();
-      expect(brief.id).toMatch(/^brief_/);
+      expect(brief.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
       expect(brief.problemStatement).toBe(problem.problemStatement);
       expect(brief.priorityScore).toBe(problem.scores.priority);
     });
@@ -738,7 +738,7 @@ describe('Brief Generator', () => {
       });
 
       expect(brief).toBeDefined();
-      expect(brief.id).toMatch(/^brief_/);
+      expect(brief.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
     });
 
     it('defaults to pro tier when userTier not specified', async () => {
