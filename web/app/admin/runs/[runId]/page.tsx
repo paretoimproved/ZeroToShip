@@ -42,6 +42,12 @@ function formatLatencyMs(value?: number | null): string {
   return `${formatNumber(Math.round(value))} ms`;
 }
 
+function formatBudgetStopReason(reason: string): string {
+  if (reason === "budget_usd_exceeded") return "USD budget cap exceeded";
+  if (reason === "budget_tokens_exceeded") return "Token budget cap exceeded";
+  return "Budget cap reached";
+}
+
 type BriefSummary = NonNullable<PipelineRunRow["briefSummaries"]>[number];
 
 function escapeMermaidLabel(value: string): string {
@@ -407,6 +413,30 @@ export default function RunDetailPage() {
             </p>
           </div>
         </div>
+
+        {diagnostics?.budgetStop && (
+          <div className="mb-6 p-4 rounded-lg border border-yellow-200 dark:border-yellow-900 bg-yellow-50 dark:bg-yellow-950/30">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100">
+                {formatBudgetStopReason(diagnostics.budgetStop.reason)}
+              </p>
+              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-900 dark:bg-yellow-900 dark:text-yellow-100">
+                Generated {diagnostics.budgetStop.generatedBriefCount} of{" "}
+                {diagnostics.budgetStop.requestedBriefCount}
+              </span>
+            </div>
+            <p className="text-xs text-yellow-900/80 dark:text-yellow-100/80 mt-2 font-mono">
+              spentUsd={formatCurrency(diagnostics.budgetStop.spentUsd)} spentTokens=
+              {formatNumber(diagnostics.budgetStop.spentTokens)}
+              {typeof diagnostics.budgetStop.runBudgetUsd === "number"
+                ? ` capUsd=${formatCurrency(diagnostics.budgetStop.runBudgetUsd)}`
+                : ""}
+              {typeof diagnostics.budgetStop.runBudgetTokens === "number"
+                ? ` capTokens=${formatNumber(diagnostics.budgetStop.runBudgetTokens)}`
+                : ""}
+            </p>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">

@@ -238,6 +238,15 @@ export interface GenerationDiagnosticsSnapshot {
   fallbackRate: number;
   fallbackReasonCounts: Record<FallbackReasonCode, number>;
   qualityFailureReasonCounts: Record<QualityFailureReasonCode, number>;
+  budgetStop?: {
+    reason: "budget_usd_exceeded" | "budget_tokens_exceeded" | "unknown";
+    requestedBriefCount: number;
+    generatedBriefCount: number;
+    runBudgetUsd?: number;
+    runBudgetTokens?: number;
+    spentUsd: number;
+    spentTokens: number;
+  };
   costPerBriefUsd: number | null;
   latencyPerBriefMs: number | null;
 }

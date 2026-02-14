@@ -26,6 +26,21 @@ export type QualityFailureReasonCode =
   | 'nested_content_incomplete'
   | 'unknown';
 
+export type BudgetStopReason =
+  | 'budget_usd_exceeded'
+  | 'budget_tokens_exceeded'
+  | 'unknown';
+
+export interface BudgetStopSnapshot {
+  reason: BudgetStopReason;
+  requestedBriefCount: number;
+  generatedBriefCount: number;
+  runBudgetUsd?: number;
+  runBudgetTokens?: number;
+  spentUsd: number;
+  spentTokens: number;
+}
+
 /**
  * Generate-phase diagnostics emitted before run-level enrichment.
  * Ratios are 0-1 decimals.
@@ -40,6 +55,11 @@ export interface GeneratePhaseDiagnostics {
   fallbackRate: number;
   fallbackReasonCounts: Record<FallbackReasonCode, number>;
   qualityFailureReasonCounts: Record<QualityFailureReasonCode, number>;
+  /**
+   * Optional Phase 3 artifact: records when graph generation halts early due
+   * to a configured run budget cap (USD or tokens).
+   */
+  budgetStop?: BudgetStopSnapshot;
 }
 
 /**

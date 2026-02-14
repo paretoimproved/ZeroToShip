@@ -9,6 +9,7 @@ import type { ScoredProblem } from '../../analysis/scorer';
 import type { GapAnalysis } from '../../analysis/gap-analyzer';
 import { cosineSimilarity } from '../../analysis/similarity';
 import { selectGenerationProvider } from '../../generation/providers';
+import { GraphBudgetManager } from '../../generation/graph/budget';
 import { createPhaseLogger } from '../utils/logger';
 import { AnalysisError, wrapError } from '../../lib/errors';
 import type {
@@ -236,6 +237,17 @@ export async function runGeneratePhase(
       };
     }
 
+    const hasGraphBudgetCaps =
+      selection.effectiveMode === 'graph' &&
+      (typeof envConfig.GRAPH_RUN_BUDGET_USD === 'number' ||
+        typeof envConfig.GRAPH_RUN_BUDGET_TOKENS === 'number');
+    const budgetManager = hasGraphBudgetCaps
+      ? new GraphBudgetManager({
+        runBudgetUsd: envConfig.GRAPH_RUN_BUDGET_USD,
+        runBudgetTokens: envConfig.GRAPH_RUN_BUDGET_TOKENS,
+      })
+      : null;
+
     // Generate briefs with tier-appropriate model
     const briefs = await selection.provider.generate({
       scoredProblems: filteredProblems,
@@ -263,13 +275,43 @@ export async function runGeneratePhase(
 
     const publishableBriefs = validatedBriefs.filter(v => v.quality.valid);
     const flaggedBriefs = validatedBriefs.filter(v => !v.quality.valid);
-    const diagnostics = buildGenerateDiagnostics(validatedBriefs);
+    const baseDiagnostics = buildGenerateDiagnostics(validatedBriefs);
+    const budgetStop =
+      budgetManager && briefs.length < filteredProblems.length
+        ? (() => {
+          const spent = budgetManager.getSpent();
+          let reason: 'budget_usd_exceeded' | 'budget_tokens_exceeded' | 'unknown' = 'unknown';
+          if (typeof envConfig.GRAPH_RUN_BUDGET_USD === 'number') {
+            if (spent.estimatedCostUsd >= envConfig.GRAPH_RUN_BUDGET_USD) {
+              reason = 'budget_usd_exceeded';
+            }
+          }
+          if (reason === 'unknown' && typeof envConfig.GRAPH_RUN_BUDGET_TOKENS === 'number') {
+            if (spent.totalTokens >= envConfig.GRAPH_RUN_BUDGET_TOKENS) {
+              reason = 'budget_tokens_exceeded';
+            }
+          }
+
+          return {
+            reason,
+            requestedBriefCount: filteredProblems.length,
+            generatedBriefCount: briefs.length,
+            runBudgetUsd: envConfig.GRAPH_RUN_BUDGET_USD,
+            runBudgetTokens: envConfig.GRAPH_RUN_BUDGET_TOKENS,
+            spentUsd: Number(spent.estimatedCostUsd.toFixed(6)),
+            spentTokens: spent.totalTokens,
+          };
+        })()
+        : undefined;
+
+    const diagnostics = budgetStop ? { ...baseDiagnostics, budgetStop } : baseDiagnostics;
 
     logger.info(
       {
         publishable: publishableBriefs.length,
         flagged: flaggedBriefs.length,
         fallbackCount: diagnostics.fallbackCount,
+        budgetStopReason: diagnostics.budgetStop?.reason,
       },
       'Brief quality validation results'
     );
