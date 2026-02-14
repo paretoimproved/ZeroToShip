@@ -4,8 +4,10 @@
  * Business logic for fetching, filtering, and managing ideas
  */
 
-import { eq, desc, asc, gte, lte, and, like, sql, ilike, or } from 'drizzle-orm';
+import { eq, desc, asc, gte, lt, lte, and, like, sql, ilike, or } from 'drizzle-orm';
 import { db, ideas, savedIdeas, viewedIdeas, validationRequests } from '../db/client';
+import { config as envConfig } from '../../config/env';
+import { getTodayWindowUtc } from '../../lib/timezone';
 import type {
   IdeaBrief,
   IdeaSummary,
@@ -61,11 +63,10 @@ function rowToIdeaBrief(row: typeof ideas.$inferSelect): IdeaBrief {
  * Get today's published ideas
  */
 export async function getTodaysIdeas(): Promise<IdeaBrief[]> {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  // Use scheduler-configured timezone for "today" boundaries so the UI and cron runs
+  // agree on what "today" means (and avoid edge caching around UTC midnight).
+  const tz = envConfig.SCHEDULER_TIMEZONE || 'UTC';
+  const { start, end } = getTodayWindowUtc(tz, new Date());
 
   const rows = await db
     .select()
@@ -73,8 +74,8 @@ export async function getTodaysIdeas(): Promise<IdeaBrief[]> {
     .where(
       and(
         eq(ideas.isPublished, true),
-        gte(ideas.publishedAt, today),
-        lte(ideas.publishedAt, tomorrow)
+        gte(ideas.publishedAt, start),
+        lt(ideas.publishedAt, end)
       )
     )
     .orderBy(desc(ideas.priorityScore))

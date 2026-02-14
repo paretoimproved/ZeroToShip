@@ -106,6 +106,11 @@ export interface PhaseResult<T = unknown> {
 export interface PipelineConfig {
   /** Hours of content to look back (default: 24) */
   hoursBack: number;
+  /**
+   * Requested generation mode for this run (optional).
+   * If omitted, the orchestrator falls back to environment configuration.
+   */
+  generationMode?: GenerationMode;
   /** Which scrapers to run */
   scrapers: {
     reddit: boolean;

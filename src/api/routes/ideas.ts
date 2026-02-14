@@ -79,6 +79,9 @@ export const ideasRoutes: FastifyPluginAsync = async (fastify) => {
     async (request, reply) => {
       const { ideas, total } = await getTodaysIdeasForTier(request.userTier);
 
+      // Prevent CDN/browser caching so "today" updates immediately after scheduled runs.
+      reply.header('Cache-Control', 'no-store, max-age=0');
+
       return reply.send({
         ideas,
         total,
