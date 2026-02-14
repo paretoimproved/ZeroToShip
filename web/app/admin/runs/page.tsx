@@ -45,6 +45,36 @@ function modeColor(mode?: string | null): string {
   return "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300";
 }
 
+function statusBadge(run: PipelineRunRow): { label: string; className: string } {
+  const status = run.status ?? (run.completedAt ? (run.success ? "completed" : "failed") : "running");
+
+  if (status === "running") {
+    return {
+      label: "Running",
+      className: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+    };
+  }
+
+  if (status === "completed") {
+    return {
+      label: "Success",
+      className: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+    };
+  }
+
+  if (status === "failed") {
+    return {
+      label: "Failed",
+      className: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+    };
+  }
+
+  return {
+    label: String(status),
+    className: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
+  };
+}
+
 const PHASE_ORDER = ["scrape", "analyze", "generate", "deliver"];
 
 function PhaseDots({ phases }: { phases: Record<string, string> }) {
@@ -176,15 +206,19 @@ export default function RunHistoryPage() {
                   <td className="px-4 py-3 whitespace-nowrap">{formatDate(run.startedAt)}</td>
                   <td className="px-4 py-3 whitespace-nowrap">{formatDuration(run.totalDuration)}</td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                        run.success
-                          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                          : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                      }`}
-                    >
-                      {run.success ? "Success" : "Failed"}
-                    </span>
+                    {(() => {
+                      const badge = statusBadge(run);
+                      return (
+                        <span
+                          className={[
+                            "inline-block px-2 py-0.5 rounded-full text-xs font-medium",
+                            badge.className,
+                          ].join(" ")}
+                        >
+                          {badge.label}
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td className="px-4 py-3">
                     <span

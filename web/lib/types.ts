@@ -154,6 +154,7 @@ export interface Subscription {
 export interface PipelineRunRow {
   id: number;
   runId: string;
+  status?: "running" | "completed" | "failed" | string;
   startedAt: string;
   completedAt: string | null;
   config: Record<string, unknown>;

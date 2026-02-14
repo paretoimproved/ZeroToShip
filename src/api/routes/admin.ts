@@ -248,9 +248,9 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
     };
 
     const statusFilter = query.status === 'completed'
-      ? eq(pipelineRuns.success, true)
+      ? eq(pipelineRuns.status, 'completed')
       : query.status === 'failed'
-        ? eq(pipelineRuns.success, false)
+        ? eq(pipelineRuns.status, 'failed')
         : undefined;
 
     const baseQuery = statusFilter

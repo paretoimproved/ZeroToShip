@@ -186,7 +186,16 @@ const PHASE_LABELS: Record<string, string> = {
   deliver: "Deliver",
 };
 
-function PhaseTimeline({ phases }: { phases: Record<string, string> }) {
+function PhaseTimeline({
+  phases,
+  status,
+}: {
+  phases: Record<string, string>;
+  status?: string | null;
+}) {
+  const isRunning = status === "running";
+  const activePhase = isRunning ? PHASE_ORDER.find((p) => phases[p] === "pending") ?? null : null;
+
   return (
     <div className="flex items-center justify-between max-w-lg">
       {PHASE_ORDER.map((phase, i) => {
@@ -194,6 +203,7 @@ function PhaseTimeline({ phases }: { phases: Record<string, string> }) {
         let circleColor = "bg-gray-300 dark:bg-gray-600 border-gray-400 dark:border-gray-500";
         if (status === "completed") circleColor = "bg-green-500 border-green-600";
         else if (status === "failed") circleColor = "bg-red-500 border-red-600";
+        else if (activePhase === phase) circleColor = "bg-blue-500 border-blue-600";
 
         return (
           <div key={phase} className="flex items-center">
@@ -299,6 +309,7 @@ export default function RunDetailPage() {
 
   if (!run) return null;
 
+  const derivedStatus = run.status ?? (run.completedAt ? (run.success ? "completed" : "failed") : "running");
   const isDryRun = Boolean(run.config.dryRun);
   const diagnostics = run.generationDiagnostics || null;
   const qualityReasonRows = diagnostics
@@ -345,12 +356,22 @@ export default function RunDetailPage() {
           <div className="flex items-center space-x-2">
             <span
               className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                run.success
-                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                  : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                derivedStatus === "running"
+                  ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                  : derivedStatus === "completed"
+                    ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                    : derivedStatus === "failed"
+                      ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                      : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
               }`}
             >
-              {run.success ? "Success" : "Failed"}
+              {derivedStatus === "running"
+                ? "Running"
+                : derivedStatus === "completed"
+                  ? "Success"
+                  : derivedStatus === "failed"
+                    ? "Failed"
+                    : derivedStatus}
             </span>
             <span
               className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${modeColor(run.generationMode)}`}
@@ -371,7 +392,7 @@ export default function RunDetailPage() {
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           Phase Timeline
         </h2>
-        <PhaseTimeline phases={run.phases} />
+        <PhaseTimeline phases={run.phases} status={derivedStatus} />
       </div>
 
       {/* Stats Grid */}
