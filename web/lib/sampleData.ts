@@ -6,7 +6,7 @@ export const sampleBrief: IdeaBrief = {
   tagline: "A real-time CI/CD dashboard built for solo developers and small teams.",
   priorityScore: 87,
   effortEstimate: "week",
-  revenueEstimate: "$8K–$15K MRR within 12 months",
+  revenueEstimate: "$8K–$15K per month within 12 months",
 
   problemStatement:
     "Solo developers and indie hackers juggle multiple projects across GitHub Actions, Vercel, Railway, and Fly.io. There is no single pane of glass that aggregates build status, deploy health, and failure alerts across all of these providers without enterprise-grade complexity or pricing. Developers waste 20+ minutes per day context-switching between dashboards just to check if their deploys succeeded.",
@@ -58,14 +58,14 @@ export const sampleBrief: IdeaBrief = {
     pricing:
       "Free tier: 2 connected repos, 7-day history. Pro ($9/mo): unlimited repos, 90-day history, Slack/Discord alerts. Team ($19/mo per seat): shared dashboards, role-based access, priority support.",
     revenueProjection:
-      "Month 3: 200 free users, 30 Pro subscribers ($270 MRR). Month 6: 800 free users, 120 Pro + 15 Team ($1,365 MRR). Month 12: 2,500 free users, 400 Pro + 80 Team ($5,120 MRR). Break-even at ~60 Pro subscribers.",
+      "Month 3: 200 free users, 30 Pro subscribers ($270 per month). Month 6: 800 free users, 120 Pro + 15 Team ($1,365 per month). Month 12: 2,500 free users, 400 Pro + 80 Team ($5,120 per month). Break-even at ~60 Pro subscribers.",
     monetizationPath:
       "Start with Pro subscriptions as primary revenue. Introduce Team tier at month 4. Explore a marketplace for community-built provider adapters (take 20% commission) at month 9. Long-term: API access tier for developers building on top of ShipWatch data.",
   },
 
   goToMarket: {
     launchStrategy:
-      "Launch on Product Hunt as a 'Developer Tools' product. Post Show HN with a focus on the technical architecture. Submit to Indie Hackers and dev tool newsletters (TLDR, Bytes, Console.dev).",
+      "Launch on Product Hunt as a 'Developer Tools' product. Post on Hacker News (Show HN) with a focus on the technical architecture. Submit to Indie Hackers and dev tool newsletters (TLDR, Bytes, Console.dev).",
     channels: [
       "Product Hunt launch",
       "Hacker News Show HN",

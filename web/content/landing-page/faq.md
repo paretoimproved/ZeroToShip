@@ -5,7 +5,7 @@
 
 ---
 
-### How is this different from browsing Reddit/HN myself?
+### How is this different from browsing Reddit or Hacker News myself?
 
 We scrape 300+ posts daily across 8 subreddits, Hacker News, and GitHub. Then AI clusters similar problems, scores them by opportunity, and generates technical specs. You'd spend hours doing this manually—we do it in minutes and deliver the best ideas to your inbox.
 

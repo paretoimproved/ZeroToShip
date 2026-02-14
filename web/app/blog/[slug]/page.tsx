@@ -148,7 +148,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               Get startup ideas delivered daily
             </p>
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-              ZeroToShip scrapes 300+ posts from Reddit, HN, and GitHub every
+              ZeroToShip scrapes 300+ posts from Reddit, Hacker News, and GitHub every
               day and delivers 10 scored ideas with full business briefs.
             </p>
             <Link

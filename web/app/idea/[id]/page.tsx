@@ -16,7 +16,7 @@ const mockBrief: IdeaBrief = {
   tagline: "Unified monitoring for indie developers",
   priorityScore: 87,
   effortEstimate: "weekend",
-  revenueEstimate: "$5K-15K MRR",
+  revenueEstimate: "$5K-15K per month",
   problemStatement:
     "Solo developers and small teams struggle to monitor multiple services across different cloud providers. Enterprise tools like Datadog and New Relic are expensive ($100+/month) and overkill for simple projects. Developers end up either ignoring monitoring entirely or cobbling together free tiers from multiple services, leading to alert fatigue and missed issues.",
   targetAudience:
@@ -47,7 +47,7 @@ const mockBrief: IdeaBrief = {
     pricing:
       "$9/mo Hobby (5 services, 7-day retention), $29/mo Pro (unlimited services, 30-day retention, priority support)",
     revenueProjection:
-      "Target 100 paying users in month 1 ($1K MRR), 500 users by month 6 ($10K MRR)",
+      "Target 100 paying users in month 1 ($1K per month), 500 users by month 6 ($10K per month)",
     monetizationPath:
       "Free tier with 2 services and 1-day retention to drive adoption. Convert to paid through retention limits and service count.",
   },
@@ -56,7 +56,7 @@ const mockBrief: IdeaBrief = {
       "Product Hunt launch with Indie Hackers cross-post. Focus on building in public to attract target audience.",
     channels: ["Indie Hackers", "Reddit r/SideProject", "Dev.to", "Hacker News"],
     firstCustomers:
-      "Reach out to indie hackers on Reddit and HN who have complained about monitoring costs. Offer lifetime deals to first 50 customers for testimonials.",
+      "Reach out to indie hackers on Reddit and Hacker News who have complained about monitoring costs. Offer lifetime deals to first 50 customers for testimonials.",
   },
   risks: [
     "Competition from free tools and generous free tiers",
@@ -164,7 +164,7 @@ export default function IdeaPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8">
       <Link
-        href="/"
+        href="/dashboard"
         className="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200 mb-6 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
       >
         <svg

@@ -89,7 +89,7 @@ Contact Us
 ## FAQ Below Pricing
 
 ### Why is Pro worth $19/mo?
-Each brief includes market analysis, tech stack recommendations, competitor landscape, and a go-to-market playbook. It replaces hours of research with a 5-minute read. One validated idea can be worth thousands in MRR.
+Each brief includes market analysis, tech stack recommendations, competitor landscape, and a go-to-market playbook. It replaces hours of research with a 5-minute read. One validated idea can be worth thousands per month.
 
 ### Can I cancel anytime?
 Yes, cancel with one click. No questions asked, no contracts.
@@ -101,7 +101,7 @@ Full refund within 14 days if you're not finding value.
 
 ## Social Proof Below Pricing
 
-> "Found my current project in the first week. Already at $2K MRR."
+> "Found my current project in the first week. Already at $2K per month."
 > — @indiehacker (placeholder)
 
 > "The technical specs alone save me hours of planning."

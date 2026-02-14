@@ -19,7 +19,7 @@ const faqJsonLd: Record<string, unknown> = {
   mainEntity: [
     {
       "@type": "Question",
-      name: "How is this different from browsing Reddit/HN myself?",
+      name: "How is this different from browsing Reddit or Hacker News myself?",
       acceptedAnswer: {
         "@type": "Answer",
         text: "We scrape 300+ posts daily across 8 subreddits, Hacker News, and GitHub. Then AI clusters similar problems, scores them by opportunity, and generates technical specs. You'd spend hours doing this manually \u2014 we do it in minutes and deliver the best ideas to your inbox.",
@@ -112,7 +112,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen">
       <LandingNav />
-      <div id="main-content">
+      <main id="main-content" tabIndex={-1}>
         <HeroSection />
         <SourceStrip />
         <HowItWorks />
@@ -122,7 +122,7 @@ export default function LandingPage() {
         <PricingSection />
         <FAQSection />
         <FinalCTA />
-      </div>
+      </main>
       <Footer />
       <JsonLd data={faqJsonLd} />
       <JsonLd data={organizationJsonLd} />

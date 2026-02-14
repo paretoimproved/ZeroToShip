@@ -284,7 +284,7 @@ export default function PipelinePage() {
                   <div className="flex items-center space-x-4">
                     {[
                       { key: "reddit", label: "Reddit", checked: scraperReddit, set: setScraperReddit },
-                      { key: "hn", label: "HN", checked: scraperHN, set: setScraperHN },
+                      { key: "hn", label: "Hacker News", checked: scraperHN, set: setScraperHN },
                       { key: "github", label: "GitHub", checked: scraperGithub, set: setScraperGithub },
                     ].map((s) => (
                       <label key={s.key} className="flex items-center space-x-1.5 text-sm text-gray-600 dark:text-gray-400">

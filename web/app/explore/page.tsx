@@ -3,6 +3,7 @@ import Link from "next/link";
 import LandingNav from "@/components/landing/LandingNav";
 import Footer from "@/components/landing/Footer";
 import type { EffortLevel } from "@/lib/types";
+import { humanizeText } from "@/lib/humanize";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
@@ -128,8 +129,11 @@ export default async function ExplorePage() {
                       >
                         {getEffortLabel(idea.effortEstimate)}
                       </span>
-                      <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300 line-clamp-1 min-w-0" title={idea.revenueEstimate}>
-                        {idea.revenueEstimate}
+                      <span
+                        className="text-xs font-medium text-emerald-700 dark:text-emerald-300 line-clamp-1 min-w-0"
+                        title={humanizeText(idea.revenueEstimate)}
+                      >
+                        {humanizeText(idea.revenueEstimate)}
                       </span>
                     </div>
                   </Link>

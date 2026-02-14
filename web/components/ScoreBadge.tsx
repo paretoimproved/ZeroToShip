@@ -14,16 +14,21 @@ export function ScoreBadge({ score, size = "md" }: ScoreBadgeProps) {
   };
 
   const sizeClasses = {
-    sm: "text-xs px-2 py-0.5",
+    sm: "text-[11px] px-2 py-0.5",
     md: "text-sm px-2.5 py-1",
     lg: "text-base px-3 py-1.5",
   };
 
+  const rounded = Math.round(score);
+  const label = size === "sm" ? `Score ${rounded}/100` : `Opportunity score ${rounded}/100`;
+
   return (
     <span
+      title="Opportunity score (0–100). Higher = better opportunity vs effort."
+      aria-label={label}
       className={`inline-flex items-center font-semibold rounded-full shadow-sm transition-colors duration-200 ${getScoreColor(score)} ${sizeClasses[size]}`}
     >
-      {score.toFixed(0)}
+      {`Score ${rounded}/100`}
     </span>
   );
 }
@@ -36,25 +41,25 @@ interface EffortBadgeProps {
 export function EffortBadge({ effort, size = "md" }: EffortBadgeProps) {
   const effortConfig: Record<EffortLevel, { label: string; color: string }> = {
     weekend: {
-      label: "Weekend",
+      label: "Build: Weekend",
       color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
     },
     week: {
-      label: "1 Week",
+      label: "Build: 1 Week",
       color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
     },
     month: {
-      label: "1 Month",
+      label: "Build: 1 Month",
       color: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
     },
     quarter: {
-      label: "Quarter+",
+      label: "Build: Quarter+",
       color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
     },
   };
 
   const sizeClasses = {
-    sm: "text-xs px-2 py-0.5",
+    sm: "text-[11px] px-2 py-0.5",
     md: "text-sm px-2.5 py-1",
     lg: "text-base px-3 py-1.5",
   };
@@ -63,6 +68,8 @@ export function EffortBadge({ effort, size = "md" }: EffortBadgeProps) {
 
   return (
     <span
+      title="Rough time estimate to build a basic MVP."
+      aria-label={`Estimated build time: ${config.label.replace(/^Build:\s*/i, "")}`}
       className={`inline-flex items-center font-medium rounded-full shadow-sm transition-colors duration-200 ${config.color} ${sizeClasses[size]}`}
     >
       {config.label}
