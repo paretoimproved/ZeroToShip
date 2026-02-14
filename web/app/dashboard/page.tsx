@@ -18,7 +18,7 @@ const mockIdeas: IdeaBrief[] = [
     tagline: "Unified monitoring for indie developers",
     priorityScore: 87,
     effortEstimate: "weekend",
-    revenueEstimate: "$5K-15K MRR",
+    revenueEstimate: "$5K-15K per month",
     problemStatement:
       "Solo developers and small teams struggle to monitor multiple services across different cloud providers without expensive enterprise tools.",
     targetAudience: "Indie hackers and small dev teams",
@@ -35,13 +35,13 @@ const mockIdeas: IdeaBrief[] = [
     },
     businessModel: {
       pricing: "$9/mo hobby, $29/mo pro",
-      revenueProjection: "$10K MRR in 6 months",
+      revenueProjection: "$10K per month in 6 months",
       monetizationPath: "Freemium to paid",
     },
     goToMarket: {
       launchStrategy: "Product Hunt + Indie Hackers",
       channels: ["Reddit", "Dev.to", "Indie Hackers"],
-      firstCustomers: "Indie hackers on Reddit and HN",
+      firstCustomers: "Indie hackers on Reddit and Hacker News",
     },
     risks: ["Competition from free tools", "Pricing pressure"],
     generatedAt: new Date().toISOString(),

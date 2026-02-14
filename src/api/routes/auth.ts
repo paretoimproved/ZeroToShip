@@ -28,6 +28,9 @@ const GoogleAuthRequestSchema = z.object({
 
 const AuthResponseSchema = z.object({
   token: z.string(),
+  // When Supabase requires email confirmation, signUp may not return a session.
+  // Frontend should show a clear "check your email" confirmation screen.
+  needsEmailConfirmation: z.boolean().optional(),
   user: z.object({
     id: z.string(),
     email: z.string(),
@@ -117,6 +120,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
           const tier = await getUserTierById(data.user.id);
           return reply.send({
             token: '',
+            needsEmailConfirmation: true,
             user: { ...user, tier },
           });
         }
@@ -128,6 +132,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
 
       return reply.send({
         token,
+        needsEmailConfirmation: false,
         user: { ...user, tier },
       });
     }

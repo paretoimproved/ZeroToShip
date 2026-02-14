@@ -66,9 +66,23 @@ function getEffortBadgeStyle(effort: string): { bg: string; text: string } {
   return { bg: '#fee2e2', text: '#dc2626' };
 }
 
+function formatEffortLabel(effort: string): string {
+  const lower = effort.toLowerCase();
+  if (lower === 'weekend') return 'Weekend';
+  if (lower === 'week') return '1 Week';
+  if (lower === 'month') return '1 Month';
+  if (lower === 'quarter') return 'Quarter+';
+  return effort;
+}
+
+function humanizeTextForEmail(text: string): string {
+  if (!text) return '';
+  return text.replace(/\bMRR\b/g, 'per month');
+}
+
 function truncateRevenue(estimate: string): string {
   if (!estimate) return '';
-  const cleaned = estimate.replace(/^Year\s*\d+:\s*/i, '').trim();
+  const cleaned = humanizeTextForEmail(estimate.replace(/^Year\s*\d+:\s*/i, '').trim());
   return cleaned.length > REVENUE_DISPLAY_LENGTH
     ? cleaned.slice(0, REVENUE_DISPLAY_LENGTH) + '...'
     : cleaned;
@@ -76,7 +90,7 @@ function truncateRevenue(estimate: string): string {
 
 function generateSubjectLine(topIdea: IdeaBrief, ideaCount: number): string {
   const score = formatScore(topIdea.priorityScore);
-  const effort = topIdea.effortEstimate.toLowerCase();
+  const effort = formatEffortLabel(topIdea.effortEstimate).toLowerCase();
   const revenue = truncateRevenue(topIdea.revenueEstimate);
 
   const templates = [
@@ -84,7 +98,7 @@ function generateSubjectLine(topIdea: IdeaBrief, ideaCount: number): string {
     `A ${effort} project worth ${revenue}`,
     `Today's top idea scored ${score}/100`,
     `${ideaCount} ideas today. #1 is a ${effort} build.`,
-    `Could you build this in a ${effort}?`,
+    `Could you build this in ${effort}?`,
   ];
 
   // Deterministic daily selection based on date
@@ -95,7 +109,7 @@ function generateSubjectLine(topIdea: IdeaBrief, ideaCount: number): string {
 }
 
 function generatePreviewText(topIdea: IdeaBrief, ideaCount: number): string {
-  return `${ideaCount} ideas scored today. #1 is a ${topIdea.effortEstimate.toLowerCase()} build.`;
+  return `${ideaCount} ideas scored today. #1 is a ${formatEffortLabel(topIdea.effortEstimate).toLowerCase()} build.`;
 }
 
 function buildPreheader(text: string): string {
@@ -133,6 +147,7 @@ function buildStatBar(ideaCount: number, topScore: string): string {
 }
 
 function buildScoreChips(brief: IdeaBrief, revenue: string): string {
+  const effortLabel = formatEffortLabel(brief.effortEstimate);
   return `
           <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 0 20px 0;">
             <tr>
@@ -142,8 +157,8 @@ function buildScoreChips(brief: IdeaBrief, revenue: string): string {
               </td>
               <td width="3%"></td>
               <td width="31%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
-                <div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Effort</div>
-                <div style="font-size: 18px; font-weight: 700; color: #111827; margin-top: 2px;">${escapeHtml(brief.effortEstimate)}</div>
+                <div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Build time</div>
+                <div style="font-size: 18px; font-weight: 700; color: #111827; margin-top: 2px;">${escapeHtml(effortLabel)}</div>
               </td>
               <td width="3%"></td>
               <td width="31%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
@@ -238,7 +253,7 @@ function buildInlineUpgradeBanner(
     `You're seeing 1 of today's ${ideaCount} ideas. Pro members get the full brief for every one.`,
     `Today's lineup has ${ideaCount - 1} more ideas just like this one.`,
     briefs.length >= 3
-      ? `Today's #3 idea scored ${formatScore(briefs[2].priorityScore)} &#8212; and it's a ${briefs[2].effortEstimate.toLowerCase()} build.`
+      ? `Today's #3 idea scored ${formatScore(briefs[2].priorityScore)} &#8212; and it's a ${formatEffortLabel(briefs[2].effortEstimate).toLowerCase()} build.`
       : `There are ${ideaCount - 1} more ideas waiting for you today.`,
   ];
   const copy = variants[dateHash % variants.length];
@@ -267,6 +282,7 @@ function buildIdeaCard(
   config: Required<EmailBuilderConfig>
 ): string {
   const effortStyle = getEffortBadgeStyle(brief.effortEstimate);
+  const effortLabel = formatEffortLabel(brief.effortEstimate);
   const ideaUrl = `${config.baseUrl}/idea/${brief.id || ''}`;
   const tagline = brief.tagline.length > TAGLINE_TRUNCATE_LENGTH
     ? brief.tagline.slice(0, TAGLINE_TRUNCATE_LENGTH) + '...'
@@ -304,7 +320,7 @@ function buildIdeaCard(
               <td style="vertical-align: top; padding-left: 12px;">
                 <div style="font-size: 15px; font-weight: 600; color: #111827; margin-bottom: 2px;">${escapeHtml(brief.name)}</div>
                 <div style="font-size: 13px; color: #6b7280; margin-bottom: 6px;">${escapeHtml(tagline)}</div>
-                <span style="display: inline-block; background-color: ${effortStyle.bg}; color: ${effortStyle.text}; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">${escapeHtml(brief.effortEstimate)}</span>
+                <span style="display: inline-block; background-color: ${effortStyle.bg}; color: ${effortStyle.text}; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">${escapeHtml(effortLabel)}</span>
               </td>
               <td width="48" style="vertical-align: top; text-align: right;">
                 <div style="font-size: 18px; font-weight: 700; color: #6366f1;">${formatScore(brief.priorityScore)}</div>
@@ -515,7 +531,7 @@ function buildPlainTextEmail(
   lines.push(topIdea.name);
   lines.push(`"${topIdea.tagline}"`);
   lines.push('');
-  lines.push(`Priority: ${formatScore(topIdea.priorityScore)}/100 | Effort: ${topIdea.effortEstimate} | Revenue: ${truncateRevenue(topIdea.revenueEstimate)}`);
+  lines.push(`Score: ${formatScore(topIdea.priorityScore)}/100 | Build time: ${formatEffortLabel(topIdea.effortEstimate)} | Revenue: ${truncateRevenue(topIdea.revenueEstimate)}`);
   lines.push('');
 
   if (tier === 'pro') {
@@ -562,7 +578,7 @@ function buildPlainTextEmail(
       if (locked) {
         lines.push(`#${rank} ${brief.name} [PRO]`);
       } else {
-        lines.push(`#${rank} ${brief.name} — Score: ${formatScore(brief.priorityScore)} [${brief.effortEstimate}]`);
+        lines.push(`#${rank} ${brief.name} — Score: ${formatScore(brief.priorityScore)} [${formatEffortLabel(brief.effortEstimate)}]`);
         lines.push(`   "${brief.tagline}"`);
         lines.push(`   Read brief: ${config.baseUrl}/idea/${brief.id || ''}`);
       }

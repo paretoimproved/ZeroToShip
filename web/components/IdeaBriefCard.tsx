@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { IdeaBrief } from "@/lib/types";
 import { ScoreBadge, EffortBadge } from "@/components/ScoreBadge";
 import { SectionLabel, SectionValue, PillBadge, MonoPill, PlatformIcon } from "@/components/ui";
+import { humanizeText } from "@/lib/humanize";
 
 const allTabs = ["problem", "solution", "tech", "business", "sources"] as const;
 type TabId = (typeof allTabs)[number];
@@ -68,6 +69,8 @@ export default function IdeaBriefCard({
 
   const showGatedOverlay = gated && gatedTabs.has(activeTab);
 
+  const revenueEstimate = humanizeText(brief.revenueEstimate);
+
   return (
     <article
       className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden animate-fade-in-up opacity-0"
@@ -94,14 +97,14 @@ export default function IdeaBriefCard({
               <p className="text-gray-600 dark:text-gray-400 mt-1">{brief.tagline}</p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2 sm:flex-shrink-0 sm:max-w-[50%]">
+          <div className="flex flex-wrap items-center gap-2 sm:flex-shrink-0 sm:max-w-[55%]">
             <ScoreBadge score={brief.priorityScore} size="sm" />
             <EffortBadge effort={brief.effortEstimate} size="sm" />
             <span
-              title={brief.revenueEstimate}
-              className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 line-clamp-2"
+              title={revenueEstimate}
+              className="hidden sm:inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 line-clamp-2"
             >
-              {brief.revenueEstimate}
+              {revenueEstimate}
             </span>
             {bookmarkSlot}
           </div>
@@ -171,19 +174,19 @@ function ProblemPanel({ brief }: { brief: IdeaBrief }) {
   return (
     <dl>
       <SectionLabel>The Problem</SectionLabel>
-      <SectionValue>{brief.problemStatement}</SectionValue>
+      <SectionValue>{humanizeText(brief.problemStatement)}</SectionValue>
 
       <SectionLabel>Target Audience</SectionLabel>
-      <SectionValue>{brief.targetAudience}</SectionValue>
+      <SectionValue>{humanizeText(brief.targetAudience)}</SectionValue>
 
       <SectionLabel>Market Size</SectionLabel>
-      <SectionValue>{brief.marketSize}</SectionValue>
+      <SectionValue>{humanizeText(brief.marketSize)}</SectionValue>
 
       <SectionLabel>Existing Solutions</SectionLabel>
-      <SectionValue>{brief.existingSolutions}</SectionValue>
+      <SectionValue>{humanizeText(brief.existingSolutions)}</SectionValue>
 
       <SectionLabel>Market Gaps</SectionLabel>
-      <SectionValue>{brief.gaps}</SectionValue>
+      <SectionValue>{humanizeText(brief.gaps)}</SectionValue>
     </dl>
   );
 }
@@ -192,19 +195,19 @@ function SolutionPanel({ brief }: { brief: IdeaBrief }) {
   return (
     <dl>
       <SectionLabel>Proposed Solution</SectionLabel>
-      <SectionValue>{brief.proposedSolution}</SectionValue>
+      <SectionValue>{humanizeText(brief.proposedSolution)}</SectionValue>
 
       <SectionLabel>Key Features</SectionLabel>
       <SectionValue>
         <div className="flex flex-wrap gap-2">
           {brief.keyFeatures.map((feature) => (
-            <PillBadge key={feature}>{feature}</PillBadge>
+            <PillBadge key={feature}>{humanizeText(feature)}</PillBadge>
           ))}
         </div>
       </SectionValue>
 
       <SectionLabel>MVP Scope</SectionLabel>
-      <SectionValue>{brief.mvpScope}</SectionValue>
+      <SectionValue>{humanizeText(brief.mvpScope)}</SectionValue>
     </dl>
   );
 }
@@ -222,10 +225,10 @@ function TechSpecPanel({ brief }: { brief: IdeaBrief }) {
       </SectionValue>
 
       <SectionLabel>Architecture</SectionLabel>
-      <SectionValue>{brief.technicalSpec.architecture}</SectionValue>
+      <SectionValue>{humanizeText(brief.technicalSpec.architecture)}</SectionValue>
 
       <SectionLabel>Estimated Effort</SectionLabel>
-      <SectionValue>{brief.technicalSpec.estimatedEffort}</SectionValue>
+      <SectionValue>{humanizeText(brief.technicalSpec.estimatedEffort)}</SectionValue>
     </dl>
   );
 }
@@ -234,28 +237,28 @@ function BusinessPanel({ brief }: { brief: IdeaBrief }) {
   return (
     <dl>
       <SectionLabel>Pricing Strategy</SectionLabel>
-      <SectionValue>{brief.businessModel.pricing}</SectionValue>
+      <SectionValue>{humanizeText(brief.businessModel.pricing)}</SectionValue>
 
       <SectionLabel>Revenue Projection</SectionLabel>
-      <SectionValue>{brief.businessModel.revenueProjection}</SectionValue>
+      <SectionValue>{humanizeText(brief.businessModel.revenueProjection)}</SectionValue>
 
       <SectionLabel>Monetization Path</SectionLabel>
-      <SectionValue>{brief.businessModel.monetizationPath}</SectionValue>
+      <SectionValue>{humanizeText(brief.businessModel.monetizationPath)}</SectionValue>
 
       <SectionLabel>Launch Strategy</SectionLabel>
-      <SectionValue>{brief.goToMarket.launchStrategy}</SectionValue>
+      <SectionValue>{humanizeText(brief.goToMarket.launchStrategy)}</SectionValue>
 
       <SectionLabel>Channels</SectionLabel>
       <SectionValue>
         <div className="flex flex-wrap gap-2">
           {brief.goToMarket.channels.map((channel) => (
-            <PillBadge key={channel}>{channel}</PillBadge>
+            <PillBadge key={channel}>{humanizeText(channel)}</PillBadge>
           ))}
         </div>
       </SectionValue>
 
       <SectionLabel>First Customers</SectionLabel>
-      <SectionValue>{brief.goToMarket.firstCustomers}</SectionValue>
+      <SectionValue>{humanizeText(brief.goToMarket.firstCustomers)}</SectionValue>
 
       {brief.risks.length > 0 && (
         <>
@@ -281,7 +284,7 @@ function BusinessPanel({ brief }: { brief: IdeaBrief }) {
                       d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                     />
                   </svg>
-                  <span className="text-amber-800 dark:text-amber-200">{risk}</span>
+                  <span className="text-amber-800 dark:text-amber-200">{humanizeText(risk)}</span>
                 </div>
               ))}
             </div>
@@ -295,6 +298,14 @@ function BusinessPanel({ brief }: { brief: IdeaBrief }) {
 function SourcesPanel({ brief }: { brief: IdeaBrief }) {
   if (!brief.sources || brief.sources.length === 0) return null;
 
+  const getPlatformLabel = (platform: string) => {
+    if (platform === "hn") return "Hacker News";
+    if (platform === "reddit") return "Reddit";
+    if (platform === "twitter") return "Twitter/X";
+    if (platform === "github") return "GitHub";
+    return platform;
+  };
+
   return (
     <div className="space-y-3">
       {brief.sources.map((source, i) => (
@@ -305,13 +316,21 @@ function SourcesPanel({ brief }: { brief: IdeaBrief }) {
           rel="noopener noreferrer"
           className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
         >
-          <PlatformIcon platform={source.platform} />
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <PlatformIcon platform={source.platform} size="sm" />
+            <span
+              title={source.platform === "hn" ? "HN is short for Hacker News" : undefined}
+              className="text-xs font-semibold text-gray-700 dark:text-gray-300"
+            >
+              {getPlatformLabel(source.platform)}
+            </span>
+          </div>
           <div className="flex-1 min-w-0">
             <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
               {source.title}
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400">
-              {source.score} upvotes · {source.commentCount} comments
+              {source.score} points · {source.commentCount} comments
             </div>
           </div>
           <svg

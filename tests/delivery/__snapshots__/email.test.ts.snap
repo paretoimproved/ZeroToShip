@@ -10,7 +10,7 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for multiple
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="supported-color-schemes" content="light dark">
-<title>A weekend project worth $10K MRR</title>
+<title>A weekend project worth $10K per month</title>
 <!--[if mso]>
 <style type="text/css">
 table { border-collapse: collapse; }
@@ -65,13 +65,13 @@ Top score: <strong style="color: #6366f1;">10.0</strong>
 </td>
 <td width="3%"></td>
 <td width="31%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
-<div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Effort</div>
-<div style="font-size: 18px; font-weight: 700; color: #111827; margin-top: 2px;">weekend</div>
+<div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Build time</div>
+<div style="font-size: 18px; font-weight: 700; color: #111827; margin-top: 2px;">Weekend</div>
 </td>
 <td width="3%"></td>
 <td width="31%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
 <div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Revenue</div>
-<div style="font-size: 14px; font-weight: 700; color: #111827; margin-top: 2px;">$10K MRR</div>
+<div style="font-size: 14px; font-weight: 700; color: #111827; margin-top: 2px;">$10K per month</div>
 </td>
 </tr>
 </table>
@@ -117,7 +117,7 @@ Today's #3 idea scored 9.0 &#8212; and it's a weekend build.
 <td style="vertical-align: top; padding-left: 12px;">
 <div style="font-size: 15px; font-weight: 600; color: #111827; margin-bottom: 2px;">Idea 2</div>
 <div style="font-size: 13px; color: #6b7280; margin-bottom: 6px;">Tagline for idea 2</div>
-<span style="display: inline-block; background-color: #ecfdf5; color: #059669; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">weekend</span>
+<span style="display: inline-block; background-color: #ecfdf5; color: #059669; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">Weekend</span>
 </td>
 <td width="48" style="vertical-align: top; text-align: right;">
 <div style="font-size: 18px; font-weight: 700; color: #6366f1;">9.5</div>
@@ -143,7 +143,7 @@ Today's #3 idea scored 9.0 &#8212; and it's a weekend build.
 <td style="vertical-align: top; padding-left: 12px;">
 <div style="font-size: 15px; font-weight: 600; color: #111827; margin-bottom: 2px;">Idea 3</div>
 <div style="font-size: 13px; color: #6b7280; margin-bottom: 6px;">Tagline for idea 3</div>
-<span style="display: inline-block; background-color: #ecfdf5; color: #059669; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">weekend</span>
+<span style="display: inline-block; background-color: #ecfdf5; color: #059669; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">Weekend</span>
 </td>
 <td width="48" style="vertical-align: top; text-align: right;">
 <div style="font-size: 18px; font-weight: 700; color: #6366f1;">9.0</div>
@@ -255,7 +255,7 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for multiple
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="supported-color-schemes" content="light dark">
-<title>A weekend project worth $10K MRR</title>
+<title>A weekend project worth $10K per month</title>
 <!--[if mso]>
 <style type="text/css">
 table { border-collapse: collapse; }
@@ -310,13 +310,13 @@ Top score: <strong style="color: #6366f1;">10.0</strong>
 </td>
 <td width="3%"></td>
 <td width="31%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
-<div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Effort</div>
-<div style="font-size: 18px; font-weight: 700; color: #111827; margin-top: 2px;">weekend</div>
+<div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Build time</div>
+<div style="font-size: 18px; font-weight: 700; color: #111827; margin-top: 2px;">Weekend</div>
 </td>
 <td width="3%"></td>
 <td width="31%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
 <div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Revenue</div>
-<div style="font-size: 14px; font-weight: 700; color: #111827; margin-top: 2px;">$10K MRR</div>
+<div style="font-size: 14px; font-weight: 700; color: #111827; margin-top: 2px;">$10K per month</div>
 </td>
 </tr>
 </table>
@@ -375,7 +375,7 @@ Top score: <strong style="color: #6366f1;">10.0</strong>
 <td style="vertical-align: top; padding-left: 12px;">
 <div style="font-size: 15px; font-weight: 600; color: #111827; margin-bottom: 2px;">Idea 2</div>
 <div style="font-size: 13px; color: #6b7280; margin-bottom: 6px;">Tagline for idea 2</div>
-<span style="display: inline-block; background-color: #ecfdf5; color: #059669; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">weekend</span>
+<span style="display: inline-block; background-color: #ecfdf5; color: #059669; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">Weekend</span>
 </td>
 <td width="48" style="vertical-align: top; text-align: right;">
 <div style="font-size: 18px; font-weight: 700; color: #6366f1;">9.5</div>
@@ -401,7 +401,7 @@ Top score: <strong style="color: #6366f1;">10.0</strong>
 <td style="vertical-align: top; padding-left: 12px;">
 <div style="font-size: 15px; font-weight: 600; color: #111827; margin-bottom: 2px;">Idea 3</div>
 <div style="font-size: 13px; color: #6b7280; margin-bottom: 6px;">Tagline for idea 3</div>
-<span style="display: inline-block; background-color: #ecfdf5; color: #059669; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">weekend</span>
+<span style="display: inline-block; background-color: #ecfdf5; color: #059669; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">Weekend</span>
 </td>
 <td width="48" style="vertical-align: top; text-align: right;">
 <div style="font-size: 18px; font-weight: 700; color: #6366f1;">9.0</div>
@@ -427,7 +427,7 @@ Top score: <strong style="color: #6366f1;">10.0</strong>
 <td style="vertical-align: top; padding-left: 12px;">
 <div style="font-size: 15px; font-weight: 600; color: #111827; margin-bottom: 2px;">Idea 4</div>
 <div style="font-size: 13px; color: #6b7280; margin-bottom: 6px;">Tagline for idea 4</div>
-<span style="display: inline-block; background-color: #ecfdf5; color: #059669; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">weekend</span>
+<span style="display: inline-block; background-color: #ecfdf5; color: #059669; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">Weekend</span>
 </td>
 <td width="48" style="vertical-align: top; text-align: right;">
 <div style="font-size: 18px; font-weight: 700; color: #6366f1;">8.5</div>
@@ -453,7 +453,7 @@ Top score: <strong style="color: #6366f1;">10.0</strong>
 <td style="vertical-align: top; padding-left: 12px;">
 <div style="font-size: 15px; font-weight: 600; color: #111827; margin-bottom: 2px;">Idea 5</div>
 <div style="font-size: 13px; color: #6b7280; margin-bottom: 6px;">Tagline for idea 5</div>
-<span style="display: inline-block; background-color: #ecfdf5; color: #059669; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">weekend</span>
+<span style="display: inline-block; background-color: #ecfdf5; color: #059669; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">Weekend</span>
 </td>
 <td width="48" style="vertical-align: top; text-align: right;">
 <div style="font-size: 18px; font-weight: 700; color: #6366f1;">8.0</div>
@@ -507,7 +507,7 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for plain te
 Idea 1
 "Tagline for idea 1"
 
-Priority: 10.0/100 | Effort: weekend | Revenue: $10K MRR
+Score: 10.0/100 | Build time: Weekend | Revenue: $10K per month
 
 Users struggle with testing email systems
 The brief covers feature 1 and 3 more technical approaches.
@@ -518,11 +518,11 @@ Read the full brief: https://test.zerotoship.dev/idea/brief_0
 
 TODAY'S OTHER IDEAS
 
-#2 Idea 2 — Score: 9.5 [weekend]
+#2 Idea 2 — Score: 9.5 [Weekend]
 "Tagline for idea 2"
 Read brief: https://test.zerotoship.dev/idea/brief_1
 
-#3 Idea 3 — Score: 9.0 [weekend]
+#3 Idea 3 — Score: 9.0 [Weekend]
 "Tagline for idea 3"
 Read brief: https://test.zerotoship.dev/idea/brief_2
 
@@ -555,7 +555,7 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for plain te
 Idea 1
 "Tagline for idea 1"
 
-Priority: 10.0/100 | Effort: weekend | Revenue: $10K MRR
+Score: 10.0/100 | Build time: Weekend | Revenue: $10K per month
 
 THE PROBLEM
 Users struggle with testing email systems
@@ -581,19 +581,19 @@ View full brief on dashboard: https://test.zerotoship.dev/idea/brief_0
 
 TODAY'S OTHER IDEAS
 
-#2 Idea 2 — Score: 9.5 [weekend]
+#2 Idea 2 — Score: 9.5 [Weekend]
 "Tagline for idea 2"
 Read brief: https://test.zerotoship.dev/idea/brief_1
 
-#3 Idea 3 — Score: 9.0 [weekend]
+#3 Idea 3 — Score: 9.0 [Weekend]
 "Tagline for idea 3"
 Read brief: https://test.zerotoship.dev/idea/brief_2
 
-#4 Idea 4 — Score: 8.5 [weekend]
+#4 Idea 4 — Score: 8.5 [Weekend]
 "Tagline for idea 4"
 Read brief: https://test.zerotoship.dev/idea/brief_3
 
-#5 Idea 5 — Score: 8.0 [weekend]
+#5 Idea 5 — Score: 8.0 [Weekend]
 "Tagline for idea 5"
 Read brief: https://test.zerotoship.dev/idea/brief_4
 
@@ -611,7 +611,7 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for single b
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="supported-color-schemes" content="light dark">
-<title>A weekend project worth $10K MRR</title>
+<title>A weekend project worth $10K per month</title>
 <!--[if mso]>
 <style type="text/css">
 table { border-collapse: collapse; }
@@ -666,13 +666,13 @@ Top score: <strong style="color: #6366f1;">8.5</strong>
 </td>
 <td width="3%"></td>
 <td width="31%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
-<div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Effort</div>
-<div style="font-size: 18px; font-weight: 700; color: #111827; margin-top: 2px;">weekend</div>
+<div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Build time</div>
+<div style="font-size: 18px; font-weight: 700; color: #111827; margin-top: 2px;">Weekend</div>
 </td>
 <td width="3%"></td>
 <td width="31%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
 <div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Revenue</div>
-<div style="font-size: 14px; font-weight: 700; color: #111827; margin-top: 2px;">$10K MRR</div>
+<div style="font-size: 14px; font-weight: 700; color: #111827; margin-top: 2px;">$10K per month</div>
 </td>
 </tr>
 </table>

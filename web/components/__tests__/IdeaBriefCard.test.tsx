@@ -20,7 +20,7 @@ function makeBrief(overrides: Partial<IdeaBrief> = {}): IdeaBrief {
     tagline: "A tagline for testing",
     priorityScore: 85,
     effortEstimate: "week",
-    revenueEstimate: "$10k MRR",
+    revenueEstimate: "$10k per month",
     problemStatement: "People struggle with X",
     targetAudience: "Developers",
     marketSize: "$1B TAM",
@@ -36,7 +36,7 @@ function makeBrief(overrides: Partial<IdeaBrief> = {}): IdeaBrief {
     },
     businessModel: {
       pricing: "Freemium",
-      revenueProjection: "$10k MRR in 6 months",
+      revenueProjection: "$10k per month in 6 months",
       monetizationPath: "SaaS subscriptions",
     },
     goToMarket: {
@@ -57,7 +57,7 @@ describe("IdeaBriefCard", () => {
 
     expect(screen.getByText("TestIdea")).toBeInTheDocument();
     expect(screen.getByText("A tagline for testing")).toBeInTheDocument();
-    expect(screen.getByText("85")).toBeInTheDocument();
+    expect(screen.getByText("Score 85/100")).toBeInTheDocument();
   });
 
   it("renders correct tab labels without sources", () => {
@@ -182,7 +182,7 @@ describe("IdeaBriefCard", () => {
 
     await user.click(screen.getByRole("tab", { name: "Sources" }));
     expect(screen.getByText("Cool Reddit Post")).toBeInTheDocument();
-    expect(screen.getByText("42 upvotes · 15 comments")).toBeInTheDocument();
+    expect(screen.getByText("42 points · 15 comments")).toBeInTheDocument();
   });
 
   it("navigates tabs with arrow keys", async () => {

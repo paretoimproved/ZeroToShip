@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://zerotoship.dev"),
   title: "ZeroToShip — Ship Ideas, Not Guesses",
   description:
-    "Every morning, ZeroToShip scrapes 300+ posts from Reddit, HN, and GitHub, clusters real pain points, and delivers 10 scored startup ideas with full business briefs. Wake up to signal, not noise.",
+    "Every morning, ZeroToShip scrapes 300+ posts from Reddit, Hacker News, and GitHub, clusters real pain points, and delivers 10 scored startup ideas with full business briefs. Wake up to signal, not noise.",
   icons: {
     icon: "/favicon.svg",
     apple: "/apple-touch-icon.png",
@@ -30,14 +30,14 @@ export const metadata: Metadata = {
   openGraph: {
     title: "ZeroToShip — Ship Ideas, Not Guesses",
     description:
-      "Scrapes Reddit, HN, and GitHub daily. Delivers 10 scored startup ideas with full business briefs every morning.",
+      "Scrapes Reddit, Hacker News, and GitHub daily. Delivers 10 scored startup ideas with full business briefs every morning.",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
     title: "ZeroToShip — Ship Ideas, Not Guesses",
     description:
-      "Scrapes Reddit, HN, and GitHub daily. Delivers 10 scored startup ideas with full business briefs every morning.",
+      "Scrapes Reddit, Hacker News, and GitHub daily. Delivers 10 scored startup ideas with full business briefs every morning.",
   },
 };
 

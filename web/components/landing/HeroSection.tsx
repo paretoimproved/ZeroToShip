@@ -56,8 +56,8 @@ export default function HeroSection() {
 
         {/* Subheadline */}
         <p className="mx-auto mt-6 max-w-2xl text-balance text-lg leading-relaxed text-gray-600 dark:text-gray-400 sm:text-xl">
-          Every morning, ZeroToShip scrapes 300+ posts from Reddit, HN, and
-          GitHub, clusters real pain points, and delivers 10 scored startup
+          Every morning, ZeroToShip scrapes 300+ posts from Reddit, Hacker News,
+          and GitHub, clusters real pain points, and delivers 10 scored startup
           ideas with full business briefs. Wake up to signal, not noise.
         </p>
 

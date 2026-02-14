@@ -13,6 +13,9 @@ export default function LoginPage() {
   const { isAuthenticated, isLoading, loginWithGoogleCode } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [defaultEmail, setDefaultEmail] = useState("");
+  const [notice, setNotice] = useState<string | null>(null);
+  const [subtitle, setSubtitle] = useState<string | undefined>(undefined);
 
   // Detect OAuth callback (URL has ?code= or #access_token after provider redirect)
   const [isOAuthCallback, setIsOAuthCallback] = useState(() => {
@@ -29,6 +32,20 @@ export default function LoginPage() {
       router.replace("/dashboard");
     }
   }, [isLoading, isAuthenticated, router]);
+
+  // Pull query params for post-signup guidance and email prefill.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const email = params.get("email") || "";
+    const fromSignup = params.get("signup") === "1";
+
+    if (email) setDefaultEmail(email);
+    if (fromSignup) {
+      setNotice("Account created. Confirm your email, then sign in.");
+      setSubtitle("Check your email for the confirmation link.");
+    }
+  }, []);
 
   // If OAuth callback failed (loading done, not authenticated), show the form
   useEffect(() => {
@@ -91,6 +108,9 @@ export default function LoginPage() {
           onGoogleSuccess={handleGoogleSuccess}
           error={error}
           isLoading={loading}
+          defaultEmail={defaultEmail}
+          notice={notice ?? undefined}
+          subtitle={subtitle}
         />
       </div>
     </div>

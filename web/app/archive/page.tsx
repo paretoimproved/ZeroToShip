@@ -9,6 +9,7 @@ import { PlatformIcon } from "@/components/ui";
 import { useAuth } from "@/components/AuthProvider";
 import { api } from "@/lib/api";
 import { normalizeIdeas } from "@/lib/normalize";
+import { humanizeText } from "@/lib/humanize";
 import {
   trackIdeaViewed,
   trackArchiveFiltered,
@@ -62,7 +63,7 @@ const platformConfig: Record<
   },
   hn: {
     letter: "Y",
-    label: "HN",
+    label: "Hacker News",
     activeColor:
       "bg-orange-100 text-orange-800 border-orange-400 dark:bg-orange-900 dark:text-orange-200 dark:border-orange-600",
   },
@@ -246,10 +247,10 @@ function CompactCard({
           {getEffortLabel(idea.effortEstimate)}
         </span>
         <span
-          title={idea.revenueEstimate}
+          title={humanizeText(idea.revenueEstimate)}
           className="text-xs font-medium text-emerald-700 dark:text-emerald-300 truncate min-w-0"
         >
-          {idea.revenueEstimate}
+          {humanizeText(idea.revenueEstimate)}
         </span>
       </div>
     </article>

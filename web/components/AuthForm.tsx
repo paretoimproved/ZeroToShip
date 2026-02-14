@@ -19,6 +19,8 @@ interface AuthFormProps {
   onOAuth: (provider: OAuthProvider) => Promise<void>;
   onGoogleSuccess: (code: string) => Promise<void>;
   error?: string | null;
+  notice?: string;
+  subtitle?: string;
   isLoading?: boolean;
   defaultEmail?: string;
 }
@@ -29,6 +31,8 @@ export default function AuthForm({
   onOAuth,
   onGoogleSuccess,
   error,
+  notice,
+  subtitle,
   isLoading = false,
   defaultEmail = "",
 }: AuthFormProps) {
@@ -87,8 +91,17 @@ export default function AuthForm({
         {isLogin ? "Sign In to ZeroToShip" : "Create Your Account"}
       </h1>
       <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-2 mb-6">
-        {isLogin ? "Welcome back" : "Start finding your next big idea"}
+        {subtitle ?? (isLogin ? "Welcome back" : "Start finding your next big idea")}
       </p>
+
+      {notice && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4 flex items-start gap-2">
+          <svg className="h-5 w-5 text-blue-500 dark:text-blue-400 shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a.75.75 0 01.75.75v.5a.75.75 0 01-1.5 0v-.5A.75.75 0 0110 7zm0 3a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 10z" clipRule="evenodd" />
+          </svg>
+          <p className="text-blue-700 dark:text-blue-300 text-sm">{notice}</p>
+        </div>
+      )}
 
       {displayError && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-4 flex items-start gap-2">
