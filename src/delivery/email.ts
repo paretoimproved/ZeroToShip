@@ -70,7 +70,7 @@ const DEFAULT_CONFIG: Required<Omit<EmailServiceConfig, 'builderConfig'>> & {
   resendApiKey: '',
   fromEmail: envConfig.RESEND_FROM_EMAIL || 'briefs@zerotoship.dev',
   fromName: envConfig.RESEND_FROM_NAME || 'ZeroToShip',
-  replyTo: envConfig.RESEND_REPLY_TO || 'hello@zerotoship.dev',
+  replyTo: 'hello@zerotoship.dev',
   builderConfig: {},
 };
 
