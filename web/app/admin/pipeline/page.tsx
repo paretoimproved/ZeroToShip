@@ -69,6 +69,7 @@ export default function PipelinePage() {
   const [skipDelivery, setSkipDelivery] = useState(false);
   const [hoursBack, setHoursBack] = useState("");
   const [maxBriefs, setMaxBriefs] = useState("");
+  const [generationMode, setGenerationMode] = useState<"legacy" | "graph">("graph");
 
   // Advanced config
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -157,6 +158,7 @@ export default function PipelinePage() {
       if (skipDelivery) options.skipDelivery = true;
       if (hoursBack) options.hoursBack = Number(hoursBack);
       if (maxBriefs) options.maxBriefs = Number(maxBriefs);
+      options.generationMode = generationMode;
 
       // Advanced settings
       if (showAdvanced) {
@@ -227,6 +229,34 @@ export default function PipelinePage() {
               />
               <span>Skip Delivery</span>
             </label>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-600 dark:text-gray-400">Generation Mode</span>
+            <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setGenerationMode("graph")}
+                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                  generationMode === "graph"
+                    ? "bg-blue-600 text-white"
+                    : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                }`}
+              >
+                Graph
+              </button>
+              <button
+                type="button"
+                onClick={() => setGenerationMode("legacy")}
+                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                  generationMode === "legacy"
+                    ? "bg-gray-900 text-white"
+                    : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                }`}
+              >
+                Legacy
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center space-x-4">

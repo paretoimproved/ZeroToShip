@@ -189,6 +189,7 @@ class ApiClient {
     skipDelivery?: boolean;
     hoursBack?: number;
     maxBriefs?: number;
+    generationMode?: "legacy" | "graph";
     scrapers?: { reddit?: boolean; hn?: boolean; github?: boolean };
     clusteringThreshold?: number;
     minPriorityScore?: number;
@@ -218,7 +219,7 @@ class ApiClient {
     return this.request(`/admin/runs/${runId}`);
   }
 
-  async getEmailLogs(params?: { page?: number; limit?: number; status?: string }): Promise<{
+  async getEmailLogs(params?: { page?: number; limit?: number; status?: string; runId?: string }): Promise<{
     logs: EmailLogRow[];
     total: number;
     page: number;
@@ -228,6 +229,7 @@ class ApiClient {
     if (params?.page) searchParams.set('page', String(params.page));
     if (params?.limit) searchParams.set('limit', String(params.limit));
     if (params?.status) searchParams.set('status', params.status);
+    if (params?.runId) searchParams.set('runId', params.runId);
     const qs = searchParams.toString();
     return this.request(`/admin/email-logs${qs ? `?${qs}` : ''}`);
   }

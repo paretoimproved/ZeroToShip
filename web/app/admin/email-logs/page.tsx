@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
 import type { EmailLogRow } from "@/lib/types";
+import Link from "next/link";
 
 type StatusFilter = "all" | "sent" | "delivered" | "opened" | "bounced" | "failed";
 
@@ -44,6 +45,7 @@ export default function EmailLogsPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [runIdFilter, setRunIdFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,6 +59,7 @@ export default function EmailLogsPage() {
         page,
         limit: LIMIT,
         status: statusFilter === "all" ? undefined : statusFilter,
+        runId: runIdFilter.trim() ? runIdFilter.trim() : undefined,
       });
       setLogs(data.logs);
       setTotal(data.total);
@@ -65,7 +68,7 @@ export default function EmailLogsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, statusFilter]);
+  }, [page, statusFilter, runIdFilter]);
 
   useEffect(() => {
     fetchLogs();
@@ -83,7 +86,7 @@ export default function EmailLogsPage() {
       </h1>
 
       {/* Filter Bar */}
-      <div className="flex items-center space-x-2">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         {(["all", "sent", "delivered", "opened", "bounced", "failed"] as StatusFilter[]).map(
           (filter) => (
             <button
@@ -99,6 +102,31 @@ export default function EmailLogsPage() {
             </button>
           )
         )}
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-600 dark:text-gray-400">
+            Run ID
+          </label>
+          <input
+            value={runIdFilter}
+            onChange={(e) => {
+              setRunIdFilter(e.target.value);
+              setPage(1);
+            }}
+            placeholder="run_YYYYMMDD_..."
+            className="w-full max-w-[320px] px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+          />
+          {runIdFilter.trim() && (
+            <button
+              onClick={() => {
+                setRunIdFilter("");
+                setPage(1);
+              }}
+              className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm"
+            >
+              Clear
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Table */}
@@ -118,12 +146,13 @@ export default function EmailLogsPage() {
             <p className="text-gray-500 dark:text-gray-400">No email logs found</p>
           </div>
         ) : (
-          <table className="min-w-[800px] w-full text-sm">
+          <table className="min-w-[1000px] w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                 <th className="px-4 py-3 font-medium sticky left-0 z-10 bg-gray-50 dark:bg-gray-800">Recipient</th>
                 <th className="px-4 py-3 font-medium hidden lg:table-cell">Subject</th>
                 <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium hidden xl:table-cell">Error</th>
                 <th className="px-4 py-3 font-medium">Sent At</th>
                 <th className="px-4 py-3 font-medium hidden lg:table-cell">Delivered At</th>
                 <th className="px-4 py-3 font-medium hidden lg:table-cell">Opened At</th>
@@ -149,6 +178,18 @@ export default function EmailLogsPage() {
                         {log.status.charAt(0).toUpperCase() + log.status.slice(1)}
                       </span>
                     </td>
+                    <td className="px-4 py-3 max-w-md truncate hidden xl:table-cell">
+                      {log.error ? (
+                        <span
+                          className="text-xs text-red-700 dark:text-red-300"
+                          title={log.error}
+                        >
+                          {log.error}
+                        </span>
+                      ) : (
+                        "\u2014"
+                      )}
+                    </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       {formatDate(log.sentAt)}
                     </td>
@@ -160,9 +201,13 @@ export default function EmailLogsPage() {
                     </td>
                     <td className="px-4 py-3">
                       {log.runId ? (
-                        <span className="font-mono text-xs text-amber-600 dark:text-amber-400">
+                        <Link
+                          href={`/admin/runs/${log.runId}`}
+                          className="font-mono text-xs text-amber-600 dark:text-amber-400 hover:underline"
+                          title={log.runId}
+                        >
                           ...{log.runId.slice(-8)}
-                        </span>
+                        </Link>
                       ) : (
                         "\u2014"
                       )}

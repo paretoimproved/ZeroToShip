@@ -9,7 +9,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { requireAdmin } from '../middleware/auth';
 import { runPipeline, DEFAULT_PIPELINE_CONFIG, generateRunId } from '../../scheduler';
 import { db, ideas, subscriptions, users, pipelineRuns, emailLogs } from '../db/client';
-import { eq, count, desc, sql } from 'drizzle-orm';
+import { and, eq, count, desc, sql } from 'drizzle-orm';
 
 export const adminRoutes: FastifyPluginAsync = async (server) => {
   /**
@@ -296,21 +296,27 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
    * Paginated email delivery logs
    */
   server.get('/email-logs', { preHandler: [requireAdmin] }, async (request, reply) => {
-    const query = request.query as { page?: string; limit?: string; status?: string };
+    const query = request.query as { page?: string; limit?: string; status?: string; runId?: string };
     const page = Math.max(1, parseInt(query.page || '1'));
     const limit = Math.min(100, Math.max(1, parseInt(query.limit || '20')));
     const offset = (page - 1) * limit;
 
-    const statusFilter = query.status && query.status !== 'all'
-      ? eq(emailLogs.status, query.status)
-      : undefined;
+    const filters = [];
+    if (query.status && query.status !== 'all') {
+      filters.push(eq(emailLogs.status, query.status));
+    }
+    if (query.runId) {
+      filters.push(eq(emailLogs.runId, query.runId));
+    }
 
-    const baseQuery = statusFilter
-      ? db.select().from(emailLogs).where(statusFilter)
+    const whereClause = filters.length > 0 ? and(...filters) : undefined;
+
+    const baseQuery = whereClause
+      ? db.select().from(emailLogs).where(whereClause)
       : db.select().from(emailLogs);
 
-    const countQuery = statusFilter
-      ? db.select({ count: count() }).from(emailLogs).where(statusFilter)
+    const countQuery = whereClause
+      ? db.select({ count: count() }).from(emailLogs).where(whereClause)
       : db.select({ count: count() }).from(emailLogs);
 
     const [logs, totalResult] = await Promise.all([
