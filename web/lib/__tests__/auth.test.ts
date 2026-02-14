@@ -222,10 +222,24 @@ describe('Auth utilities', () => {
         jsonResponse({ token: 'signup-jwt', user: mockUser })
       );
 
-      const user = await signup('new@test.com', 'pass', 'New User');
+      const result = await signup('new@test.com', 'pass', 'New User');
 
-      expect(user).toEqual(mockUser);
+      expect(result.user).toEqual(mockUser);
+      expect(result.needsEmailConfirmation).toBe(false);
       expect(storage['zerotoship_token']).toBe('signup-jwt');
+    });
+
+    it('should not store an empty token and should signal email confirmation needed', async () => {
+      const mockUser = { id: '2', email: 'new@test.com', name: 'New User' };
+      mockFetch.mockReturnValue(
+        jsonResponse({ token: '', user: mockUser, needsEmailConfirmation: true })
+      );
+
+      const result = await signup('new@test.com', 'pass', 'New User');
+
+      expect(result.user).toEqual(mockUser);
+      expect(result.needsEmailConfirmation).toBe(true);
+      expect(storage['zerotoship_token']).toBeUndefined();
     });
 
     it('should throw on failed signup', async () => {

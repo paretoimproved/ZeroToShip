@@ -71,9 +71,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signup = useCallback(async (email: string, password: string, name: string) => {
-    const userData = await authSignup(email, password, name);
-    setUser(userData);
-    return userData;
+    const result = await authSignup(email, password, name);
+    setUser(result.user);
+    return result.user;
   }, []);
 
   const loginWithOAuthHandler = useCallback(async (provider: OAuthProvider) => {

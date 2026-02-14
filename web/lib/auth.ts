@@ -55,7 +55,7 @@ export async function signup(
   email: string,
   password: string,
   name: string
-): Promise<User> {
+): Promise<{ user: User; needsEmailConfirmation: boolean }> {
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1"}/auth/signup`,
     {
@@ -70,9 +70,14 @@ export async function signup(
     throw new Error(error.message);
   }
 
-  const { token, user } = await response.json();
-  setToken(token);
-  return user;
+  const { token, user, needsEmailConfirmation } = await response.json();
+  if (token) {
+    setToken(token);
+  } else {
+    // Ensure we don't persist an empty token in localStorage.
+    clearToken();
+  }
+  return { user, needsEmailConfirmation: Boolean(needsEmailConfirmation) };
 }
 
 export function logout(): void {
