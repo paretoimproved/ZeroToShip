@@ -58,6 +58,49 @@ function formatModelLabel(model: string | null | undefined): string {
   return model;
 }
 
+function safeGanttId(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9_]+/g, "_").replace(/^_+|_+$/g, "");
+}
+
+function buildAggregateTraceGantt(briefs: BriefSummary[]): string | null {
+  const graphBriefs = briefs.filter((b) => b.generationMeta?.providerMode === "graph");
+  const hasTrace = graphBriefs.some((b) => (b.generationMeta?.graphTrace?.length ?? 0) > 0);
+  if (!hasTrace) return null;
+
+  const lines: string[] = ["gantt"];
+  lines.push(`  title Run Trace Timeline (per-brief attempts)`);
+  lines.push(`  dateFormat  YYYY-MM-DDTHH:mm:ss.SSSZ`);
+  lines.push(`  axisFormat  %H:%M:%S`);
+
+  for (let i = 0; i < graphBriefs.length; i += 1) {
+    const brief = graphBriefs[i];
+    const trace = brief.generationMeta?.graphTrace ?? [];
+    if (trace.length === 0) continue;
+
+    const sectionTitle = escapeMermaidLabel(brief.name) || `Brief ${i + 1}`;
+    lines.push(`  section ${sectionTitle}`);
+
+    for (let j = 0; j < trace.length; j += 1) {
+      const step = trace[j];
+      const start = step.startedAt;
+      const end = step.finishedAt;
+      const startMs = Date.parse(start);
+      const endMs = Date.parse(end);
+      if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) continue;
+
+      const durationSeconds = Math.max(1, Math.round((endMs - startMs) / 1000));
+      const model = escapeMermaidLabel(formatModelLabel(step.model));
+      const passFail = step.passedQuality ? "pass" : "fail";
+      const taskLabel = `Attempt ${step.attempt} (${model}) ${passFail}`;
+      const taskId = safeGanttId(`b${i + 1}_a${step.attempt}`);
+
+      lines.push(`  ${taskLabel} :${taskId}, ${start}, ${durationSeconds}s`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
 function buildGraphTraceMermaid(brief: BriefSummary): string | null {
   const meta = brief.generationMeta ?? null;
   if (!meta || meta.providerMode !== "graph") return null;
@@ -551,6 +594,16 @@ export default function RunDetailPage() {
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
             Visualizes per-brief graph attempts (generate → evaluate → retry). Trace is only available for graph-mode briefs.
           </p>
+
+          {(() => {
+            const gantt = buildAggregateTraceGantt(run.briefSummaries);
+            if (!gantt) return null;
+            return (
+              <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 overflow-x-auto">
+                <MermaidDiagram chart={gantt} className="min-w-[720px]" />
+              </div>
+            );
+          })()}
 
           <div className="space-y-3 mt-4">
             {run.briefSummaries.map((brief, i) => {
