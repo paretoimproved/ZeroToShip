@@ -92,6 +92,7 @@ export class GraphGenerationProvider implements GenerationProvider {
             graphFailedSections: graphResult.failedSections,
             graphRetriedSections: retriedSections,
             graphTrace: graphResult.trace,
+            handoffMeta: graphResult.handoffMeta,
           },
         };
       } catch (error) {
@@ -125,6 +126,7 @@ export class GraphGenerationProvider implements GenerationProvider {
             graphFailedSections: brief.generationMeta?.graphFailedSections,
             graphRetriedSections: brief.generationMeta?.graphRetriedSections,
             graphTrace: brief.generationMeta?.graphTrace,
+            handoffMeta: brief.generationMeta?.handoffMeta,
           },
         };
       }

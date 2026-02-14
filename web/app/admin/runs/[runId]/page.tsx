@@ -687,6 +687,7 @@ export default function RunDetailPage() {
               const models = meta?.graphModelsUsed?.join(", ") || null;
               const retried = meta?.graphRetriedSections?.join(", ") || null;
               const failed = meta?.graphFailedSections?.join(", ") || null;
+              const handoff = meta?.handoffMeta ?? null;
 
               return (
                 <details
@@ -736,6 +737,19 @@ export default function RunDetailPage() {
                       {models && <p><span className="font-medium">Models:</span> <span className="font-mono">{models}</span></p>}
                       {retried && <p><span className="font-medium">Retried sections:</span> <span className="font-mono">{retried}</span></p>}
                       {failed && <p><span className="font-medium">Failed sections:</span> <span className="font-mono">{failed}</span></p>}
+                      {handoff && (
+                        <p>
+                          <span className="font-medium">Handoff:</span>{" "}
+                          <span className="font-mono">
+                            {handoff.provider}:{handoff.status}
+                            {typeof handoff.durationMs === "number" ? ` ${formatNumber(handoff.durationMs)}ms` : ""}
+                            {typeof handoff.addedCompetitors === "number" ? ` +c=${handoff.addedCompetitors}` : ""}
+                            {typeof handoff.addedGaps === "number" ? ` +g=${handoff.addedGaps}` : ""}
+                            {typeof handoff.addedDifferentiators === "number" ? ` +d=${handoff.addedDifferentiators}` : ""}
+                            {handoff.reason ? ` (${handoff.reason})` : ""}
+                          </span>
+                        </p>
+                      )}
                       {meta?.fallbackReason && <p><span className="font-medium">Fallback reason:</span> <span className="font-mono">{meta.fallbackReason}</span></p>}
                     </div>
                   </div>

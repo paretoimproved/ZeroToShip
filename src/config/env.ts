@@ -133,6 +133,22 @@ const envSchema = z.object({
     (val) => (val === '' || val === undefined ? undefined : val),
     z.coerce.number().int().nonnegative().optional()
   ),
+
+  // Agent-to-agent handoff (Phase 4)
+  HANDOFF_PROVIDER: z.enum(['off', 'mock', 'n8n']).default('off'),
+  N8N_HANDOFF_URL: z.preprocess(
+    (val) => (val === '' || val === undefined ? undefined : val),
+    z.string().url().optional()
+  ),
+  N8N_HANDOFF_API_KEY: z.string().default(''),
+  HANDOFF_TIMEOUT_MS: z.preprocess(
+    (val) => (val === '' || val === undefined ? undefined : val),
+    z.coerce.number().int().positive().default(8000)
+  ),
+  HANDOFF_MAX_FAILURES: z.preprocess(
+    (val) => (val === '' || val === undefined ? undefined : val),
+    z.coerce.number().int().nonnegative().default(2)
+  ),
 });
 
 // --- Typed config object ---

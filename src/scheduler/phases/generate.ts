@@ -259,6 +259,11 @@ export async function runGeneratePhase(
         maxConcurrent: envConfig.GRAPH_MAX_CONCURRENT_BRIEFS,
         runBudgetUsd: envConfig.GRAPH_RUN_BUDGET_USD,
         runBudgetTokens: envConfig.GRAPH_RUN_BUDGET_TOKENS,
+        handoffProvider: envConfig.HANDOFF_PROVIDER,
+        handoffUrl: envConfig.N8N_HANDOFF_URL,
+        handoffApiKey: envConfig.N8N_HANDOFF_API_KEY || undefined,
+        handoffTimeoutMs: envConfig.HANDOFF_TIMEOUT_MS,
+        handoffMaxFailures: envConfig.HANDOFF_MAX_FAILURES,
       },
     });
 
