@@ -166,10 +166,13 @@ export default function SampleBriefPreview() {
                   className={[
                     "inline-flex items-center text-xs font-medium",
                     "px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
-                    "min-w-0 max-w-full sm:max-w-[360px] truncate whitespace-nowrap",
+                    // Truncation is more reliable when applied to a non-flex text box.
+                    "min-w-0 max-w-full sm:max-w-[360px] overflow-hidden",
                   ].join(" ")}
                 >
-                  {sampleBrief.revenueEstimate}
+                  <span className="min-w-0 truncate whitespace-nowrap">
+                    {sampleBrief.revenueEstimate}
+                  </span>
                 </span>
               </div>
             </div>

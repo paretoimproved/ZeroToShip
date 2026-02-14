@@ -107,10 +107,11 @@ export default function IdeaBriefCard({
                 // We show the full value on hover via `title`.
                 "hidden sm:inline-flex items-center text-xs font-medium",
                 "px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
-                "min-w-0 max-w-full sm:max-w-[360px] truncate whitespace-nowrap",
+                // Truncation is more reliable when applied to a non-flex text box.
+                "min-w-0 max-w-full sm:max-w-[360px] overflow-hidden",
               ].join(" ")}
             >
-              {revenueEstimate}
+              <span className="min-w-0 truncate whitespace-nowrap">{revenueEstimate}</span>
             </span>
             {bookmarkSlot}
           </div>
