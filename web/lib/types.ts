@@ -159,6 +159,7 @@ export interface PipelineRunRow {
   completedAt: string | null;
   config: Record<string, unknown>;
   phases: Record<string, string>;
+  phaseResults?: Record<string, unknown> | null;
   stats: {
     postsScraped: number;
     clustersCreated: number;
@@ -184,6 +185,7 @@ export interface PipelineRunRow {
   generationMode?: GenerationMode | null;
   generationDiagnostics?: GenerationDiagnosticsSnapshot | null;
   briefSummaries: Array<{
+    id?: string;
     name: string;
     tagline: string;
     priorityScore: number;
@@ -206,6 +208,8 @@ export interface PipelineRunRow {
         addedGaps?: number;
         addedDifferentiators?: number;
       };
+      publishDecision?: "auto" | "review";
+      publishConfidence?: number;
     } | null;
   }> | null;
 }
@@ -248,6 +252,12 @@ export interface GenerationDiagnosticsSnapshot {
   fallbackRate: number;
   fallbackReasonCounts: Record<FallbackReasonCode, number>;
   qualityFailureReasonCounts: Record<QualityFailureReasonCode, number>;
+  publishGate?: {
+    enabled: boolean;
+    confidenceThreshold: number;
+    autoPublishCount: number;
+    needsReviewCount: number;
+  };
   budgetStop?: {
     reason: "budget_usd_exceeded" | "budget_tokens_exceeded" | "unknown";
     requestedBriefCount: number;

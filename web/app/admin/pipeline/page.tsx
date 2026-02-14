@@ -39,6 +39,7 @@ function getPhaseState(
   if (!phases) return "pending";
   const s = phases[phase];
   if (s === "completed") return "completed";
+  if (s === "blocked") return "completed";
   if (s === "failed") return "failed";
 
   // Only show "running" spinner if we know a pipeline is actively running
@@ -78,6 +79,8 @@ export default function PipelinePage() {
   const [clusteringThreshold, setClusteringThreshold] = useState("0.75");
   const [minPriorityScore, setMinPriorityScore] = useState("8");
   const [minFrequencyForGap, setMinFrequencyForGap] = useState("1");
+  const [publishGateEnabled, setPublishGateEnabled] = useState(false);
+  const [publishGateConfidenceThreshold, setPublishGateConfidenceThreshold] = useState("0.85");
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -106,7 +109,10 @@ export default function PipelinePage() {
       // Only evaluate completion for the run we triggered, not a stale previous run
       if (currentRunId && data.runId !== currentRunId) return;
 
-      const allCompleted = PHASE_ORDER.every((p) => data.phases?.[p] === "completed");
+      const allCompleted = PHASE_ORDER.every((p) => {
+        const s = data.phases?.[p];
+        return s === "completed" || s === "blocked";
+      });
       const anyFailed = PHASE_ORDER.some((p) => data.phases?.[p] === "failed");
 
       if (allCompleted || anyFailed) {
@@ -168,6 +174,8 @@ export default function PipelinePage() {
         options.clusteringThreshold = Number(clusteringThreshold);
         options.minPriorityScore = Number(minPriorityScore);
         options.minFrequencyForGap = Number(minFrequencyForGap);
+        options.publishGateEnabled = publishGateEnabled;
+        options.publishGateConfidenceThreshold = Number(publishGateConfidenceThreshold);
       }
 
       const result = await api.triggerPipeline(options);
@@ -179,7 +187,10 @@ export default function PipelinePage() {
     }
   }
 
-  const isComplete = status?.phases && PHASE_ORDER.every((p) => status.phases?.[p] === "completed");
+  const isComplete = status?.phases && PHASE_ORDER.every((p) => {
+    const s = status.phases?.[p];
+    return s === "completed" || s === "blocked";
+  });
   const isFailed = status?.phases && PHASE_ORDER.some((p) => status.phases?.[p] === "failed");
 
   return (
@@ -276,6 +287,41 @@ export default function PipelinePage() {
 
             {showAdvanced && (
               <div className="mt-3 pl-5 space-y-4 border-l-2 border-gray-200 dark:border-gray-600">
+                {/* Publish Gate */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Publish Gate (Phase 5)
+                  </label>
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <label className="flex items-center space-x-1.5 text-sm text-gray-600 dark:text-gray-400">
+                      <input
+                        type="checkbox"
+                        checked={publishGateEnabled}
+                        onChange={(e) => setPublishGateEnabled(e.target.checked)}
+                        className="rounded border-gray-300"
+                      />
+                      <span>Require Review Before Delivery</span>
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        Confidence Threshold
+                      </span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="1"
+                        value={publishGateConfidenceThreshold}
+                        onChange={(e) => setPublishGateConfidenceThreshold(e.target.value)}
+                        className="w-24 px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+                      />
+                    </div>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-400">
+                    Blocks delivery if any brief is below the threshold.
+                  </p>
+                </div>
+
                 {/* Scraper Toggles */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -411,7 +457,7 @@ export default function PipelinePage() {
                 style={{
                   width: `${
                     (PHASE_ORDER.filter(
-                      (p) => status.phases?.[p] === "completed"
+                      (p) => status.phases?.[p] === "completed" || status.phases?.[p] === "blocked"
                     ).length /
                       PHASE_ORDER.length) *
                     100

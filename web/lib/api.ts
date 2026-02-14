@@ -193,6 +193,8 @@ class ApiClient {
     clusteringThreshold?: number;
     minPriorityScore?: number;
     minFrequencyForGap?: number;
+    publishGateEnabled?: boolean;
+    publishGateConfidenceThreshold?: number;
   }): Promise<PipelineRunResponse> {
     return this.request<PipelineRunResponse>("/admin/pipeline/run", {
       method: "POST",
@@ -216,6 +218,24 @@ class ApiClient {
 
   async getRunDetail(runId: string): Promise<{ run: PipelineRunRow }> {
     return this.request(`/admin/runs/${runId}`);
+  }
+
+  async approvePublishGate(runId: string, briefIds?: string[]): Promise<{
+    status: string;
+    publishedCount: number;
+    delivered: unknown;
+  }> {
+    return this.request(`/admin/runs/${runId}/publish/approve`, {
+      method: "POST",
+      body: JSON.stringify(briefIds?.length ? { briefIds } : {}),
+    });
+  }
+
+  async rejectPublishGate(runId: string, reason?: string): Promise<{ status: string }> {
+    return this.request(`/admin/runs/${runId}/publish/reject`, {
+      method: "POST",
+      body: JSON.stringify(reason ? { reason } : {}),
+    });
   }
 
   async getEmailLogs(params?: { page?: number; limit?: number; status?: string }): Promise<{

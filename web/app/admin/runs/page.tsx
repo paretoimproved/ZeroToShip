@@ -5,7 +5,7 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import type { PipelineRunRow } from "@/lib/types";
 
-type StatusFilter = "all" | "completed" | "failed";
+type StatusFilter = "all" | "completed" | "failed" | "needs_review";
 
 const LIMIT = 20;
 
@@ -71,6 +71,13 @@ function statusBadge(run: PipelineRunRow): { label: string; className: string } 
     return {
       label: "Failed",
       className: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+    };
+  }
+
+  if (status === "needs_review") {
+    return {
+      label: "Needs review",
+      className: "bg-amber-100 text-amber-900 dark:bg-amber-900/50 dark:text-amber-200",
     };
   }
 
@@ -147,7 +154,7 @@ export default function RunHistoryPage() {
 
       {/* Filter Bar */}
       <div className="flex items-center space-x-2">
-        {(["all", "completed", "failed"] as StatusFilter[]).map((filter) => (
+        {(["all", "completed", "needs_review", "failed"] as StatusFilter[]).map((filter) => (
           <button
             key={filter}
             onClick={() => handleFilterChange(filter)}
@@ -157,7 +164,7 @@ export default function RunHistoryPage() {
                 : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
             }`}
           >
-            {filter.charAt(0).toUpperCase() + filter.slice(1)}
+            {filter === "needs_review" ? "Needs Review" : filter.charAt(0).toUpperCase() + filter.slice(1)}
           </button>
         ))}
       </div>

@@ -31,7 +31,7 @@ export interface RunStatus {
   runId: string;
   config: PipelineConfig;
   startedAt: string;
-  phases: Record<PhaseName, 'pending' | 'completed' | 'failed'>;
+  phases: Record<PhaseName, 'pending' | 'completed' | 'failed' | 'blocked'>;
   phaseStats?: PhaseStats;
   lastCompletedPhase: PhaseName | null;
   updatedAt: string;
@@ -144,7 +144,7 @@ export async function savePhaseResult(
 export async function updatePhaseStatus(
   runId: string,
   phase: PhaseName,
-  outcome: 'completed' | 'failed'
+  outcome: 'completed' | 'failed' | 'blocked'
 ): Promise<void> {
   const row = await db.select({
     phases: pipelineRuns.phases,
@@ -159,7 +159,7 @@ export async function updatePhaseStatus(
     return;
   }
 
-  const phases = row[0].phases as Record<PhaseName, 'pending' | 'completed' | 'failed'>;
+  const phases = row[0].phases as Record<PhaseName, 'pending' | 'completed' | 'failed' | 'blocked'>;
   phases[phase] = outcome;
 
   const updates: Record<string, unknown> = {

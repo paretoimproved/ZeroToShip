@@ -141,6 +141,25 @@ function buildGenerateDiagnostics(
   };
 }
 
+function clamp01(value: number): number {
+  if (value <= 0) return 0;
+  if (value >= 1) return 1;
+  return value;
+}
+
+function computePublishConfidence(
+  brief: { generationMeta?: { isFallback?: boolean; graphAttemptCount?: number } },
+  quality: { valid: boolean },
+): number {
+  // Heuristic confidence until Phase 6 introduces an eval harness scorer.
+  // Bias toward review when we see fallbacks or multiple graph attempts.
+  let score = quality.valid ? 0.9 : 0.1;
+  if (brief.generationMeta?.isFallback) score -= 0.5;
+  const attempts = brief.generationMeta?.graphAttemptCount ?? 1;
+  if (attempts > 1) score -= 0.1 * Math.min(3, attempts - 1);
+  return clamp01(score);
+}
+
 /**
  * Deduplicate scored problems by comparing cluster embeddings.
  * Keeps the higher-priority problem when two are too similar.
@@ -275,6 +294,21 @@ export async function runGeneratePhase(
           'Brief failed quality validation — will not auto-publish'
         );
       }
+
+      const publishGateEnabled = Boolean(config.publishGate?.enabled);
+      const threshold = config.publishGate?.confidenceThreshold ?? 0.85;
+      const confidence = computePublishConfidence(brief, quality);
+      const publishDecision: 'auto' | 'review' =
+        quality.valid && (!publishGateEnabled || confidence >= threshold)
+          ? 'auto'
+          : 'review';
+
+      brief.generationMeta = {
+        ...(brief.generationMeta ?? { isFallback: false }),
+        publishDecision,
+        publishConfidence: confidence,
+      };
+
       return { brief, quality };
     });
 
@@ -309,7 +343,20 @@ export async function runGeneratePhase(
         })()
         : undefined;
 
-    const diagnostics = budgetStop ? { ...baseDiagnostics, budgetStop } : baseDiagnostics;
+    const publishGateEnabled = Boolean(config.publishGate?.enabled);
+    const publishGateThreshold = config.publishGate?.confidenceThreshold ?? 0.85;
+    const autoPublishCount = validatedBriefs.filter(v => v.brief.generationMeta?.publishDecision === 'auto').length;
+    const needsReviewCount = validatedBriefs.filter(v => v.brief.generationMeta?.publishDecision === 'review').length;
+
+    const diagnostics = {
+      ...(budgetStop ? { ...baseDiagnostics, budgetStop } : baseDiagnostics),
+      publishGate: {
+        enabled: publishGateEnabled,
+        confidenceThreshold: publishGateThreshold,
+        autoPublishCount,
+        needsReviewCount,
+      },
+    };
 
     logger.info(
       {
@@ -328,6 +375,7 @@ export async function runGeneratePhase(
           .insert(ideas)
           .values(
             validatedBriefs.map(({ brief, quality }) => ({
+              id: brief.id,
               name: brief.name,
               tagline: brief.tagline,
               priorityScore: String(brief.priorityScore),
@@ -348,8 +396,8 @@ export async function runGeneratePhase(
               risks: brief.risks,
               sources: brief.sources,
               generatedAt: brief.generatedAt,
-              isPublished: quality.valid,
-              publishedAt: quality.valid ? new Date() : null,
+              isPublished: brief.generationMeta?.publishDecision === 'auto',
+              publishedAt: brief.generationMeta?.publishDecision === 'auto' ? new Date() : null,
             }))
           )
           .onConflictDoNothing();

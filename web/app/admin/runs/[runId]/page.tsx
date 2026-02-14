@@ -54,6 +54,18 @@ function formatBudgetStopReason(reason: string): string {
 }
 
 type BriefSummary = NonNullable<PipelineRunRow["briefSummaries"]>[number];
+type PublishGateHistoryEntry = {
+  action: "approve" | "reject";
+  by: string | null;
+  at: string;
+  reason?: string | null;
+  briefIds?: string[];
+  delivered?: boolean;
+  deliveredSent?: number;
+};
+type PhaseResults = {
+  publishGateHistory?: PublishGateHistoryEntry[];
+} & Record<string, unknown>;
 
 function escapeMermaidLabel(value: string): string {
   return value
@@ -275,6 +287,8 @@ export default function RunDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [configExpanded, setConfigExpanded] = useState(false);
+  const [reviewActionLoading, setReviewActionLoading] = useState(false);
+  const [reviewActionError, setReviewActionError] = useState<string | null>(null);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
@@ -334,6 +348,13 @@ export default function RunDetailPage() {
   const derivedStatus = run.status ?? (run.completedAt ? (run.success ? "completed" : "failed") : "running");
   const isDryRun = Boolean(run.config.dryRun);
   const diagnostics = run.generationDiagnostics || null;
+  const publishGate = diagnostics?.publishGate ?? null;
+  const briefSummaries = run.briefSummaries ?? [];
+  const reviewBriefs = briefSummaries.filter((b) => b.generationMeta?.publishDecision === "review");
+  const phaseResults = (run.phaseResults ?? null) as PhaseResults | null;
+  const reviewHistory: PublishGateHistoryEntry[] = Array.isArray(phaseResults?.publishGateHistory)
+    ? phaseResults!.publishGateHistory
+    : [];
   const qualityReasonRows = diagnostics
     ? Object.entries(diagnostics.qualityFailureReasonCounts)
       .filter(([, count]) => count > 0)
@@ -381,6 +402,8 @@ export default function RunDetailPage() {
               className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
                 derivedStatus === "running"
                   ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                  : derivedStatus === "needs_review"
+                    ? "bg-amber-100 text-amber-900 dark:bg-amber-900/50 dark:text-amber-200"
                   : derivedStatus === "completed"
                     ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                     : derivedStatus === "failed"
@@ -390,6 +413,8 @@ export default function RunDetailPage() {
             >
               {derivedStatus === "running"
                 ? "Running"
+                : derivedStatus === "needs_review"
+                  ? "Needs review"
                 : derivedStatus === "completed"
                   ? "Success"
                   : derivedStatus === "failed"
@@ -526,6 +551,158 @@ export default function RunDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Publish Gate (Phase 5) */}
+      {(publishGate?.enabled || derivedStatus === "needs_review" || reviewBriefs.length > 0) && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Publish Gate
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                {publishGate?.enabled
+                  ? `Enabled (threshold: ${publishGate.confidenceThreshold.toFixed(2)})`
+                  : "Disabled"}
+              </p>
+            </div>
+
+            {derivedStatus === "needs_review" && (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={reviewActionLoading}
+                  onClick={async () => {
+                    setReviewActionLoading(true);
+                    setReviewActionError(null);
+                    try {
+                      await api.approvePublishGate(runId);
+                      const data = await api.getRunDetail(runId);
+                      setRun(data.run);
+                    } catch (err) {
+                      setReviewActionError(err instanceof Error ? err.message : "Failed to approve publish gate");
+                    } finally {
+                      setReviewActionLoading(false);
+                    }
+                  }}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors ${
+                    reviewActionLoading ? "bg-gray-400 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700"
+                  }`}
+                >
+                  {reviewActionLoading ? "Approving..." : "Approve + Deliver"}
+                </button>
+                <button
+                  type="button"
+                  disabled={reviewActionLoading}
+                  onClick={async () => {
+                    setReviewActionLoading(true);
+                    setReviewActionError(null);
+                    try {
+                      await api.rejectPublishGate(runId);
+                      const data = await api.getRunDetail(runId);
+                      setRun(data.run);
+                    } catch (err) {
+                      setReviewActionError(err instanceof Error ? err.message : "Failed to reject publish gate");
+                    } finally {
+                      setReviewActionLoading(false);
+                    }
+                  }}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
+                    reviewActionLoading
+                      ? "bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 cursor-not-allowed"
+                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700"
+                  }`}
+                >
+                  Reject
+                </button>
+              </div>
+            )}
+          </div>
+
+          {reviewActionError && (
+            <div className="mt-4 p-3 rounded-lg border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 text-sm text-red-700 dark:text-red-300">
+              {reviewActionError}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+            <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Auto-publish</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+                {publishGate?.autoPublishCount ?? 0}
+              </p>
+            </div>
+            <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Needs review</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+                {publishGate?.needsReviewCount ?? reviewBriefs.length}
+              </p>
+            </div>
+            <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Run status</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+                {derivedStatus}
+              </p>
+            </div>
+          </div>
+
+          {reviewBriefs.length > 0 && (
+            <div className="mt-6">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Review Briefs
+              </h3>
+              <div className="space-y-2">
+                {reviewBriefs.map((b) => (
+                  <div
+                    key={b.id ?? b.name}
+                    className="flex items-center justify-between gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                        {b.name}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        {b.tagline}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-900 dark:bg-amber-900/50 dark:text-amber-200">
+                        review
+                      </span>
+                      <span className="text-xs font-mono text-gray-500 dark:text-gray-400">
+                        conf={typeof b.generationMeta?.publishConfidence === "number"
+                          ? b.generationMeta.publishConfidence.toFixed(2)
+                          : "n/a"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {reviewHistory.length > 0 && (
+            <div className="mt-6">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Review History
+              </h3>
+              <div className="space-y-2">
+                {reviewHistory.slice().reverse().map((h, idx) => (
+                  <div
+                    key={`${h.at ?? idx}`}
+                    className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300"
+                  >
+                    <span className="font-mono">{h.action}</span>{" "}
+                    <span className="text-gray-500 dark:text-gray-400">
+                      {h.by ? `by ${h.by}` : ""} {h.at ? `at ${formatDate(h.at)}` : ""}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* API Metrics */}
       {run.apiMetrics && (

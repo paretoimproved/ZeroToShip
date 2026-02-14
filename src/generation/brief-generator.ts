@@ -40,6 +40,9 @@ export interface BriefGenerationMeta {
   graphRetriedSections?: string[];
   graphTrace?: GraphAttemptTrace[];
   handoffMeta?: BriefHandoffMeta;
+  // Phase 5: publish gating
+  publishDecision?: 'auto' | 'review';
+  publishConfidence?: number;
 }
 
 export type HandoffProvider = 'off' | 'mock' | 'n8n';
@@ -217,7 +220,8 @@ const DEFAULT_CONFIG: Required<Omit<BriefGeneratorConfig, 'runBudgetUsd' | 'runB
  * Generate unique brief ID
  */
 function generateBriefId(): string {
-  return `brief_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+  // Use UUID so we can persist it as ideas.id (uuid) and reliably reference the row later.
+  return crypto.randomUUID();
 }
 
 /**
