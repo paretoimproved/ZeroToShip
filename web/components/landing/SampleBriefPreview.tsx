@@ -158,10 +158,17 @@ export default function SampleBriefPreview() {
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 mt-1">{sampleBrief.tagline}</p>
               </div>
-              <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+              <div className="flex flex-wrap items-center gap-2 flex-shrink-0 min-w-0">
                 <ScoreBadge score={sampleBrief.priorityScore} size="sm" />
                 <EffortBadge effort={sampleBrief.effortEstimate} size="sm" />
-                <span className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
+                <span
+                  title={sampleBrief.revenueEstimate}
+                  className={[
+                    "inline-flex items-center text-xs font-medium",
+                    "px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
+                    "min-w-0 max-w-full sm:max-w-[360px] truncate whitespace-nowrap",
+                  ].join(" ")}
+                >
                   {sampleBrief.revenueEstimate}
                 </span>
               </div>
