@@ -19,6 +19,11 @@ function formatDuration(durationMs: number): string {
   return `${m}m ${s}s`;
 }
 
+function formatDurationMaybe(durationMs: number | null | undefined): string {
+  if (typeof durationMs !== "number") return "In progress";
+  return formatDuration(durationMs);
+}
+
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString();
 }
@@ -272,17 +277,34 @@ export default function RunDetailPage() {
   const [configExpanded, setConfigExpanded] = useState(false);
 
   useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | null = null;
+
     async function load() {
       try {
         const data = await api.getRunDetail(runId);
         setRun(data.run);
+
+        const status =
+          data.run?.status ??
+          (data.run?.completedAt ? (data.run?.success ? "completed" : "failed") : "running");
+        if (status !== "running" && interval) {
+          clearInterval(interval);
+          interval = null;
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load run details");
       } finally {
         setLoading(false);
       }
     }
+
+    // Initial fetch, then poll while the run is still running so the phase timeline feels "live".
     load();
+    interval = setInterval(load, 5000);
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [runId]);
 
   if (loading) {
@@ -349,7 +371,8 @@ export default function RunDetailPage() {
                 {run.completedAt ? formatDate(run.completedAt) : "In progress"}
               </p>
               <p>
-                <span className="font-medium">Duration:</span> {formatDuration(run.totalDuration)}
+                <span className="font-medium">Duration:</span>{" "}
+                {formatDurationMaybe(run.totalDuration)}
               </p>
             </div>
           </div>

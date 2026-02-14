@@ -166,7 +166,7 @@ export interface PipelineRunRow {
     emailsSent: number;
   };
   success: boolean;
-  totalDuration: number;
+  totalDuration: number | null;
   errors: Array<{
     phase: string;
     message: string;

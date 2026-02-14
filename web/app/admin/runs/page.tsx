@@ -21,6 +21,11 @@ function formatDuration(durationMs: number): string {
   return `${m}m ${s}s`;
 }
 
+function formatDurationMaybe(durationMs: number | null | undefined): string {
+  if (typeof durationMs !== "number") return "\u2014";
+  return formatDuration(durationMs);
+}
+
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString();
 }
@@ -204,7 +209,7 @@ export default function RunHistoryPage() {
                     </Link>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">{formatDate(run.startedAt)}</td>
-                  <td className="px-4 py-3 whitespace-nowrap">{formatDuration(run.totalDuration)}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">{formatDurationMaybe(run.totalDuration)}</td>
                   <td className="px-4 py-3">
                     {(() => {
                       const badge = statusBadge(run);
