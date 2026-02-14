@@ -229,8 +229,8 @@ describe('Email Builder', () => {
       const brief = createMockBrief({ effortEstimate: 'weekend' });
       const result = buildDailyEmail([brief], 'free');
 
-      expect(result.html).toContain('Effort');
-      expect(result.html).toContain('weekend');
+      expect(result.html).toContain('Build time');
+      expect(result.html).toContain('Weekend');
     });
 
     it('includes revenue estimate in score bar (truncated to 20 chars)', () => {
@@ -240,8 +240,8 @@ describe('Email Builder', () => {
       const result = buildDailyEmail([brief], 'free');
 
       expect(result.html).toContain('Revenue');
-      // revenueEstimate.slice(0, 20) = '$50K-$100K MRR withi'
-      expect(result.html).toContain('$50K-$100K MRR withi');
+      // MRR should be humanized for non-technical readers.
+      expect(result.html).toContain('$50K-$100K per month');
     });
 
     it('includes idea name and tagline in hero', () => {
@@ -427,7 +427,7 @@ describe('Email Builder', () => {
       const result = buildDailyEmail([brief], 'free');
 
       expect(result.text).toContain('7.3');
-      expect(result.text).toContain('Effort: weekend');
+      expect(result.text).toContain('Build time: Weekend');
     });
 
     it('includes tagline in quotes in plain text', () => {
