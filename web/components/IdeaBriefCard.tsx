@@ -97,12 +97,18 @@ export default function IdeaBriefCard({
               <p className="text-gray-600 dark:text-gray-400 mt-1">{brief.tagline}</p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2 sm:flex-shrink-0 sm:max-w-[55%]">
+          <div className="flex flex-wrap items-center gap-2 sm:flex-shrink-0 sm:max-w-[55%] min-w-0">
             <ScoreBadge score={brief.priorityScore} size="sm" />
             <EffortBadge effort={brief.effortEstimate} size="sm" />
             <span
               title={revenueEstimate}
-              className="hidden sm:inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 line-clamp-2"
+              className={[
+                // Prevent long AI-generated strings from blowing up the layout.
+                // We show the full value on hover via `title`.
+                "hidden sm:inline-flex items-center text-xs font-medium",
+                "px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
+                "min-w-0 max-w-full sm:max-w-[360px] truncate whitespace-nowrap",
+              ].join(" ")}
             >
               {revenueEstimate}
             </span>
