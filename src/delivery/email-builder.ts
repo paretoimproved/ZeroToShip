@@ -180,7 +180,12 @@ function buildSectionBlock(label: string, content: string): string {
 
 function buildHeroSection(brief: IdeaBrief, tier: SubscriberTier, config: Required<EmailBuilderConfig>): string {
   const revenue = truncateRevenue(brief.revenueEstimate);
-  const ideaUrl = `${config.baseUrl}/idea/${brief.id || ''}`;
+  const ideaPath = `/idea/${brief.id || ''}`;
+  // Email links are often opened in a logged-out browser session. For free users,
+  // route through login with `next` so they land on a fully-unlocked brief after auth.
+  const ideaUrl = tier === 'free'
+    ? `${config.baseUrl}/login?next=${encodeURIComponent(ideaPath)}`
+    : `${config.baseUrl}${ideaPath}`;
 
   const headerHtml = `
           <span style="display: inline-block; background-color: #6366f1; color: #ffffff; padding: 4px 12px; border-radius: 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Today's #1 Idea</span>
@@ -280,11 +285,15 @@ function buildIdeaCard(
   brief: IdeaBrief,
   rank: number,
   locked: boolean,
+  tier: SubscriberTier,
   config: Required<EmailBuilderConfig>
 ): string {
   const effortStyle = getEffortBadgeStyle(brief.effortEstimate);
   const effortLabel = formatEffortLabel(brief.effortEstimate);
-  const ideaUrl = `${config.baseUrl}/idea/${brief.id || ''}`;
+  const ideaPath = `/idea/${brief.id || ''}`;
+  const ideaUrl = tier === 'free'
+    ? `${config.baseUrl}/login?next=${encodeURIComponent(ideaPath)}`
+    : `${config.baseUrl}${ideaPath}`;
   const tagline = brief.tagline.length > TAGLINE_TRUNCATE_LENGTH
     ? brief.tagline.slice(0, TAGLINE_TRUNCATE_LENGTH) + '...'
     : brief.tagline;
@@ -362,7 +371,7 @@ function buildOtherIdeasSection(
   const rows = visibleBriefs.map((brief, index) => {
     const rank = index + 2;
     const locked = rank > limit;
-    return buildIdeaCard(brief, rank, locked, config);
+    return buildIdeaCard(brief, rank, locked, tier, config);
   }).join('\n');
 
   const lockedFooter = lockedCount > 0 && tier === 'free'
