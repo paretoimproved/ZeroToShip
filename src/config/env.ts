@@ -50,6 +50,8 @@ const envSchema = z.object({
   // Email
   RESEND_API_KEY: z.string().default(''),
   RESEND_WEBHOOK_SECRET: z.string().default(''),
+  RESEND_FROM_EMAIL: z.string().default(''),
+  RESEND_FROM_NAME: z.string().default(''),
 
   // Monitoring and alerting
   SENTRY_DSN: z.string().optional(),
@@ -111,6 +113,10 @@ const envSchema = z.object({
     .default('true')
     .transform((val) => val !== 'false'),
   GENERATION_MODE: z.enum(['legacy', 'graph']).default('legacy'),
+  SCHEDULER_GENERATION_MODE: z.preprocess(
+    (val) => (val === '' || val === undefined ? undefined : val),
+    z.enum(['legacy', 'graph']).optional()
+  ),
 
   // Graph generation (Phase 3 controls)
   GRAPH_MAX_ATTEMPTS: z.preprocess(
