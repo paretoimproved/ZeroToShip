@@ -1,6 +1,6 @@
 import type { GapAnalysis } from '../../analysis/gap-analyzer';
 import type { ScoredProblem } from '../../analysis/scorer';
-import type { BriefGeneratorConfig, GraphAttemptTrace, IdeaBrief } from '../brief-generator';
+import type { BriefGeneratorConfig, BriefHandoffMeta, GraphAttemptTrace, IdeaBrief } from '../brief-generator';
 
 export type GraphSection =
   | 'core'
@@ -37,6 +37,9 @@ export interface SingleBriefGraphState {
   failedSections: GraphSection[];
   sectionRetryCounts: Record<GraphSection, number>;
   trace: GraphAttemptTrace[];
+  handoffApplied: boolean;
+  handoffFailureCount: number;
+  handoffMeta?: BriefHandoffMeta;
 }
 
 export interface SingleBriefGraphResult {
@@ -49,4 +52,5 @@ export interface SingleBriefGraphResult {
   sectionRetryCounts: Record<GraphSection, number>;
   reasons: string[];
   trace: GraphAttemptTrace[];
+  handoffMeta?: BriefHandoffMeta;
 }

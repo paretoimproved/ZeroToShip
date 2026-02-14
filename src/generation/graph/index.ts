@@ -40,6 +40,9 @@ export async function runSingleBriefGraph(
     | 'failedSections'
     | 'sectionRetryCounts'
     | 'trace'
+    | 'handoffApplied'
+    | 'handoffFailureCount'
+    | 'handoffMeta'
   >,
 ): Promise<SingleBriefGraphResult> {
   const maxAttempts = Math.max(1, initialState.config.maxAttempts ?? DEFAULT_GRAPH_MAX_ATTEMPTS);
@@ -57,6 +60,9 @@ export async function runSingleBriefGraph(
     failedSections: [],
     sectionRetryCounts: createSectionRetryCounter(),
     trace: [],
+    handoffApplied: false,
+    handoffFailureCount: 0,
+    handoffMeta: undefined,
   };
 
   while (state.attempt <= state.maxAttempts) {
@@ -104,6 +110,7 @@ export async function runSingleBriefGraph(
         sectionRetryCounts: state.sectionRetryCounts,
         reasons: [],
         trace: state.trace,
+        handoffMeta: state.handoffMeta,
       };
     }
 
@@ -169,5 +176,6 @@ export async function runSingleBriefGraph(
     sectionRetryCounts: state.sectionRetryCounts,
     reasons: state.latestValidation?.reasons ?? [],
     trace: state.trace,
+    handoffMeta: state.handoffMeta,
   };
 }

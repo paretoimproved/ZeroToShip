@@ -39,6 +39,19 @@ export interface BriefGenerationMeta {
   graphFailedSections?: string[];
   graphRetriedSections?: string[];
   graphTrace?: GraphAttemptTrace[];
+  handoffMeta?: BriefHandoffMeta;
+}
+
+export type HandoffProvider = 'off' | 'mock' | 'n8n';
+
+export interface BriefHandoffMeta {
+  provider: Exclude<HandoffProvider, 'off'>;
+  status: 'ok' | 'skipped' | 'error';
+  reason?: string;
+  durationMs?: number;
+  addedCompetitors?: number;
+  addedGaps?: number;
+  addedDifferentiators?: number;
 }
 
 /**
@@ -172,6 +185,13 @@ export interface BriefGeneratorConfig {
   runBudgetUsd?: number;
   /** Optional run-level budget in total tokens (input+output) for brief generation calls. */
   runBudgetTokens?: number;
+
+  // Phase 4 handoff controls (agent-to-agent enrichment)
+  handoffProvider?: HandoffProvider;
+  handoffUrl?: string;
+  handoffApiKey?: string;
+  handoffTimeoutMs?: number;
+  handoffMaxFailures?: number;
 }
 
 const DEFAULT_CONFIG: Required<Omit<BriefGeneratorConfig, 'runBudgetUsd' | 'runBudgetTokens'>>
@@ -186,6 +206,11 @@ const DEFAULT_CONFIG: Required<Omit<BriefGeneratorConfig, 'runBudgetUsd' | 'runB
   maxSectionRetries: 1,
   runBudgetUsd: undefined,
   runBudgetTokens: undefined,
+  handoffProvider: 'off',
+  handoffUrl: '',
+  handoffApiKey: '',
+  handoffTimeoutMs: 8000,
+  handoffMaxFailures: 2,
 };
 
 /**

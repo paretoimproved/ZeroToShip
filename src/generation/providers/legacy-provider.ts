@@ -17,6 +17,7 @@ export class LegacyGenerationProvider implements GenerationProvider {
         graphFailedSections: brief.generationMeta?.graphFailedSections,
         graphRetriedSections: brief.generationMeta?.graphRetriedSections,
         graphTrace: brief.generationMeta?.graphTrace,
+        handoffMeta: brief.generationMeta?.handoffMeta,
       },
     }));
   }

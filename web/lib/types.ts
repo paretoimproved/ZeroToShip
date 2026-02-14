@@ -197,6 +197,15 @@ export interface PipelineRunRow {
       graphFailedSections?: string[];
       graphRetriedSections?: string[];
       graphTrace?: GraphAttemptTrace[];
+      handoffMeta?: {
+        provider: "mock" | "n8n";
+        status: "ok" | "skipped" | "error";
+        reason?: string;
+        durationMs?: number;
+        addedCompetitors?: number;
+        addedGaps?: number;
+        addedDifferentiators?: number;
+      };
     } | null;
   }> | null;
 }

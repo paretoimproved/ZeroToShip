@@ -643,6 +643,7 @@ export async function runPipeline(
           graphFailedSections: b.generationMeta.graphFailedSections,
           graphRetriedSections: b.generationMeta.graphRetriedSections,
           graphTrace: b.generationMeta.graphTrace,
+          handoffMeta: b.generationMeta.handoffMeta,
         }
         : null,
     })) || [];
