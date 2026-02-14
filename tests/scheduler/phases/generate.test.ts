@@ -204,6 +204,34 @@ describe('Generate Phase', () => {
 
       expect(db.insert).toHaveBeenCalled();
     });
+
+    it('truncates category to fit ideas.category varchar(100)', async () => {
+      const { generateAllBriefs } = await import('../../../src/generation/brief-generator');
+      const { db } = await import('../../../src/api/db/client');
+
+      const longCategory = 'x'.repeat(150);
+      vi.mocked(generateAllBriefs).mockResolvedValue([
+        makeGenerationBrief({ keyFeatures: [longCategory] }),
+      ]);
+
+      await runGeneratePhase(
+        'test-run-category-truncate',
+        makeConfig({ maxBriefs: 1 }),
+        [makeScoredProblem({ id: 'sp-cat' })],
+        new Map([['sp-cat', makeGap('sp-cat')]])
+      );
+
+      expect(db.insert).toHaveBeenCalled();
+      const insertReturn = vi.mocked(db.insert).mock.results[0]?.value as any;
+      expect(insertReturn?.values).toBeDefined();
+
+      const valuesFn = insertReturn.values as ReturnType<typeof vi.fn>;
+      expect(valuesFn).toHaveBeenCalledTimes(1);
+
+      const rows = valuesFn.mock.calls[0][0] as Array<{ category: string | null }>;
+      expect(rows).toHaveLength(1);
+      expect(rows[0].category).toBe('x'.repeat(100));
+    });
   });
 
   describe('error handling', () => {

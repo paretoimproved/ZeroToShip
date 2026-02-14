@@ -20,6 +20,24 @@ const ANTHROPIC_VERSION = '2023-06-01';
 /** Default timeout for API calls (ms) */
 const DEFAULT_TIMEOUT_MS = 60_000;
 
+/** Default retry attempts for transient provider failures (excludes initial attempt). */
+const DEFAULT_MAX_RETRIES = 2;
+
+const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504, 529]);
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function computeBackoffMs(attempt: number): number {
+  // attempt is 1-based (1 = first try). Backoff starts on attempt 2.
+  const baseMs = 250;
+  const maxMs = 8000;
+  const exp = Math.min(6, Math.max(0, attempt - 2)); // 0,1,2...
+  const jitter = 0.75 + Math.random() * 0.5; // 0.75x - 1.25x
+  return Math.min(maxMs, Math.round(baseMs * (2 ** exp) * jitter));
+}
+
 /**
  * Options for a single Anthropic API call
  */
@@ -36,6 +54,9 @@ export interface AnthropicCallOptions {
   module: ApiCallRecord['module'];
   /** Batch size for metrics (default 1) */
   batchSize?: number;
+
+  /** Retries for transient failures (default 2). Set to 0 to disable retries. */
+  maxRetries?: number;
 }
 
 /**
@@ -86,41 +107,158 @@ export async function callAnthropicApi(
     timeoutMs = DEFAULT_TIMEOUT_MS,
     module: moduleName,
     batchSize = 1,
+    maxRetries = DEFAULT_MAX_RETRIES,
   } = options;
 
-  const startTime = Date.now();
   const inputTokens = (system ? estimateTokens(system) : 0) + estimateTokens(prompt);
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const body: Record<string, unknown> = {
+    model,
+    max_tokens: maxTokens,
+    messages: [{ role: 'user', content: prompt }],
+  };
+  if (system) {
+    body.system = system;
+  }
+  if (temperature !== undefined) {
+    body.temperature = temperature;
+  }
 
-  try {
-    const body: Record<string, unknown> = {
-      model,
-      max_tokens: maxTokens,
-      messages: [{ role: 'user', content: prompt }],
-    };
-    if (system) {
-      body.system = system;
-    }
-    if (temperature !== undefined) {
-      body.temperature = temperature;
-    }
+  const maxAttempts = Math.max(1, maxRetries + 1);
 
-    const response = await fetch(ANTHROPIC_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': ANTHROPIC_VERSION,
-      },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const startTime = Date.now();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-    if (!response.ok) {
-      const errorBody = await response.text();
+    try {
+      const response = await fetch(ANTHROPIC_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': ANTHROPIC_VERSION,
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
 
+      if (!response.ok) {
+        const errorBody = await response.text();
+
+        getGlobalMetrics().recordCall({
+          timestamp: new Date(),
+          module: moduleName,
+          model,
+          batchSize,
+          itemsProcessed: 0,
+          inputTokens,
+          outputTokens: 0,
+          success: false,
+          durationMs: Date.now() - startTime,
+        });
+
+        const canRetry = RETRYABLE_STATUS_CODES.has(response.status) && attempt < maxAttempts;
+        logger.warn(
+          { status: response.status, module: moduleName, attempt, maxAttempts, canRetry },
+          'Anthropic API error'
+        );
+
+        if (canRetry) {
+          await sleep(computeBackoffMs(attempt));
+          continue;
+        }
+
+        throw new AnthropicApiError(response.status, errorBody);
+      }
+
+      const data = await response.json() as {
+        content: Array<{ type: string; text: string }>;
+      };
+
+      const text = data.content[0]?.text;
+      if (!text) {
+        getGlobalMetrics().recordCall({
+          timestamp: new Date(),
+          module: moduleName,
+          model,
+          batchSize,
+          itemsProcessed: 0,
+          inputTokens,
+          outputTokens: 0,
+          success: false,
+          durationMs: Date.now() - startTime,
+        });
+
+        const canRetry = attempt < maxAttempts;
+        logger.warn(
+          { module: moduleName, attempt, maxAttempts, canRetry },
+          'No content in Anthropic response'
+        );
+
+        if (canRetry) {
+          await sleep(computeBackoffMs(attempt));
+          continue;
+        }
+
+        throw new Error('Anthropic API returned empty content');
+      }
+
+      const outputTokens = estimateTokens(text);
+
+      getGlobalMetrics().recordCall({
+        timestamp: new Date(),
+        module: moduleName,
+        model,
+        batchSize,
+        itemsProcessed: batchSize,
+        inputTokens,
+        outputTokens,
+        success: true,
+        durationMs: Date.now() - startTime,
+      });
+
+      return { text, inputTokens, outputTokens };
+    } catch (error) {
+      // Handle abort/timeout
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        getGlobalMetrics().recordCall({
+          timestamp: new Date(),
+          module: moduleName,
+          model,
+          batchSize,
+          itemsProcessed: 0,
+          inputTokens,
+          outputTokens: 0,
+          success: false,
+          durationMs: Date.now() - startTime,
+        });
+
+        const canRetry = attempt < maxAttempts;
+        logger.warn(
+          { module: moduleName, timeoutMs, attempt, maxAttempts, canRetry },
+          'Anthropic API call timed out'
+        );
+
+        if (canRetry) {
+          await sleep(computeBackoffMs(attempt));
+          continue;
+        }
+
+        throw new Error(`Anthropic API call timed out after ${timeoutMs}ms`);
+      }
+
+      // Re-throw AnthropicApiError (already recorded metrics above)
+      if (error instanceof AnthropicApiError) {
+        throw error;
+      }
+
+      // Empty content failures are recorded above in the try block.
+      if (error instanceof Error && error.message === 'Anthropic API returned empty content') {
+        throw error;
+      }
+
+      // Network / unexpected errors (retryable up to maxAttempts)
       getGlobalMetrics().recordCall({
         timestamp: new Date(),
         module: moduleName,
@@ -133,100 +271,23 @@ export async function callAnthropicApi(
         durationMs: Date.now() - startTime,
       });
 
+      const canRetry = attempt < maxAttempts;
       logger.warn(
-        { status: response.status, module: moduleName },
-        'Anthropic API error'
+        { err: error, module: moduleName, attempt, maxAttempts, canRetry },
+        'Anthropic API call failed'
       );
 
-      throw new AnthropicApiError(response.status, errorBody);
-    }
+      if (canRetry) {
+        await sleep(computeBackoffMs(attempt));
+        continue;
+      }
 
-    const data = await response.json() as {
-      content: Array<{ type: string; text: string }>;
-    };
-
-    const text = data.content[0]?.text;
-    if (!text) {
-      getGlobalMetrics().recordCall({
-        timestamp: new Date(),
-        module: moduleName,
-        model,
-        batchSize,
-        itemsProcessed: 0,
-        inputTokens,
-        outputTokens: 0,
-        success: false,
-        durationMs: Date.now() - startTime,
-      });
-
-      logger.warn({ module: moduleName }, 'No content in Anthropic response');
-      throw new Error('Anthropic API returned empty content');
-    }
-
-    const outputTokens = estimateTokens(text);
-
-    getGlobalMetrics().recordCall({
-      timestamp: new Date(),
-      module: moduleName,
-      model,
-      batchSize,
-      itemsProcessed: batchSize,
-      inputTokens,
-      outputTokens,
-      success: true,
-      durationMs: Date.now() - startTime,
-    });
-
-    return { text, inputTokens, outputTokens };
-  } catch (error) {
-    // Re-throw AnthropicApiError (already recorded metrics above)
-    if (error instanceof AnthropicApiError) {
       throw error;
+    } finally {
+      clearTimeout(timeoutId);
     }
-
-    // Handle abort/timeout
-    if (error instanceof DOMException && error.name === 'AbortError') {
-      getGlobalMetrics().recordCall({
-        timestamp: new Date(),
-        module: moduleName,
-        model,
-        batchSize,
-        itemsProcessed: 0,
-        inputTokens,
-        outputTokens: 0,
-        success: false,
-        durationMs: Date.now() - startTime,
-      });
-
-      logger.warn({ module: moduleName, timeoutMs }, 'Anthropic API call timed out');
-      throw new Error(`Anthropic API call timed out after ${timeoutMs}ms`);
-    }
-
-    // Handle "empty content" error (already recorded metrics above)
-    if (error instanceof Error && error.message === 'Anthropic API returned empty content') {
-      throw error;
-    }
-
-    // Network / unexpected errors
-    getGlobalMetrics().recordCall({
-      timestamp: new Date(),
-      module: moduleName,
-      model,
-      batchSize,
-      itemsProcessed: 0,
-      inputTokens,
-      outputTokens: 0,
-      success: false,
-      durationMs: Date.now() - startTime,
-    });
-
-    logger.warn(
-      { err: error, module: moduleName },
-      'Anthropic API call failed'
-    );
-
-    throw error;
-  } finally {
-    clearTimeout(timeoutId);
   }
+
+  // Should be unreachable.
+  throw new Error('Anthropic API call failed after retries');
 }

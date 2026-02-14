@@ -41,6 +41,7 @@ const baseOpts = {
   prompt: 'Hello',
   maxTokens: 100,
   module: 'scorer' as const,
+  maxRetries: 0,
 };
 
 describe('callAnthropicApi', () => {

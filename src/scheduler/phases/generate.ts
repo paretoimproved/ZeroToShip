@@ -26,6 +26,16 @@ import { db, ideas } from '../../api/db/client';
 /** Similarity threshold for post-filter deduplication of scored problems */
 const BRIEF_DEDUP_THRESHOLD = 0.85;
 
+/** ideas.category is varchar(100) */
+const IDEA_CATEGORY_MAX_LENGTH = 100;
+
+function truncateVarchar(value: string | null | undefined, maxLength: number): string | null {
+  if (!value) return null;
+  const normalized = value.trim();
+  if (!normalized) return null;
+  return normalized.length > maxLength ? normalized.slice(0, maxLength) : normalized;
+}
+
 const FALLBACK_REASON_CODES: FallbackReasonCode[] = [
   'missing_gap_analysis',
   'missing_api_key',
@@ -270,7 +280,7 @@ export async function runGeneratePhase(
               priorityScore: String(brief.priorityScore),
               effortEstimate: brief.effortEstimate,
               revenueEstimate: brief.revenueEstimate,
-              category: brief.keyFeatures?.[0] || null,
+              category: truncateVarchar(brief.keyFeatures?.[0], IDEA_CATEGORY_MAX_LENGTH),
               problemStatement: brief.problemStatement,
               targetAudience: brief.targetAudience,
               marketSize: brief.marketSize,

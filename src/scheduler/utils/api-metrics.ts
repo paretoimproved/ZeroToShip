@@ -90,6 +90,8 @@ export class ApiMetricsCollector {
   getEstimatedCost(): number {
     let cost = 0;
     for (const call of this.calls) {
+      // Only count successful calls; failures may not be billed and are often retries/timeouts.
+      if (!call.success) continue;
       const pricing = MODEL_PRICING[call.model as ClaudeModel];
       if (pricing) {
         cost += (call.inputTokens / 1_000_000) * pricing.input;
