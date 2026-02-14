@@ -11,7 +11,12 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.push("/login");
+      if (typeof window === "undefined") {
+        router.replace("/login");
+        return;
+      }
+      const next = `${window.location.pathname}${window.location.search || ""}`;
+      router.replace(`/login?next=${encodeURIComponent(next)}`);
     }
   }, [isLoading, isAuthenticated, router]);
 

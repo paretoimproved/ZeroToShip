@@ -6,27 +6,42 @@ import { signup, loginWithOAuth } from "@/lib/auth";
 import { trackSignupCompleted } from "@/lib/analytics";
 import { useAuth } from "@/components/AuthProvider";
 import AuthForm from "@/components/AuthForm";
+import { useToast } from "@/components/ToastProvider";
+import { getPostAuthRedirect, sanitizeNextPath } from "@/lib/redirect";
 
 function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { loginWithGoogleCode } = useAuth();
+  const toast = useToast();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [defaultEmail, setDefaultEmail] = useState("");
   const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState("");
 
+  const nextParam = sanitizeNextPath(searchParams.get("next"));
+  const redirectTo = getPostAuthRedirect(
+    nextParam || (typeof window !== "undefined" ? sessionStorage.getItem("z2s_next") : null)
+  );
+
   useEffect(() => {
     const prefillEmail = searchParams.get("email");
     if (prefillEmail) {
       setDefaultEmail(prefillEmail);
     }
-  }, [searchParams]);
+
+    if (nextParam && typeof window !== "undefined") {
+      sessionStorage.setItem("z2s_next", nextParam);
+    }
+  }, [searchParams, nextParam]);
 
   const handleOAuth = async (provider: "google" | "github") => {
     setError(null);
     trackSignupCompleted(provider);
+    if (redirectTo && redirectTo !== "/dashboard") {
+      sessionStorage.setItem("z2s_next", redirectTo);
+    }
     await loginWithOAuth(provider);
   };
 
@@ -34,7 +49,9 @@ function SignupForm() {
     setError(null);
     trackSignupCompleted("google");
     await loginWithGoogleCode(code);
-    router.push("/dashboard");
+    toast.success("Account created", "You're signed in.");
+    sessionStorage.removeItem("z2s_next");
+    router.push(redirectTo);
   };
 
   const handleSubmit = async (data: { email: string; password: string; name?: string }) => {
@@ -47,9 +64,12 @@ function SignupForm() {
       if (result.needsEmailConfirmation) {
         setSubmittedEmail(data.email);
         setNeedsEmailConfirmation(true);
+        toast.info("Confirm your email", "Check your inbox for the verification link.");
         return;
       }
-      router.push("/dashboard");
+      toast.success("Account created", "Welcome to ZeroToShip.");
+      sessionStorage.removeItem("z2s_next");
+      router.push(redirectTo);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Signup failed");
     } finally {
@@ -72,7 +92,7 @@ function SignupForm() {
         </p>
         <div className="mt-6 flex justify-center">
           <a
-            href={`/login?signup=1&email=${encodeURIComponent(submittedEmail)}`}
+            href={`/login?signup=1&email=${encodeURIComponent(submittedEmail)}${nextParam ? `&next=${encodeURIComponent(nextParam)}` : ""}`}
             className="inline-block rounded-lg bg-primary-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
           >
             Go to Sign In
