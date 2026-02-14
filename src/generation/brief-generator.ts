@@ -38,6 +38,23 @@ export interface BriefGenerationMeta {
   graphModelsUsed?: string[];
   graphFailedSections?: string[];
   graphRetriedSections?: string[];
+  graphTrace?: GraphAttemptTrace[];
+}
+
+/**
+ * Lightweight per-attempt trace emitted by the graph generator.
+ * Stored on briefs for admin debugging and rollout verification.
+ */
+export interface GraphAttemptTrace {
+  attempt: number;
+  model: string | null;
+  retrySections: string[];
+  mergedSections: string[];
+  passedQuality: boolean;
+  reasons: string[];
+  failedSections: string[];
+  startedAt: string;
+  finishedAt: string;
 }
 
 /**

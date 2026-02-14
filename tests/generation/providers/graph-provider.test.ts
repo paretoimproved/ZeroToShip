@@ -64,6 +64,30 @@ describe('GraphGenerationProvider', () => {
       modelsUsed: [CLAUDE_MODELS.HAIKU, CLAUDE_MODELS.SONNET],
       failedSections: [],
       reasons: [],
+      trace: [
+        {
+          attempt: 1,
+          model: CLAUDE_MODELS.HAIKU,
+          retrySections: [],
+          mergedSections: [],
+          passedQuality: false,
+          reasons: ['name too short (< 2 chars)'],
+          failedSections: ['core'],
+          startedAt: '2026-02-13T00:00:00.000Z',
+          finishedAt: '2026-02-13T00:00:01.000Z',
+        },
+        {
+          attempt: 2,
+          model: CLAUDE_MODELS.SONNET,
+          retrySections: ['core'],
+          mergedSections: ['core'],
+          passedQuality: true,
+          reasons: [],
+          failedSections: [],
+          startedAt: '2026-02-13T00:00:02.000Z',
+          finishedAt: '2026-02-13T00:00:03.000Z',
+        },
+      ],
       sectionRetryCounts: {
         core: 1,
         problem: 0,
@@ -93,6 +117,8 @@ describe('GraphGenerationProvider', () => {
       CLAUDE_MODELS.SONNET,
     ]);
     expect(result[0].generationMeta?.graphRetriedSections).toContain('core');
+    expect(result[0].generationMeta?.graphTrace).toHaveLength(2);
+    expect(result[0].generationMeta?.graphTrace?.[0]?.model).toBe(CLAUDE_MODELS.HAIKU);
   });
 
   it('falls back to legacy provider when graph execution throws', async () => {

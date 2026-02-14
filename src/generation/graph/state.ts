@@ -1,6 +1,6 @@
 import type { GapAnalysis } from '../../analysis/gap-analyzer';
 import type { ScoredProblem } from '../../analysis/scorer';
-import type { BriefGeneratorConfig, IdeaBrief } from '../brief-generator';
+import type { BriefGeneratorConfig, GraphAttemptTrace, IdeaBrief } from '../brief-generator';
 
 export type GraphSection =
   | 'core'
@@ -32,10 +32,12 @@ export interface SingleBriefGraphState {
   attempt: number;
   maxAttempts: number;
   modelsUsed: string[];
+  lastAttemptModel: string | null;
   latestBrief: IdeaBrief | null;
   latestValidation: GraphCriticAssessment | null;
   failedSections: GraphSection[];
   sectionRetryCounts: Record<GraphSection, number>;
+  trace: GraphAttemptTrace[];
 }
 
 export interface SingleBriefGraphResult {
@@ -47,4 +49,5 @@ export interface SingleBriefGraphResult {
   failedSections: GraphSection[];
   sectionRetryCounts: Record<GraphSection, number>;
   reasons: string[];
+  trace: GraphAttemptTrace[];
 }

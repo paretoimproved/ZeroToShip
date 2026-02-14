@@ -187,10 +187,32 @@ export interface PipelineRunRow {
     tagline: string;
     priorityScore: number;
     effortEstimate: string;
+    generationMeta?: {
+      isFallback: boolean;
+      fallbackReason?: string;
+      providerMode?: GenerationMode;
+      graphAttemptCount?: number;
+      graphModelsUsed?: string[];
+      graphFailedSections?: string[];
+      graphRetriedSections?: string[];
+      graphTrace?: GraphAttemptTrace[];
+    } | null;
   }> | null;
 }
 
 export type GenerationMode = "legacy" | "graph";
+
+export interface GraphAttemptTrace {
+  attempt: number;
+  model: string | null;
+  retrySections: string[];
+  mergedSections: string[];
+  passedQuality: boolean;
+  reasons: string[];
+  failedSections: string[];
+  startedAt: string;
+  finishedAt: string;
+}
 
 export type FallbackReasonCode =
   | "missing_gap_analysis"

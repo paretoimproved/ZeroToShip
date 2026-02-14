@@ -54,6 +54,7 @@ export class GraphGenerationProvider implements GenerationProvider {
             graphModelsUsed: graphResult.modelsUsed,
             graphFailedSections: graphResult.failedSections,
             graphRetriedSections: retriedSections,
+            graphTrace: graphResult.trace,
           },
         });
       } catch (error) {
@@ -82,6 +83,7 @@ export class GraphGenerationProvider implements GenerationProvider {
               graphModelsUsed: brief.generationMeta?.graphModelsUsed,
               graphFailedSections: brief.generationMeta?.graphFailedSections,
               graphRetriedSections: brief.generationMeta?.graphRetriedSections,
+              graphTrace: brief.generationMeta?.graphTrace,
             },
           }))
         );

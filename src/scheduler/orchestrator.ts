@@ -633,6 +633,18 @@ export async function runPipeline(
       tagline: b.tagline,
       priorityScore: b.priorityScore,
       effortEstimate: b.effortEstimate,
+      generationMeta: b.generationMeta
+        ? {
+          isFallback: b.generationMeta.isFallback,
+          fallbackReason: b.generationMeta.fallbackReason,
+          providerMode: b.generationMeta.providerMode,
+          graphAttemptCount: b.generationMeta.graphAttemptCount,
+          graphModelsUsed: b.generationMeta.graphModelsUsed,
+          graphFailedSections: b.generationMeta.graphFailedSections,
+          graphRetriedSections: b.generationMeta.graphRetriedSections,
+          graphTrace: b.generationMeta.graphTrace,
+        }
+        : null,
     })) || [];
 
     await db.update(pipelineRuns)

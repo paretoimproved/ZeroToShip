@@ -4,12 +4,13 @@ import type { SingleBriefGraphState } from '../state';
 
 export async function runGenerateBriefNode(state: SingleBriefGraphState): Promise<SingleBriefGraphState> {
   const modelForAttempt = getAttemptModel(state.modelCascade, state.attempt);
+  const modelOverride = modelForAttempt ?? (state.config.model || undefined);
   const briefs = await generateAllBriefs(
     [state.problem],
     state.gapAnalyses,
     {
       ...state.config,
-      model: modelForAttempt ?? state.config.model,
+      model: modelOverride,
     },
   );
 
@@ -20,6 +21,7 @@ export async function runGenerateBriefNode(state: SingleBriefGraphState): Promis
   return {
     ...state,
     modelsUsed,
+    lastAttemptModel: modelOverride ?? null,
     latestBrief: briefs[0] ?? null,
   };
 }

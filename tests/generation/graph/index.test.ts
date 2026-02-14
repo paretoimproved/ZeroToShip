@@ -78,6 +78,10 @@ describe('runSingleBriefGraph', () => {
     expect(result.failedSections).toEqual([]);
     expect(result.reasons).toEqual([]);
     expect(result.sectionRetryCounts.core).toBe(0);
+    expect(result.trace).toHaveLength(1);
+    expect(result.trace[0]?.attempt).toBe(1);
+    expect(result.trace[0]?.model).toBe(CLAUDE_MODELS.HAIKU);
+    expect(result.trace[0]?.passedQuality).toBe(true);
     expect(generateAllBriefs).toHaveBeenCalledWith(
       expect.any(Array),
       expect.any(Map),
@@ -111,6 +115,11 @@ describe('runSingleBriefGraph', () => {
     expect(result.modelsUsed).toEqual([CLAUDE_MODELS.HAIKU, CLAUDE_MODELS.SONNET]);
     expect(result.sectionRetryCounts.core).toBe(1);
     expect(generateAllBriefs).toHaveBeenCalledTimes(2);
+    expect(result.trace).toHaveLength(2);
+    expect(result.trace[0]?.passedQuality).toBe(false);
+    expect(result.trace[0]?.model).toBe(CLAUDE_MODELS.HAIKU);
+    expect(result.trace[1]?.passedQuality).toBe(true);
+    expect(result.trace[1]?.model).toBe(CLAUDE_MODELS.SONNET);
   });
 
   it('replaces only failed sections during retry synthesis', async () => {
@@ -182,6 +191,8 @@ describe('runSingleBriefGraph', () => {
       CLAUDE_MODELS.SONNET,
       CLAUDE_MODELS.OPUS,
     ]);
+    expect(result.trace).toHaveLength(3);
+    expect(result.trace[2]?.model).toBe(CLAUDE_MODELS.OPUS);
     expect(generateAllBriefs).toHaveBeenNthCalledWith(
       1,
       expect.any(Array),

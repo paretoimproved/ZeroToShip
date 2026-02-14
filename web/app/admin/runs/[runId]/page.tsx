@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { api } from "@/lib/api";
 import type { PipelineRunRow } from "@/lib/types";
+import { MermaidDiagram } from "@/components/admin/MermaidDiagram";
 
 function formatDuration(durationMs: number): string {
   const totalSeconds = Math.max(0, Math.round(durationMs / 1000));
@@ -39,6 +40,93 @@ function formatCurrency(value?: number | null): string {
 function formatLatencyMs(value?: number | null): string {
   if (typeof value !== "number") return "N/A";
   return `${formatNumber(Math.round(value))} ms`;
+}
+
+type BriefSummary = NonNullable<PipelineRunRow["briefSummaries"]>[number];
+
+function escapeMermaidLabel(value: string): string {
+  return value
+    .replace(/[\r\n]+/g, " ")
+    .replace(/["\\[\\]<>`]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 140);
+}
+
+function formatModelLabel(model: string | null | undefined): string {
+  if (!model) return "default";
+  return model;
+}
+
+function buildGraphTraceMermaid(brief: BriefSummary): string | null {
+  const meta = brief.generationMeta ?? null;
+  if (!meta || meta.providerMode !== "graph") return null;
+
+  const trace = meta.graphTrace ?? null;
+  if (trace && trace.length > 0) {
+    const lines: string[] = ["flowchart TD"];
+    lines.push(`  START["${escapeMermaidLabel(brief.name)}"]`);
+
+    for (let i = 0; i < trace.length; i += 1) {
+      const step = trace[i];
+      const attemptId = `A${i + 1}`;
+      const evalId = `E${i + 1}`;
+      const model = escapeMermaidLabel(formatModelLabel(step.model));
+      const retrySections = (step.retrySections ?? []).join(", ");
+      const retrySuffix = retrySections ? ` (retry: ${escapeMermaidLabel(retrySections)})` : "";
+
+      lines.push(`  ${attemptId}["Attempt ${step.attempt}: ${model}${retrySuffix}"]`);
+      lines.push(`  ${evalId}{"Quality pass?"}`);
+
+      if (i === 0) lines.push(`  START --> ${attemptId}`);
+      else lines.push(`  ${`E${i}`} --> ${attemptId}`);
+
+      lines.push(`  ${attemptId} --> ${evalId}`);
+
+      if (step.passedQuality) {
+        lines.push(`  ${evalId} -- "yes" --> DONE([Done])`);
+      } else {
+        const failed = (step.failedSections ?? []).join(", ");
+        const reasonHint = step.reasons?.[0] ? `; ${escapeMermaidLabel(step.reasons[0])}` : "";
+        const label = failed ? `${escapeMermaidLabel(failed)}${reasonHint}` : `fail${reasonHint}`;
+
+        if (i < trace.length - 1) {
+          lines.push(`  ${evalId} -- "${label}" --> ${`A${i + 2}`}`);
+        } else {
+          lines.push(`  ${evalId} -- "${label}" --> STOP([Stopped])`);
+        }
+      }
+    }
+
+    return lines.join("\n");
+  }
+
+  const attemptCount = meta.graphAttemptCount ?? (meta.graphModelsUsed?.length || 0);
+  const models = meta.graphModelsUsed ?? [];
+  if (!attemptCount || attemptCount <= 0) return null;
+
+  const lines: string[] = ["flowchart TD"];
+  lines.push(`  START["${escapeMermaidLabel(brief.name)}"]`);
+  for (let i = 0; i < attemptCount; i += 1) {
+    const attemptId = `A${i + 1}`;
+    const evalId = `E${i + 1}`;
+    const model = escapeMermaidLabel(formatModelLabel(models[i] ?? null));
+
+    lines.push(`  ${attemptId}["Attempt ${i + 1}: ${model}"]`);
+    lines.push(`  ${evalId}{"Quality pass?"}`);
+    if (i === 0) lines.push(`  START --> ${attemptId}`);
+    else lines.push(`  ${`E${i}`} --> ${attemptId}`);
+    lines.push(`  ${attemptId} --> ${evalId}`);
+
+    if (i === attemptCount - 1) {
+      const failed = (meta.graphFailedSections ?? []).join(", ");
+      lines.push(`  ${evalId} -- "${escapeMermaidLabel(failed || "unknown")}" --> DONE([End])`);
+    } else {
+      lines.push(`  ${evalId} -- "retry" --> ${`A${i + 2}`}`);
+    }
+  }
+
+  return lines.join("\n");
 }
 
 const PHASE_ORDER = ["scrape", "analyze", "generate", "deliver"];
@@ -445,6 +533,88 @@ export default function RunDetailPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Run Trace (graph-mode debugging) */}
+      {run.briefSummaries && run.briefSummaries.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-baseline justify-between gap-3 flex-wrap">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Run Trace
+            </h2>
+            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${modeColor(run.generationMode)}`}>
+              {run.generationMode || "n/a"}
+            </span>
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+            Visualizes per-brief graph attempts (generate → evaluate → retry). Trace is only available for graph-mode briefs.
+          </p>
+
+          <div className="space-y-3 mt-4">
+            {run.briefSummaries.map((brief, i) => {
+              const meta = brief.generationMeta ?? null;
+              const chart = buildGraphTraceMermaid(brief);
+              const attempts = meta?.graphAttemptCount ?? meta?.graphTrace?.length ?? null;
+              const models = meta?.graphModelsUsed?.join(", ") || null;
+              const retried = meta?.graphRetriedSections?.join(", ") || null;
+              const failed = meta?.graphFailedSections?.join(", ") || null;
+
+              return (
+                <details
+                  key={i}
+                  className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700"
+                >
+                  <summary className="cursor-pointer select-none">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-gray-900 dark:text-gray-100">
+                          {brief.name}
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                          {brief.tagline}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap justify-end">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${modeColor(meta?.providerMode)}`}>
+                          {meta?.providerMode || "n/a"}
+                        </span>
+                        {typeof attempts === "number" && (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">
+                            Attempts: {attempts}
+                          </span>
+                        )}
+                        {meta?.isFallback && (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                            Fallback
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </summary>
+
+                  <div className="mt-4 space-y-3">
+                    {chart ? (
+                      <div className="overflow-x-auto">
+                        <MermaidDiagram chart={chart} className="min-w-[520px]" />
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        No graph trace available for this brief.
+                      </p>
+                    )}
+
+                    <div className="text-xs text-gray-600 dark:text-gray-300 space-y-1">
+                      {models && <p><span className="font-medium">Models:</span> <span className="font-mono">{models}</span></p>}
+                      {retried && <p><span className="font-medium">Retried sections:</span> <span className="font-mono">{retried}</span></p>}
+                      {failed && <p><span className="font-medium">Failed sections:</span> <span className="font-mono">{failed}</span></p>}
+                      {meta?.fallbackReason && <p><span className="font-medium">Fallback reason:</span> <span className="font-mono">{meta.fallbackReason}</span></p>}
+                    </div>
+                  </div>
+                </details>
+              );
+            })}
           </div>
         </div>
       )}

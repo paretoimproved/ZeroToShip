@@ -35,8 +35,10 @@ export async function runSingleBriefGraph(
     | 'maxAttempts'
     | 'modelCascade'
     | 'modelsUsed'
+    | 'lastAttemptModel'
     | 'failedSections'
     | 'sectionRetryCounts'
+    | 'trace'
   >,
 ): Promise<SingleBriefGraphResult> {
   const maxAttempts = Math.max(1, initialState.config.maxAttempts ?? DEFAULT_GRAPH_MAX_ATTEMPTS);
@@ -48,15 +50,18 @@ export async function runSingleBriefGraph(
     modelCascade,
     modelsUsed: [],
     attempt: 1,
+    lastAttemptModel: null,
     latestBrief: null,
     latestValidation: null,
     failedSections: [],
     sectionRetryCounts: createSectionRetryCounter(),
+    trace: [],
   };
 
   while (state.attempt <= state.maxAttempts) {
     const previousBrief = state.latestBrief;
     const sectionsToRetry = state.failedSections;
+    const attemptStartedAt = new Date().toISOString();
 
     state = await runGenerateBriefNode(state);
 
@@ -69,6 +74,24 @@ export async function runSingleBriefGraph(
 
     state = runEvaluateBriefNode(state);
 
+    const attemptFinishedAt = new Date().toISOString();
+    const traceEntry = {
+      attempt: state.attempt,
+      model: state.lastAttemptModel,
+      retrySections: sectionsToRetry,
+      mergedSections: previousBrief && sectionsToRetry.length > 0 ? sectionsToRetry : [],
+      passedQuality: Boolean(state.latestValidation?.valid),
+      reasons: state.latestValidation?.reasons ?? [],
+      failedSections: state.failedSections,
+      startedAt: attemptStartedAt,
+      finishedAt: attemptFinishedAt,
+    };
+
+    state = {
+      ...state,
+      trace: [...state.trace, traceEntry],
+    };
+
     if (state.latestBrief && state.latestValidation?.valid) {
       return {
         brief: state.latestBrief,
@@ -79,6 +102,7 @@ export async function runSingleBriefGraph(
         failedSections: [],
         sectionRetryCounts: state.sectionRetryCounts,
         reasons: [],
+        trace: state.trace,
       };
     }
 
@@ -122,5 +146,6 @@ export async function runSingleBriefGraph(
     failedSections: state.failedSections,
     sectionRetryCounts: state.sectionRetryCounts,
     reasons: state.latestValidation?.reasons ?? [],
+    trace: state.trace,
   };
 }
