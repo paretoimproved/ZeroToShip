@@ -263,7 +263,7 @@ export async function runPipeline(
   preGeneratedRunId?: string
 ): Promise<PipelineResult> {
   const fullConfig = { ...DEFAULT_PIPELINE_CONFIG, ...config };
-  const requestedGenerationMode = getConfiguredGenerationMode();
+  const requestedGenerationMode = fullConfig.generationMode ?? getConfiguredGenerationMode();
 
   // Determine run ID and resume state
   let runId: string;

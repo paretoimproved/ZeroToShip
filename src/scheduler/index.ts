@@ -14,7 +14,9 @@ import type { PipelineConfig, SchedulerConfig } from './types';
 const DEFAULT_SCHEDULER_CONFIG: SchedulerConfig = {
   cronExpression: envConfig.SCHEDULER_CRON,
   timezone: envConfig.SCHEDULER_TIMEZONE,
-  pipelineConfig: {},
+  pipelineConfig: {
+    generationMode: envConfig.SCHEDULER_GENERATION_MODE ?? envConfig.GENERATION_MODE,
+  },
   enabled: envConfig.SCHEDULER_ENABLED,
 };
 
@@ -91,6 +93,7 @@ export function isSchedulerRunning(): boolean {
 
 // Re-export key items
 export { runPipeline, DEFAULT_PIPELINE_CONFIG, generateRunId } from './orchestrator';
+export { checkPipelineFreshness } from './watchdog';
 export { logger, createLogger, createRunLogger, createPhaseLogger } from './utils/logger';
 export { withRetry, retryable } from './utils/retry';
 export { MetricsCollector } from './utils/metrics';

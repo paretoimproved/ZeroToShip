@@ -104,6 +104,7 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
         skipDelivery?: boolean;
         hoursBack?: number;
         maxBriefs?: number;
+        generationMode?: 'legacy' | 'graph';
         scrapers?: { reddit?: boolean; hn?: boolean; twitter?: boolean; github?: boolean };
         clusteringThreshold?: number;
         minPriorityScore?: number;
@@ -114,6 +115,7 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
         ...DEFAULT_PIPELINE_CONFIG,
         hoursBack: body?.hoursBack ?? DEFAULT_PIPELINE_CONFIG.hoursBack,
         maxBriefs: body?.maxBriefs ?? DEFAULT_PIPELINE_CONFIG.maxBriefs,
+        generationMode: body?.generationMode,
         dryRun: body?.dryRun ?? body?.skipDelivery ?? false,
         scrapers: body?.scrapers
           ? { ...DEFAULT_PIPELINE_CONFIG.scrapers, ...body.scrapers }

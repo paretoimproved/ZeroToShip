@@ -68,9 +68,9 @@ const DEFAULT_CONFIG: Required<Omit<EmailServiceConfig, 'builderConfig'>> & {
   builderConfig: EmailBuilderConfig;
 } = {
   resendApiKey: '',
-  fromEmail: 'briefs@zerotoship.dev',
-  fromName: 'ZeroToShip',
-  replyTo: 'hello@zerotoship.dev',
+  fromEmail: envConfig.RESEND_FROM_EMAIL || 'briefs@zerotoship.dev',
+  fromName: envConfig.RESEND_FROM_NAME || 'ZeroToShip',
+  replyTo: envConfig.RESEND_REPLY_TO || 'hello@zerotoship.dev',
   builderConfig: {},
 };
 
@@ -97,50 +97,78 @@ async function sendViaResend(
   replyTo: string,
   content: EmailContent
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from,
-        to: [to],
-        reply_to: replyTo,
-        subject: content.subject,
-        html: content.html,
-        text: content.text,
-      }),
-    });
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+  const isRetryableStatus = (status: number) => status === 429 || status >= 500;
 
-    if (!response.ok) {
-      const errorBody = (await response.json()) as ResendErrorResponse;
-      const deliveryErr = new DeliveryError(
-        `Resend API error (${response.status}): ${errorBody.message}`,
-        { context: { to, statusCode: response.status } }
+  const MAX_ATTEMPTS = 3;
+  const BACKOFF_BASE_MS = envConfig.isTest ? 0 : 400;
+  const jitterMs = () => (envConfig.isTest ? 0 : Math.floor(Math.random() * 200));
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from,
+          to: [to],
+          reply_to: replyTo,
+          subject: content.subject,
+          html: content.html,
+          text: content.text,
+        }),
+      });
+
+      if (!response.ok) {
+        let parsed: Partial<ResendErrorResponse> | null = null;
+        let raw = '';
+        try {
+          if (typeof (response as unknown as { json?: unknown }).json === 'function') {
+            parsed = (await (response as unknown as { json: () => Promise<unknown> }).json()) as Partial<ResendErrorResponse>;
+          } else if (typeof (response as unknown as { text?: unknown }).text === 'function') {
+            raw = await (response as unknown as { text: () => Promise<string> }).text();
+          }
+        } catch {
+          // ignore parse errors; we'll fall back to an unknown message
+        }
+
+        const message = parsed?.message || raw || 'Unknown Resend API error';
+        const err = new DeliveryError(
+          `Resend API error (${response.status}): ${message}`,
+          { context: { to, statusCode: response.status, attempt } }
+        );
+
+        if (attempt < MAX_ATTEMPTS && isRetryableStatus(response.status)) {
+          const backoffMs = BACKOFF_BASE_MS * (2 ** (attempt - 1)) + jitterMs();
+          await sleep(backoffMs);
+          continue;
+        }
+
+        return { success: false, error: err.message };
+      }
+
+      const data = (await response.json()) as ResendSuccessResponse;
+      return { success: true, messageId: data.id };
+    } catch (error) {
+      const err = new DeliveryError(
+        error instanceof Error ? error.message : 'Unknown error',
+        { context: { to, attempt }, cause: error instanceof Error ? error : undefined }
       );
-      return {
-        success: false,
-        error: deliveryErr.message,
-      };
-    }
 
-    const data = (await response.json()) as ResendSuccessResponse;
-    return {
-      success: true,
-      messageId: data.id,
-    };
-  } catch (error) {
-    const deliveryErr = new DeliveryError(
-      error instanceof Error ? error.message : 'Unknown error',
-      { context: { to }, cause: error instanceof Error ? error : undefined }
-    );
-    return {
-      success: false,
-      error: deliveryErr.message,
-    };
+      if (attempt < MAX_ATTEMPTS) {
+        const backoffMs = BACKOFF_BASE_MS * (2 ** (attempt - 1)) + jitterMs();
+        await sleep(backoffMs);
+        continue;
+      }
+
+      return { success: false, error: err.message };
+    }
   }
+
+  return { success: false, error: 'Email send failed after retries' };
 }
 
 /**

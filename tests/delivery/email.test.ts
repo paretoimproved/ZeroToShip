@@ -60,7 +60,7 @@ function mockResendSuccess(messageId = 'msg_123456') {
 }
 
 function mockResendError(status = 401, message = 'Invalid API key') {
-  mockFetch.mockResolvedValueOnce({
+  const resp = {
     ok: false,
     status,
     json: async () => ({
@@ -68,7 +68,15 @@ function mockResendError(status = 401, message = 'Invalid API key') {
       message,
       name: 'ApiError',
     }),
-  });
+  };
+
+  // Rate limits and 5xx are retryable in code; keep a stable response for all attempts.
+  if (status === 429 || status >= 500) {
+    mockFetch.mockResolvedValue(resp);
+    return;
+  }
+
+  mockFetch.mockResolvedValueOnce(resp);
 }
 
 // ============================================================================
@@ -645,7 +653,8 @@ describe('Email Service', () => {
     });
 
     it('handles network error (fetch throws)', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('Network error'));
+      // Network errors are retried; reject for all attempts.
+      mockFetch.mockRejectedValue(new Error('Network error'));
 
       const subscriber = createTestSubscriber('test@example.com');
       const briefs = [createMockBrief()];
@@ -659,7 +668,8 @@ describe('Email Service', () => {
     });
 
     it('handles non-Error thrown objects', async () => {
-      mockFetch.mockRejectedValueOnce('string error');
+      // Unknown throws are retried; reject for all attempts.
+      mockFetch.mockRejectedValue('string error');
 
       const subscriber = createTestSubscriber('test@example.com');
 
