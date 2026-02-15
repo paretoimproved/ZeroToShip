@@ -149,8 +149,18 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, reply) => {
       const subscription = await getUserSubscription(request.userId!);
+      const tierOverride = request.headers['x-tier-override'] as string | undefined;
 
       if (!subscription) {
+        // If admin tier override is active, return a synthetic subscription
+        if (tierOverride) {
+          return reply.send({
+            id: request.userId!,
+            plan: request.userTier,
+            status: 'active',
+            cancelAtPeriodEnd: false,
+          });
+        }
         return reply.status(404).send({
           code: 'NOT_FOUND',
           message: 'Subscription not found',
@@ -158,7 +168,7 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       // Reflect admin tier override in subscription plan
-      if (request.userTier && request.userTier !== subscription.plan) {
+      if (tierOverride && request.userTier !== subscription.plan) {
         return reply.send({ ...subscription, plan: request.userTier });
       }
 
