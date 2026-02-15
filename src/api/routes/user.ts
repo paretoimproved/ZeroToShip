@@ -124,6 +124,11 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
         });
       }
 
+      // Reflect admin tier override in subscription plan
+      if (request.userTier && request.userTier !== subscription.plan) {
+        return reply.send({ ...subscription, plan: request.userTier });
+      }
+
       return reply.send(subscription);
     }
   );

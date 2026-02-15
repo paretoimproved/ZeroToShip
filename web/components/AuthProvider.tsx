@@ -25,9 +25,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     async function fetchUserProfile(token: string): Promise<void> {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
-      const response = await fetch(`${apiUrl}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+      if (typeof window !== "undefined") {
+        const tierOverride = sessionStorage.getItem("zerotoship_tier_override");
+        if (tierOverride) headers["X-Tier-Override"] = tierOverride;
+      }
+      const response = await fetch(`${apiUrl}/auth/me`, { headers });
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
@@ -86,9 +89,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Fetch full profile (tier, isAdmin) in background
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
-    fetch(`${apiUrl}/auth/me`, {
-      headers: { Authorization: `Bearer ${result.token}` },
-    })
+    const profileHeaders: Record<string, string> = { Authorization: `Bearer ${result.token}` };
+    if (typeof window !== "undefined") {
+      const tierOverride = sessionStorage.getItem("zerotoship_tier_override");
+      if (tierOverride) profileHeaders["X-Tier-Override"] = tierOverride;
+    }
+    fetch(`${apiUrl}/auth/me`, { headers: profileHeaders })
       .then((r) => r.ok ? r.json() : null)
       .then((userData) => { if (userData) setUser(userData); })
       .catch(() => {});
