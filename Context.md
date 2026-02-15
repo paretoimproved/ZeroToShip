@@ -58,7 +58,7 @@ All core modules are built, tested, deployed, and running in production:
 | AI Provider | Decided | Anthropic Claude (text), OpenAI (embeddings only) |
 | Deployment | Decided | Vercel (web) + Railway (API/scheduler) + Supabase (DB) |
 | Twitter/X | Decided | Removed from UI. Non-functional (no bearer token, Nitter dead). Replace post-launch with Bluesky/dev.to/Lobsters. |
-| Generation mode | Decided | Legacy provider is default. Graph provider available as opt-in via `GENERATION_MODE=graph`. |
+| Generation mode | Decided | Legacy provider is default. Graph provider available via `GENERATION_MODE=graph`. Cron path fixed (was silently falling back to legacy due to shallow config merge). |
 | Tier naming | Decided | Free / Builder ($19/mo) / Enterprise ($99/mo). Internal identifiers remain `'pro'`. |
 
 ## Cost Profile
@@ -119,6 +119,7 @@ All core modules are built, tested, deployed, and running in production:
 
 | Date | Change |
 |------|--------|
+| 2026-02-15 | Fix: graph mode now works on Railway cron (deep-merge pipelineConfig in startScheduler, add --generation-mode CLI flag, 24 new tests) |
 | 2026-02-15 | Graph generation: budget controls, concurrency limits, trace timeline (Mermaid), aggregate run view, diagnostics for budget stops |
 | 2026-02-15 | Handoff system: phase 4 gap enrichment hook with n8n client + mock provider |
 | 2026-02-15 | Ops fixes: graph-mode scheduling, fresh ideas/today query, Resend sender config, timezone handling |
