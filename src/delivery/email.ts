@@ -15,11 +15,11 @@ import {
 } from './email-builder';
 import { DeliveryError } from '../lib/errors';
 
-/** Default concurrent email sends per batch */
-const DEFAULT_EMAIL_CONCURRENCY = 5;
+/** Default concurrent email sends per batch (Resend free tier: 2 req/s) */
+const DEFAULT_EMAIL_CONCURRENCY = 2;
 
-/** Default delay between email batches (ms) */
-const DEFAULT_EMAIL_DELAY_MS = 100;
+/** Default delay between email batches (ms) — keeps us under Resend's 2 req/s free-tier limit */
+const DEFAULT_EMAIL_DELAY_MS = 600;
 
 /**
  * Subscriber information
