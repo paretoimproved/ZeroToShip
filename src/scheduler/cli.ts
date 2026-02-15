@@ -9,29 +9,33 @@
 import http from 'http';
 import { runPipeline } from './orchestrator';
 import { startScheduler, stopScheduler } from './index';
+import { checkPipelineFreshness } from './watchdog';
 import { closeDatabase } from '../api/db/client';
 import { processOnboardingDrip } from '../delivery/onboarding';
 import { logger } from './utils/logger';
 import type { PipelineConfig } from './types';
 
-interface CliOptions {
-  command: 'run' | 'schedule' | 'health' | 'onboarding-drip' | 'help';
+export interface CliOptions {
+  command: 'run' | 'schedule' | 'health' | 'onboarding-drip' | 'watchdog' | 'help';
   dryRun: boolean;
   hoursBack: number;
   verbose: boolean;
   maxBriefs: number;
+  maxAgeHours?: number;
+  generationMode?: 'legacy' | 'graph';
 }
 
 /**
  * Parse command line arguments
  */
-function parseArgs(args: string[]): CliOptions {
+export function parseArgs(args: string[]): CliOptions {
   const options: CliOptions = {
     command: 'help',
     dryRun: false,
     hoursBack: 24,
     verbose: false,
     maxBriefs: 10,
+    maxAgeHours: undefined,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -41,6 +45,7 @@ function parseArgs(args: string[]): CliOptions {
     else if (arg === 'schedule') options.command = 'schedule';
     else if (arg === 'health') options.command = 'health';
     else if (arg === 'onboarding-drip') options.command = 'onboarding-drip';
+    else if (arg === 'watchdog') options.command = 'watchdog';
     else if (arg === 'help' || arg === '--help' || arg === '-h')
       options.command = 'help';
     else if (arg === '--dry-run') options.dryRun = true;
@@ -49,6 +54,13 @@ function parseArgs(args: string[]): CliOptions {
       options.hoursBack = parseInt(args[++i], 10);
     } else if (arg === '--max-briefs' && args[i + 1]) {
       options.maxBriefs = parseInt(args[++i], 10);
+    } else if (arg === '--max-age-hours' && args[i + 1]) {
+      options.maxAgeHours = parseFloat(args[++i]);
+    } else if (arg === '--generation-mode' && args[i + 1]) {
+      const mode = args[++i];
+      if (mode === 'legacy' || mode === 'graph') {
+        options.generationMode = mode;
+      }
     }
   }
 
@@ -114,20 +126,24 @@ COMMANDS:
   run              Run the pipeline once
   schedule         Start the scheduler (runs continuously)
   onboarding-drip  Process onboarding drip emails for eligible users
+  watchdog         Check for stale/missed successful runs
   health           Check environment and configuration
   help             Show this help message
 
 OPTIONS:
-  --dry-run         Skip actual email delivery
-  --hours <n>       Look back N hours (default: 24)
-  --max-briefs <n>  Maximum briefs to generate (default: 10)
-  --verbose, -v     Enable verbose output
+  --dry-run                  Skip actual email delivery
+  --hours <n>                Look back N hours (default: 24)
+  --max-briefs <n>           Maximum briefs to generate (default: 10)
+  --generation-mode <mode>   Generation mode: 'legacy' or 'graph' (default: from env)
+  --max-age-hours            Watchdog threshold for latest successful run age
+  --verbose, -v              Enable verbose output
 
 EXAMPLES:
   npm run scheduler run --dry-run
   npm run scheduler run --hours 48 --max-briefs 5
   npm run scheduler schedule
   npm run scheduler onboarding-drip
+  npm run scheduler watchdog --max-age-hours 30
   npm run scheduler health
 `);
 }
@@ -151,6 +167,7 @@ async function main(): Promise<void> {
         dryRun: options.dryRun,
         maxBriefs: options.maxBriefs,
         verbose: options.verbose,
+        ...(options.generationMode && { generationMode: options.generationMode }),
       };
 
       try {
@@ -210,6 +227,7 @@ async function main(): Promise<void> {
           hoursBack: options.hoursBack,
           maxBriefs: options.maxBriefs,
           verbose: options.verbose,
+          ...(options.generationMode && { generationMode: options.generationMode }),
         },
       });
 
@@ -284,6 +302,39 @@ async function main(): Promise<void> {
     case 'health': {
       const ok = await checkHealth();
       process.exit(ok ? 0 : 1);
+    }
+
+    case 'watchdog': {
+      console.log('Running pipeline watchdog check...\n');
+
+      try {
+        const result = await checkPipelineFreshness({
+          maxAgeHours: options.maxAgeHours,
+          alertOnFailure: true,
+        });
+
+        console.log('='.repeat(60));
+        console.log('  PIPELINE WATCHDOG');
+        console.log('='.repeat(60));
+        console.log(`Healthy: ${result.healthy}`);
+        console.log(`Reason: ${result.reason}`);
+        console.log(`Checked at: ${result.checkedAt}`);
+        console.log(`Threshold: ${result.maxAgeHours}h`);
+        console.log(`Latest success age: ${result.ageHours ?? 'none'}h`);
+        console.log(`Latest successful run: ${result.latestSuccessfulRunId || 'none'}`);
+        console.log(`Latest run: ${result.latestRunId || 'none'} (${result.latestRunStatus || 'unknown'})`);
+
+        await closeDatabase();
+        process.exit(result.healthy ? 0 : 1);
+      } catch (error) {
+        logger.error(
+          { error: error instanceof Error ? error.message : String(error) },
+          'Watchdog check failed'
+        );
+        await closeDatabase();
+        process.exit(1);
+      }
+      break;
     }
 
     case 'help':

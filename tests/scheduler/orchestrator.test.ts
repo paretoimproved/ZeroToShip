@@ -112,6 +112,25 @@ vi.mock('../../src/lib/alerts', () => ({
   sendPipelineFailureAlert: vi.fn(),
 }));
 
+// Mock pipeline lock (used by orchestrator for distributed locking)
+vi.mock('../../src/lib/pipeline-lock', () => ({
+  acquirePipelineLock: vi.fn().mockResolvedValue(true),
+  extendPipelineLock: vi.fn().mockResolvedValue(true),
+  releasePipelineLock: vi.fn().mockResolvedValue(undefined),
+  PIPELINE_LOCK_TTL_SECONDS: 300,
+}));
+
+// Mock generation providers — wraps real legacy behavior by default,
+// enables per-test overrides for graph mode verification.
+const { mockSelectGenerationProvider } = vi.hoisted(() => ({
+  mockSelectGenerationProvider: vi.fn(),
+}));
+vi.mock('../../src/generation/providers', () => ({
+  getConfiguredGenerationMode: vi.fn().mockReturnValue('legacy'),
+  selectGenerationProvider: mockSelectGenerationProvider,
+  resolveGenerationMode: vi.fn((v?: string) => (v === 'graph' ? 'graph' : 'legacy')),
+}));
+
 // Helper factories
 function createMockPost(overrides: Partial<RawPost> = {}): RawPost {
   return {
@@ -316,6 +335,20 @@ describe('Pipeline Orchestrator', () => {
     vi.mocked(persistence.loadRunStatus).mockResolvedValue(null);
     vi.mocked(persistence.loadPhaseResult).mockResolvedValue(null);
     vi.mocked(persistence.getResumePhase).mockReturnValue(null);
+
+    // Reset selectGenerationProvider to delegate to generateAllBriefs (legacy behavior)
+    const { generateAllBriefs } = await import('../../src/generation/brief-generator');
+    mockSelectGenerationProvider.mockImplementation((mode: string = 'legacy') => ({
+      requestedMode: mode,
+      effectiveMode: mode,
+      provider: {
+        mode,
+        generate: async (input: { scoredProblems: ScoredProblem[]; gapAnalyses: Map<string, GapAnalysis>; config?: Record<string, unknown> }) => {
+          const briefs = await generateAllBriefs(input.scoredProblems, input.gapAnalyses, input.config);
+          return briefs;
+        },
+      },
+    }));
   });
 
   // ---- Existing tests (preserved) ----
@@ -917,6 +950,59 @@ describe('Pipeline Orchestrator', () => {
 
       expect(result.phases.generate.data?.briefs).toHaveLength(1);
       expect(result.phases.generate.data?.briefs[0].name).toBe('SuperApp');
+    });
+  });
+
+  // ---- New tests: Graph mode propagation ----
+
+  describe('graph mode propagation', () => {
+    it('should pass graph generationMode to generate phase when config specifies graph', async () => {
+      await setupFullPipelineMocks();
+      const mockBrief = createMockBrief();
+
+      // Override selectGenerationProvider for this test to return a graph mock
+      mockSelectGenerationProvider.mockReturnValue({
+        requestedMode: 'graph',
+        effectiveMode: 'graph',
+        provider: {
+          mode: 'graph',
+          generate: vi.fn().mockResolvedValue([mockBrief]),
+        },
+      });
+
+      const result = await runPipeline({ dryRun: true, generationMode: 'graph' });
+
+      expect(mockSelectGenerationProvider).toHaveBeenCalledWith('graph');
+      expect(result.phases.generate.data?.generationMode).toBe('graph');
+    });
+
+    it('should default to legacy mode when generationMode is not specified', async () => {
+      await setupFullPipelineMocks();
+
+      const result = await runPipeline({ dryRun: true });
+
+      expect(mockSelectGenerationProvider).toHaveBeenCalledWith('legacy');
+    });
+
+    it('should include generationMode in generate phase output for graph runs', async () => {
+      await setupFullPipelineMocks();
+      const mockBrief = createMockBrief();
+
+      mockSelectGenerationProvider.mockReturnValue({
+        requestedMode: 'graph',
+        effectiveMode: 'graph',
+        provider: {
+          mode: 'graph',
+          generate: vi.fn().mockResolvedValue([mockBrief]),
+        },
+      });
+
+      const result = await runPipeline({ dryRun: true, generationMode: 'graph' });
+
+      expect(result.phases.generate.success).toBe(true);
+      expect(result.phases.generate.data).toBeDefined();
+      expect(result.phases.generate.data?.generationMode).toBe('graph');
+      expect(result.phases.generate.data?.briefCount).toBe(1);
     });
   });
 });
