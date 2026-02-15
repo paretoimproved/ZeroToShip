@@ -2,6 +2,7 @@
  * User Routes for ZeroToShip API
  *
  * Endpoints:
+ * - POST /api/v1/user/unsubscribe - Unsubscribe from emails (public, token-based)
  * - GET /api/v1/user/preferences - Get user preferences
  * - PUT /api/v1/user/preferences - Update user preferences
  * - GET /api/v1/user/subscription - Get subscription status
@@ -38,6 +39,38 @@ import {
 
 export const userRoutes: FastifyPluginAsync = async (fastify) => {
   const app = fastify.withTypeProvider<ZodTypeProvider>();
+
+  /**
+   * POST /api/v1/user/unsubscribe
+   * Unsubscribe a user from emails via token (public — no auth required)
+   */
+  app.post(
+    '/unsubscribe',
+    {
+      schema: {
+        body: z.object({
+          token: z.string().uuid(),
+        }),
+        response: {
+          200: z.object({ success: z.boolean(), message: z.string() }),
+          404: ApiErrorSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const { token } = request.body;
+      const result = await updateUserPreferences(token, { emailFrequency: 'never' });
+
+      if (!result) {
+        return reply.status(404).send({
+          code: 'NOT_FOUND',
+          message: 'Invalid unsubscribe token',
+        });
+      }
+
+      return reply.send({ success: true, message: 'You have been unsubscribed from emails.' });
+    }
+  );
 
   /**
    * GET /api/v1/user/preferences
