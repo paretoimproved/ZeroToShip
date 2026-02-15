@@ -8,7 +8,7 @@
 
 ## Current Focus
 
-**Launch prep.** Product is deployed on Railway (API + scheduler) + Vercel (web) + Supabase (DB). Pipeline runs daily. 1364 tests passing across 52 backend + 11 frontend test files. Feb 7 plan review 16/16 complete. Need to close remaining ops items and ship to real users.
+**Ready for soft launch.** Full smoke test passed (auth, dashboard, archive, billing, email, mobile, admin). Production migrations applied (0006–0008). Pipeline runs daily in graph mode. 2 friends dogfooding. Remaining items are ops hardening (Redis, Sentry, Resend webhooks) — not blockers for early users.
 
 ## What's Done
 
@@ -19,7 +19,7 @@ All core modules are built, tested, deployed, and running in production:
 - **Generation**: Two providers available:
   - **Legacy**: Single Claude call per brief (default, stable)
   - **Graph**: Multi-node pipeline with model cascade (Claude 4.5 snapshots), section-aware retries, synthesis, budget controls, trace visualization. Selectable via `GENERATION_MODE=graph` env var.
-- **Delivery**: Email (Resend, redesigned daily digest), Web Dashboard (Next.js 15)
+- **Delivery**: Email (Resend, redesigned daily digest, unsubscribe flow), Web Dashboard (Next.js 15)
 - **API**: Fastify with Supabase auth, SHA-256 hashed API keys, DB-backed isAdmin, Redis rate limiting (in-memory fallback), tier gating, usage tracking
 - **Payments**: Stripe integration (checkout, webhooks, billing portal). Production flow hardened (Feb 14).
 - **Scheduler**: Cron orchestrator with DB-only persistence, resume, retries, metrics, pipeline lock (Redis-backed)
@@ -39,16 +39,17 @@ All core modules are built, tested, deployed, and running in production:
 
 ## What's Left (Pre-Launch)
 
+- [x] Run remaining Drizzle migrations in production (0006 email_logs, 0007 hash_api_keys, 0008 drop_users_tier) — applied 2026-02-15
+- [x] Backfill `keyHash` for existing API keys in production — done 2026-02-15
+- [x] Set `isAdmin=true` for admin users in production DB — already set
+- [x] Full manual smoke test (signup → email confirm → dashboard → brief → archive → billing → mobile) — passed 2026-02-15
 - [ ] Refresh 3 email snapshot tests (template copy changed, snapshots stale)
-- [ ] Provision Redis on Railway and set `REDIS_URL` env var
-- [ ] Run remaining Drizzle migrations in production (0006 email_logs, 0007 hash_api_keys, 0008 drop_users_tier)
+- [ ] Provision Redis on Railway and set `REDIS_URL` env var (in-memory fallback works at small scale)
 - [ ] Configure Resend webhook in dashboard → `/api/webhooks/resend`, set `RESEND_WEBHOOK_SECRET`
-- [ ] Backfill `keyHash` for existing API keys in production
-- [ ] Set `isAdmin=true` for admin users in production DB
 - [ ] Set up monitoring (UptimeRobot + Sentry)
-- [ ] Full manual smoke test (signup → email confirm → dashboard → brief → archive → billing → mobile)
 - [ ] Write Show HN post, finalize Product Hunt listing
-- [ ] **Launch**
+- [ ] **Soft launch** → share in communities, gather feedback
+- [ ] **Big launch** → Show HN + Product Hunt
 
 ## Active Decisions
 
@@ -119,6 +120,10 @@ All core modules are built, tested, deployed, and running in production:
 
 | Date | Change |
 |------|--------|
+| 2026-02-15 | Launch prep: production migrations 0007+0008 applied, key_prefix backfilled, smoke test passed all flows |
+| 2026-02-15 | Feat: email unsubscribe flow (public API endpoint + /unsubscribe page), sets email_frequency to 'never' |
+| 2026-02-15 | Fix: admin tier switcher persists through refresh (/auth/me + /user/subscription now respect X-Tier-Override, synthetic subscription for free users) |
+| 2026-02-15 | Fix: email rate limiting (concurrency 5→2, delay 100→600ms) to stay under Resend free-tier 2 req/s |
 | 2026-02-15 | Fix: graph mode now works on Railway cron (deep-merge pipelineConfig in startScheduler, add --generation-mode CLI flag, 24 new tests) |
 | 2026-02-15 | Graph generation: budget controls, concurrency limits, trace timeline (Mermaid), aggregate run view, diagnostics for budget stops |
 | 2026-02-15 | Handoff system: phase 4 gap enrichment hook with n8n client + mock provider |
