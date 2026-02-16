@@ -26,9 +26,9 @@ test.describe('Pricing Page (/pricing)', () => {
   });
 
   test('should display three plan cards', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: 'Starter' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Free' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Builder' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Team' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Enterprise' })).toBeVisible();
   });
 
   test('should show correct monthly prices', async ({ page }) => {
@@ -44,21 +44,21 @@ test.describe('Pricing Page (/pricing)', () => {
   test('should toggle to annual billing', async ({ page }) => {
     await page.getByRole('radio', { name: /Annual/i }).click();
     await page.waitForTimeout(200);
-    await expect(page.getByText('$12.42')).toBeVisible();
+    await expect(page.getByText('$15.83')).toBeVisible();
     await expect(page.getByText('$82.50')).toBeVisible();
   });
 
   test('should show annual savings badges', async ({ page }) => {
     await page.getByRole('radio', { name: /Annual/i }).click();
     await page.waitForTimeout(200);
-    await expect(page.getByText('Save 35%')).toBeVisible();
-    await expect(page.getByText('Save 17%')).toBeVisible();
+    await expect(page.getByText('Save 2 months').first()).toBeVisible();
   });
 
   test('should show billing subtext on annual', async ({ page }) => {
     await page.getByRole('radio', { name: /Annual/i }).click();
     await page.waitForTimeout(200);
-    await expect(page.getByText('billed at $149/year')).toBeVisible();
+    await expect(page.getByText('billed at $190/year')).toBeVisible();
+    await expect(page.getByText('billed at $990/year')).toBeVisible();
   });
 
   test('Get Started Free navigates to /signup', async ({ page }) => {
@@ -93,9 +93,9 @@ test.describe('Pricing Page (/pricing)', () => {
   test('should be responsive at mobile viewport', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/pricing');
-    await expect(page.getByRole('heading', { name: 'Starter' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Free' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Builder' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Team' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Enterprise' })).toBeVisible();
     await expect(
       page.getByRole('button', { name: 'Toggle navigation' }),
     ).toBeVisible();

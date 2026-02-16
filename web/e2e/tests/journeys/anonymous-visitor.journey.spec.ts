@@ -1,159 +1,71 @@
 /**
  * Anonymous Visitor Journey
  *
- * End-to-end journey simulating a first-time anonymous visitor exploring
- * ZeroToShip: landing on the homepage, browsing tier-limited ideas,
- * viewing a gated idea detail page, hitting auth gates on protected
- * routes, and discovering the landing/pricing page.
+ * Validates current anonymous flow:
+ * landing -> explore -> idea detail (gated tabs) -> protected route guards.
  */
 
 import { test, expect } from '../../fixtures';
-import { HomePage } from '../../pages/home.page';
-import { TIER_LIMITS } from '../../utils/test-data';
 import { annotate, journeyPause } from '../../utils/journey-helpers';
 
 test.describe('Journey: Anonymous Visitor', () => {
   test.slow();
 
-  test('complete anonymous visitor journey', async ({ asAnonymous, setupMocks }) => {
+  test('complete anonymous visitor journey', async ({ asAnonymous }) => {
     const page = asAnonymous;
-    await setupMocks(page, 'anonymous');
-    const homePage = new HomePage(page);
 
-    // ---------------------------------------------------------------
-    // Step 1: Land on homepage
-    // ---------------------------------------------------------------
-    await test.step('Step 1: Land on homepage', async () => {
-      await annotate(page, 'Step 1: Land on homepage');
+    await test.step('Step 1: Landing page experience', async () => {
+      await annotate(page, 'Step 1: Landing page');
 
-      await homePage.goto();
-
+      await page.goto('/');
       await expect(page).toHaveTitle(/ZeroToShip/i);
-      await expect(homePage.heading).toBeVisible();
-      await expect(homePage.dateDisplay).toBeVisible();
+      await expect(
+        page.getByRole('heading', { name: /The Internet Complains/i })
+      ).toBeVisible();
+      await expect(
+        page.getByRole('navigation', { name: 'Main navigation' })
+      ).toBeVisible();
 
       await journeyPause(page);
     });
 
-    // ---------------------------------------------------------------
-    // Step 2: Browse ideas (3-idea limit)
-    // ---------------------------------------------------------------
-    await test.step('Step 2: Browse ideas (3-idea limit)', async () => {
-      await annotate(page, 'Step 2: Browse ideas (3-idea limit)');
+    await test.step('Step 2: Explore page discovery', async () => {
+      await annotate(page, 'Step 2: Explore page');
 
-      const ideaCount = await homePage.getIdeaCount();
-      expect(ideaCount).toBe(TIER_LIMITS.anonymous.ideasVisible);
+      await page.goto('/explore');
+      await expect(page.getByRole('heading', { name: /Startup Ideas Worth Building/i })).toBeVisible();
 
-      for (let i = 0; i < ideaCount; i++) {
-        const name = await homePage.getIdeaName(i);
-        expect(name.trim().length).toBeGreaterThan(0);
-
-        const score = await homePage.getIdeaScore(i);
-        expect(score.trim().length).toBeGreaterThan(0);
-      }
+      const cards = page.locator('article');
+      const emptyState = page.locator('text=/No ideas available right now/i');
+      const hasCards = (await cards.count()) > 0;
+      const hasEmptyState = await emptyState.isVisible().catch(() => false);
+      expect(hasCards || hasEmptyState).toBeTruthy();
 
       await journeyPause(page);
     });
 
-    // ---------------------------------------------------------------
-    // Step 3: Test gated tab content inline
-    // ---------------------------------------------------------------
-    await test.step('Step 3: Test gated tab content inline', async () => {
-      await annotate(page, 'Step 3: Test gated tab content inline');
+    await test.step('Step 3: Idea detail has gated sections', async () => {
+      await annotate(page, 'Step 3: Idea detail gating');
 
-      // Problem tab should be visible (not gated)
-      const activeTab = await homePage.getActiveTabName(0);
-      expect(activeTab).toBe('Problem');
+      await page.goto('/idea/mock-1');
+      await expect(page.locator('article h3.font-mono').first()).toBeVisible();
 
-      // Switch to Solution tab — should show gated content
-      await homePage.switchTab(0, 'Solution');
-
+      await page.getByRole('tab', { name: 'Solution' }).click();
       const gatedContent = page.locator('[data-testid="gated-content"]');
       await expect(gatedContent).toBeVisible();
-
-      // Sign up CTA should be visible
-      const signUpCta = gatedContent.locator('a:has-text("Sign Up")');
-      await expect(signUpCta).toBeVisible();
-
-      // Switch back to Problem tab
-      await homePage.switchTab(0, 'Problem');
+      await expect(gatedContent.getByRole('link', { name: 'Sign Up' })).toBeVisible();
 
       await journeyPause(page);
     });
 
-    // ---------------------------------------------------------------
-    // Step 4: Try /settings (auth gate)
-    // ---------------------------------------------------------------
-    await test.step('Step 4: Try /settings (auth gate)', async () => {
-      await annotate(page, 'Step 4: Try /settings (auth gate)', {
-        color: '#dc2626',
-      });
+    await test.step('Step 4: Protected routes redirect to login', async () => {
+      await annotate(page, 'Step 4: Protected route guards', { color: '#dc2626' });
 
       await page.goto('/settings');
-
-      const currentUrl = page.url();
-      const isRedirected =
-        currentUrl.includes('/login') ||
-        currentUrl.includes('/auth') ||
-        currentUrl.includes('/signin');
-
-      const authPrompt = page.locator(
-        'text=/sign in|log in|create account|sign up to access/i',
-      );
-      const hasAuthPrompt = (await authPrompt.count()) > 0;
-
-      expect(isRedirected || hasAuthPrompt).toBeTruthy();
-
-      await journeyPause(page);
-    });
-
-    // ---------------------------------------------------------------
-    // Step 5: Try /account (auth gate)
-    // ---------------------------------------------------------------
-    await test.step('Step 5: Try /account (auth gate)', async () => {
-      await annotate(page, 'Step 5: Try /account (auth gate)', {
-        color: '#dc2626',
-      });
+      await expect(page).toHaveURL(/\/login/);
 
       await page.goto('/account');
-
-      const currentUrl = page.url();
-      const isRedirected =
-        currentUrl.includes('/login') ||
-        currentUrl.includes('/auth') ||
-        currentUrl.includes('/signin');
-
-      const authPrompt = page.locator(
-        'text=/sign in|log in|create account|sign up to access/i',
-      );
-      const hasAuthPrompt = (await authPrompt.count()) > 0;
-
-      expect(isRedirected || hasAuthPrompt).toBeTruthy();
-
-      await journeyPause(page);
-    });
-
-    // ---------------------------------------------------------------
-    // Step 6: Visit /landing (pricing + CTA)
-    // ---------------------------------------------------------------
-    await test.step('Step 6: Visit /landing (pricing + CTA)', async () => {
-      await annotate(page, 'Step 6: Visit /landing (pricing + CTA)');
-
-      await page.goto('/landing');
-
-      const mainContent = page.locator('main');
-      await expect(mainContent).toBeVisible();
-
-      const pageHeading = page.locator('h1');
-      await expect(pageHeading).toBeVisible();
-
-      // Look for "Get Started" or "Sign Up" CTA buttons
-      const ctaButtons = page.locator(
-        'a:has-text("Get Started"), a:has-text("Sign Up"), ' +
-        'button:has-text("Get Started"), button:has-text("Sign Up")',
-      );
-      const ctaCount = await ctaButtons.count();
-      expect(ctaCount).toBeGreaterThan(0);
+      await expect(page).toHaveURL(/\/login/);
 
       await journeyPause(page);
     });

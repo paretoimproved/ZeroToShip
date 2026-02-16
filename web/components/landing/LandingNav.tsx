@@ -184,7 +184,7 @@ export default function LandingNav() {
                   href="/signup"
                   className={`ml-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-700 ${focusRingClasses}`}
                 >
-                  Start Free
+                  Get Started Free
                 </Link>
               </>
             )}
@@ -314,7 +314,7 @@ export default function LandingNav() {
                   onClick={closeMobileMenu}
                   className={`mt-2 rounded-lg bg-primary-600 px-4 py-3 text-center text-lg font-semibold text-white shadow-sm transition-colors hover:bg-primary-700 ${focusRingClasses}`}
                 >
-                  Start Free
+                  Get Started Free
                 </Link>
               </>
             )}

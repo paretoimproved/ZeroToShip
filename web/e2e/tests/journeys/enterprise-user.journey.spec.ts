@@ -197,6 +197,12 @@ test.describe('Journey: Enterprise User', () => {
         }
       }
 
+      // Ensure dialog overlays are closed before the next nav click.
+      await page.evaluate(() => {
+        const dialog = document.querySelector('dialog[open]') as HTMLDialogElement | null;
+        dialog?.close();
+      });
+
       await journeyPause(page);
     });
 
@@ -206,8 +212,7 @@ test.describe('Journey: Enterprise User', () => {
     await test.step('Step 6: Archive with combined filters', async () => {
       await annotate(page, 'Step 6: Archive with combined filters');
 
-      const accountPage = new AccountPage(page);
-      await accountPage.goToArchive();
+      await page.goto('/archive');
 
       const archivePage = new ArchivePage(page);
       await archivePage.waitForLoad();

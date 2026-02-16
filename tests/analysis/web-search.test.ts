@@ -87,6 +87,8 @@ describe('WebSearchClient', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.useFakeTimers();
+    global.fetch = mockFetch;
+    WebSearchClient.resetForTesting();
     // Clear environment variables for test isolation
     delete process.env.SERPAPI_KEY;
     delete process.env.BRAVE_API_KEY;
@@ -94,6 +96,7 @@ describe('WebSearchClient', () => {
   });
 
   afterEach(() => {
+    WebSearchClient.resetForTesting();
     vi.useRealTimers();
   });
 
@@ -375,9 +378,112 @@ describe('WebSearchClient', () => {
     });
   });
 
+  describe('cache and retry behavior', () => {
+    it('reuses cached responses for repeated queries', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          web: {
+            results: [
+              {
+                title: 'Cached result',
+                url: 'https://cached.example/result',
+                description: 'cached',
+              },
+            ],
+          },
+        }),
+      });
+
+      const client = new WebSearchClient({
+        braveApiKey: 'test-key',
+        rateLimitDelay: 0,
+      });
+
+      const first = await client.search('same query');
+      const second = await client.search('same query');
+
+      expect(first.results[0].url).toBe('https://cached.example/result');
+      expect(second.results[0].url).toBe('https://cached.example/result');
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('deduplicates in-flight identical requests', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          web: {
+            results: [
+              {
+                title: 'One',
+                url: 'https://parallel.example',
+                description: 'first',
+              },
+            ],
+          },
+        }),
+      });
+
+      const client = new WebSearchClient({
+        braveApiKey: 'test-key',
+        rateLimitDelay: 0,
+      });
+
+      const firstPromise = client.search('parallel query');
+      const secondPromise = client.search('parallel query');
+
+      const [first, second] = await Promise.all([firstPromise, secondPromise]);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(first.results[0].url).toBe('https://parallel.example');
+      expect(second.results[0].url).toBe('https://parallel.example');
+    });
+
+    it('retries on 429 using retry-after/backoff', async () => {
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 429,
+          statusText: 'Too Many Requests',
+          headers: {
+            get: () => '1',
+          },
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            web: {
+              results: [
+                {
+                  title: 'Retry success',
+                  url: 'https://retry.example',
+                  description: 'success',
+                },
+              ],
+            },
+          }),
+        });
+
+      const client = new WebSearchClient({
+        braveApiKey: 'test-key',
+        rateLimitDelay: 0,
+        maxRetries: 1,
+        retryBaseDelayMs: 100,
+      });
+
+      const searchPromise = client.search('retry query');
+      await vi.advanceTimersByTimeAsync(1000);
+      const result = await searchPromise;
+
+      expect(result.results[0].url).toBe('https://retry.example');
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+  });
+
   describe('searchForProblem', () => {
-    it('executes multiple queries', async () => {
-      const client = new WebSearchClient();
+    it('expands to additional queries when unique results are sparse', async () => {
+      const client = new WebSearchClient({
+        minUniqueResultsBeforeExpansion: 100,
+      });
 
       const promise = client.searchForProblem('Need better expense tracking');
 
@@ -385,8 +491,32 @@ describe('WebSearchClient', () => {
       await vi.advanceTimersByTimeAsync(5000);
       const results = await promise;
 
-      // Should return multiple search responses
+      // Should run through all available query variants
       expect(results.length).toBeGreaterThanOrEqual(2);
+      expect(results.length).toBeLessThanOrEqual(3);
+    });
+
+    it('stops early when first query returns enough unique results', async () => {
+      const client = new WebSearchClient({
+        minUniqueResultsBeforeExpansion: 2,
+      });
+
+      const searchSpy = vi.spyOn(client, 'search');
+      searchSpy.mockResolvedValueOnce({
+        query: 'q1',
+        provider: 'mock',
+        searchedAt: new Date(),
+        totalResults: 2,
+        results: [
+          { title: 'A', url: 'https://example.com/a', snippet: 'a', position: 1, domain: 'example.com' },
+          { title: 'B', url: 'https://example.com/b', snippet: 'b', position: 2, domain: 'example.com' },
+        ],
+      });
+
+      const results = await client.searchForProblem('Need better expense tracking');
+
+      expect(results).toHaveLength(1);
+      expect(searchSpy).toHaveBeenCalledTimes(1);
     });
 
     it('continues on individual query failure', async () => {
@@ -402,17 +532,16 @@ describe('WebSearchClient', () => {
           }),
         });
 
-      const client = new WebSearchClient({ serpApiKey: 'key', rateLimitDelay: 10 });
-
-      // Suppress console.warn for this test
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const client = new WebSearchClient({
+        serpApiKey: 'key',
+        rateLimitDelay: 10,
+        minUniqueResultsBeforeExpansion: 100,
+      });
 
       const results = await client.searchForProblem('test problem');
 
       // Should have at least one result (from successful query)
-      expect(results.length).toBeGreaterThanOrEqual(0);
-
-      warnSpy.mockRestore();
+      expect(results.length).toBeGreaterThanOrEqual(1);
 
       // Restore fake timers for other tests
       vi.useFakeTimers();

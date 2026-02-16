@@ -175,7 +175,7 @@ describe('Analyze Phase', () => {
       );
     });
 
-    it('should run scoring and gap analysis in parallel', async () => {
+    it('should score before running gap analysis', async () => {
       const { clusterPosts } = await import('../../../src/analysis/deduplicator');
       const { scoreAll } = await import('../../../src/analysis/scorer');
       const { analyzeAllGaps } = await import('../../../src/analysis/gap-analyzer');
@@ -185,14 +185,53 @@ describe('Analyze Phase', () => {
       vi.mocked(scoreAll).mockResolvedValue([makeScoredProblem()]);
       vi.mocked(analyzeAllGaps).mockResolvedValue([]);
 
-      await runAnalyzePhase('test-run-parallel', makeConfig(), [makePost()]);
+      await runAnalyzePhase('test-run-ordering', makeConfig(), [makePost()]);
 
-      // Both should be called with the clusters from step 1
       expect(scoreAll).toHaveBeenCalledWith(clusters);
+      expect(
+        vi.mocked(scoreAll).mock.invocationCallOrder[0]
+      ).toBeLessThan(
+        vi.mocked(analyzeAllGaps).mock.invocationCallOrder[0]
+      );
       expect(analyzeAllGaps).toHaveBeenCalledWith(
         clusters,
         expect.any(Object)
       );
+    });
+
+    it('should limit gap analysis to top scored candidates', async () => {
+      const { clusterPosts } = await import('../../../src/analysis/deduplicator');
+      const { scoreAll } = await import('../../../src/analysis/scorer');
+      const { analyzeAllGaps } = await import('../../../src/analysis/gap-analyzer');
+
+      const clusters = Array.from({ length: 30 }, (_, i) =>
+        makeCluster({
+          id: `c${i + 1}`,
+          problemStatement: `Problem ${i + 1}`,
+        })
+      );
+
+      // Score order is descending priority; c30 is highest, then c29, etc.
+      const scored = Array.from({ length: 30 }, (_, i) =>
+        makeScoredProblem({
+          id: `c${30 - i}`,
+        })
+      );
+
+      vi.mocked(clusterPosts).mockResolvedValue(clusters);
+      vi.mocked(scoreAll).mockResolvedValue(scored);
+      vi.mocked(analyzeAllGaps).mockResolvedValue([]);
+
+      await runAnalyzePhase(
+        'test-run-candidate-cap',
+        makeConfig({ maxBriefs: 3 }),
+        [makePost()]
+      );
+
+      const calledClusters = vi.mocked(analyzeAllGaps).mock.calls[0][0] as ProblemCluster[];
+      expect(calledClusters).toHaveLength(15);
+      expect(calledClusters[0].id).toBe('c30');
+      expect(calledClusters[14].id).toBe('c16');
     });
   });
 

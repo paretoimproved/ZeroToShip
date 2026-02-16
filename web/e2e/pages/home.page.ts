@@ -31,7 +31,7 @@ export class HomePage extends BasePage {
    * Navigate to the home page
    */
   async goto(): Promise<void> {
-    await this.page.goto('/');
+    await this.page.goto('/dashboard');
     await this.waitForLoad();
   }
 
@@ -128,7 +128,7 @@ export class HomePage extends BasePage {
    * Check if showing mock data
    */
   async isUsingMockData(): Promise<boolean> {
-    const mockBadge = this.page.locator('text="Using mock data"');
+    const mockBadge = this.page.locator('text="Demo data"');
     return await mockBadge.isVisible();
   }
 

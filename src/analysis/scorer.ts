@@ -279,6 +279,48 @@ function buildScoredProblem(cluster: ProblemCluster, aiScores: ScoreResponse): S
 }
 
 /**
+ * Rebuild a cached score result on top of the current cluster identity.
+ * Prevents stale IDs/embeddings from cache entries from leaking across runs.
+ */
+function reconcileCachedScore(
+  cluster: ProblemCluster,
+  cached: ScoredProblem
+): ScoredProblem {
+  const frequencyScore = calculateFrequencyScore(cluster.frequency);
+  const engagementScore = calculateEngagementScore(cluster.totalScore, cluster.frequency);
+
+  const impact = calculateImpact(
+    frequencyScore,
+    cached.scores.severity,
+    cached.scores.marketSize,
+    engagementScore
+  );
+
+  const effort = calculateEffort(
+    cached.scores.technicalComplexity,
+    cached.scores.timeToMvp
+  );
+
+  const priority = normalizePriority(calculatePriority(impact, effort));
+
+  return {
+    ...cluster,
+    scores: {
+      frequency: frequencyScore,
+      severity: cached.scores.severity,
+      marketSize: cached.scores.marketSize,
+      technicalComplexity: cached.scores.technicalComplexity,
+      timeToMvp: cached.scores.timeToMvp,
+      engagement: engagementScore,
+      impact,
+      effort,
+      priority,
+    },
+    reasoning: { ...cached.reasoning },
+  };
+}
+
+/**
  * Calculate frequency score (normalized 1-10)
  */
 function calculateFrequencyScore(frequency: number): number {
@@ -337,7 +379,7 @@ export async function scoreAll(
   for (const cluster of clusters) {
     const cached = cache.get(cluster.representativePost.url, cluster.problemStatement);
     if (cached) {
-      cachedResults.push(cached);
+      cachedResults.push(reconcileCachedScore(cluster, cached));
     } else {
       uncachedClusters.push(cluster);
     }

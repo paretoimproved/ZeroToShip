@@ -11,9 +11,9 @@ test.describe('Landing Page — Pricing Section', () => {
 
   test('should display three plan cards', async ({ page }) => {
     const section = page.locator('#pricing');
-    await expect(section.getByRole('heading', { name: 'Starter' })).toBeVisible();
+    await expect(section.getByRole('heading', { name: 'Free' })).toBeVisible();
     await expect(section.getByRole('heading', { name: 'Builder', exact: true })).toBeVisible();
-    await expect(section.getByRole('heading', { name: 'Team' })).toBeVisible();
+    await expect(section.getByRole('heading', { name: 'Enterprise' })).toBeVisible();
   });
 
   test('should show section heading', async ({ page }) => {
@@ -22,7 +22,7 @@ test.describe('Landing Page — Pricing Section', () => {
     ).toBeVisible();
   });
 
-  test('should show $0 for Starter monthly', async ({ page }) => {
+  test('should show $0 for Free monthly', async ({ page }) => {
     const section = page.locator('#pricing');
     await expect(section.getByText('$0')).toBeVisible();
   });
@@ -32,7 +32,7 @@ test.describe('Landing Page — Pricing Section', () => {
     await expect(section.getByText('$19')).toBeVisible();
   });
 
-  test('should show $99 for Team monthly', async ({ page }) => {
+  test('should show $99 for Enterprise monthly', async ({ page }) => {
     const section = page.locator('#pricing');
     await expect(section.getByText('$99')).toBeVisible();
   });
@@ -45,7 +45,7 @@ test.describe('Landing Page — Pricing Section', () => {
     const section = page.locator('#pricing');
     await section.getByRole('radio', { name: /Annual/i }).click();
     await page.waitForTimeout(200);
-    await expect(section.getByText('$12.42')).toBeVisible();
+    await expect(section.getByText('$15.83')).toBeVisible();
     await expect(section.getByText('$82.50')).toBeVisible();
   });
 
@@ -53,23 +53,22 @@ test.describe('Landing Page — Pricing Section', () => {
     const section = page.locator('#pricing');
     await section.getByRole('radio', { name: /Annual/i }).click();
     await page.waitForTimeout(200);
-    await expect(section.getByText('Save 35%')).toBeVisible();
-    await expect(section.getByText('Save 17%')).toBeVisible();
+    await expect(section.getByText('Save 2 months').first()).toBeVisible();
   });
 
   test('should show annual billing subtext', async ({ page }) => {
     const section = page.locator('#pricing');
     await section.getByRole('radio', { name: /Annual/i }).click();
     await page.waitForTimeout(200);
-    await expect(section.getByText('billed at $149/year')).toBeVisible();
+    await expect(section.getByText('billed at $190/year')).toBeVisible();
     await expect(section.getByText('billed at $990/year')).toBeVisible();
   });
 
-  test('Starter should list featured brief as included', async ({ page }) => {
+  test('Free plan should list featured brief as included', async ({ page }) => {
     await expect(page.getByText('1 featured brief per email')).toBeVisible();
   });
 
-  test('Starter should list full briefs as not included', async ({ page }) => {
+  test('Free plan should list full briefs as not included', async ({ page }) => {
     await expect(page.getByText('Full briefs for all ideas')).toBeVisible();
   });
 

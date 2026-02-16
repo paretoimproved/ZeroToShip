@@ -53,13 +53,13 @@ export interface GapAnalysis {
 const DEFAULT_MAX_SEARCH_RESULTS = 10;
 
 /** Default delay between web search requests (ms) */
-const DEFAULT_SEARCH_RATE_LIMIT_DELAY_MS = 1000;
+const DEFAULT_SEARCH_RATE_LIMIT_DELAY_MS = 1200;
 
 /** Default max competitors to analyze per problem */
 const DEFAULT_MAX_COMPETITORS = 10;
 
 /** Default concurrent gap analysis operations */
-const DEFAULT_GAP_CONCURRENCY = 2;
+const DEFAULT_GAP_CONCURRENCY = 1;
 
 /** Default minimum post frequency to trigger web search analysis */
 const DEFAULT_MIN_FREQUENCY_FOR_SEARCH = 1;

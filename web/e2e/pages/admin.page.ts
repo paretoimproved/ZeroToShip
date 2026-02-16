@@ -85,10 +85,13 @@ export class AdminPipelinePage extends BasePage {
     this.runButton = page.locator('button:has-text("Run Pipeline")');
     this.dryRunCheckbox = page.locator('label:has-text("Dry Run") input[type="checkbox"]');
     this.skipDeliveryCheckbox = page.locator('label:has-text("Skip Delivery") input[type="checkbox"]');
-    this.hoursBackInput = page.locator('input[placeholder="24"]');
+    this.hoursBackInput = page.locator('input[placeholder="48"], input[placeholder="24"]').first();
     this.maxBriefsInput = page.locator('input[placeholder="10"]');
     this.statusPanel = page.locator('h2:has-text("Latest Run Status")').locator('..');
-    this.phaseBadges = page.locator('span.rounded-full');
+    this.phaseBadges = page
+      .locator('h2:has-text("Pipeline Progress")')
+      .locator('..')
+      .locator('span.text-xs.font-medium');
   }
 
   async goto(): Promise<void> {
@@ -130,11 +133,16 @@ export class AdminPipelinePage extends BasePage {
   }
 
   async getPhaseBadgeTexts(): Promise<string[]> {
-    const count = await this.phaseBadges.count();
+    const labels = ['Scrape', 'Analyze', 'Generate', 'Deliver'] as const;
     const texts: string[] = [];
-    for (let i = 0; i < count; i++) {
-      texts.push(await this.phaseBadges.nth(i).textContent() || '');
+
+    for (const label of labels) {
+      const badge = this.page.getByText(new RegExp(`^${label}$`)).first();
+      if (await badge.isVisible().catch(() => false)) {
+        texts.push(label.toLowerCase());
+      }
     }
+
     return texts;
   }
 }

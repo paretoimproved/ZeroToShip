@@ -6,6 +6,7 @@
  */
 
 import * as Sentry from '@sentry/node';
+import { config } from '../config/env';
 
 let initialized = false;
 
@@ -13,7 +14,7 @@ let initialized = false;
  * Initialize Sentry monitoring
  */
 export function initMonitoring(): void {
-  const dsn = process.env.SENTRY_DSN;
+  const dsn = config.SENTRY_DSN;
 
   if (!dsn) {
     console.warn('[Monitoring] SENTRY_DSN not set - error tracking disabled');
@@ -24,8 +25,8 @@ export function initMonitoring(): void {
 
   Sentry.init({
     dsn,
-    environment: process.env.NODE_ENV || 'development',
-    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+    environment: config.NODE_ENV,
+    tracesSampleRate: config.isProduction ? 0.1 : 1.0,
   });
 
   initialized = true;

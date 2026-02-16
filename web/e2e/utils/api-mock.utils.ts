@@ -36,6 +36,14 @@ export interface MockIdea {
     firstCustomers: string;
   };
   risks: string[];
+  sources?: Array<{
+    platform: "reddit" | "hn" | "twitter" | "github";
+    title: string;
+    url: string;
+    score: number;
+    commentCount: number;
+    postedAt: string;
+  }>;
   generatedAt: string;
 }
 
@@ -49,7 +57,7 @@ export function generateMockIdeas(count: number = SEED_IDEAS.length): MockIdea[]
     tagline: `Tagline for ${seed.name}`,
     priorityScore: seed.score,
     effortEstimate: seed.effort,
-    revenueEstimate: '$5K-20K MRR',
+    revenueEstimate: '$5K-20K per month',
     problemStatement: `Problem statement for ${seed.name}`,
     targetAudience: 'Developers and indie hackers',
     marketSize: '$1B+ market',
@@ -65,7 +73,7 @@ export function generateMockIdeas(count: number = SEED_IDEAS.length): MockIdea[]
     },
     businessModel: {
       pricing: '$9-29/mo',
-      revenueProjection: '$10K MRR',
+      revenueProjection: '$10K per month',
       monetizationPath: 'Freemium',
     },
     goToMarket: {
@@ -74,8 +82,129 @@ export function generateMockIdeas(count: number = SEED_IDEAS.length): MockIdea[]
       firstCustomers: 'Early adopters',
     },
     risks: ['Competition', 'Market changes'],
+    sources: [
+      {
+        platform: "reddit",
+        title: `${seed.name}: pain point thread`,
+        url: "https://reddit.com/r/startups/example",
+        score: 234,
+        commentCount: 89,
+        postedAt: new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        platform: "hn",
+        title: `Ask HN: ${seed.name} alternatives?`,
+        url: "https://news.ycombinator.com/item?id=12345678",
+        score: 156,
+        commentCount: 67,
+        postedAt: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        platform: "github",
+        title: `${seed.name}: issue backlog`,
+        url: "https://github.com/example/repo/issues/1",
+        score: 42,
+        commentCount: 12,
+        postedAt: new Date(Date.now() - 9 * 60 * 60 * 1000).toISOString(),
+      },
+    ],
     generatedAt: new Date().toISOString(),
   }));
+}
+
+function tierToPlan(tier: UserTier): 'free' | 'pro' | 'enterprise' {
+  if (tier === 'enterprise') return 'enterprise';
+  if (tier === 'pro') return 'pro';
+  return 'free';
+}
+
+function buildMockUser(
+  tier: UserTier,
+  emailFrequency: 'daily' | 'weekly' | 'never' = 'daily'
+) {
+  const plan = tierToPlan(tier);
+  const capitalized = plan.charAt(0).toUpperCase() + plan.slice(1);
+  return {
+    id: `${plan}-user-123`,
+    email: `${plan}@test.zerotoship.dev`,
+    name: `${capitalized} User`,
+    tier: plan,
+    isAdmin: false,
+    preferences: {
+      emailFrequency,
+    },
+  };
+}
+
+/**
+ * Setup API mocking for auth/me endpoint.
+ * Anonymous users get 401; authenticated tiers get a valid profile.
+ */
+export async function mockAuthMeApi(
+  page: Page,
+  tier: UserTier = 'anonymous'
+): Promise<void> {
+  await page.route(`${API_URL}/auth/me`, async (route: Route) => {
+    if (tier === 'anonymous') {
+      await route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 'UNAUTHORIZED',
+          message: 'Authentication required',
+        }),
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(buildMockUser(tier)),
+    });
+  });
+}
+
+/**
+ * Setup API mocking for updating user preferences.
+ */
+export async function mockUserPreferencesApi(
+  page: Page,
+  tier: Exclude<UserTier, 'anonymous'> = 'free'
+): Promise<void> {
+  let emailFrequency: 'daily' | 'weekly' | 'never' = 'daily';
+
+  await page.route(`${API_URL}/user/preferences`, async (route: Route) => {
+    const method = route.request().method();
+
+    if (method === 'PUT' || method === 'PATCH') {
+      const payload = route.request().postDataJSON() as
+        | { emailFrequency?: 'daily' | 'weekly' | 'never' }
+        | undefined;
+      if (payload?.emailFrequency) {
+        emailFrequency = payload.emailFrequency;
+      }
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(buildMockUser(tier, emailFrequency)),
+    });
+  });
+}
+
+/**
+ * Setup API mocking for saved ideas/bookmarks.
+ */
+export async function mockSavedIdeasApi(page: Page): Promise<void> {
+  await page.route(`${API_URL}/ideas/saved`, async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([]),
+    });
+  });
 }
 
 /**
@@ -376,6 +505,8 @@ export async function mockAdminPipelineRunApi(page: Page): Promise<void> {
         body: JSON.stringify({
           status: 'started',
           message: 'Pipeline run started',
+          // Keep shape aligned with the real API and the admin UI, which expects `runId`.
+          runId: 'run_20260214_openclaw_demo',
           config: { hoursBack: 24, maxBriefs: 10, dryRun: false },
         }),
       });
@@ -423,6 +554,52 @@ export async function mockAdminUsersApi(page: Page): Promise<void> {
 }
 
 /**
+ * Setup API mocking for admin runs list.
+ */
+export async function mockAdminRunsApi(
+  page: Page,
+  runs: unknown[],
+  options: { page?: number; limit?: number; total?: number } = {},
+): Promise<void> {
+  const pageNum = options.page ?? 1;
+  const limit = options.limit ?? 20;
+  const total = options.total ?? runs.length;
+
+  // Match only the list endpoint (/admin/runs[?query...]) but NOT /admin/runs/:runId.
+  const listRe = new RegExp(`${API_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/admin/runs(?:\\?.*)?$`);
+
+  await page.route(listRe, async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        runs,
+        total,
+        page: pageNum,
+        limit,
+      }),
+    });
+  });
+}
+
+/**
+ * Setup API mocking for admin run detail.
+ */
+export async function mockAdminRunDetailApi(
+  page: Page,
+  runId: string,
+  run: unknown,
+): Promise<void> {
+  await page.route(`${API_URL}/admin/runs/${runId}`, async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ run }),
+    });
+  });
+}
+
+/**
  * Setup all admin API mocks
  */
 export async function setupAdminApiMocks(page: Page): Promise<void> {
@@ -441,12 +618,45 @@ export async function setupAllApiMocks(
   page: Page,
   tier: UserTier = 'anonymous'
 ): Promise<void> {
+  if (tier === 'anonymous') {
+    await mockAuthMeApi(page, tier);
+  } else {
+    let emailFrequency: 'daily' | 'weekly' | 'never' = 'daily';
+
+    await page.route(`${API_URL}/auth/me`, async (route: Route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(buildMockUser(tier, emailFrequency)),
+      });
+    });
+
+    await page.route(`${API_URL}/user/preferences`, async (route: Route) => {
+      const method = route.request().method();
+      if (method === 'PUT' || method === 'PATCH') {
+        const payload = route.request().postDataJSON() as
+          | { emailFrequency?: 'daily' | 'weekly' | 'never' }
+          | undefined;
+        if (payload?.emailFrequency) {
+          emailFrequency = payload.emailFrequency;
+        }
+      }
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(buildMockUser(tier, emailFrequency)),
+      });
+    });
+  }
+
   await mockIdeaDetailApi(page);
   await mockIdeasApi(page, tier);
   await mockArchiveApi(page, { tier });
 
   if (tier !== 'anonymous') {
-    const plan = tier === 'free' ? 'free' : tier === 'pro' ? 'pro' : 'enterprise';
+    const plan = tierToPlan(tier);
+    await mockSavedIdeasApi(page);
     await mockSubscriptionApi(page, plan);
     await mockBillingCheckoutApi(page);
     await mockBillingPortalApi(page);

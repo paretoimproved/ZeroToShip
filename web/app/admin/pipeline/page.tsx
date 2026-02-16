@@ -201,6 +201,31 @@ export default function PipelinePage() {
         Pipeline Control
       </h1>
 
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          Daily Cron
+        </h2>
+        <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
+          This pipeline runs on a daily scheduler and produces Today&apos;s ranked briefs. In the
+          OpenClaw product, the run output can automatically trigger bounded execution workflows
+          via the handoff seam (visible on Run Detail).
+        </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-900/40 dark:text-gray-200">
+            <span className="font-semibold">Schedule</span>
+            <div className="mt-1 text-gray-700 dark:text-gray-300">Daily 5:00 AM PT</div>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-900/40 dark:text-gray-200">
+            <span className="font-semibold">Timezone</span>
+            <div className="mt-1 text-gray-700 dark:text-gray-300">America/Los_Angeles</div>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-900/40 dark:text-gray-200">
+            <span className="font-semibold">Mode</span>
+            <div className="mt-1 text-gray-700 dark:text-gray-300">Graph with retries + budgets</div>
+          </div>
+        </div>
+      </div>
+
       {/* Toast */}
       {toast && (
         <div

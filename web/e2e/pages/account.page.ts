@@ -62,9 +62,15 @@ export class AccountPage extends BasePage {
 
     // Plan cards
     this.planCards = page.locator('section:has(h2:text("Available Plans")) > div > div');
-    this.freePlanCard = page.locator('[class*="rounded-xl"]:has(h3:text("Free"))');
-    this.proPlanCard = page.locator('[class*="rounded-xl"]:has(h3:text("Builder"))');
-    this.enterprisePlanCard = page.locator('[class*="rounded-xl"]:has(h3:text("Enterprise"))');
+    this.freePlanCard = this.planCards.filter({
+      has: page.getByRole('heading', { level: 3, name: 'Free' }),
+    }).first();
+    this.proPlanCard = this.planCards.filter({
+      has: page.getByRole('heading', { level: 3, name: 'Builder' }),
+    }).first();
+    this.enterprisePlanCard = this.planCards.filter({
+      has: page.getByRole('heading', { level: 3, name: 'Enterprise' }),
+    }).first();
 
     // Loading state
     this.loadingState = page.locator('.animate-pulse');
@@ -96,7 +102,11 @@ export class AccountPage extends BasePage {
    * Get current plan name
    */
   async getCurrentPlan(): Promise<string> {
-    return await this.currentPlanName.textContent() || '';
+    const raw = (await this.currentPlanName.textContent() || '').trim().toLowerCase();
+    if (raw.includes('builder') || raw === 'pro') return 'pro';
+    if (raw.includes('enterprise')) return 'enterprise';
+    if (raw.includes('free')) return 'free';
+    return raw;
   }
 
   /**
@@ -111,8 +121,7 @@ export class AccountPage extends BasePage {
    */
   async isCurrentPlan(plan: 'free' | 'pro' | 'enterprise'): Promise<boolean> {
     const currentPlan = await this.getCurrentPlan();
-    const expected = plan === 'pro' ? 'builder' : plan;
-    return currentPlan.toLowerCase() === expected;
+    return currentPlan === plan;
   }
 
   /**

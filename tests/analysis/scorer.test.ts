@@ -3,6 +3,9 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import type { RawPost } from '../../src/scrapers/types';
 import type { ProblemCluster } from '../../src/analysis/deduplicator';
 import {
@@ -527,6 +530,46 @@ describe('Scorer', () => {
       });
 
       expect(results.length).toBe(10);
+    });
+
+    it('preserves current cluster identity for cached scores', async () => {
+      const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'z2s-score-cache-'));
+      try {
+        const problemStatement = 'Users struggle with multi-tenant billing reconciliation';
+        const sharedUrl = 'https://example.com/shared-problem';
+
+        const firstCluster = createMockCluster({
+          id: 'cluster_old',
+          frequency: 3,
+          problemStatement,
+          representativePost: createMockPost({ url: sharedUrl }),
+        });
+
+        const secondCluster = createMockCluster({
+          id: 'cluster_new',
+          frequency: 9,
+          problemStatement,
+          representativePost: createMockPost({ url: sharedUrl }),
+        });
+
+        await scoreAll([firstCluster], {
+          useAI: false,
+          scoreCacheOptions: { cacheDir },
+        });
+
+        const cachedResults = await scoreAll([secondCluster], {
+          useAI: false,
+          scoreCacheOptions: { cacheDir },
+        });
+
+        expect(cachedResults).toHaveLength(1);
+        expect(cachedResults[0].id).toBe('cluster_new');
+        expect(cachedResults[0].problemStatement).toBe(problemStatement);
+        expect(cachedResults[0].frequency).toBe(9);
+        expect(cachedResults[0].representativePost.url).toBe(sharedUrl);
+      } finally {
+        fs.rmSync(cacheDir, { recursive: true, force: true });
+      }
     });
   });
 

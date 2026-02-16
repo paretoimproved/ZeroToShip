@@ -1,52 +1,64 @@
 /**
- * Smoke tests to verify E2E infrastructure is working
+ * Smoke tests to verify core routes and navigation are healthy
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures';
 
 test.describe('Smoke Tests', () => {
-  test('homepage loads', async ({ page }) => {
-    await page.goto('/');
-    await expect(page).toHaveTitle(/ZeroToShip/i);
+  test('landing page loads', async ({ asAnonymous }) => {
+    await asAnonymous.goto('/');
+    await expect(asAnonymous).toHaveTitle(/ZeroToShip/i);
+    await expect(
+      asAnonymous.getByRole('heading', { name: /The Internet Complains/i })
+    ).toBeVisible();
   });
 
-  test('navigation bar is visible', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.locator('nav')).toBeVisible();
-    await expect(page.locator('a:has-text("ZeroToShip")')).toBeVisible();
+  test('landing main navigation is visible', async ({ asAnonymous }) => {
+    await asAnonymous.goto('/');
+    await expect(
+      asAnonymous.getByRole('navigation', { name: 'Main navigation' })
+    ).toBeVisible();
+    await expect(
+      asAnonymous.getByRole('link', { name: 'ZeroToShip' })
+    ).toBeVisible();
   });
 
-  test('can navigate to archive page', async ({ page }) => {
-    await page.goto('/');
-    await page.click('nav a:has-text("Archive")');
-    await expect(page).toHaveURL('/archive');
-    await expect(page.locator('h1:has-text("Idea Archive")')).toBeVisible();
+  test('authenticated user can load dashboard', async ({ asFreeUser, setupMocks }) => {
+    await setupMocks(asFreeUser, 'free');
+    await asFreeUser.goto('/dashboard');
+    await expect(asFreeUser.getByRole('heading', { name: "Today's Top Ideas" })).toBeVisible();
   });
 
-  test('can navigate to settings page', async ({ page }) => {
-    await page.goto('/');
-    await page.click('nav a:has-text("Settings")');
-    await expect(page).toHaveURL('/settings');
-    await expect(page.locator('h1:has-text("Settings")')).toBeVisible();
+  test('authenticated app navigation links are visible', async ({ asFreeUser, setupMocks }) => {
+    await setupMocks(asFreeUser, 'free');
+    await asFreeUser.goto('/dashboard');
+
+    const nav = asFreeUser.getByRole('navigation', { name: 'Main navigation' });
+    await expect(nav.getByRole('link', { name: 'Today' })).toBeVisible();
+    await expect(nav.getByRole('link', { name: 'Archive' })).toBeVisible();
+    await expect(nav.getByRole('link', { name: 'Settings' })).toBeVisible();
+    await expect(nav.getByRole('link', { name: 'Account' })).toBeVisible();
   });
 
-  test('can navigate to account page', async ({ page }) => {
-    await page.goto('/');
-    await page.click('nav a:has-text("Account")');
-    await expect(page).toHaveURL('/account');
-    await expect(page.locator('h1:has-text("Account")')).toBeVisible();
-  });
+  test('authenticated user can navigate to archive/settings/account', async ({
+    asFreeUser,
+    setupMocks,
+  }) => {
+    await setupMocks(asFreeUser, 'free');
+    await asFreeUser.goto('/dashboard');
 
-  test('home page shows idea cards or empty state', async ({ page }) => {
-    await page.goto('/');
+    const nav = asFreeUser.getByRole('navigation', { name: 'Main navigation' });
 
-    // Either idea cards are visible or the empty state message is shown
-    const ideaCards = page.locator('article');
-    const emptyState = page.locator('text="No ideas generated yet"');
+    await nav.getByRole('link', { name: 'Archive' }).click();
+    await expect(asFreeUser).toHaveURL('/archive');
+    await expect(asFreeUser.getByRole('heading', { name: 'Idea Archive' })).toBeVisible();
 
-    const hasIdeas = await ideaCards.count() > 0;
-    const hasEmptyState = await emptyState.isVisible();
+    await nav.getByRole('link', { name: 'Settings' }).click();
+    await expect(asFreeUser).toHaveURL('/settings');
+    await expect(asFreeUser.getByRole('heading', { name: 'Settings' })).toBeVisible();
 
-    expect(hasIdeas || hasEmptyState).toBeTruthy();
+    await nav.getByRole('link', { name: 'Account' }).click();
+    await expect(asFreeUser).toHaveURL('/account');
+    await expect(asFreeUser.getByRole('heading', { name: 'Account' })).toBeVisible();
   });
 });

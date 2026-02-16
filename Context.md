@@ -2,13 +2,13 @@
 
 > **Purpose**: Current state of ZeroToShip. Read this at session start, update it at session end.
 
-**Last Updated**: 2026-02-15
+**Last Updated**: 2026-02-16
 
 ---
 
 ## Current Focus
 
-**Ready for soft launch.** Full smoke test passed (auth, dashboard, archive, billing, email, mobile, admin). Production migrations applied (0006–0008). Pipeline runs daily in graph mode. 2 friends dogfooding. Remaining items are ops hardening (Redis, Sentry, Resend webhooks) — not blockers for early users.
+**Soft launched.** All changes deployed to production via main. Pipeline runs daily in graph mode. Launch posts drafted for 5 channels (Reddit, Indie Hackers, Discord, Dev.to/Hashnode, Lobsters). Working directly on main branch going forward — Railway auto-deploys from main.
 
 ## What's Done
 
@@ -47,8 +47,8 @@ All core modules are built, tested, deployed, and running in production:
 - [ ] Provision Redis on Railway and set `REDIS_URL` env var (in-memory fallback works at small scale)
 - [ ] Configure Resend webhook in dashboard → `/api/webhooks/resend`, set `RESEND_WEBHOOK_SECRET`
 - [ ] Set up monitoring (UptimeRobot + Sentry)
+- [x] **Soft launch** — launch posts written, first post (r/SideProject) live
 - [ ] Write Show HN post, finalize Product Hunt listing
-- [ ] **Soft launch** → share in communities, gather feedback
 - [ ] **Big launch** → Show HN + Product Hunt
 
 ## Active Decisions
@@ -60,6 +60,7 @@ All core modules are built, tested, deployed, and running in production:
 | Deployment | Decided | Vercel (web) + Railway (API/scheduler) + Supabase (DB) |
 | Twitter/X | Decided | Removed from UI. Non-functional (no bearer token, Nitter dead). Replace post-launch with Bluesky/dev.to/Lobsters. |
 | Generation mode | Decided | Legacy provider is default. Graph provider available via `GENERATION_MODE=graph`. Cron path fixed (was silently falling back to legacy due to shallow config merge). |
+| Branch strategy | Decided | Work directly on `main`. Railway auto-deploys from main. No more feature branches unless needed for PRs. |
 | Tier naming | Decided | Free / Builder ($19/mo) / Enterprise ($99/mo). Internal identifiers remain `'pro'`. |
 
 ## Cost Profile
@@ -94,6 +95,7 @@ All core modules are built, tested, deployed, and running in production:
 ## Known Issues
 
 - 3 email snapshot tests failing (stale after template copy updates — need `npx vitest run -u tests/delivery/email.test.ts`)
+- Stripe webhook→DB sync: `updateSubscription` now logs errors but callers still don't check return value — webhooks can be marked "processed" even if DB write fails
 - Twitter scraper non-functional (removed from UI, still in codebase)
 - Redis not yet provisioned in Railway — rate limiting falls back to in-memory
 - Pre-existing test timeouts in gap-analyzer.test.ts (2 tests), orchestrator.test.ts (1 test), hackernews.test.ts (2 tests)
@@ -120,6 +122,11 @@ All core modules are built, tested, deployed, and running in production:
 
 | Date | Change |
 |------|--------|
+| 2026-02-16 | Deployed to production: merged codex/dummy-proof-ux → main (PR #8), Railway auto-deployed |
+| 2026-02-16 | Fix: email subject lines no longer include priority score, revenue chip replaced with $ opportunity scale |
+| 2026-02-16 | Fix: all user-facing "8 AM" copy replaced with "morning", welcome email now links to zerotoship.dev |
+| 2026-02-16 | Fix: updateSubscription logs errors instead of silently swallowing (Stripe webhook sync debugging) |
+| 2026-02-16 | Manually fixed Lindsey's subscription in production (cancel_at_period_end synced from Stripe) |
 | 2026-02-15 | Launch prep: production migrations 0007+0008 applied, key_prefix backfilled, smoke test passed all flows |
 | 2026-02-15 | Feat: email unsubscribe flow (public API endpoint + /unsubscribe page), sets email_frequency to 'never' |
 | 2026-02-15 | Fix: admin tier switcher persists through refresh (/auth/me + /user/subscription now respect X-Tier-Override, synthetic subscription for free users) |

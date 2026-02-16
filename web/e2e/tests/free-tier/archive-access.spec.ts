@@ -262,12 +262,8 @@ test.describe('Free Tier - Archive Access', () => {
       await archivePage.goto();
 
       // Look for upgrade messaging related to archive
-      const upgradeMessages = asFreeUser.locator(
-        'text=/upgrade.*archive/i, ' +
-        'text=/unlimited.*archive/i, ' +
-        'text=/more ideas.*upgrade/i, ' +
-        'text=/free tier/i, ' +
-        '[data-testid="archive-upgrade-prompt"]'
+      const upgradeMessages = asFreeUser.getByText(
+        /upgrade.*archive|unlimited.*archive|more ideas.*upgrade|free tier/i
       );
 
       // Also check for any general upgrade prompts
@@ -276,8 +272,8 @@ test.describe('Free Tier - Archive Access', () => {
         'button:has-text("Upgrade")'
       );
 
-      const hasUpgradeMessage = await upgradeMessages.count() > 0;
-      const hasGeneralUpgrade = await generalUpgrade.count() > 0;
+      const hasUpgradeMessage = (await upgradeMessages.count()) > 0;
+      const hasGeneralUpgrade = (await generalUpgrade.count()) > 0;
 
       // Either specific archive upgrade message, general upgrade, or no message (still valid)
       // The test verifies the feature works without errors

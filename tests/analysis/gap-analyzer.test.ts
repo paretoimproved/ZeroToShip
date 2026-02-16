@@ -37,6 +37,34 @@ import {
   type GapAnalysis,
 } from '../../src/analysis/gap-analyzer';
 
+const initialSerpApiKey = process.env.SERPAPI_KEY;
+const initialBraveApiKey = process.env.BRAVE_API_KEY;
+
+beforeEach(() => {
+  mockFetch.mockClear();
+  delete process.env.SERPAPI_KEY;
+  delete process.env.BRAVE_API_KEY;
+  _resetConfigForTesting();
+  WebSearchClient.resetForTesting();
+});
+
+afterEach(() => {
+  if (initialSerpApiKey !== undefined) {
+    process.env.SERPAPI_KEY = initialSerpApiKey;
+  } else {
+    delete process.env.SERPAPI_KEY;
+  }
+
+  if (initialBraveApiKey !== undefined) {
+    process.env.BRAVE_API_KEY = initialBraveApiKey;
+  } else {
+    delete process.env.BRAVE_API_KEY;
+  }
+
+  _resetConfigForTesting();
+  WebSearchClient.resetForTesting();
+});
+
 // Helper to create mock posts
 function createMockPost(overrides: Partial<RawPost> = {}): RawPost {
   return {

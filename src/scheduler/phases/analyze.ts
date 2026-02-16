@@ -1,20 +1,68 @@
 /**
  * Analyze Phase Runner
  *
- * Clusters posts, then runs scoring and gap analysis in parallel.
+ * Clusters posts, scores them, then runs gap analysis on top candidates.
  */
 
 import { clusterPosts } from '../../analysis/deduplicator';
 import { scoreAll } from '../../analysis/scorer';
 import { analyzeAllGaps } from '../../analysis/gap-analyzer';
+import type { ProblemCluster, ScoredProblem } from '../../analysis';
 import type { RawPost } from '../../scrapers/types';
 import { createPhaseLogger } from '../utils/logger';
-import { AnalysisError, isZeroToShipError, wrapError } from '../../lib/errors';
+import { AnalysisError, wrapError } from '../../lib/errors';
 import type {
   PhaseResult,
   AnalyzePhaseOutput,
   PipelineConfig,
 } from '../types';
+
+/** Analyze this many top-ranked clusters per requested brief */
+const GAP_ANALYSIS_BRIEF_BUFFER = 5;
+
+/** Minimum gap-analysis candidate pool for stable quality */
+const GAP_ANALYSIS_MIN_CANDIDATES = 15;
+
+/**
+ * Select top-ranked clusters for gap analysis to cap search volume.
+ */
+function selectGapAnalysisCandidates(
+  clusters: ProblemCluster[],
+  scoredProblems: ScoredProblem[],
+  maxBriefs: number
+): ProblemCluster[] {
+  const candidateLimit = Math.min(
+    clusters.length,
+    Math.max(maxBriefs * GAP_ANALYSIS_BRIEF_BUFFER, GAP_ANALYSIS_MIN_CANDIDATES)
+  );
+
+  if (candidateLimit === clusters.length) {
+    return clusters;
+  }
+
+  const clusterById = new Map(clusters.map(cluster => [cluster.id, cluster]));
+  const selected: ProblemCluster[] = [];
+  const selectedIds = new Set<string>();
+
+  for (const problem of scoredProblems) {
+    if (selected.length >= candidateLimit) break;
+    const cluster = clusterById.get(problem.id);
+    if (!cluster) continue;
+    selected.push(cluster);
+    selectedIds.add(cluster.id);
+  }
+
+  if (selected.length < candidateLimit) {
+    for (const cluster of clusters) {
+      if (selected.length >= candidateLimit) break;
+      if (selectedIds.has(cluster.id)) continue;
+      selected.push(cluster);
+      selectedIds.add(cluster.id);
+    }
+  }
+
+  return selected;
+}
 
 /**
  * Run the analyze phase
@@ -51,14 +99,29 @@ export async function runAnalyzePhase(
       };
     }
 
-    // Step 2: Score and gap analyze in parallel
-    logger.debug('Running scoring and gap analysis in parallel...');
-    const [scoredProblems, gapAnalyses] = await Promise.all([
-      scoreAll(clusters),
-      analyzeAllGaps(clusters, {
-        minFrequencyForSearch: config.minFrequencyForGap,
-      }),
-    ]);
+    // Step 2: Score clusters
+    logger.debug('Scoring clusters...');
+    const scoredProblems = await scoreAll(clusters);
+
+    // Step 3: Analyze only top-ranked clusters to reduce web-search volume
+    const gapCandidates = selectGapAnalysisCandidates(
+      clusters,
+      scoredProblems,
+      config.maxBriefs
+    );
+    logger.info(
+      {
+        totalClusters: clusters.length,
+        scoredCount: scoredProblems.length,
+        gapCandidates: gapCandidates.length,
+        maxBriefs: config.maxBriefs,
+      },
+      'Selected clusters for gap analysis'
+    );
+
+    const gapAnalyses = await analyzeAllGaps(gapCandidates, {
+      minFrequencyForSearch: config.minFrequencyForGap,
+    });
 
     // Convert gap analyses to Map
     const gapMap = new Map<string, (typeof gapAnalyses)[number]>();

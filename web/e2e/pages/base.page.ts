@@ -23,12 +23,12 @@ export abstract class BasePage {
     this.page = page;
 
     // NavBar locators (based on NavBar.tsx)
-    this.navBar = page.locator('nav');
-    this.logo = page.locator('a:has-text("ZeroToShip")');
-    this.todayLink = page.locator('nav a:has-text("Today")');
-    this.archiveLink = page.locator('nav a:has-text("Archive")');
-    this.settingsLink = page.locator('nav a:has-text("Settings")');
-    this.accountLink = page.locator('nav a:has-text("Account")');
+    this.navBar = page.getByRole('navigation', { name: /main navigation/i }).first();
+    this.logo = this.navBar.getByRole('link').first();
+    this.todayLink = this.navBar.getByRole('link', { name: 'Today' });
+    this.archiveLink = this.navBar.getByRole('link', { name: 'Archive' });
+    this.settingsLink = this.navBar.getByRole('link', { name: 'Settings' });
+    this.accountLink = this.navBar.getByRole('link', { name: 'Account' });
 
     // Main content locators
     this.mainContent = page.locator('main');
@@ -50,7 +50,7 @@ export abstract class BasePage {
    */
   async goToToday(): Promise<void> {
     await this.todayLink.click();
-    await this.page.waitForURL('/');
+    await this.page.waitForURL('/dashboard');
   }
 
   /**

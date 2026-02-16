@@ -15,9 +15,7 @@ test.describe('Input Validation', () => {
       await page.goto('/login');
 
       const emailInput = page.locator('input[type="email"], input[name="email"]');
-      const submitButton = page.locator(
-        'button[type="submit"], button:has-text("Sign In"), button:has-text("Log In")'
-      );
+      const submitButton = page.locator('button[type="submit"]').first();
 
       // Skip if login form doesn't exist on this page
       if (!(await emailInput.isVisible().catch(() => false))) {
@@ -53,9 +51,7 @@ test.describe('Input Validation', () => {
 
       const emailInput = page.locator('input[type="email"], input[name="email"]');
       const passwordInput = page.locator('input[type="password"], input[name="password"]');
-      const submitButton = page.locator(
-        'button[type="submit"], button:has-text("Sign In"), button:has-text("Log In")'
-      );
+      const submitButton = page.locator('button[type="submit"]').first();
 
       // Skip if login form doesn't exist
       if (!(await passwordInput.isVisible().catch(() => false))) {
@@ -84,7 +80,8 @@ test.describe('Input Validation', () => {
   });
 
   test.describe('Settings Form Validation', () => {
-    test('settings form validates required fields', async ({ page, setupMocks }) => {
+    test('settings form validates required fields', async ({ asFreeUser, setupMocks }) => {
+      const page = asFreeUser;
       await setupMocks(page, 'free');
 
       const settingsPage = new SettingsPage(page);
@@ -106,7 +103,8 @@ test.describe('Input Validation', () => {
       }
     });
 
-    test('settings form handles very long strings (1000+ chars)', async ({ page, setupMocks }) => {
+    test('settings form handles very long strings (1000+ chars)', async ({ asFreeUser, setupMocks }) => {
+      const page = asFreeUser;
       await setupMocks(page, 'free');
 
       const settingsPage = new SettingsPage(page);
@@ -148,7 +146,8 @@ test.describe('Input Validation', () => {
       expect(true).toBeTruthy();
     });
 
-    test('settings form handles special characters', async ({ page, setupMocks }) => {
+    test('settings form handles special characters', async ({ asFreeUser, setupMocks }) => {
+      const page = asFreeUser;
       await setupMocks(page, 'free');
 
       const settingsPage = new SettingsPage(page);
@@ -189,7 +188,8 @@ test.describe('Input Validation', () => {
       expect(true).toBeTruthy();
     });
 
-    test('XSS attempt in text fields is sanitized', async ({ page, setupMocks }) => {
+    test('XSS attempt in text fields is sanitized', async ({ asFreeUser, setupMocks }) => {
+      const page = asFreeUser;
       await setupMocks(page, 'free');
 
       const settingsPage = new SettingsPage(page);
@@ -277,7 +277,7 @@ test.describe('Input Validation', () => {
           await page.waitForLoadState('domcontentloaded');
 
           // Verify page is still functional
-          const nav = page.locator('nav');
+          const nav = page.getByRole('navigation', { name: 'Main navigation' });
           await expect(nav).toBeVisible();
         }
       } else {
@@ -286,8 +286,9 @@ test.describe('Input Validation', () => {
       }
     });
 
-    test('filter values are validated (score range 0-100)', async ({ page, setupMocks }) => {
-      await setupMocks(page, 'anonymous');
+    test('filter values are validated (score range 0-100)', async ({ asFreeUser, setupMocks }) => {
+      const page = asFreeUser;
+      await setupMocks(page, 'free');
 
       const settingsPage = new SettingsPage(page);
       await settingsPage.goto();

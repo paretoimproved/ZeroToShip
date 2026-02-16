@@ -72,7 +72,7 @@ export class IdeaDetailPage extends BasePage {
    */
   async goBack(): Promise<void> {
     await this.backLink.click();
-    await this.page.waitForURL('/');
+    await this.page.waitForURL('/dashboard');
   }
 
   /**

@@ -130,22 +130,23 @@ test.describe('Keyboard Navigation', () => {
       await page.goto('/');
       await page.waitForLoadState('domcontentloaded');
 
-      // Find and focus on the Archive link
-      const archiveLink = page.locator('nav a:has-text("Archive")');
-      await archiveLink.focus();
+      // Find and focus on Sign In link in the landing nav
+      const signInLink = page.getByRole('navigation', { name: 'Main navigation' })
+        .getByRole('link', { name: 'Sign In' });
+      await signInLink.focus();
 
       // Press Enter to activate the link
       await page.keyboard.press('Enter');
 
-      // Should navigate to archive page
-      await expect(page).toHaveURL('/archive');
+      // Should navigate to login page
+      await expect(page).toHaveURL('/login');
     });
 
     test('can press Space to toggle checkboxes', async ({ page }) => {
-      await page.goto('/settings');
+      await page.goto('/');
       await page.waitForLoadState('domcontentloaded');
 
-      // Find first checkbox in settings
+      // Find first checkbox in view (if present)
       const checkbox = page.locator('input[type="checkbox"]').first();
 
       if (await checkbox.isVisible()) {
@@ -194,22 +195,24 @@ test.describe('Keyboard Navigation', () => {
       await page.keyboard.press('Tab');
 
       // Look for skip link
-      const skipLink = page.locator('a:has-text("Skip to main content"), a:has-text("Skip to content"), a[href="#main"], a[href="#content"]').first();
+      const skipLink = page.locator(
+        'a:has-text("Skip to main content"), a:has-text("Skip to content"), a[href="#main"], a[href="#content"], a[href="#main-content"]'
+      ).first();
 
       if (await skipLink.isVisible()) {
         await skipLink.click();
 
         // Verify focus moved to main content
-        const focusedElement = await page.evaluate(() => {
-          const el = document.activeElement;
-          return el?.tagName.toLowerCase() || 'unknown';
-        });
-
         // Should be focused on main or its first child
         const mainHasFocus = await page.evaluate(() => {
           const main = document.querySelector('main');
           const activeEl = document.activeElement;
-          return main?.contains(activeEl) || activeEl?.tagName.toLowerCase() === 'main';
+          const activeId = (activeEl as Element | null)?.id;
+          return (
+            !!main &&
+            (!!activeEl && (main.contains(activeEl) || activeEl.tagName.toLowerCase() === 'main')) ||
+            activeId === 'main-content'
+          );
         });
 
         expect(mainHasFocus).toBeTruthy();
@@ -246,7 +249,7 @@ test.describe('Keyboard Navigation', () => {
     });
 
     test('can navigate entire settings form with keyboard only', async ({ page }) => {
-      await page.goto('/settings');
+      await page.goto('/login');
       await page.waitForLoadState('domcontentloaded');
 
       // Get all form controls

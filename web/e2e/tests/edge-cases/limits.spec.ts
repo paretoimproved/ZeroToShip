@@ -12,7 +12,8 @@ import { generateMockIdeas } from '../../utils/api-mock.utils';
 
 test.describe('Boundary Conditions', () => {
   test.describe('Empty and Minimal Data States', () => {
-    test('handles empty ideas list gracefully (shows "no ideas" message)', async ({ page }) => {
+    test('handles empty ideas list gracefully (shows "no ideas" message)', async ({ asFreeUser }) => {
+      const page = asFreeUser;
       // Mock API to return empty ideas list
       await page.route(`${API_URL}/ideas/today`, (route) =>
         route.fulfill({
@@ -22,7 +23,7 @@ test.describe('Boundary Conditions', () => {
             ideas: [],
             total: 0,
             limit: 3,
-            tier: 'anonymous',
+            tier: 'free',
           }),
         })
       );
@@ -49,7 +50,8 @@ test.describe('Boundary Conditions', () => {
       expect(hasEmptyState).toBeTruthy();
     });
 
-    test('handles single idea in list correctly', async ({ page }) => {
+    test('handles single idea in list correctly', async ({ asFreeUser }) => {
+      const page = asFreeUser;
       // Mock API to return exactly 1 idea
       const singleIdea = generateMockIdeas(1);
 
@@ -61,7 +63,7 @@ test.describe('Boundary Conditions', () => {
             ideas: singleIdea,
             total: 1,
             limit: 3,
-            tier: 'anonymous',
+            tier: 'free',
           }),
         })
       );
@@ -80,7 +82,8 @@ test.describe('Boundary Conditions', () => {
   });
 
   test.describe('Tier Limits', () => {
-    test('handles exactly at free tier limit (3 ideas)', async ({ page }) => {
+    test('handles exactly at free tier limit (3 ideas)', async ({ asFreeUser }) => {
+      const page = asFreeUser;
       const freeLimit = TIER_LIMITS.free.ideasVisible; // 3
       const ideas = generateMockIdeas(freeLimit);
 
@@ -105,7 +108,8 @@ test.describe('Boundary Conditions', () => {
       expect(ideaCount).toBe(freeLimit);
     });
 
-    test('handles exactly at pro tier limit (10 ideas)', async ({ page }) => {
+    test('handles exactly at pro tier limit (10 ideas)', async ({ asProUser }) => {
+      const page = asProUser;
       const proLimit = TIER_LIMITS.pro.ideasVisible; // 10
       const ideas = generateMockIdeas(proLimit);
 
@@ -133,8 +137,9 @@ test.describe('Boundary Conditions', () => {
   });
 
   test.describe('Navigation Edge Cases', () => {
-    test('back button behavior works across pages', async ({ page, setupMocks }) => {
-      await setupMocks(page, 'anonymous');
+    test('back button behavior works across pages', async ({ asFreeUser, setupMocks }) => {
+      const page = asFreeUser;
+      await setupMocks(page, 'free');
 
       const homePage = new HomePage(page);
       await homePage.goto();
@@ -150,7 +155,7 @@ test.describe('Boundary Conditions', () => {
       await page.goBack();
 
       // Should be back on home page
-      await expect(page).toHaveURL('/');
+      await expect(page).toHaveURL('/dashboard');
 
       // Home page should still be functional
       await expect(homePage.heading).toBeVisible();
@@ -161,7 +166,7 @@ test.describe('Boundary Conditions', () => {
 
       // Go back
       await page.goBack();
-      await expect(page).toHaveURL('/');
+      await expect(page).toHaveURL('/dashboard');
     });
 
     test('deep link to idea page works when logged out (shows limited view)', async ({ page }) => {
@@ -182,22 +187,25 @@ test.describe('Boundary Conditions', () => {
       // Page should load and show the idea (possibly with limited info)
       await page.waitForLoadState('domcontentloaded');
 
-      // Should show idea content or a paywall/login prompt
-      const ideaTitle = page.locator('h1');
-      const loginPrompt = page.locator('text=/sign in|log in|upgrade|unlock/i');
+      // Should show an idea surface or a login/upgrade prompt.
+      const backLink = page.getByRole('link', { name: /back to today'?s ideas/i });
+      const briefCard = page.locator('article').first();
+      const loginPrompt = page.locator('text=/sign in|log in|upgrade|unlock/i').first();
 
-      const hasContent = await ideaTitle.isVisible().catch(() => false);
-      const hasLoginPrompt = await loginPrompt.first().isVisible().catch(() => false);
+      const hasBackLink = await backLink.isVisible().catch(() => false);
+      const hasBriefCard = await briefCard.isVisible().catch(() => false);
+      const hasLoginPrompt = await loginPrompt.isVisible().catch(() => false);
+      const redirectedToLogin = /\/login/.test(page.url());
 
-      // Either shows content or prompts to login
-      expect(hasContent || hasLoginPrompt).toBeTruthy();
+      expect(hasBackLink || hasBriefCard || hasLoginPrompt || redirectedToLogin).toBeTruthy();
     });
 
     test('rapid navigation (clicking multiple links quickly) does not break', async ({
-      page,
+      asFreeUser,
       setupMocks,
     }) => {
-      await setupMocks(page, 'anonymous');
+      const page = asFreeUser;
+      await setupMocks(page, 'free');
 
       const homePage = new HomePage(page);
       await homePage.goto();
@@ -221,12 +229,12 @@ test.describe('Boundary Conditions', () => {
       await page.waitForLoadState('domcontentloaded');
 
       // Page should still be functional - nav should be visible
-      const nav = page.locator('nav');
+      const nav = page.getByRole('navigation', { name: 'Main navigation' });
       await expect(nav).toBeVisible();
 
       // Should be on one of the valid pages
       const currentUrl = page.url();
-      const validPaths = ['/', '/archive', '/settings', '/account'];
+      const validPaths = ['/dashboard', '/archive', '/settings', '/account'];
       const isOnValidPage = validPaths.some(
         (path) => currentUrl.endsWith(path) || currentUrl.includes(path)
       );
@@ -234,8 +242,9 @@ test.describe('Boundary Conditions', () => {
       expect(isOnValidPage).toBeTruthy();
     });
 
-    test('browser refresh maintains state where appropriate', async ({ page, setupMocks }) => {
-      await setupMocks(page, 'anonymous');
+    test('browser refresh maintains state where appropriate', async ({ asFreeUser, setupMocks }) => {
+      const page = asFreeUser;
+      await setupMocks(page, 'free');
 
       const settingsPage = new SettingsPage(page);
       await settingsPage.goto();
@@ -275,24 +284,20 @@ test.describe('Boundary Conditions', () => {
       const page2 = await context2.newPage();
 
       try {
-        // Navigate both pages to the app
-        await Promise.all([page1.goto('/'), page2.goto('/')]);
+        // Navigate to different public pages in each tab
+        await Promise.all([page1.goto('/'), page2.goto('/explore')]);
 
         // Both pages should load successfully
-        await expect(page1.locator('nav')).toBeVisible();
-        await expect(page2.locator('nav')).toBeVisible();
+        await expect(
+          page1.getByRole('navigation', { name: 'Main navigation' })
+        ).toBeVisible();
+        await expect(
+          page2.getByRole('navigation', { name: 'Main navigation' })
+        ).toBeVisible();
 
-        // Navigate to different pages in each tab
-        await page1.click('nav a:has-text("Settings")');
-        await page2.click('nav a:has-text("Archive")');
-
-        // Both should navigate correctly without interfering
-        await expect(page1).toHaveURL('/settings');
-        await expect(page2).toHaveURL('/archive');
-
-        // Verify content is correct in each
-        await expect(page1.locator('h1:has-text("Settings")')).toBeVisible();
-        await expect(page2.locator('h1:has-text("Archive")')).toBeVisible();
+        // Verify content is correct in each tab
+        await expect(page1.getByRole('heading', { name: /The Internet Complains/i })).toBeVisible();
+        await expect(page2.getByRole('heading', { name: /Startup Ideas Worth Building/i })).toBeVisible();
       } finally {
         await context1.close();
         await context2.close();

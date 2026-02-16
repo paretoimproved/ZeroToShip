@@ -9,6 +9,82 @@ import path from 'path';
 
 // Resolve auth paths relative to e2e directory
 const e2eDir = path.dirname(__dirname);
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+
+function buildMockUser(tier: 'free' | 'pro' | 'enterprise') {
+  const label = tier.charAt(0).toUpperCase() + tier.slice(1);
+  return {
+    id: `${tier}-user-123`,
+    email: `${tier}@test.zerotoship.dev`,
+    name: `${label} User`,
+    tier,
+    isAdmin: tier === 'enterprise',
+    preferences: {
+      emailFrequency: 'daily',
+    },
+  };
+}
+
+async function attachAuthenticatedRoutes(
+  page: Page,
+  tier: 'free' | 'pro' | 'enterprise'
+): Promise<void> {
+  let emailFrequency: 'daily' | 'weekly' | 'never' = 'daily';
+
+  await page.route(`${API_URL}/auth/me`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ...buildMockUser(tier),
+        preferences: { emailFrequency },
+      }),
+    });
+  });
+
+  await page.route(`${API_URL}/user/preferences`, async (route) => {
+    if (route.request().method() === 'PUT' || route.request().method() === 'PATCH') {
+      const payload = route.request().postDataJSON() as
+        | { emailFrequency?: 'daily' | 'weekly' | 'never' }
+        | undefined;
+      if (payload?.emailFrequency) {
+        emailFrequency = payload.emailFrequency;
+      }
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ...buildMockUser(tier),
+        preferences: { emailFrequency },
+      }),
+    });
+  });
+
+  await page.route(`${API_URL}/ideas/saved`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([]),
+    });
+  });
+
+  await page.route(`${API_URL}/user/subscription`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: `sub_${tier}_123`,
+        userId: `${tier}-user-123`,
+        plan: tier,
+        status: 'active',
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        cancelAtPeriodEnd: false,
+      }),
+    });
+  });
+}
 
 export interface AuthFixtures {
   /**
@@ -67,13 +143,12 @@ export const test = base.extend<AuthFixtures>({
       context = await browser.newContext();
     }
 
-    const page = await context.newPage();
-
-    // Inject fake auth token so isAuthenticated() returns true
-    await page.goto('/');
-    await page.evaluate((tier) => {
+    await context.addInitScript((tier: string) => {
       localStorage.setItem('zerotoship_token', `fake-${tier}-token`);
     }, 'free');
+
+    const page = await context.newPage();
+    await attachAuthenticatedRoutes(page, 'free');
 
     await use(page);
 
@@ -96,13 +171,12 @@ export const test = base.extend<AuthFixtures>({
       context = await browser.newContext();
     }
 
-    const page = await context.newPage();
-
-    // Inject fake auth token so isAuthenticated() returns true
-    await page.goto('/');
-    await page.evaluate((tier) => {
+    await context.addInitScript((tier: string) => {
       localStorage.setItem('zerotoship_token', `fake-${tier}-token`);
     }, 'pro');
+
+    const page = await context.newPage();
+    await attachAuthenticatedRoutes(page, 'pro');
 
     await use(page);
 
@@ -125,13 +199,12 @@ export const test = base.extend<AuthFixtures>({
       context = await browser.newContext();
     }
 
-    const page = await context.newPage();
-
-    // Inject fake auth token so isAuthenticated() returns true
-    await page.goto('/');
-    await page.evaluate((tier) => {
+    await context.addInitScript((tier: string) => {
       localStorage.setItem('zerotoship_token', `fake-${tier}-token`);
     }, 'enterprise');
+
+    const page = await context.newPage();
+    await attachAuthenticatedRoutes(page, 'enterprise');
 
     await use(page);
 

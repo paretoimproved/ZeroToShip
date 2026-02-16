@@ -64,6 +64,10 @@ export class ArchivePage extends BasePage {
   async waitForLoad(): Promise<void> {
     await this.page.waitForLoadState('domcontentloaded');
     await expect(this.heading).toBeVisible({ timeout: 10000 });
+    await Promise.race([
+      this.ideaCards.first().waitFor({ state: 'visible', timeout: 10000 }).catch(() => {}),
+      this.emptyState.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {}),
+    ]);
   }
 
   /**
@@ -95,9 +99,17 @@ export class ArchivePage extends BasePage {
    * Set minimum score filter
    */
   async setMinScore(score: number): Promise<void> {
-    // Set the slider value via JavaScript
+    // Use native setter so React-controlled range inputs update reliably.
     await this.minScoreSlider.evaluate((el: HTMLInputElement, value: number) => {
-      el.value = String(value);
+      const nativeSetter = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        'value'
+      )?.set;
+      if (nativeSetter) {
+        nativeSetter.call(el, String(value));
+      } else {
+        el.value = String(value);
+      }
       el.dispatchEvent(new Event('input', { bubbles: true }));
       el.dispatchEvent(new Event('change', { bubbles: true }));
     }, score);

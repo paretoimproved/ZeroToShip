@@ -8,31 +8,33 @@ Work through tiers in order. Within each tier, issues are sequenced by dependenc
 
 ### Tier 1 — Foundations (do first, other things depend on these)
 
-- [ ] **Issue 1**: Centralized Config Module
-- [ ] **Issue 6**: Typed Error Classes
-- [ ] **Issue 7**: Named Constants
+- [x] **Issue 1**: Centralized Config Module — `src/config/env.ts` with Zod validation, lazy singleton, all env vars typed
+- [x] **Issue 6**: Typed Error Classes — `src/lib/errors.ts` with ZeroToShipError hierarchy (ScraperError, AnalysisError, DeliveryError, ApiError), severity levels, type guards
+- [x] **Issue 7**: Named Constants — DEFAULT_SIMILARITY_THRESHOLD, SINGLE_BRIEF_MAX_TOKENS, MAX_POSTS_PER_SOURCE, etc. extracted across all modules
 
 ### Tier 2 — Core Architecture
 
-- [ ] **Issue 5**: Scraper DRY Refactor
-- [ ] **Issue 13**: Parallel Scrapers
-- [ ] **Issue 2**: Pipeline Intermediate Persistence
-- [ ] **Issue 15**: Scraper Result Limits
+- [x] **Issue 5**: Scraper DRY Refactor — `src/scrapers/shared.ts` with truncateResults, getCutoffDate, stripHtml, wrapScraperError, withScraperErrorHandling
+- [x] **Issue 13**: Parallel Scrapers — `Promise.allSettled()` in `src/scheduler/phases/scrape.ts`
+- [x] **Issue 2**: Pipeline Intermediate Persistence — DB-based via `src/scheduler/utils/persistence.ts` (savePhaseResult, loadPhaseResult, updatePhaseStatus, getResumePhase)
+- [x] **Issue 15**: Scraper Result Limits — MAX_POSTS_PER_SOURCE=500 in shared.ts, used by all scrapers
 
 ### Tier 3 — API & Frontend
 
-- [ ] **Issue 8**: Thin Controllers (ideas.ts, billing.ts)
-- [ ] **Issue 16**: API Pagination
-- [ ] **Issue 4**: Shared Types + npm Workspaces
-- [ ] **Issue 3**: Auth Audit + Integration Tests
+- [x] **Issue 8**: Thin Controllers — ideas.ts and billing.ts delegate to `src/api/services/ideas.ts` and `src/api/services/billing.ts`
+- [x] **Issue 16**: API Pagination — limit/offset via PaginationQuerySchema on archive endpoint, page/pageSize/hasMore in response
+- [x] **Issue 4**: Shared Types + npm Workspaces — `packages/shared/` with `@zerotoship/shared`, workspaces configured in root package.json
+- [x] **Issue 3**: Auth Audit + Integration Tests — requireAuth/optionalAuth middleware on all routes, `tests/api/auth.test.ts` with tier access control tests
 
 ### Tier 4 — Testing (do after refactoring)
 
-- [ ] **Issue 11**: Pipeline Integration Tests
-- [ ] **Issue 10**: Stronger API Test Assertions
-- [ ] **Issue 9**: Delivery Module Tests
-- [ ] **Issue 14**: Pipeline-Level Dedup
-- [ ] **Issue 12**: Frontend web/lib/ Unit Tests
+- [x] **Issue 11**: Pipeline Integration Tests — `tests/scheduler/orchestrator.test.ts` + `tests/scheduler/phases/` (scrape, analyze, generate, deliver)
+- [x] **Issue 10**: Stronger API Test Assertions — body assertions (data.page, data.pageSize, ideas.length, brief contents), not just status codes
+- [x] **Issue 9**: Delivery Module Tests — `tests/delivery/email.test.ts` with snapshot tests, Resend mocks, batch/tier tests
+- [x] **Issue 14**: Pipeline-Level Dedup — `src/analysis/score-cache.ts` with 48-hour TTL caching by URL/hash
+- [x] **Issue 12**: Frontend web/lib/ Unit Tests — `web/lib/__tests__/` with analytics, billing, oauth, api, auth, redirect tests
+
+**Status: 16/16 complete** — All issues resolved between 2026-02-09 and 2026-02-12.
 
 ---
 

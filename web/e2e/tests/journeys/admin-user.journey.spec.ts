@@ -189,7 +189,7 @@ test.describe('Journey: Admin User', () => {
 
       // Should show tier options
       const freeOption = page.locator('button:has-text("Free")');
-      const proOption = page.locator('button:has-text("Pro")');
+      const proOption = page.locator('button:has-text("Builder")');
       const enterpriseOption = page.locator('button:has-text("Enterprise")');
       const anonymousOption = page.locator('button:has-text("Anonymous")');
 

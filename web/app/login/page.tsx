@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { login, loginWithOAuth } from "@/lib/auth";
 import { trackLoginCompleted } from "@/lib/analytics";
@@ -10,8 +10,9 @@ import { Spinner } from "@/components/icons";
 import { useToast } from "@/components/ToastProvider";
 import { getPostAuthRedirect, sanitizeNextPath } from "@/lib/redirect";
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isAuthenticated, isLoading, loginWithGoogleCode } = useAuth();
   const toast = useToast();
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +40,10 @@ export default function LoginPage() {
       sessionStorage.setItem("z2s_next", next);
     }
   }, []);
+
+  const redirectTo = getPostAuthRedirect(
+    searchParams.get("next") || (typeof window !== "undefined" ? sessionStorage.getItem("z2s_next") : null)
+  );
 
   // Detect OAuth callback (URL has ?code= or #access_token after provider redirect)
   const [isOAuthCallback, setIsOAuthCallback] = useState(() => {
@@ -150,5 +155,20 @@ export default function LoginPage() {
         />
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4">
+          <Spinner className="h-8 w-8 text-primary-500" />
+          <p className="text-sm text-gray-500 dark:text-gray-400">Loading...</p>
+        </div>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
   );
 }

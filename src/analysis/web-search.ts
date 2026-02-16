@@ -39,6 +39,11 @@ export interface WebSearchConfig {
   braveApiKey?: string;
   maxResults?: number;
   rateLimitDelay?: number;
+  maxRetries?: number;
+  retryBaseDelayMs?: number;
+  cacheTtlMs?: number;
+  minUniqueResultsBeforeExpansion?: number;
+  maxQueriesPerProblem?: number;
 }
 
 const DEFAULT_CONFIG: Required<WebSearchConfig> = {
@@ -47,7 +52,36 @@ const DEFAULT_CONFIG: Required<WebSearchConfig> = {
   braveApiKey: '',
   maxResults: 10,
   rateLimitDelay: 1000,
+  maxRetries: 2,
+  retryBaseDelayMs: 1200,
+  cacheTtlMs: 30 * 60 * 1000,
+  minUniqueResultsBeforeExpansion: 8,
+  maxQueriesPerProblem: 3,
 };
+
+/** Maximum backoff delay for retry attempts */
+const MAX_RETRY_BACKOFF_MS = 12_000;
+
+interface CacheEntry {
+  response: SearchResponse;
+  expiresAt: number;
+}
+
+class SearchRequestError extends Error {
+  readonly status: number;
+  readonly retryAfterMs: number | null;
+
+  constructor(
+    message: string,
+    status: number,
+    retryAfterMs: number | null = null
+  ) {
+    super(message);
+    this.name = 'SearchRequestError';
+    this.status = status;
+    this.retryAfterMs = retryAfterMs;
+  }
+}
 
 /**
  * Extract domain from URL
@@ -100,11 +134,33 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
+ * Parse Retry-After header value to milliseconds
+ */
+function parseRetryAfterMs(value: string | null): number | null {
+  if (!value) return null;
+
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return Math.round(seconds * 1000);
+  }
+
+  const retryDateMs = Date.parse(value);
+  if (!Number.isNaN(retryDateMs)) {
+    return Math.max(0, retryDateMs - Date.now());
+  }
+
+  return null;
+}
+
+/**
  * Web Search Client
  */
 export class WebSearchClient {
   private config: Required<WebSearchConfig>;
-  private lastRequestTime = 0;
+  private static requestTurn: Promise<void> = Promise.resolve();
+  private static lastRequestAt = 0;
+  private static responseCache = new Map<string, CacheEntry>();
+  private static inFlight = new Map<string, Promise<SearchResponse>>();
 
   constructor(config: WebSearchConfig = {}) {
     this.config = {
@@ -140,12 +196,24 @@ export class WebSearchClient {
    * Rate limit requests
    */
   private async rateLimit(): Promise<void> {
-    const now = Date.now();
-    const elapsed = now - this.lastRequestTime;
-    if (elapsed < this.config.rateLimitDelay) {
-      await sleep(this.config.rateLimitDelay - elapsed);
+    const previousTurn = WebSearchClient.requestTurn;
+    let releaseTurn: () => void = () => {};
+    const currentTurn = new Promise<void>(resolve => {
+      releaseTurn = resolve;
+    });
+    WebSearchClient.requestTurn = currentTurn;
+
+    await previousTurn;
+    try {
+      const now = Date.now();
+      const elapsed = now - WebSearchClient.lastRequestAt;
+      if (elapsed < this.config.rateLimitDelay) {
+        await sleep(this.config.rateLimitDelay - elapsed);
+      }
+      WebSearchClient.lastRequestAt = Date.now();
+    } finally {
+      releaseTurn();
     }
-    this.lastRequestTime = Date.now();
   }
 
   /**
@@ -162,7 +230,11 @@ export class WebSearchClient {
     const response = await fetch(`https://serpapi.com/search?${params}`);
 
     if (!response.ok) {
-      throw new Error(`SerpAPI error: ${response.status} ${response.statusText}`);
+      throw new SearchRequestError(
+        `SerpAPI error: ${response.status} ${response.statusText}`,
+        response.status,
+        parseRetryAfterMs(response.headers?.get('retry-after') ?? null)
+      );
     }
 
     const data = await response.json() as {
@@ -209,7 +281,11 @@ export class WebSearchClient {
     });
 
     if (!response.ok) {
-      throw new Error(`Brave Search error: ${response.status} ${response.statusText}`);
+      throw new SearchRequestError(
+        `Brave Search error: ${response.status} ${response.statusText}`,
+        response.status,
+        parseRetryAfterMs(response.headers?.get('retry-after') ?? null)
+      );
     }
 
     const data = await response.json() as {
@@ -272,9 +348,9 @@ export class WebSearchClient {
   }
 
   /**
-   * Execute a search query with automatic fallback
+   * Execute a search query against the configured provider with fallback
    */
-  async search(query: string): Promise<SearchResponse> {
+  private async executeSearch(query: string): Promise<SearchResponse> {
     await this.rateLimit();
 
     const provider = this.getProvider();
@@ -283,8 +359,9 @@ export class WebSearchClient {
       try {
         return await this.searchSerpApi(query);
       } catch (error) {
-        if (this.config.braveApiKey) {
+        if (this.config.braveApiKey && !(error instanceof SearchRequestError && error.status === 429)) {
           logger.warn({ err: error, query }, 'SerpAPI failed, falling back to Brave Search');
+          await this.rateLimit();
           return this.searchBrave(query);
         }
         throw error;
@@ -299,16 +376,143 @@ export class WebSearchClient {
   }
 
   /**
+   * Retry policy for transient search failures.
+   */
+  private isRetryableError(error: unknown): boolean {
+    if (error instanceof SearchRequestError) {
+      if (error.status === 429 || error.status === 408) {
+        return true;
+      }
+      return error.status >= 500 && error.status < 600;
+    }
+
+    return error instanceof TypeError;
+  }
+
+  /**
+   * Compute retry delay using Retry-After and exponential backoff.
+   */
+  private getRetryDelayMs(error: unknown, attempt: number): number {
+    const exponentialDelay = Math.min(
+      this.config.retryBaseDelayMs * Math.pow(2, attempt),
+      MAX_RETRY_BACKOFF_MS
+    );
+
+    if (error instanceof SearchRequestError && error.retryAfterMs !== null) {
+      return Math.max(error.retryAfterMs, exponentialDelay);
+    }
+
+    return exponentialDelay;
+  }
+
+  private getCacheKey(query: string): string {
+    const provider = this.getProvider();
+    return `${provider}:${this.config.maxResults}:${query.trim().toLowerCase()}`;
+  }
+
+  private getCachedResponse(cacheKey: string): SearchResponse | null {
+    const cached = WebSearchClient.responseCache.get(cacheKey);
+    if (!cached) {
+      return null;
+    }
+
+    if (cached.expiresAt <= Date.now()) {
+      WebSearchClient.responseCache.delete(cacheKey);
+      return null;
+    }
+
+    return {
+      ...cached.response,
+      results: [...cached.response.results],
+      searchedAt: new Date(cached.response.searchedAt),
+    };
+  }
+
+  private setCachedResponse(cacheKey: string, response: SearchResponse): void {
+    if (this.config.cacheTtlMs <= 0) {
+      return;
+    }
+
+    WebSearchClient.responseCache.set(cacheKey, {
+      response: {
+        ...response,
+        results: [...response.results],
+        searchedAt: new Date(response.searchedAt),
+      },
+      expiresAt: Date.now() + this.config.cacheTtlMs,
+    });
+  }
+
+  /**
+   * Execute a search query with cache, in-flight dedupe, and retry handling.
+   */
+  async search(query: string): Promise<SearchResponse> {
+    const trimmedQuery = query.trim();
+    const cacheKey = this.getCacheKey(trimmedQuery);
+
+    const cached = this.getCachedResponse(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const inFlight = WebSearchClient.inFlight.get(cacheKey);
+    if (inFlight) {
+      return inFlight;
+    }
+
+    const request = (async () => {
+      let lastError: unknown = null;
+      const maxAttempts = this.config.maxRetries + 1;
+
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+          const response = await this.executeSearch(trimmedQuery);
+          this.setCachedResponse(cacheKey, response);
+          return response;
+        } catch (error) {
+          lastError = error;
+
+          if (attempt === maxAttempts - 1 || !this.isRetryableError(error)) {
+            throw error;
+          }
+
+          const delayMs = this.getRetryDelayMs(error, attempt);
+          logger.warn(
+            { err: error, query: trimmedQuery, attempt: attempt + 1, delayMs },
+            'Search request failed; retrying'
+          );
+          await sleep(delayMs);
+        }
+      }
+
+      throw lastError instanceof Error ? lastError : new Error('Search failed');
+    })();
+
+    WebSearchClient.inFlight.set(cacheKey, request);
+    try {
+      return await request;
+    } finally {
+      WebSearchClient.inFlight.delete(cacheKey);
+    }
+  }
+
+  /**
    * Execute multiple search queries for a problem
    */
   async searchForProblem(problemStatement: string): Promise<SearchResponse[]> {
-    const queries = generateSearchQueries(problemStatement);
+    const queries = generateSearchQueries(problemStatement)
+      .slice(0, this.config.maxQueriesPerProblem);
     const results: SearchResponse[] = [];
 
     for (const query of queries) {
       try {
         const response = await this.search(query);
         results.push(response);
+
+        const uniqueResults = WebSearchClient.deduplicateResults(results).length;
+        if (uniqueResults >= this.config.minUniqueResultsBeforeExpansion) {
+          break;
+        }
       } catch (error) {
         logger.warn({ err: error, query }, 'Search failed for query');
         // Continue with other queries
@@ -344,5 +548,15 @@ export class WebSearchClient {
    */
   getActiveProvider(): 'serpapi' | 'brave' | 'mock' {
     return this.getProvider();
+  }
+
+  /**
+   * Test-only helper to reset static shared state.
+   */
+  static resetForTesting(): void {
+    WebSearchClient.requestTurn = Promise.resolve();
+    WebSearchClient.lastRequestAt = 0;
+    WebSearchClient.responseCache.clear();
+    WebSearchClient.inFlight.clear();
   }
 }
