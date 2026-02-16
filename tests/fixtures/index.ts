@@ -72,7 +72,7 @@ export const mockIdea: ApiIdeaBrief = makeIdeaBrief();
  */
 export function makeGenerationBrief(overrides: Partial<GenerationIdeaBrief> = {}): GenerationIdeaBrief {
   return {
-    id: 'brief_test_001',
+    id: 'b0000000-0000-0000-0000-000000000001',
     name: 'TestApp',
     tagline: 'A test idea for testing purposes',
     priorityScore: 8.5,
@@ -130,7 +130,7 @@ export function makeGenerationBrief(overrides: Partial<GenerationIdeaBrief> = {}
 export function makeGenerationBriefs(count: number): GenerationIdeaBrief[] {
   return Array.from({ length: count }, (_, i) =>
     makeGenerationBrief({
-      id: `brief_${i}`,
+      id: `b0000000-0000-0000-0000-${String(i + 1).padStart(12, '0')}`,
       name: `Idea ${i + 1}`,
       tagline: `Tagline for idea ${i + 1}`,
       priorityScore: 10 - i * 0.5,

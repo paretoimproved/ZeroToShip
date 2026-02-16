@@ -232,6 +232,29 @@ describe('Generate Phase', () => {
       expect(rows).toHaveLength(1);
       expect(rows[0].category).toBe('x'.repeat(100));
     });
+
+    it('queues briefs for review when publish gate threshold is not met', async () => {
+      const { generateAllBriefs } = await import('../../../src/generation/brief-generator');
+      const { db } = await import('../../../src/api/db/client');
+
+      vi.mocked(generateAllBriefs).mockResolvedValue([makeGenerationBrief({ name: 'NeedsReview' })]);
+
+      const result = await runGeneratePhase(
+        'test-run-publish-gate',
+        makeConfig({ publishGate: { enabled: true, confidenceThreshold: 0.95 } }),
+        [makeScoredProblem({ id: 'sp-gate' })],
+        new Map([['sp-gate', makeGap('sp-gate')]])
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.data?.briefs?.[0]?.generationMeta?.publishDecision).toBe('review');
+      expect(result.data?.diagnostics?.publishGate?.enabled).toBe(true);
+      expect(result.data?.diagnostics?.publishGate?.needsReviewCount).toBe(1);
+
+      const insertReturn = vi.mocked(db.insert).mock.results[0]?.value as any;
+      const rows = insertReturn.values.mock.calls[0][0] as Array<{ isPublished: boolean }>;
+      expect(rows[0].isPublished).toBe(false);
+    });
   });
 
   describe('error handling', () => {

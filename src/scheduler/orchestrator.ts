@@ -79,6 +79,10 @@ export const DEFAULT_PIPELINE_CONFIG: PipelineConfig = {
   minPriorityScore: DEFAULT_MIN_PRIORITY_SCORE,
   dryRun: false,
   verbose: false,
+  publishGate: {
+    enabled: false,
+    confidenceThreshold: 0.85,
+  },
 };
 
 /**
@@ -562,14 +566,34 @@ export async function runPipeline(
 
   // Phase 4: Deliver (degraded by default — delivery failures don't stop pipeline)
   metrics.startPhase('deliver');
-  const deliverResult = generateResult.data?.briefs?.length
-    ? await runDeliverPhase(runId, fullConfig, generateResult.data.briefs)
-    : { success: true, data: { subscriberCount: 0, sent: 0, failed: 0, dryRun: fullConfig.dryRun }, duration: 0, phase: 'deliver' as const, timestamp: new Date() };
+  const publishGateEnabled = Boolean(fullConfig.publishGate?.enabled);
+  const needsPublishReview = publishGateEnabled
+    && (generateResult.data?.diagnostics?.publishGate?.needsReviewCount ?? 0) > 0;
+
+  const deliverResult = needsPublishReview
+    ? {
+      success: true,
+      data: {
+        subscriberCount: 0,
+        sent: 0,
+        failed: 0,
+        dryRun: fullConfig.dryRun,
+        skipped: true,
+        skippedReason: 'publish_gate_review_required' as const,
+      },
+      duration: 0,
+      phase: 'deliver' as const,
+      timestamp: new Date(),
+    }
+    : generateResult.data?.briefs?.length
+      ? await runDeliverPhase(runId, fullConfig, generateResult.data.briefs)
+      : { success: true, data: { subscriberCount: 0, sent: 0, failed: 0, dryRun: fullConfig.dryRun }, duration: 0, phase: 'deliver' as const, timestamp: new Date() };
   metrics.completePhase('deliver', deliverResult.success, deliverResult.data?.sent || 0);
 
   if (deliverResult.success) {
     await savePhaseResult(runId, 'deliver', deliverResult.data);
-    await updatePhaseStatus(runId, 'deliver', 'completed');
+    const deliverOutcome = deliverResult.data?.skipped ? 'blocked' : 'completed';
+    await updatePhaseStatus(runId, 'deliver', deliverOutcome);
     if (deliverResult.data) {
       await updatePhaseStats(runId, 'deliver', {
         sent: deliverResult.data.sent,
@@ -629,6 +653,7 @@ export async function runPipeline(
   // Update the pipeline run row with final results
   try {
     const briefSummaries = result.phases.generate.data?.briefs?.map(b => ({
+      id: b.id,
       name: b.name,
       tagline: b.tagline,
       priorityScore: b.priorityScore,
@@ -644,13 +669,21 @@ export async function runPipeline(
           graphRetriedSections: b.generationMeta.graphRetriedSections,
           graphTrace: b.generationMeta.graphTrace,
           handoffMeta: b.generationMeta.handoffMeta,
+          publishDecision: b.generationMeta.publishDecision,
+          publishConfidence: b.generationMeta.publishConfidence,
         }
         : null,
     })) || [];
 
+    const finalStatus = deliverResult.data?.skipped
+      ? 'needs_review'
+      : result.success
+        ? 'completed'
+        : 'failed';
+
     await db.update(pipelineRuns)
       .set({
-        status: result.success ? 'completed' : 'failed',
+        status: finalStatus,
         completedAt: result.completedAt,
         stats: result.stats,
         success: result.success,

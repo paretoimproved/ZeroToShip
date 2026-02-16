@@ -7,15 +7,38 @@ import { login, loginWithOAuth } from "@/lib/auth";
 import { trackLoginCompleted } from "@/lib/analytics";
 import AuthForm from "@/components/AuthForm";
 import { Spinner } from "@/components/icons";
+import { useToast } from "@/components/ToastProvider";
+import { getPostAuthRedirect, sanitizeNextPath } from "@/lib/redirect";
 
 export default function LoginPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading, loginWithGoogleCode } = useAuth();
+  const toast = useToast();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [defaultEmail, setDefaultEmail] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   const [subtitle, setSubtitle] = useState<string | undefined>(undefined);
+  const [redirectTo, setRedirectTo] = useState<string>(() => {
+    if (typeof window === "undefined") return "/dashboard";
+    const params = new URLSearchParams(window.location.search);
+    const next = sanitizeNextPath(params.get("next"));
+    const stored = sanitizeNextPath(sessionStorage.getItem("z2s_next"));
+    return getPostAuthRedirect(next || stored);
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const next = sanitizeNextPath(params.get("next"));
+    const stored = sanitizeNextPath(sessionStorage.getItem("z2s_next"));
+    const destination = getPostAuthRedirect(next || stored);
+
+    setRedirectTo(destination);
+    if (next) {
+      sessionStorage.setItem("z2s_next", next);
+    }
+  }, []);
 
   // Detect OAuth callback (URL has ?code= or #access_token after provider redirect)
   const [isOAuthCallback, setIsOAuthCallback] = useState(() => {
@@ -29,9 +52,10 @@ export default function LoginPage() {
   // Redirect to dashboard if already authenticated (e.g. after OAuth callback)
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.replace("/dashboard");
+      sessionStorage.removeItem("z2s_next");
+      router.replace(redirectTo);
     }
-  }, [isLoading, isAuthenticated, router]);
+  }, [isLoading, isAuthenticated, router, redirectTo]);
 
   // Pull query params for post-signup guidance and email prefill.
   useEffect(() => {
@@ -39,11 +63,15 @@ export default function LoginPage() {
     const params = new URLSearchParams(window.location.search);
     const email = params.get("email") || "";
     const fromSignup = params.get("signup") === "1";
+    const next = sanitizeNextPath(params.get("next"));
 
     if (email) setDefaultEmail(email);
     if (fromSignup) {
       setNotice("Account created. Confirm your email, then sign in.");
       setSubtitle("Check your email for the confirmation link.");
+    }
+    if (next) {
+      sessionStorage.setItem("z2s_next", next);
     }
   }, []);
 
@@ -57,6 +85,10 @@ export default function LoginPage() {
   const handleOAuth = async (provider: "google" | "github") => {
     setError(null);
     trackLoginCompleted(provider);
+    // Persist where the user intended to go across the redirect-based flow.
+    if (redirectTo && redirectTo !== "/dashboard") {
+      sessionStorage.setItem("z2s_next", redirectTo);
+    }
     await loginWithOAuth(provider);
   };
 
@@ -64,7 +96,9 @@ export default function LoginPage() {
     setError(null);
     trackLoginCompleted("google");
     await loginWithGoogleCode(code);
-    router.push("/dashboard");
+    toast.success("Signed in", "Welcome back.");
+    sessionStorage.removeItem("z2s_next");
+    router.push(redirectTo);
   };
 
   const handleSubmit = async (data: { email: string; password: string }) => {
@@ -74,7 +108,9 @@ export default function LoginPage() {
     try {
       await login(data.email, data.password);
       trackLoginCompleted("email");
-      router.push("/dashboard");
+      toast.success("Signed in", "Welcome back.");
+      sessionStorage.removeItem("z2s_next");
+      router.push(redirectTo);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {

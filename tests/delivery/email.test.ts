@@ -47,7 +47,7 @@ const normalizeForSnapshot = (s: string) =>
 // ---------------------------------------------------------------------------
 
 const createMockBrief = (overrides: Partial<IdeaBrief> = {}): IdeaBrief =>
-  makeGenerationBrief({ id: 'brief_stable_id', ...overrides });
+  makeGenerationBrief({ id: 'b0000000-0000-0000-0000-0000000000aa', ...overrides });
 
 const createMockBriefs = (count: number): IdeaBrief[] =>
   makeGenerationBriefs(count);

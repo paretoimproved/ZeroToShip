@@ -110,7 +110,7 @@ export default function IdeaBriefCard({
                 "min-w-0 max-w-full sm:max-w-[360px] truncate whitespace-nowrap",
               ].join(" ")}
             >
-              {revenueEstimate}
+              <span className="min-w-0 truncate whitespace-nowrap">{revenueEstimate}</span>
             </span>
             {bookmarkSlot}
           </div>

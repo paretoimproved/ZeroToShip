@@ -56,6 +56,16 @@ export interface GeneratePhaseDiagnostics {
   fallbackReasonCounts: Record<FallbackReasonCode, number>;
   qualityFailureReasonCounts: Record<QualityFailureReasonCode, number>;
   /**
+   * Optional Phase 5 artifact: records publish-gate behavior.
+   * When enabled, briefs below the confidence threshold are queued for review.
+   */
+  publishGate?: {
+    enabled: boolean;
+    confidenceThreshold: number;
+    autoPublishCount: number;
+    needsReviewCount: number;
+  };
+  /**
    * Optional Phase 3 artifact: records when graph generation halts early due
    * to a configured run budget cap (USD or tokens).
    */
@@ -122,6 +132,14 @@ export interface PipelineConfig {
   verbose: boolean;
   /** Resume a previous run from its last completed phase */
   resumeRunId?: string;
+  /**
+   * Phase 5: publish gate configuration.
+   * When enabled, delivery can be blocked until an admin approves the run.
+   */
+  publishGate?: {
+    enabled: boolean;
+    confidenceThreshold: number;
+  };
 }
 
 /**
@@ -166,6 +184,9 @@ export interface DeliverPhaseOutput {
   sent: number;
   failed: number;
   dryRun: boolean;
+  /** true when delivery was intentionally blocked/skipped (e.g., publish gate). */
+  skipped?: boolean;
+  skippedReason?: 'publish_gate_review_required';
 }
 
 /**

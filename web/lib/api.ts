@@ -75,8 +75,11 @@ class ApiClient {
   }
 
   async getIdea(id: string): Promise<IdeaBrief> {
-    const res = await this.request<{ idea: IdeaBrief }>(`/ideas/${id}`);
-    return res.idea;
+    const res = await this.request<{ idea: IdeaBrief & { brief?: IdeaBrief } }>(`/ideas/${id}`);
+    // Backend returns IdeaSummary for some tiers: { ...summary, brief?: IdeaBrief }
+    // Unwrap so pages always get a flat IdeaBrief shape.
+    const idea = (res as unknown as { idea: IdeaBrief & { brief?: IdeaBrief } }).idea;
+    return idea.brief ?? idea;
   }
 
   async searchIdeas(params: {
@@ -194,6 +197,8 @@ class ApiClient {
     clusteringThreshold?: number;
     minPriorityScore?: number;
     minFrequencyForGap?: number;
+    publishGateEnabled?: boolean;
+    publishGateConfidenceThreshold?: number;
   }): Promise<PipelineRunResponse> {
     return this.request<PipelineRunResponse>("/admin/pipeline/run", {
       method: "POST",
@@ -218,6 +223,25 @@ class ApiClient {
   async getRunDetail(runId: string): Promise<{ run: PipelineRunRow }> {
     return this.request(`/admin/runs/${runId}`);
   }
+
+  async approvePublishGate(runId: string, briefIds?: string[]): Promise<{
+    status: string;
+    publishedCount: number;
+    delivered: unknown;
+  }> {
+    return this.request(`/admin/runs/${runId}/publish/approve`, {
+      method: "POST",
+      body: JSON.stringify(briefIds?.length ? { briefIds } : {}),
+    });
+  }
+
+  async rejectPublishGate(runId: string, reason?: string): Promise<{ status: string }> {
+    return this.request(`/admin/runs/${runId}/publish/reject`, {
+      method: "POST",
+      body: JSON.stringify(reason ? { reason } : {}),
+    });
+  }
+
 
   async getEmailLogs(params?: { page?: number; limit?: number; status?: string; runId?: string }): Promise<{
     logs: EmailLogRow[];

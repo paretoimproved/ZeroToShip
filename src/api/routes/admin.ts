@@ -9,7 +9,8 @@ import type { FastifyPluginAsync } from 'fastify';
 import { requireAdmin } from '../middleware/auth';
 import { runPipeline, DEFAULT_PIPELINE_CONFIG, generateRunId } from '../../scheduler';
 import { db, ideas, subscriptions, users, pipelineRuns, emailLogs } from '../db/client';
-import { and, eq, count, desc, sql } from 'drizzle-orm';
+import { and, eq, count, desc, sql, inArray } from 'drizzle-orm';
+import { runDeliverPhase } from '../../scheduler/phases/deliver';
 
 export const adminRoutes: FastifyPluginAsync = async (server) => {
   /**
@@ -109,6 +110,8 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
         clusteringThreshold?: number;
         minPriorityScore?: number;
         minFrequencyForGap?: number;
+        publishGateEnabled?: boolean;
+        publishGateConfidenceThreshold?: number;
       } | undefined;
 
       const pipelineConfig = {
@@ -117,6 +120,13 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
         maxBriefs: body?.maxBriefs ?? DEFAULT_PIPELINE_CONFIG.maxBriefs,
         generationMode: body?.generationMode,
         dryRun: body?.dryRun ?? body?.skipDelivery ?? false,
+        publishGate: {
+          enabled: body?.publishGateEnabled ?? DEFAULT_PIPELINE_CONFIG.publishGate?.enabled ?? false,
+          confidenceThreshold:
+            body?.publishGateConfidenceThreshold ??
+            DEFAULT_PIPELINE_CONFIG.publishGate?.confidenceThreshold ??
+            0.85,
+        },
         scrapers: body?.scrapers
           ? { ...DEFAULT_PIPELINE_CONFIG.scrapers, ...body.scrapers }
           : DEFAULT_PIPELINE_CONFIG.scrapers,
@@ -141,6 +151,8 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
           hoursBack: pipelineConfig.hoursBack,
           maxBriefs: pipelineConfig.maxBriefs,
           dryRun: pipelineConfig.dryRun,
+          publishGateEnabled: pipelineConfig.publishGate?.enabled ?? false,
+          publishGateConfidenceThreshold: pipelineConfig.publishGate?.confidenceThreshold ?? null,
           scrapers: pipelineConfig.scrapers,
           clusteringThreshold: pipelineConfig.clusteringThreshold,
           minPriorityScore: pipelineConfig.minPriorityScore,
@@ -253,7 +265,9 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
       ? eq(pipelineRuns.status, 'completed')
       : query.status === 'failed'
         ? eq(pipelineRuns.status, 'failed')
-        : undefined;
+        : query.status === 'needs_review'
+          ? eq(pipelineRuns.status, 'needs_review')
+          : undefined;
 
     const baseQuery = statusFilter
       ? db.select(runListColumns).from(pipelineRuns).where(statusFilter)
@@ -289,6 +303,147 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
     }
 
     return reply.send({ run: result[0] });
+  });
+
+  /**
+   * POST /api/v1/admin/runs/:runId/publish/approve
+   * Approve a publish-gated run: publish selected ideas and execute delivery.
+   */
+  server.post('/runs/:runId/publish/approve', { preHandler: [requireAdmin] }, async (request, reply) => {
+    const { runId } = request.params as { runId: string };
+    const body = request.body as { briefIds?: string[] } | undefined;
+
+    const result = await db.select().from(pipelineRuns).where(eq(pipelineRuns.runId, runId)).limit(1);
+    if (result.length === 0) {
+      return reply.status(404).send({ code: 'NOT_FOUND', message: 'Run not found' });
+    }
+
+    const run = result[0] as any;
+    const phaseResults = (run.phaseResults ?? {}) as Record<string, any>;
+    const generateData = phaseResults.generate as { briefs?: any[] } | undefined;
+    const briefs = generateData?.briefs as any[] | undefined;
+
+    if (!Array.isArray(briefs) || briefs.length === 0) {
+      return reply.status(400).send({ code: 'NO_BRIEFS', message: 'No generated briefs found for this run' });
+    }
+
+    const requestedIds = Array.isArray(body?.briefIds) ? body!.briefIds.filter(Boolean) : [];
+    const allowAll = requestedIds.length === 0;
+
+    const deliverBriefs = allowAll
+      ? briefs
+      : briefs.filter((b) => requestedIds.includes(String(b.id)));
+
+    const publishIds = Array.from(new Set(deliverBriefs.map((b) => String(b.id)).filter(Boolean)));
+
+    if (publishIds.length > 0) {
+      await db
+        .update(ideas)
+        .set({ isPublished: true, publishedAt: new Date() })
+        .where(inArray(ideas.id, publishIds));
+    }
+
+    const deliverConfig = (run.config ?? {}) as any;
+    const deliverResult = await runDeliverPhase(runId, deliverConfig, deliverBriefs);
+
+    const phases = { ...(run.phases ?? {}) } as Record<string, string>;
+    phases.deliver = deliverResult.success ? 'completed' : 'failed';
+
+    const phaseStats = { ...(run.phaseStats ?? {}) } as Record<string, any>;
+    if (deliverResult.data) {
+      phaseStats.deliver = {
+        sent: deliverResult.data.sent,
+        failed: deliverResult.data.failed,
+        subscriberCount: deliverResult.data.subscriberCount,
+      };
+    }
+
+    const stats = { ...(run.stats ?? {}) } as Record<string, any>;
+    if (deliverResult.data) {
+      stats.emailsSent = deliverResult.data.sent;
+    }
+
+    const history = Array.isArray(phaseResults.publishGateHistory)
+      ? phaseResults.publishGateHistory.slice(0, 200)
+      : [];
+    history.push({
+      action: 'approve',
+      by: request.userEmail ?? null,
+      at: new Date().toISOString(),
+      briefIds: publishIds,
+      delivered: deliverResult.success,
+      deliveredSent: deliverResult.data?.sent ?? 0,
+    });
+
+    phaseResults.publishGateHistory = history;
+    phaseResults.deliver = deliverResult.data ?? null;
+
+    const now = new Date();
+    const startedAt = run.startedAt ? new Date(run.startedAt) : now;
+
+    await db.update(pipelineRuns)
+      .set({
+        status: deliverResult.success ? 'completed' : 'failed',
+        completedAt: now,
+        updatedAt: now,
+        phases,
+        phaseStats,
+        stats,
+        success: deliverResult.success,
+        totalDuration: Math.max(0, Math.round(now.getTime() - startedAt.getTime())),
+        phaseResults,
+      })
+      .where(eq(pipelineRuns.runId, runId));
+
+    return reply.send({
+      status: 'ok',
+      publishedCount: publishIds.length,
+      delivered: deliverResult.data ?? null,
+    });
+  });
+
+  /**
+   * POST /api/v1/admin/runs/:runId/publish/reject
+   * Reject a publish-gated run: keep ideas unpublished and finalize run as rejected.
+   */
+  server.post('/runs/:runId/publish/reject', { preHandler: [requireAdmin] }, async (request, reply) => {
+    const { runId } = request.params as { runId: string };
+    const body = request.body as { reason?: string } | undefined;
+
+    const result = await db.select().from(pipelineRuns).where(eq(pipelineRuns.runId, runId)).limit(1);
+    if (result.length === 0) {
+      return reply.status(404).send({ code: 'NOT_FOUND', message: 'Run not found' });
+    }
+
+    const run = result[0] as any;
+    const phaseResults = (run.phaseResults ?? {}) as Record<string, any>;
+
+    const history = Array.isArray(phaseResults.publishGateHistory)
+      ? phaseResults.publishGateHistory.slice(0, 200)
+      : [];
+    history.push({
+      action: 'reject',
+      by: request.userEmail ?? null,
+      at: new Date().toISOString(),
+      reason: body?.reason ?? null,
+    });
+    phaseResults.publishGateHistory = history;
+
+    const now = new Date();
+    const startedAt = run.startedAt ? new Date(run.startedAt) : now;
+
+    await db.update(pipelineRuns)
+      .set({
+        status: 'rejected',
+        completedAt: now,
+        updatedAt: now,
+        success: false,
+        totalDuration: Math.max(0, Math.round(now.getTime() - startedAt.getTime())),
+        phaseResults,
+      })
+      .where(eq(pipelineRuns.runId, runId));
+
+    return reply.send({ status: 'ok' });
   });
 
   /**
