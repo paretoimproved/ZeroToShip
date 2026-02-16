@@ -27,7 +27,7 @@ const faqItems = [
   {
     question: "How fresh are the ideas?",
     answer:
-      "Ideas are generated fresh every morning at 8 AM based on the previous 24\u201348 hours of posts. You'll never see the same idea twice.",
+      "Ideas are generated fresh every morning based on the previous 24\u201348 hours of posts. You'll never see the same idea twice.",
   },
   {
     question: "Is my data private?",

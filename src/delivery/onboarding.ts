@@ -97,15 +97,16 @@ function buildOnboardingHtml(
   </div>
   <div style="padding: 24px;">
     <p>Hey ${escapeHtml(name)},</p>
-    <p>Starting tomorrow at 8 AM, you'll get <strong>${ideaCount} startup ideas</strong> delivered to your inbox. Each one scraped from Reddit, Hacker News, and GitHub in the last 24 hours.</p>
+    <p>Starting tomorrow morning, you'll get <strong>${ideaCount} startup ideas</strong> delivered to your inbox. Each one scraped from Reddit, Hacker News, and GitHub in the last 24 hours.</p>
     <p><strong>Here's how it works:</strong></p>
     <ol>
-      <li><strong>Check your inbox at 8 AM</strong> -- Your daily ideas arrive</li>
+      <li><strong>Check your inbox each morning</strong> -- Your daily ideas arrive</li>
       <li><strong>Review the scores</strong> -- Higher priority = bigger opportunity, less effort</li>
       <li><strong>Click through for details</strong> -- See the full brief${isPro ? '' : ' (Builder only)'}</li>
       <li><strong>Start building</strong> -- Or wait for tomorrow's batch</li>
     </ol>
     <p><strong>Quick tip:</strong> The best ideas often have high "severity" scores -- those are the painful problems people will actually pay to solve.</p>
+    <p style="text-align: center; margin: 24px 0;"><a href="${escapeHtml(dashboardUrl)}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-weight: 600;">Explore ZeroToShip</a></p>
     <p>Questions? Just reply to this email.</p>
     <p>-- The ZeroToShip Team</p>
     ${!isPro ? `<hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" /><p style="color: #666; font-size: 14px;">P.S. Want more ideas? <a href="${escapeHtml(upgradeUrl)}" style="color: #667eea;">Upgrade to Builder</a> for 10 full briefs daily.</p>` : ''}
@@ -115,7 +116,7 @@ function buildOnboardingHtml(
     <p><a href="${escapeHtml(preferencesUrl)}" style="color: #888;">Manage preferences</a></p>
   </div>
 </div>`,
-      text: `Hey ${name},\n\nWelcome to ZeroToShip!\n\nStarting tomorrow at 8 AM, you'll get ${ideaCount} startup ideas delivered to your inbox. Each one scraped from Reddit, Hacker News, and GitHub in the last 24 hours.\n\nHere's how it works:\n1. Check your inbox at 8 AM - Your daily ideas arrive\n2. Review the scores - Higher priority = bigger opportunity\n3. Click through for details\n4. Start building - Or wait for tomorrow's batch\n\nQuick tip: The best ideas often have high "severity" scores.\n\nQuestions? Just reply to this email.\n\n-- The ZeroToShip Team`,
+      text: `Hey ${name},\n\nWelcome to ZeroToShip!\n\nStarting tomorrow morning, you'll get ${ideaCount} startup ideas delivered to your inbox. Each one scraped from Reddit, Hacker News, and GitHub in the last 24 hours.\n\nHere's how it works:\n1. Check your inbox each morning - Your daily ideas arrive\n2. Review the scores - Higher priority = bigger opportunity\n3. Click through for details\n4. Start building - Or wait for tomorrow's batch\n\nQuick tip: The best ideas often have high "severity" scores.\n\nQuestions? Just reply to this email.\n\n-- The ZeroToShip Team`,
     },
     day1: {
       html: `

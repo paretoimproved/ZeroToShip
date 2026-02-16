@@ -13,11 +13,11 @@ Hey {{name}},
 
 Welcome to ZeroToShip!
 
-Starting tomorrow at 8 AM, you'll get {{ideaCount}} startup ideas delivered to your inbox. Each one scraped from Reddit, Hacker News, and GitHub in the last 24 hours.
+Starting tomorrow morning, you'll get {{ideaCount}} startup ideas delivered to your inbox. Each one scraped from Reddit, Hacker News, and GitHub in the last 24 hours.
 
 **Here's how it works:**
 
-1. **Check your inbox at 8 AM** — Your daily ideas arrive
+1. **Check your inbox each morning** — Your daily ideas arrive
 2. **Review the scores** — Higher priority = bigger opportunity, less effort
 3. **Click through for details** — See the full brief (Pro only)
 4. **Start building** — Or wait for tomorrow's batch
