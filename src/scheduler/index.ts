@@ -26,7 +26,14 @@ let scheduledTask: cron.ScheduledTask | null = null;
  * Start the scheduler
  */
 export function startScheduler(config: Partial<SchedulerConfig> = {}): void {
-  const fullConfig = { ...DEFAULT_SCHEDULER_CONFIG, ...config };
+  const fullConfig = {
+    ...DEFAULT_SCHEDULER_CONFIG,
+    ...config,
+    pipelineConfig: {
+      ...DEFAULT_SCHEDULER_CONFIG.pipelineConfig,
+      ...config.pipelineConfig,
+    },
+  };
 
   if (!fullConfig.enabled) {
     logger.info('Scheduler is disabled');

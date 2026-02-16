@@ -341,7 +341,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
         user = await getOrCreateUser(request.userId!, request.userEmail!, name);
       }
 
-      const tier = await getUserTierById(request.userId!);
+      const tier = request.userTier ?? await getUserTierById(request.userId!);
       return reply.send({ ...user, tier, isAdmin: user.isAdmin });
     }
   );

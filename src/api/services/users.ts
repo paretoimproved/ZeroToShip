@@ -374,7 +374,11 @@ export async function updateSubscription(
     }
 
     return true;
-  } catch {
+  } catch (error) {
+    logger.error(
+      { userId, error: error instanceof Error ? error.message : String(error) },
+      'Failed to update subscription'
+    );
     return false;
   }
 }

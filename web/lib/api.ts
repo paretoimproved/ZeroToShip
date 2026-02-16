@@ -242,6 +242,7 @@ class ApiClient {
     });
   }
 
+
   async getEmailLogs(params?: { page?: number; limit?: number; status?: string; runId?: string }): Promise<{
     logs: EmailLogRow[];
     total: number;

@@ -62,7 +62,7 @@ const faqJsonLd: Record<string, unknown> = {
       name: "How fresh are the ideas?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Ideas are generated fresh every morning at 8 AM based on the previous 24\u201348 hours of posts. You'll never see the same idea twice.",
+        text: "Ideas are generated fresh every morning based on the previous 24\u201348 hours of posts. You'll never see the same idea twice.",
       },
     },
     {

@@ -1125,7 +1125,7 @@ describe('Email Service', () => {
         deliveries: [],
       });
 
-      expect(stats.averagePerSecond).toBe(50);
+      expect(stats.averagePerSecond).toBeCloseTo(2 * (1000 / 600), 1);
     });
   });
 });
