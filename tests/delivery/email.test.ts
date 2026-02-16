@@ -241,15 +241,15 @@ describe('Email Builder', () => {
       expect(result.html).toContain('Weekend');
     });
 
-    it('includes revenue estimate in score bar (truncated to 20 chars)', () => {
+    it('includes opportunity scale in score bar', () => {
       const brief = createMockBrief({
         revenueEstimate: '$50K-$100K MRR within first year',
       });
       const result = buildDailyEmail([brief], 'free');
 
-      expect(result.html).toContain('Revenue');
-      // MRR should be humanized for non-technical readers.
-      expect(result.html).toContain('$50K-$100K per month');
+      expect(result.html).toContain('Opportunity');
+      // $100K falls in the $$$ tier
+      expect(result.html).toContain('$$$');
     });
 
     it('includes idea name and tagline in hero', () => {
