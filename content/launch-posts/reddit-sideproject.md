@@ -12,7 +12,7 @@ At some point I thought, why am I doing this manually? So I built a thing.
 
 A few things surprised me while building this:
 
-The scraping was the easy part. Scoring ideas is where it gets tricky. High engagement doesn't always mean it's a good startup idea — sometimes people just love complaining. I'm still tweaking the scoring, and I'll probably always be tweaking it.
+The scraping was the easy part. Scoring ideas is where it gets tricky. High engagement doesn't always mean it's a good startup idea, sometimes people just love complaining. I'm still tweaking the scoring, and I'll probably always be tweaking it.
 
 The AI-generated briefs turned out better than I expected. I figured they'd be generic motivational fluff, but when you give Claude the actual clustered posts, engagement data, and scoring context, the market analysis sections are genuinely useful. I've found competitors I didn't know existed just from reading the briefs.
 
@@ -20,7 +20,7 @@ Daily email beats a dashboard. I built a whole web app with an archive, sorting,
 
 I've had two friends using it for about a week. One of them told me he stopped his usual "stare at a blank editor trying to think of what to build" routine and just picks from the digest now. That felt good to hear.
 
-There's a free tier that gives you the top 3 ideas each day, and a Builder tier at $19/mo for the full 10-idea report with all the detail. Not trying to get rich off this — mostly want to see if other people find it as useful as I do.
+There's a free tier that gives you the top 3 ideas each day, and a Builder tier at $19/mo for the full 10-idea report with all the detail. Not trying to get rich off this, mostly want to see if other people find it as useful as I do.
 
 https://www.zerotoship.dev
 
