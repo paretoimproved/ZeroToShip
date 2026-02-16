@@ -84,7 +84,7 @@ function buildOnboardingHtml(
   const isPro = userTier === 'pro' || userTier === 'enterprise';
   const ideaCount = isPro ? 10 : 3;
   const baseUrl = 'https://zerotoship.dev';
-  const upgradeUrl = `${baseUrl}/upgrade`;
+  const upgradeUrl = `${baseUrl}/pricing`;
   const dashboardUrl = `${baseUrl}/dashboard`;
   const preferencesUrl = `${baseUrl}/settings`;
 

@@ -33,7 +33,7 @@ export interface EmailBuilderConfig {
 const DEFAULT_CONFIG: Required<EmailBuilderConfig> = {
   baseUrl: 'https://zerotoship.dev',
   unsubscribeUrl: 'https://zerotoship.dev/unsubscribe',
-  upgradeUrl: 'https://zerotoship.dev/upgrade',
+  upgradeUrl: 'https://zerotoship.dev/pricing',
 };
 
 const FONT_STACK = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
@@ -260,7 +260,7 @@ function buildInlineUpgradeBanner(
   // Rotate copy based on day
   const dateHash = new Date().toISOString().slice(0, 10).split('').reduce((a, c) => a + c.charCodeAt(0), 0);
   const variants = [
-    `You're seeing 1 of today's ${ideaCount} ideas. Pro members get the full brief for every one.`,
+    `You're seeing 1 of today's ${ideaCount} ideas. Builder members get the full brief for every one.`,
     `Today's lineup has ${ideaCount - 1} more ideas just like this one.`,
     briefs.length >= 3
       ? `Today's #3 idea scored ${formatScore(briefs[2].priorityScore)} &#8212; and it's a ${formatEffortLabel(briefs[2].effortEstimate).toLowerCase()} build.`
@@ -315,7 +315,7 @@ function buildIdeaCard(
                   <div style="background-color: #d1d5db; border-radius: 4px; height: 12px; width: 70%; margin-top: 6px;"></div>
                 </td>
                 <td width="48" style="vertical-align: top; text-align: right;">
-                  <span style="display: inline-block; background-color: #6366f1; color: #ffffff; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">PRO</span>
+                  <span style="display: inline-block; background-color: #6366f1; color: #ffffff; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">BUILDER</span>
                 </td>
               </tr>
             </table>
@@ -383,7 +383,7 @@ function buildOtherIdeasSection(
       <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top: 8px;">
         <tr>
           <td style="text-align: center; padding: 12px 0; font-family: ${FONT_STACK};">
-            <span style="font-size: 14px; color: #6b7280;">+${lockedCount} more idea${lockedCount > 1 ? 's' : ''} available with Pro${weekendBuilds > 0 ? ` &#8212; including ${weekendBuilds} weekend build${weekendBuilds > 1 ? 's' : ''}` : ''}</span>
+            <span style="font-size: 14px; color: #6b7280;">+${lockedCount} more idea${lockedCount > 1 ? 's' : ''} available with Builder${weekendBuilds > 0 ? ` &#8212; including ${weekendBuilds} weekend build${weekendBuilds > 1 ? 's' : ''}` : ''}</span>
           </td>
         </tr>
       </table>`
@@ -413,12 +413,12 @@ function buildBottomCta(
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #111827;">
       <tr>
         <td style="padding: 32px 24px; text-align: center; font-family: ${FONT_STACK};">
-          <div style="font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 8px;">You saw ${freeCount} ideas today. Pro members saw ${totalCount}.</div>
+          <div style="font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 8px;">You saw ${freeCount} ideas today. Builder members saw ${totalCount}.</div>
           <div style="font-size: 16px; color: rgba(255,255,255,0.7); margin-bottom: 20px;">Every idea. Every brief. Every day.</div>
           <table cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 auto;">
             <tr>
               <td style="background-color: #ffffff; border-radius: 8px;">
-                <a href="${escapeHtml(config.upgradeUrl)}" style="display: inline-block; padding: 14px 32px; color: #111827; font-family: ${FONT_STACK}; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px;">Unlock Pro &#8594;</a>
+                <a href="${escapeHtml(config.upgradeUrl)}" style="display: inline-block; padding: 14px 32px; color: #111827; font-family: ${FONT_STACK}; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px;">Upgrade to Builder &#8594;</a>
               </td>
             </tr>
           </table>
@@ -590,7 +590,7 @@ function buildPlainTextEmail(
       const locked = rank > limit;
 
       if (locked) {
-        lines.push(`#${rank} ${brief.name} [PRO]`);
+        lines.push(`#${rank} ${brief.name} [BUILDER]`);
       } else {
         lines.push(`#${rank} ${brief.name} — Score: ${formatScore(brief.priorityScore)} [${formatEffortLabel(brief.effortEstimate)}]`);
         lines.push(`   "${brief.tagline}"`);
@@ -604,15 +604,15 @@ function buildPlainTextEmail(
     const lockedCount = Math.max(0, Math.min(briefs.length, MAX_EMAIL_IDEAS) - TIER_LIMITS.free);
     if (lockedCount > 0) {
       lines.push('-'.repeat(60));
-      lines.push(`+${lockedCount} more ideas with full briefs available on Pro.`);
+      lines.push(`+${lockedCount} more ideas with full briefs available on Builder.`);
       lines.push(`Unlock all ideas: ${config.upgradeUrl}`);
       lines.push('');
     }
 
     lines.push('-'.repeat(60));
-    lines.push(`You saw ${Math.min(briefs.length, TIER_LIMITS.free)} ideas today. Pro members saw ${Math.min(briefs.length, MAX_EMAIL_IDEAS)}.`);
+    lines.push(`You saw ${Math.min(briefs.length, TIER_LIMITS.free)} ideas today. Builder members saw ${Math.min(briefs.length, MAX_EMAIL_IDEAS)}.`);
     lines.push('Every idea. Every brief. Every day.');
-    lines.push(`Unlock Pro: ${config.upgradeUrl}`);
+    lines.push(`Upgrade to Builder: ${config.upgradeUrl}`);
     lines.push('');
   }
 

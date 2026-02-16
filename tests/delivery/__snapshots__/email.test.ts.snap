@@ -171,7 +171,7 @@ Today's lineup has 4 more ideas just like this one.
 <div style="background-color: #d1d5db; border-radius: 4px; height: 12px; width: 70%; margin-top: 6px;"></div>
 </td>
 <td width="48" style="vertical-align: top; text-align: right;">
-<span style="display: inline-block; background-color: #6366f1; color: #ffffff; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">PRO</span>
+<span style="display: inline-block; background-color: #6366f1; color: #ffffff; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">BUILDER</span>
 </td>
 </tr>
 </table>
@@ -190,7 +190,7 @@ Today's lineup has 4 more ideas just like this one.
 <div style="background-color: #d1d5db; border-radius: 4px; height: 12px; width: 70%; margin-top: 6px;"></div>
 </td>
 <td width="48" style="vertical-align: top; text-align: right;">
-<span style="display: inline-block; background-color: #6366f1; color: #ffffff; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">PRO</span>
+<span style="display: inline-block; background-color: #6366f1; color: #ffffff; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">BUILDER</span>
 </td>
 </tr>
 </table>
@@ -201,7 +201,7 @@ Today's lineup has 4 more ideas just like this one.
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top: 8px;">
 <tr>
 <td style="text-align: center; padding: 12px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-<span style="font-size: 14px; color: #6b7280;">+2 more ideas available with Pro &#8212; including 2 weekend builds</span>
+<span style="font-size: 14px; color: #6b7280;">+2 more ideas available with Builder &#8212; including 2 weekend builds</span>
 </td>
 </tr>
 </table>
@@ -212,12 +212,12 @@ Today's lineup has 4 more ideas just like this one.
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #111827;">
 <tr>
 <td style="padding: 32px 24px; text-align: center; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-<div style="font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 8px;">You saw 3 ideas today. Pro members saw 5.</div>
+<div style="font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 8px;">You saw 3 ideas today. Builder members saw 5.</div>
 <div style="font-size: 16px; color: rgba(255,255,255,0.7); margin-bottom: 20px;">Every idea. Every brief. Every day.</div>
 <table cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 auto;">
 <tr>
 <td style="background-color: #ffffff; border-radius: 8px;">
-<a href="https://test.zerotoship.dev/upgrade" style="display: inline-block; padding: 14px 32px; color: #111827; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px;">Unlock Pro &#8594;</a>
+<a href="https://test.zerotoship.dev/upgrade" style="display: inline-block; padding: 14px 32px; color: #111827; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px;">Upgrade to Builder &#8594;</a>
 </td>
 </tr>
 </table>
@@ -526,18 +526,18 @@ Read brief: https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-00000000000
 "Tagline for idea 3"
 Read brief: https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000003
 
-#4 Idea 4 [PRO]
+#4 Idea 4 [BUILDER]
 
-#5 Idea 5 [PRO]
+#5 Idea 5 [BUILDER]
 
 ------------------------------------------------------------
-+2 more ideas with full briefs available on Pro.
++2 more ideas with full briefs available on Builder.
 Unlock all ideas: https://test.zerotoship.dev/upgrade
 
 ------------------------------------------------------------
-You saw 3 ideas today. Pro members saw 5.
+You saw 3 ideas today. Builder members saw 5.
 Every idea. Every brief. Every day.
-Unlock Pro: https://test.zerotoship.dev/upgrade
+Upgrade to Builder: https://test.zerotoship.dev/upgrade
 
 ------------------------------------------------------------
 Manage preferences: https://test.zerotoship.dev/settings
@@ -708,12 +708,12 @@ Today's lineup has 0 more ideas just like this one.
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #111827;">
 <tr>
 <td style="padding: 32px 24px; text-align: center; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-<div style="font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 8px;">You saw 1 ideas today. Pro members saw 1.</div>
+<div style="font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 8px;">You saw 1 ideas today. Builder members saw 1.</div>
 <div style="font-size: 16px; color: rgba(255,255,255,0.7); margin-bottom: 20px;">Every idea. Every brief. Every day.</div>
 <table cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 auto;">
 <tr>
 <td style="background-color: #ffffff; border-radius: 8px;">
-<a href="https://test.zerotoship.dev/upgrade" style="display: inline-block; padding: 14px 32px; color: #111827; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px;">Unlock Pro &#8594;</a>
+<a href="https://test.zerotoship.dev/upgrade" style="display: inline-block; padding: 14px 32px; color: #111827; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px;">Upgrade to Builder &#8594;</a>
 </td>
 </tr>
 </table>
