@@ -17,7 +17,6 @@ export const TIER_LIMITS: Record<SubscriberTier, number> = {
 
 const MAX_EMAIL_IDEAS = 10;
 const TAGLINE_TRUNCATE_LENGTH = 80;
-const REVENUE_DISPLAY_LENGTH = 20;
 
 export interface EmailContent {
   subject: string;
@@ -75,37 +74,43 @@ function formatEffortLabel(effort: string): string {
   return effort;
 }
 
-function humanizeTextForEmail(text: string): string {
-  if (!text) return '';
-  return text.replace(/\bMRR\b/g, 'per month');
-}
-
-function truncateRevenue(estimate: string): string {
-  if (!estimate) return '';
-  const cleaned = humanizeTextForEmail(estimate.replace(/^Year\s*\d+:\s*/i, '').trim());
-  return cleaned.length > REVENUE_DISPLAY_LENGTH
-    ? cleaned.slice(0, REVENUE_DISPLAY_LENGTH) + '...'
-    : cleaned;
+function revenueToScale(estimate: string): { label: string; color: string } {
+  if (!estimate) return { label: '$', color: '#9ca3af' };
+  const text = estimate.toLowerCase().replace(/,/g, '');
+  // Look for the largest dollar figure in the string
+  const amounts = [...text.matchAll(/\$\s*([\d.]+)\s*(k|m|b)?/gi)];
+  let maxAmount = 0;
+  for (const m of amounts) {
+    let val = parseFloat(m[1]);
+    const suffix = (m[2] || '').toLowerCase();
+    if (suffix === 'k') val *= 1_000;
+    else if (suffix === 'm') val *= 1_000_000;
+    else if (suffix === 'b') val *= 1_000_000_000;
+    if (val > maxAmount) maxAmount = val;
+  }
+  if (maxAmount >= 1_000_000) return { label: '$$$$', color: '#059669' };
+  if (maxAmount >= 100_000) return { label: '$$$', color: '#059669' };
+  if (maxAmount >= 10_000) return { label: '$$', color: '#d97706' };
+  return { label: '$', color: '#9ca3af' };
 }
 
 function generateSubjectLine(topIdea: IdeaBrief, ideaCount: number): string {
-  const score = formatScore(topIdea.priorityScore);
-  const effort = formatEffortLabel(topIdea.effortEstimate).toLowerCase();
-  const revenue = truncateRevenue(topIdea.revenueEstimate);
+  const name = topIdea.name.trim();
 
+  // Keep subjects short and factual. Avoid hypey templates (revenue / scores / "could you build this").
   const templates = [
-    `${topIdea.name}: ${effort} build, ${revenue}`,
-    `A ${effort} project worth ${revenue}`,
-    `Today's top idea scored ${score}/100`,
-    `${ideaCount} ideas today. #1 is a ${effort} build.`,
-    `Could you build this in ${effort}?`,
+    `ZeroToShip: ${name}`,
+    `Today's ideas: ${name}`,
+    `${ideaCount} ideas today: ${name}`,
+    `Top idea: ${name}`,
   ];
 
   // Deterministic daily selection based on date
   const dateHash = new Date().toISOString().slice(0, 10).split('').reduce((a, c) => a + c.charCodeAt(0), 0);
   const subject = templates[dateHash % templates.length];
 
-  return subject.length > 60 ? subject.slice(0, 57) + '...' : subject;
+  // Most inboxes truncate around ~50 chars. Target a tighter ceiling.
+  return subject.length > 52 ? subject.slice(0, 49) + '...' : subject;
 }
 
 function generatePreviewText(topIdea: IdeaBrief, ideaCount: number): string {
@@ -146,7 +151,7 @@ function buildStatBar(ideaCount: number, topScore: string): string {
     </table>`;
 }
 
-function buildScoreChips(brief: IdeaBrief, revenue: string): string {
+function buildScoreChips(brief: IdeaBrief, revenue: { label: string; color: string }): string {
   const effortLabel = formatEffortLabel(brief.effortEstimate);
   return `
           <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 0 20px 0;">
@@ -162,8 +167,8 @@ function buildScoreChips(brief: IdeaBrief, revenue: string): string {
               </td>
               <td width="3%"></td>
               <td width="31%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
-                <div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Revenue</div>
-                <div style="font-size: 14px; font-weight: 700; color: #111827; margin-top: 2px;">${escapeHtml(revenue)}</div>
+                <div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Opportunity</div>
+                <div style="font-size: 22px; font-weight: 700; color: ${revenue.color}; margin-top: 2px; letter-spacing: 1px;">${revenue.label}</div>
               </td>
             </tr>
           </table>`;
@@ -178,8 +183,13 @@ function buildSectionBlock(label: string, content: string): string {
 }
 
 function buildHeroSection(brief: IdeaBrief, tier: SubscriberTier, config: Required<EmailBuilderConfig>): string {
-  const revenue = truncateRevenue(brief.revenueEstimate);
-  const ideaUrl = `${config.baseUrl}/idea/${brief.id || ''}`;
+  const revenue = revenueToScale(brief.revenueEstimate);
+  const ideaPath = `/idea/${brief.id || ''}`;
+  // Email links are often opened in a logged-out browser session. For free users,
+  // route through login with `next` so they land on a fully-unlocked brief after auth.
+  const ideaUrl = tier === 'free'
+    ? `${config.baseUrl}/login?next=${encodeURIComponent(ideaPath)}`
+    : `${config.baseUrl}${ideaPath}`;
 
   const headerHtml = `
           <span style="display: inline-block; background-color: #6366f1; color: #ffffff; padding: 4px 12px; border-radius: 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Today's #1 Idea</span>
@@ -279,11 +289,15 @@ function buildIdeaCard(
   brief: IdeaBrief,
   rank: number,
   locked: boolean,
+  tier: SubscriberTier,
   config: Required<EmailBuilderConfig>
 ): string {
   const effortStyle = getEffortBadgeStyle(brief.effortEstimate);
   const effortLabel = formatEffortLabel(brief.effortEstimate);
-  const ideaUrl = `${config.baseUrl}/idea/${brief.id || ''}`;
+  const ideaPath = `/idea/${brief.id || ''}`;
+  const ideaUrl = tier === 'free'
+    ? `${config.baseUrl}/login?next=${encodeURIComponent(ideaPath)}`
+    : `${config.baseUrl}${ideaPath}`;
   const tagline = brief.tagline.length > TAGLINE_TRUNCATE_LENGTH
     ? brief.tagline.slice(0, TAGLINE_TRUNCATE_LENGTH) + '...'
     : brief.tagline;
@@ -361,7 +375,7 @@ function buildOtherIdeasSection(
   const rows = visibleBriefs.map((brief, index) => {
     const rank = index + 2;
     const locked = rank > limit;
-    return buildIdeaCard(brief, rank, locked, config);
+    return buildIdeaCard(brief, rank, locked, tier, config);
   }).join('\n');
 
   const lockedFooter = lockedCount > 0 && tier === 'free'
@@ -531,7 +545,7 @@ function buildPlainTextEmail(
   lines.push(topIdea.name);
   lines.push(`"${topIdea.tagline}"`);
   lines.push('');
-  lines.push(`Score: ${formatScore(topIdea.priorityScore)}/100 | Build time: ${formatEffortLabel(topIdea.effortEstimate)} | Revenue: ${truncateRevenue(topIdea.revenueEstimate)}`);
+  lines.push(`Score: ${formatScore(topIdea.priorityScore)}/100 | Build time: ${formatEffortLabel(topIdea.effortEstimate)} | Opportunity: ${revenueToScale(topIdea.revenueEstimate).label}`);
   lines.push('');
 
   if (tier === 'pro') {
