@@ -28,6 +28,9 @@ data/runs/
 data/score-cache/
 data/test-score-cache/
 
+# Git worktrees
+.worktrees/
+
 # Test coverage
 coverage/
 
