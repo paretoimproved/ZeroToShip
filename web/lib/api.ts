@@ -243,6 +243,12 @@ class ApiClient {
   }
 
 
+  async resendFailedEmails(runId: string): Promise<{ resent: number; failed: number; total: number }> {
+    return this.request(`/admin/runs/${runId}/delivery/resend`, {
+      method: "POST",
+    });
+  }
+
   async getEmailLogs(params?: { page?: number; limit?: number; status?: string; runId?: string }): Promise<{
     logs: EmailLogRow[];
     total: number;

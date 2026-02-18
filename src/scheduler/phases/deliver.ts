@@ -107,8 +107,6 @@ export async function runDeliverPhase(
       briefs,
       {}, // Use default config
       {
-        concurrency: 5,
-        delayMs: 100,
         onProgress: (completed, total) => {
           logger.debug({ completed, total }, 'Delivery progress');
         },

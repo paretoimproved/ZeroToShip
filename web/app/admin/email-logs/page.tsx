@@ -48,6 +48,8 @@ export default function EmailLogsPage() {
   const [runIdFilter, setRunIdFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
+  const [resendResult, setResendResult] = useState<string | null>(null);
 
   const totalPages = Math.max(1, Math.ceil(total / LIMIT));
 
@@ -77,6 +79,31 @@ export default function EmailLogsPage() {
   function handleFilterChange(filter: StatusFilter) {
     setStatusFilter(filter);
     setPage(1);
+  }
+
+  const hasFailedEntries = logs.some((log) => log.status === "failed");
+  const canResend = runIdFilter.trim() && hasFailedEntries && !resending;
+
+  async function handleResendFailed() {
+    const trimmedRunId = runIdFilter.trim();
+    if (!trimmedRunId) return;
+
+    setResending(true);
+    setResendResult(null);
+    try {
+      const result = await api.resendFailedEmails(trimmedRunId);
+      setResendResult(
+        `Resent ${result.resent} of ${result.total} failed emails` +
+          (result.failed > 0 ? ` (${result.failed} still failed)` : "")
+      );
+      fetchLogs();
+    } catch (err) {
+      setResendResult(
+        `Resend error: ${err instanceof Error ? err.message : "Unknown error"}`
+      );
+    } finally {
+      setResending(false);
+    }
   }
 
   return (
@@ -126,7 +153,19 @@ export default function EmailLogsPage() {
               Clear
             </button>
           )}
+          {canResend && (
+            <button
+              onClick={handleResendFailed}
+              disabled={resending}
+              className="px-4 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {resending ? "Resending\u2026" : "Resend Failed"}
+            </button>
+          )}
         </div>
+        {resendResult && (
+          <p className="text-sm text-gray-700 dark:text-gray-300">{resendResult}</p>
+        )}
       </div>
 
       {/* Table */}

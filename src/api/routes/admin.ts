@@ -11,6 +11,7 @@ import { runPipeline, DEFAULT_PIPELINE_CONFIG, generateRunId } from '../../sched
 import { db, ideas, subscriptions, users, pipelineRuns, emailLogs } from '../db/client';
 import { and, eq, count, desc, sql, inArray } from 'drizzle-orm';
 import { runDeliverPhase } from '../../scheduler/phases/deliver';
+import { sendDailyBriefsBatch, type Subscriber } from '../../delivery/email';
 
 export const adminRoutes: FastifyPluginAsync = async (server) => {
   /**
@@ -484,6 +485,105 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
       total: totalResult[0]?.count || 0,
       page,
       limit,
+    });
+  });
+
+  /**
+   * POST /api/v1/admin/runs/:runId/delivery/resend
+   * Resend emails that failed during a specific pipeline run.
+   */
+  server.post('/runs/:runId/delivery/resend', { preHandler: [requireAdmin] }, async (request, reply) => {
+    const { runId } = request.params as { runId: string };
+
+    // 1. Load the pipeline run
+    const runResult = await db.select().from(pipelineRuns).where(eq(pipelineRuns.runId, runId)).limit(1);
+    if (runResult.length === 0) {
+      return reply.status(404).send({ code: 'NOT_FOUND', message: 'Run not found' });
+    }
+
+    const run = runResult[0] as Record<string, unknown>;
+    const phaseResults = (run.phaseResults ?? {}) as Record<string, unknown>;
+    const generateData = phaseResults.generate as { briefs?: unknown[] } | undefined;
+    const briefs = generateData?.briefs as Array<Record<string, unknown>> | undefined;
+
+    if (!Array.isArray(briefs) || briefs.length === 0) {
+      return reply.status(400).send({ code: 'NO_BRIEFS', message: 'No generated briefs found for this run' });
+    }
+
+    // 2. Get failed email log entries for this run
+    const failedLogs = await db
+      .select({ recipientEmail: emailLogs.recipientEmail, userId: emailLogs.userId })
+      .from(emailLogs)
+      .where(and(eq(emailLogs.runId, runId), eq(emailLogs.status, 'failed')));
+
+    if (failedLogs.length === 0) {
+      return reply.send({ resent: 0, failed: 0, total: 0 });
+    }
+
+    // 3. Cross-reference with active subscribers to get tier info
+    const failedEmails = failedLogs.map((l) => l.recipientEmail);
+    const failedUserIds = failedLogs.map((l) => l.userId);
+
+    const activeSubscribers = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        tier: subscriptions.plan,
+      })
+      .from(users)
+      .innerJoin(subscriptions, eq(subscriptions.userId, users.id))
+      .where(
+        and(
+          eq(subscriptions.status, 'active'),
+          inArray(users.id, failedUserIds)
+        )
+      );
+
+    // Only resend to users whose emails were in the failed set
+    const subscribers: Subscriber[] = activeSubscribers
+      .filter((s) => failedEmails.includes(s.email))
+      .map((s) => ({
+        id: s.id,
+        email: s.email,
+        tier: s.tier as Subscriber['tier'],
+      }));
+
+    if (subscribers.length === 0) {
+      return reply.send({ resent: 0, failed: 0, total: 0 });
+    }
+
+    // 4. Send emails using safe defaults (concurrency 1, delay 1000ms)
+    const batchResult = await sendDailyBriefsBatch(subscribers, briefs as never[], {});
+
+    // 5. Persist new email_logs rows for retry attempts
+    try {
+      const retryLogRows = batchResult.deliveries
+        .filter((d) => d.status === 'sent' || d.status === 'failed')
+        .map((delivery) => ({
+          runId,
+          userId: delivery.subscriberId,
+          recipientEmail: delivery.email,
+          subject: `Your Daily Startup Ideas — ${new Date().toLocaleDateString()} (retry)`,
+          messageId: delivery.messageId,
+          status: delivery.status as string,
+          error: delivery.error || null,
+          sentAt: delivery.sentAt,
+        }));
+
+      if (retryLogRows.length > 0) {
+        await db.insert(emailLogs).values(retryLogRows);
+      }
+    } catch (logError) {
+      request.log.warn(
+        { error: logError instanceof Error ? logError.message : String(logError) },
+        'Failed to persist retry email logs (non-fatal)'
+      );
+    }
+
+    return reply.send({
+      resent: batchResult.sent,
+      failed: batchResult.failed,
+      total: batchResult.total,
     });
   });
 };
