@@ -15,11 +15,13 @@ import {
 } from './email-builder';
 import { DeliveryError } from '../lib/errors';
 
-/** Default concurrent email sends per batch (Resend free tier: 2 req/s) */
-const DEFAULT_EMAIL_CONCURRENCY = 2;
+/** Send one email at a time — Resend free tier allows only 2 req/s and concurrent
+ *  sends + retries easily blow past that. Sequential is the only safe approach. */
+const DEFAULT_EMAIL_CONCURRENCY = 1;
 
-/** Default delay between email batches (ms) — keeps us under Resend's 2 req/s free-tier limit */
-const DEFAULT_EMAIL_DELAY_MS = 600;
+/** Delay between each email (ms) — 1 second keeps us well under the 2 req/s limit
+ *  even when a retry fires within the same window. */
+const DEFAULT_EMAIL_DELAY_MS = 1_000;
 
 /**
  * Subscriber information
@@ -101,8 +103,8 @@ async function sendViaResend(
   const isRetryableStatus = (status: number) => status === 429 || status >= 500;
 
   const MAX_ATTEMPTS = 3;
-  const BACKOFF_BASE_MS = envConfig.isTest ? 0 : 400;
-  const jitterMs = () => (envConfig.isTest ? 0 : Math.floor(Math.random() * 200));
+  const BACKOFF_BASE_MS = envConfig.isTest ? 0 : 1_000;
+  const jitterMs = () => (envConfig.isTest ? 0 : Math.floor(Math.random() * 300));
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {

@@ -10,7 +10,7 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for multiple
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="supported-color-schemes" content="light dark">
-<title>Today&#39;s ideas: Idea 1</title>
+<title>Top idea: Idea 1</title>
 <!--[if mso]>
 <style type="text/css">
 table { border-collapse: collapse; }
@@ -94,7 +94,7 @@ Top score: <strong style="color: #6366f1;">10.0</strong>
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #f5f3ff; border-left: 3px solid #6366f1; border-radius: 0 8px 8px 0;">
 <tr>
 <td style="padding: 14px 20px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; color: #374151; line-height: 1.5;">
-Today's lineup has 4 more ideas just like this one.
+You're seeing 1 of today's 5 ideas. Builder members get the full brief for every one.
 <a href="https://test.zerotoship.dev/upgrade" style="color: #6366f1; font-weight: 600; text-decoration: none;"> Unlock all ideas &#8594;</a>
 </td>
 </tr>
@@ -255,7 +255,7 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for multiple
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="supported-color-schemes" content="light dark">
-<title>Today&#39;s ideas: Idea 1</title>
+<title>Top idea: Idea 1</title>
 <!--[if mso]>
 <style type="text/css">
 table { border-collapse: collapse; }
@@ -611,7 +611,7 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for single b
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="supported-color-schemes" content="light dark">
-<title>Today&#39;s ideas: SnapshotApp</title>
+<title>Top idea: SnapshotApp</title>
 <!--[if mso]>
 <style type="text/css">
 table { border-collapse: collapse; }
@@ -695,7 +695,7 @@ Top score: <strong style="color: #6366f1;">8.5</strong>
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #f5f3ff; border-left: 3px solid #6366f1; border-radius: 0 8px 8px 0;">
 <tr>
 <td style="padding: 14px 20px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; color: #374151; line-height: 1.5;">
-Today's lineup has 0 more ideas just like this one.
+You're seeing 1 of today's 1 ideas. Builder members get the full brief for every one.
 <a href="https://test.zerotoship.dev/upgrade" style="color: #6366f1; font-weight: 600; text-decoration: none;"> Unlock all ideas &#8594;</a>
 </td>
 </tr>
