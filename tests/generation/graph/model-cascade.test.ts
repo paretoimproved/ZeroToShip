@@ -18,11 +18,11 @@ describe('graph model cascade', () => {
     ]);
   });
 
-  it('reuses last cascade model for attempts beyond cascade length', () => {
+  it('uses sonnet directly for sonnet target', () => {
     const cascade = buildGraphModelCascade(CLAUDE_MODELS.SONNET);
+    expect(cascade).toEqual([CLAUDE_MODELS.SONNET]);
 
-    expect(getAttemptModel(cascade, 1)).toBe(CLAUDE_MODELS.HAIKU);
+    expect(getAttemptModel(cascade, 1)).toBe(CLAUDE_MODELS.SONNET);
     expect(getAttemptModel(cascade, 2)).toBe(CLAUDE_MODELS.SONNET);
-    expect(getAttemptModel(cascade, 3)).toBe(CLAUDE_MODELS.SONNET);
   });
 });

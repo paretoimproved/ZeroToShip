@@ -21,7 +21,7 @@ describe('Model Configuration', () => {
     });
 
     it('should define Sonnet model', () => {
-      expect(CLAUDE_MODELS.SONNET).toBe('claude-sonnet-4-5-20250929');
+      expect(CLAUDE_MODELS.SONNET).toBe('claude-sonnet-4-6');
     });
 
     it('should define Opus model', () => {
@@ -82,7 +82,7 @@ describe('Model Configuration', () => {
     it('should return display name for Sonnet', () => {
       const name = getModelDisplayName(CLAUDE_MODELS.SONNET);
       expect(name).toContain('Sonnet');
-      expect(name).toContain('4.5');
+      expect(name).toContain('4.6');
     });
 
     it('should return display name for Opus', () => {

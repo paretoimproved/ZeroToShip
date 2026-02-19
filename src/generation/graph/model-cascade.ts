@@ -12,7 +12,7 @@ export function buildGraphModelCascade(targetModel?: string): string[] {
   }
 
   if (normalizedTarget === CLAUDE_MODELS.SONNET) {
-    return [CLAUDE_MODELS.HAIKU, CLAUDE_MODELS.SONNET];
+    return [CLAUDE_MODELS.SONNET];
   }
 
   if (normalizedTarget === CLAUDE_MODELS.OPUS) {

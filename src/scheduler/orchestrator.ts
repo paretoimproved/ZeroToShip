@@ -570,6 +570,11 @@ export async function runPipeline(
   const needsPublishReview = publishGateEnabled
     && (generateResult.data?.diagnostics?.publishGate?.needsReviewCount ?? 0) > 0;
 
+  // Filter out fallback briefs (placeholder content from API failures)
+  const deliverableBriefs = (generateResult.data?.briefs ?? []).filter(
+    (b) => !b.generationMeta?.isFallback
+  );
+
   const deliverResult = needsPublishReview
     ? {
       success: true,
@@ -585,8 +590,8 @@ export async function runPipeline(
       phase: 'deliver' as const,
       timestamp: new Date(),
     }
-    : generateResult.data?.briefs?.length
-      ? await runDeliverPhase(runId, fullConfig, generateResult.data.briefs)
+    : deliverableBriefs.length
+      ? await runDeliverPhase(runId, fullConfig, deliverableBriefs)
       : { success: true, data: { subscriberCount: 0, sent: 0, failed: 0, dryRun: fullConfig.dryRun }, duration: 0, phase: 'deliver' as const, timestamp: new Date() };
   metrics.completePhase('deliver', deliverResult.success, deliverResult.data?.sent || 0);
 

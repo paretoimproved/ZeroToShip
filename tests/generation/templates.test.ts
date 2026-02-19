@@ -107,7 +107,7 @@ describe('BRIEF_SYSTEM_PROMPT', () => {
   });
 
   it('includes role description', () => {
-    expect(BRIEF_SYSTEM_PROMPT).toContain('startup advisor');
+    expect(BRIEF_SYSTEM_PROMPT).toContain('startup strategist');
   });
 
   it('mentions JSON output format', () => {
@@ -116,7 +116,7 @@ describe('BRIEF_SYSTEM_PROMPT', () => {
 
   it('includes guidelines for recommendations', () => {
     expect(BRIEF_SYSTEM_PROMPT).toContain('specific');
-    expect(BRIEF_SYSTEM_PROMPT).toContain('actionable');
+    expect(BRIEF_SYSTEM_PROMPT).toContain('agent-ready');
   });
 });
 

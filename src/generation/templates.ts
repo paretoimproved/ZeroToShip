@@ -13,18 +13,19 @@ import { extractJson } from '../lib/json-parser';
 /**
  * System prompt for brief generation
  */
-export const BRIEF_SYSTEM_PROMPT = `You are a startup advisor and technical architect helping entrepreneurs identify and validate business opportunities.
+export const BRIEF_SYSTEM_PROMPT = `You are a startup strategist and technical architect who writes specs that double as build instructions. Your briefs are detailed enough that an AI coding agent could scaffold a working MVP from the spec alone, and exciting enough to pull a founder off the sidelines.
 
-Your role is to analyze problems people are experiencing (gathered from Reddit, Hacker News, Twitter, and GitHub issues) and create actionable business briefs for indie hackers and startup founders.
+Your role is to analyze real pain signals (gathered from Reddit, Hacker News, Twitter, and GitHub issues) and produce agent-ready business briefs for indie hackers and startup founders.
 
 Guidelines:
-- Be specific and actionable, not generic
-- Ground recommendations in the actual problem data provided
-- Provide realistic revenue estimates based on market size
-- Suggest concrete marketing channels and first customer acquisition strategies
-- Include specific tech recommendations suitable for the project scope
-- Identify 3-5 concrete risks with mitigations
-- Write in a direct, no-fluff style
+- Write with energy — these are pitches, not academic papers. Make founders feel the opportunity.
+- Be ruthlessly specific: name exact tools, APIs, frameworks, communities, and dollar amounts
+- Ground every recommendation in the actual problem data provided — no hand-waving
+- Provide realistic revenue projections with explicit subscriber/customer assumptions
+- Specify concrete marketing channels with outreach templates and community targets
+- Include system-design-level tech recommendations: frameworks, databases, key tables, API routes
+- Identify 3-5 concrete risks with specific mitigations (not generic "market risk")
+- Every field must be detailed enough for a headless agentic workflow to act on it
 - CRITICAL: Every field must contain specific, substantive content. Do not leave any field empty or with placeholder text like "TBD" or "To be determined".
 
 Output format: Return valid JSON matching the requested schema. Do not include markdown code blocks.`;
@@ -109,16 +110,16 @@ Generate a JSON object with these exact fields:
   "marketSize": "TAM/SAM/SOM estimates with reasoning",
   "existingSolutions": "Summary of current alternatives and their limitations",
   "gaps": "Key unmet needs the market has",
-  "proposedSolution": "Your unique solution approach (2-3 sentences)",
-  "keyFeatures": ["Feature 1", "Feature 2", "Feature 3", "Feature 4", "Feature 5"],
-  "mvpScope": "Minimum features for launch (be ruthless)",
-  "architecture": "Technical architecture overview",
-  "pricing": "Pricing strategy with specific tiers",
-  "revenueProjection": "Year 1-3 revenue potential",
+  "proposedSolution": "Concrete solution with specific implementation approach. Name exact tools, APIs, or data sources. Detailed enough for an engineer to start building.",
+  "keyFeatures": ["5 features described as user stories with acceptance criteria. Each should reference specific technical implementation (e.g., 'Slack webhook ingestion via Express endpoint that parses event payloads')."],
+  "mvpScope": "Numbered list of exact screens/endpoints to build for a launchable v1. Include data model (key entities and relationships) and the 3-5 API routes needed.",
+  "architecture": "System design: frontend framework, backend framework, database with key tables, external APIs/services to integrate, deployment target. Be specific enough that an agent could generate a project scaffold.",
+  "pricing": "Specific dollar amounts for each tier with feature gates. Example: 'Free: 5 projects, Pro $12/mo: unlimited + analytics, Team $29/seat/mo: SSO + audit log'.",
+  "revenueProjection": "Month 1/6/12/24 revenue projections with subscriber/customer count assumptions. Show the math.",
   "monetizationPath": "Primary revenue model and upsell paths",
-  "launchStrategy": "Specific launch plan (where, how, timeline)",
+  "launchStrategy": "Week-by-week launch playbook: pre-launch (landing page, waitlist), launch day (specific communities + post templates), post-launch (growth loops).",
   "channels": ["Channel 1", "Channel 2", "Channel 3"],
-  "firstCustomers": "How to get first 10 paying customers",
+  "firstCustomers": "Step-by-step playbook: where to find them (specific subreddits/communities/companies), what to say (outreach template), how to convert (offer structure).",
   "risks": ["Risk 1 with mitigation", "Risk 2 with mitigation", "Risk 3 with mitigation"]
 }
 
@@ -337,16 +338,16 @@ Return a JSON array with ${problems.length} briefs, one for each problem above. 
     "marketSize": "TAM/SAM/SOM estimates",
     "existingSolutions": "Current alternatives summary",
     "gaps": "Key unmet needs",
-    "proposedSolution": "Your solution approach",
-    "keyFeatures": ["Feature 1", "Feature 2", "Feature 3"],
-    "mvpScope": "Minimum features for launch",
-    "architecture": "Technical architecture",
-    "pricing": "Pricing strategy",
-    "revenueProjection": "Year 1-3 revenue potential",
+    "proposedSolution": "Concrete solution with specific implementation approach. Name exact tools, APIs, or data sources. Detailed enough for an engineer to start building.",
+    "keyFeatures": ["5 features described as user stories with acceptance criteria. Each should reference specific technical implementation."],
+    "mvpScope": "Numbered list of exact screens/endpoints to build for a launchable v1. Include data model (key entities and relationships) and the 3-5 API routes needed.",
+    "architecture": "System design: frontend framework, backend framework, database with key tables, external APIs/services to integrate, deployment target. Be specific enough that an agent could generate a project scaffold.",
+    "pricing": "Specific dollar amounts for each tier with feature gates. Example: 'Free: 5 projects, Pro $12/mo: unlimited + analytics, Team $29/seat/mo: SSO + audit log'.",
+    "revenueProjection": "Month 1/6/12/24 revenue projections with subscriber/customer count assumptions. Show the math.",
     "monetizationPath": "Revenue model",
-    "launchStrategy": "Launch plan",
+    "launchStrategy": "Week-by-week launch playbook: pre-launch (landing page, waitlist), launch day (specific communities + post templates), post-launch (growth loops).",
     "channels": ["Channel 1", "Channel 2"],
-    "firstCustomers": "How to get first 10 customers",
+    "firstCustomers": "Step-by-step playbook: where to find them (specific subreddits/communities/companies), what to say (outreach template), how to convert (offer structure).",
     "risks": ["Risk 1", "Risk 2", "Risk 3"]
   }
 ]
