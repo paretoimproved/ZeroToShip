@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { login, loginWithOAuth } from "@/lib/auth";
 import { trackLoginCompleted } from "@/lib/analytics";
@@ -12,7 +12,6 @@ import { getPostAuthRedirect, sanitizeNextPath } from "@/lib/redirect";
 
 function LoginPageContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { isAuthenticated, isLoading, loginWithGoogleCode } = useAuth();
   const toast = useToast();
   const [error, setError] = useState<string | null>(null);
@@ -40,10 +39,6 @@ function LoginPageContent() {
       sessionStorage.setItem("z2s_next", next);
     }
   }, []);
-
-  const redirectTo = getPostAuthRedirect(
-    searchParams.get("next") || (typeof window !== "undefined" ? sessionStorage.getItem("z2s_next") : null)
-  );
 
   // Detect OAuth callback (URL has ?code= or #access_token after provider redirect)
   const [isOAuthCallback, setIsOAuthCallback] = useState(() => {
