@@ -6,6 +6,14 @@
 
 import { config } from '../config/env';
 
+/** In-memory cooldown map: alert key → last sent timestamp */
+const alertCooldownMap = new Map<string, number>();
+
+/** Reset cooldown state (for tests) */
+export function _resetAlertCooldownForTesting(): void {
+  alertCooldownMap.clear();
+}
+
 /**
  * Escape HTML special characters to prevent injection
  */
@@ -40,6 +48,16 @@ export async function sendPipelineFailureAlert(
     return;
   }
 
+  // Dedup: skip if same alert was sent within cooldown window
+  const cooldownMinutes = Number(process.env.ALERT_COOLDOWN_MINUTES) || 60;
+  const alertKey = `${phase}:${error}`;
+  const now = Date.now();
+  const lastSent = alertCooldownMap.get(alertKey);
+  if (lastSent && now - lastSent < cooldownMinutes * 60_000) {
+    return;
+  }
+  alertCooldownMap.set(alertKey, now);
+
   const timestamp = new Date().toISOString();
 
   try {
@@ -72,6 +90,34 @@ export async function sendPipelineFailureAlert(
     }
   } catch (err) {
     console.error('[Alerts] Error sending alert:', err instanceof Error ? err.message : err);
+  }
+
+  // Send SMS via Twilio for fatal alerts when configured
+  const smsTo = process.env.ALERT_SMS_TO;
+  const smsFrom = process.env.ALERT_SMS_FROM;
+  const twilioSid = process.env.TWILIO_ACCOUNT_SID;
+  const twilioToken = process.env.TWILIO_AUTH_TOKEN;
+
+  if (severity === 'fatal' && smsTo && smsFrom && twilioSid && twilioToken) {
+    try {
+      const smsBody = `[ZeroToShip] ${phase} phase FATAL: ${error} (run: ${runId})`;
+      const smsResponse = await fetch(
+        `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${Buffer.from(`${twilioSid}:${twilioToken}`).toString('base64')}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({ To: smsTo, From: smsFrom, Body: smsBody }).toString(),
+        },
+      );
+      if (!smsResponse.ok) {
+        console.error('[Alerts] Failed to send SMS alert:', smsResponse.status);
+      }
+    } catch (err) {
+      console.error('[Alerts] Error sending SMS:', err instanceof Error ? err.message : err);
+    }
   }
 }
 

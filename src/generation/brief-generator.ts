@@ -154,7 +154,7 @@ interface GPTBriefResponse {
  * Configuration for brief generation
  */
 /** Max tokens for a single brief generation API call */
-const SINGLE_BRIEF_MAX_TOKENS = 4000;
+const SINGLE_BRIEF_MAX_TOKENS = 8000;
 
 /** Estimated tokens per brief in batch generation */
 const TOKENS_PER_BRIEF_ESTIMATE = 3500;
@@ -281,6 +281,7 @@ async function callClaude(
       prompt,
       maxTokens: SINGLE_BRIEF_MAX_TOKENS,
       temperature,
+      timeoutMs: 120_000,
       module: 'brief-generator',
     });
 
