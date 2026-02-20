@@ -98,6 +98,7 @@ vi.mock('../../src/scheduler/utils/persistence', () => ({
   loadRunStatus: vi.fn().mockResolvedValue(null),
   loadPhaseResult: vi.fn().mockResolvedValue(null),
   getResumePhase: vi.fn().mockReturnValue(null),
+  cleanupStaleRuns: vi.fn().mockResolvedValue(0),
 }));
 
 // Mock monitoring (used by orchestrator)

@@ -152,6 +152,17 @@ EXAMPLES:
  * Main CLI entry point
  */
 async function main(): Promise<void> {
+  // Ignore EPIPE errors on stdout/stderr — these occur when the parent
+  // process (e.g. piped to `head`) closes before we finish writing.
+  process.stdout.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code === 'EPIPE') return;
+    throw err;
+  });
+  process.stderr.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code === 'EPIPE') return;
+    throw err;
+  });
+
   const options = parseArgs(process.argv.slice(2));
 
   if (options.verbose) {

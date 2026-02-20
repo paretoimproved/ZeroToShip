@@ -7,7 +7,7 @@
  * Uses the `pipeline_runs` table as the single source of truth.
  */
 
-import { eq } from 'drizzle-orm';
+import { eq, and, lt, sql } from 'drizzle-orm';
 import { createLogger } from './logger';
 import { db, pipelineRuns } from '../../api/db/client';
 import type { PhaseName, PipelineConfig } from '../types';
@@ -282,4 +282,58 @@ export function getResumePhase(status: RunStatus): PhaseName | null {
   }
 
   return null;
+}
+
+/** Max age (in hours) before a `running` row is considered stale and marked `failed`. */
+const STALE_RUN_THRESHOLD_HOURS = 4;
+
+/**
+ * Mark stale `running` rows as `failed`.
+ *
+ * A run is considered stale if its `startedAt` is older than the threshold
+ * and it still has status `running`. This is a safety net — if the process
+ * crashed and never finalized the row, this prevents it from blocking future
+ * runs or confusing the dashboard.
+ *
+ * Call at the start of `runPipeline()` before acquiring the lock.
+ */
+export async function cleanupStaleRuns(): Promise<number> {
+  try {
+    const cutoff = new Date(Date.now() - STALE_RUN_THRESHOLD_HOURS * 60 * 60 * 1000);
+    const result = await db.update(pipelineRuns)
+      .set({
+        status: 'failed',
+        success: false,
+        errors: sql`COALESCE(${pipelineRuns.errors}, '[]'::jsonb) || ${JSON.stringify([{
+          phase: 'scrape',
+          message: `Marked as failed by stale-run cleanup (running for >${STALE_RUN_THRESHOLD_HOURS}h)`,
+          timestamp: new Date().toISOString(),
+          recoverable: false,
+          severity: 'fatal',
+        }])}::jsonb`,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(pipelineRuns.status, 'running'),
+          lt(pipelineRuns.startedAt, cutoff),
+        )
+      )
+      .returning({ runId: pipelineRuns.runId });
+
+    if (result.length > 0) {
+      logger.warn(
+        { count: result.length, runIds: result.map(r => r.runId) },
+        'Cleaned up stale running pipeline rows'
+      );
+    }
+
+    return result.length;
+  } catch (err) {
+    logger.warn(
+      { error: err instanceof Error ? err.message : String(err) },
+      'Failed to clean up stale runs (non-fatal)'
+    );
+    return 0;
+  }
 }

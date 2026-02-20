@@ -31,6 +31,7 @@ import {
   loadRunStatus,
   loadPhaseResult,
   getResumePhase,
+  cleanupStaleRuns,
 } from './utils/persistence';
 import { db, pipelineRuns } from '../api/db/client';
 import { DEFAULT_SIMILARITY_THRESHOLD } from '../analysis/similarity';
@@ -293,6 +294,9 @@ export async function runPipeline(
 
   const logger = createRunLogger(runId);
 
+  // Clean up stale runs before acquiring the lock (safety net for crashed processes)
+  await cleanupStaleRuns();
+
   // Acquire distributed lock to prevent concurrent pipeline runs
   const lockAcquired = await acquirePipelineLock(runId, PIPELINE_LOCK_TTL_SECONDS);
   if (!lockAcquired) {
@@ -311,6 +315,7 @@ export async function runPipeline(
 
   let lockLost = false;
   let stopLockHeartbeat: (() => void) | null = null;
+  let result: PipelineResult | undefined;
 
   try {
   const metrics = new MetricsCollector(runId);
@@ -412,12 +417,13 @@ export async function runPipeline(
     );
     sendPipelineFailureAlert(runId, 'scrape', scrapeResult.error || 'Unknown error', scrapeResult.severity ?? 'fatal');
     if (isFatal) {
-      return buildResult(runId, startedAt, fullConfig, { scrape: scrapeResult }, errors);
+      result = buildResult(runId, startedAt, fullConfig, { scrape: scrapeResult }, errors);
+      return result;
     }
   }
 
   const lockLossAfterScrape = abortForLockLoss('scrape', { scrape: scrapeResult });
-  if (lockLossAfterScrape) return lockLossAfterScrape;
+  if (lockLossAfterScrape) { result = lockLossAfterScrape; return result; }
 
   // Phase 2: Analyze (requires scrape data)
   let analyzeResult: PhaseResult<AnalyzePhaseOutput>;
@@ -471,13 +477,14 @@ export async function runPipeline(
     );
     sendPipelineFailureAlert(runId, 'analyze', analyzeResult.error || 'Unknown error', analyzeResult.severity ?? 'fatal');
     if (isFatal) {
-      return buildResult(
+      result = buildResult(
         runId,
         startedAt,
         fullConfig,
         { scrape: scrapeResult, analyze: analyzeResult },
         errors
       );
+      return result;
     }
   }
 
@@ -485,7 +492,7 @@ export async function runPipeline(
     scrape: scrapeResult,
     analyze: analyzeResult,
   });
-  if (lockLossAfterAnalyze) return lockLossAfterAnalyze;
+  if (lockLossAfterAnalyze) { result = lockLossAfterAnalyze; return result; }
 
   // Phase 3: Generate (requires analyze data)
   let generateResult: PhaseResult<GeneratePhaseOutput>;
@@ -543,7 +550,7 @@ export async function runPipeline(
     );
     sendPipelineFailureAlert(runId, 'generate', generateResult.error || 'Unknown error', generateResult.severity ?? 'fatal');
     if (isFatal) {
-      return buildResult(
+      result = buildResult(
         runId,
         startedAt,
         fullConfig,
@@ -554,6 +561,7 @@ export async function runPipeline(
         },
         errors
       );
+      return result;
     }
   }
 
@@ -562,7 +570,7 @@ export async function runPipeline(
     analyze: analyzeResult,
     generate: generateResult,
   });
-  if (lockLossAfterGenerate) return lockLossAfterGenerate;
+  if (lockLossAfterGenerate) { result = lockLossAfterGenerate; return result; }
 
   // Phase 4: Deliver (degraded by default — delivery failures don't stop pipeline)
   metrics.startPhase('deliver');
@@ -632,9 +640,9 @@ export async function runPipeline(
       error: 'Pipeline lock ownership lost during run',
     },
   });
-  if (lockLossAfterDeliver) return lockLossAfterDeliver;
+  if (lockLossAfterDeliver) { result = lockLossAfterDeliver; return result; }
 
-  const result = buildResult(
+  result = buildResult(
     runId,
     startedAt,
     fullConfig,
@@ -650,65 +658,6 @@ export async function runPipeline(
   // Attach API metrics to result
   const apiMetrics = getGlobalMetrics().getSummary();
   result.apiMetrics = apiMetrics;
-  const generationDiagnostics = buildGenerationDiagnosticsSnapshot(
-    result.phases.generate,
-    apiMetrics
-  );
-
-  // Update the pipeline run row with final results
-  try {
-    const briefSummaries = result.phases.generate.data?.briefs?.map(b => ({
-      id: b.id,
-      name: b.name,
-      tagline: b.tagline,
-      priorityScore: b.priorityScore,
-      effortEstimate: b.effortEstimate,
-      generationMeta: b.generationMeta
-        ? {
-          isFallback: b.generationMeta.isFallback,
-          fallbackReason: b.generationMeta.fallbackReason,
-          providerMode: b.generationMeta.providerMode,
-          graphAttemptCount: b.generationMeta.graphAttemptCount,
-          graphModelsUsed: b.generationMeta.graphModelsUsed,
-          graphFailedSections: b.generationMeta.graphFailedSections,
-          graphRetriedSections: b.generationMeta.graphRetriedSections,
-          graphTrace: b.generationMeta.graphTrace,
-          handoffMeta: b.generationMeta.handoffMeta,
-          publishDecision: b.generationMeta.publishDecision,
-          publishConfidence: b.generationMeta.publishConfidence,
-        }
-        : null,
-    })) || [];
-
-    const finalStatus = deliverResult.data?.skipped
-      ? 'needs_review'
-      : result.success
-        ? 'completed'
-        : 'failed';
-
-    await db.update(pipelineRuns)
-      .set({
-        status: finalStatus,
-        completedAt: result.completedAt,
-        stats: result.stats,
-        success: result.success,
-        totalDuration: result.totalDuration,
-        errors: result.errors,
-        apiMetrics: result.apiMetrics || null,
-        briefSummaries,
-        generationMode: result.phases.generate.data?.generationMode ?? 'legacy',
-        generationDiagnostics,
-        updatedAt: new Date(),
-      })
-      .where(eq(pipelineRuns.runId, runId));
-
-    logger.info({ runId }, 'Pipeline run finalized in database');
-  } catch (dbError) {
-    logger.warn(
-      { error: dbError instanceof Error ? dbError.message : String(dbError) },
-      'Failed to finalize pipeline run in database (non-fatal)'
-    );
-  }
 
   const summary = metrics.getSummary();
   logger.info(
@@ -718,6 +667,71 @@ export async function runPipeline(
 
   return result;
   } finally {
+    // Finalize the pipeline run in the database. This is in `finally` so
+    // the status update executes even if the process hit an unexpected
+    // error (e.g. EPIPE) between buildResult and here.
+    if (result) {
+      try {
+        const finalApiMetrics = result.apiMetrics ?? getGlobalMetrics().getSummary();
+        const generationDiagnostics = buildGenerationDiagnosticsSnapshot(
+          result.phases.generate,
+          finalApiMetrics,
+        );
+
+        const briefSummaries = result.phases.generate.data?.briefs?.map(b => ({
+          id: b.id,
+          name: b.name,
+          tagline: b.tagline,
+          priorityScore: b.priorityScore,
+          effortEstimate: b.effortEstimate,
+          generationMeta: b.generationMeta
+            ? {
+              isFallback: b.generationMeta.isFallback,
+              fallbackReason: b.generationMeta.fallbackReason,
+              providerMode: b.generationMeta.providerMode,
+              graphAttemptCount: b.generationMeta.graphAttemptCount,
+              graphModelsUsed: b.generationMeta.graphModelsUsed,
+              graphFailedSections: b.generationMeta.graphFailedSections,
+              graphRetriedSections: b.generationMeta.graphRetriedSections,
+              graphTrace: b.generationMeta.graphTrace,
+              handoffMeta: b.generationMeta.handoffMeta,
+              publishDecision: b.generationMeta.publishDecision,
+              publishConfidence: b.generationMeta.publishConfidence,
+            }
+            : null,
+        })) || [];
+
+        const finalStatus = result.phases.deliver.data?.skipped
+          ? 'needs_review'
+          : result.success
+            ? 'completed'
+            : 'failed';
+
+        await db.update(pipelineRuns)
+          .set({
+            status: finalStatus,
+            completedAt: result.completedAt,
+            stats: result.stats,
+            success: result.success,
+            totalDuration: result.totalDuration,
+            errors: result.errors,
+            apiMetrics: finalApiMetrics || null,
+            briefSummaries,
+            generationMode: result.phases.generate.data?.generationMode ?? 'legacy',
+            generationDiagnostics,
+            updatedAt: new Date(),
+          })
+          .where(eq(pipelineRuns.runId, runId));
+
+        logger.info({ runId }, 'Pipeline run finalized in database');
+      } catch (dbError) {
+        logger.warn(
+          { error: dbError instanceof Error ? dbError.message : String(dbError) },
+          'Failed to finalize pipeline run in database (non-fatal)'
+        );
+      }
+    }
+
     stopLockHeartbeat?.();
     await releasePipelineLock(runId);
   }
