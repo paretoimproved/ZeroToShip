@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import type { IdeaBrief } from "@/lib/types";
 import { ScoreBadge, EffortBadge } from "@/components/ScoreBadge";
-import { SectionLabel, SectionValue, PillBadge, MonoPill, PlatformIcon } from "@/components/ui";
+import { SectionLabel, SectionValue, MarkdownSection, PillBadge, MonoPill, PlatformIcon } from "@/components/ui";
 import { humanizeText } from "@/lib/humanize";
 
 const allTabs = ["problem", "solution", "tech", "business", "sources"] as const;
@@ -180,40 +180,38 @@ function ProblemPanel({ brief }: { brief: IdeaBrief }) {
   return (
     <dl>
       <SectionLabel>The Problem</SectionLabel>
-      <SectionValue>{humanizeText(brief.problemStatement)}</SectionValue>
+      <MarkdownSection>{brief.problemStatement}</MarkdownSection>
 
       <SectionLabel>Target Audience</SectionLabel>
-      <SectionValue>{humanizeText(brief.targetAudience)}</SectionValue>
+      <MarkdownSection>{brief.targetAudience}</MarkdownSection>
 
       <SectionLabel>Market Size</SectionLabel>
-      <SectionValue>{humanizeText(brief.marketSize)}</SectionValue>
+      <MarkdownSection>{brief.marketSize}</MarkdownSection>
 
       <SectionLabel>Existing Solutions</SectionLabel>
-      <SectionValue>{humanizeText(brief.existingSolutions)}</SectionValue>
+      <MarkdownSection>{brief.existingSolutions}</MarkdownSection>
 
       <SectionLabel>Market Gaps</SectionLabel>
-      <SectionValue>{humanizeText(brief.gaps)}</SectionValue>
+      <MarkdownSection>{brief.gaps}</MarkdownSection>
     </dl>
   );
 }
 
 function SolutionPanel({ brief }: { brief: IdeaBrief }) {
+  const featuresMarkdown = brief.keyFeatures
+    .map((feature, i) => `${i + 1}. ${feature}`)
+    .join("\n");
+
   return (
     <dl>
       <SectionLabel>Proposed Solution</SectionLabel>
-      <SectionValue>{humanizeText(brief.proposedSolution)}</SectionValue>
+      <MarkdownSection>{brief.proposedSolution}</MarkdownSection>
 
       <SectionLabel>Key Features</SectionLabel>
-      <SectionValue>
-        <div className="flex flex-wrap gap-2">
-          {brief.keyFeatures.map((feature) => (
-            <PillBadge key={feature}>{humanizeText(feature)}</PillBadge>
-          ))}
-        </div>
-      </SectionValue>
+      <MarkdownSection>{featuresMarkdown}</MarkdownSection>
 
       <SectionLabel>MVP Scope</SectionLabel>
-      <SectionValue>{humanizeText(brief.mvpScope)}</SectionValue>
+      <MarkdownSection>{brief.mvpScope}</MarkdownSection>
     </dl>
   );
 }
@@ -231,28 +229,30 @@ function TechSpecPanel({ brief }: { brief: IdeaBrief }) {
       </SectionValue>
 
       <SectionLabel>Architecture</SectionLabel>
-      <SectionValue>{humanizeText(brief.technicalSpec.architecture)}</SectionValue>
+      <MarkdownSection>{brief.technicalSpec.architecture}</MarkdownSection>
 
       <SectionLabel>Estimated Effort</SectionLabel>
-      <SectionValue>{humanizeText(brief.technicalSpec.estimatedEffort)}</SectionValue>
+      <MarkdownSection>{brief.technicalSpec.estimatedEffort}</MarkdownSection>
     </dl>
   );
 }
 
 function BusinessPanel({ brief }: { brief: IdeaBrief }) {
+  const risksMarkdown = brief.risks.map((risk) => `- ${risk}`).join("\n");
+
   return (
     <dl>
       <SectionLabel>Pricing Strategy</SectionLabel>
-      <SectionValue>{humanizeText(brief.businessModel.pricing)}</SectionValue>
+      <MarkdownSection>{brief.businessModel.pricing}</MarkdownSection>
 
       <SectionLabel>Revenue Projection</SectionLabel>
-      <SectionValue>{humanizeText(brief.businessModel.revenueProjection)}</SectionValue>
+      <MarkdownSection>{brief.businessModel.revenueProjection}</MarkdownSection>
 
       <SectionLabel>Monetization Path</SectionLabel>
-      <SectionValue>{humanizeText(brief.businessModel.monetizationPath)}</SectionValue>
+      <MarkdownSection>{brief.businessModel.monetizationPath}</MarkdownSection>
 
       <SectionLabel>Launch Strategy</SectionLabel>
-      <SectionValue>{humanizeText(brief.goToMarket.launchStrategy)}</SectionValue>
+      <MarkdownSection>{brief.goToMarket.launchStrategy}</MarkdownSection>
 
       <SectionLabel>Channels</SectionLabel>
       <SectionValue>
@@ -264,37 +264,12 @@ function BusinessPanel({ brief }: { brief: IdeaBrief }) {
       </SectionValue>
 
       <SectionLabel>First Customers</SectionLabel>
-      <SectionValue>{humanizeText(brief.goToMarket.firstCustomers)}</SectionValue>
+      <MarkdownSection>{brief.goToMarket.firstCustomers}</MarkdownSection>
 
       {brief.risks.length > 0 && (
         <>
           <SectionLabel>Risks</SectionLabel>
-          <SectionValue>
-            <div className="space-y-3">
-              {brief.risks.map((risk, i) => (
-                <div
-                  key={i}
-                  className="flex items-start gap-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 border border-amber-200 dark:border-amber-800"
-                >
-                  <svg
-                    className="w-5 h-5 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                    />
-                  </svg>
-                  <span className="text-amber-800 dark:text-amber-200">{humanizeText(risk)}</span>
-                </div>
-              ))}
-            </div>
-          </SectionValue>
+          <MarkdownSection>{risksMarkdown}</MarkdownSection>
         </>
       )}
     </dl>

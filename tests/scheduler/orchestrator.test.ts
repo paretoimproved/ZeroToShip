@@ -177,7 +177,7 @@ function createMockScoredProblem(overrides: Partial<ScoredProblem> = {}): Scored
       engagement: 5,
       impact: 56,
       effort: 20,
-      priority: 18,
+      priority: 25,
     },
     reasoning: {
       severity: 'High severity',

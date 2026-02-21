@@ -28,7 +28,9 @@ Guidelines:
 - Every field must be detailed enough for a headless agentic workflow to act on it
 - CRITICAL: Every field must contain specific, substantive content. Do not leave any field empty or with placeholder text like "TBD" or "To be determined".
 
-Output format: Return valid JSON matching the requested schema. Do not include markdown code blocks.`;
+Format all text fields using markdown: use **bold** for key terms, bullet points for lists, ### headers for subsections, and tables where appropriate. This makes briefs scannable and actionable.
+
+Output format: Return valid JSON matching the requested schema. Do not wrap the JSON in markdown code blocks.`;
 
 /**
  * Build the main brief generation prompt
@@ -105,25 +107,25 @@ Generate a JSON object with these exact fields:
 {
   "name": "Product name (catchy, memorable, 1-2 words)",
   "tagline": "One-line value proposition (under 10 words)",
-  "problemStatement": "Refined problem statement (1-2 sentences)",
-  "targetAudience": "Specific target persona with demographics",
-  "marketSize": "TAM/SAM/SOM estimates with reasoning",
-  "existingSolutions": "Summary of current alternatives and their limitations",
-  "gaps": "Key unmet needs the market has",
-  "proposedSolution": "Concrete solution with specific implementation approach. Name exact tools, APIs, or data sources. Detailed enough for an engineer to start building.",
-  "keyFeatures": ["5 features described as user stories with acceptance criteria. Each should reference specific technical implementation (e.g., 'Slack webhook ingestion via Express endpoint that parses event payloads')."],
-  "mvpScope": "Numbered list of exact screens/endpoints to build for a launchable v1. Include data model (key entities and relationships) and the 3-5 API routes needed.",
-  "architecture": "System design: frontend framework, backend framework, database with key tables, external APIs/services to integrate, deployment target. Be specific enough that an agent could generate a project scaffold.",
-  "pricing": "Specific dollar amounts for each tier with feature gates. Example: 'Free: 5 projects, Pro $12/mo: unlimited + analytics, Team $29/seat/mo: SSO + audit log'.",
-  "revenueProjection": "Month 1/6/12/24 revenue projections with subscriber/customer count assumptions. Show the math.",
-  "monetizationPath": "Primary revenue model and upsell paths",
-  "launchStrategy": "Week-by-week launch playbook: pre-launch (landing page, waitlist), launch day (specific communities + post templates), post-launch (growth loops).",
+  "problemStatement": "Refined problem statement using markdown. Use **bold** for key pain points.",
+  "targetAudience": "Target persona with demographics. Use bullet points for distinct segments.",
+  "marketSize": "TAM/SAM/SOM estimates. Use a markdown list or table with reasoning.",
+  "existingSolutions": "Summary of current alternatives. Use bullet points with **competitor name**: limitation format.",
+  "gaps": "Key unmet needs. Use bullet points for each gap.",
+  "proposedSolution": "Concrete solution with specific implementation approach. Use **bold** for key terms, bullet points for components. Name exact tools, APIs, or data sources.",
+  "keyFeatures": ["**Feature Name** — description with acceptance criteria and specific technical implementation (e.g., '**Webhook Ingestion** — Express endpoint that parses Slack event payloads and stores alerts in PostgreSQL'). Include 5 features, each as a markdown-formatted string."],
+  "mvpScope": "Numbered list of exact screens/endpoints using markdown. Include ### Data Model subsection with key entities and ### API Routes subsection.",
+  "architecture": "System design using markdown. Use ### subsections for Frontend, Backend, Database, External Services, Deployment. Include key tables and API routes.",
+  "pricing": "Pricing tiers using a markdown table. Columns: Tier, Price, Features. Example: Free | $0 | 5 projects.",
+  "revenueProjection": "Month 1/6/12/24 projections using a markdown table. Show subscriber counts and revenue. Include assumptions as bullet points.",
+  "monetizationPath": "Primary revenue model and upsell paths using markdown. Use **bold** for key strategies.",
+  "launchStrategy": "Week-by-week launch playbook using markdown. Use ### headers for Pre-Launch, Launch Day, Post-Launch phases.",
   "channels": ["Channel 1", "Channel 2", "Channel 3"],
-  "firstCustomers": "Step-by-step playbook: where to find them (specific subreddits/communities/companies), what to say (outreach template), how to convert (offer structure).",
-  "risks": ["Risk 1 with mitigation", "Risk 2 with mitigation", "Risk 3 with mitigation"]
+  "firstCustomers": "Step-by-step playbook using markdown. Use numbered list with ### Where to Find, ### What to Say, ### How to Convert subsections.",
+  "risks": ["**Risk name** — description with specific mitigation strategy", "**Risk 2** — description with mitigation", "**Risk 3** — description with mitigation"]
 }
 
-Important: Return ONLY the JSON object, no markdown formatting or code blocks.`;
+Important: Return ONLY the JSON object. Do not wrap it in markdown code blocks. Text field VALUES should use markdown formatting for structure.`;
 }
 
 /**
@@ -354,5 +356,7 @@ Return a JSON array with ${problems.length} briefs, one for each problem above. 
 
 CRITICAL: Every field in every brief must contain specific, substantive content. Do not use placeholder text like "TBD", "To be determined", or "Research required". Base all content on the problem data provided above.
 
-Important: Return ONLY the JSON array with ${problems.length} objects, no markdown or code blocks.`;
+Format all text field VALUES using markdown: use **bold** for key terms, bullet points for lists, ### headers for subsections, and tables where appropriate. This makes briefs scannable and actionable.
+
+Important: Return ONLY the JSON array with ${problems.length} objects. Do not wrap it in markdown code blocks. Text field VALUES should use markdown formatting for structure.`;
 }

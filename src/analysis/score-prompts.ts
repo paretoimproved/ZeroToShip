@@ -114,7 +114,7 @@ Use the FULL 1-10 range. Do not cluster scores in the 4-6 range.
 
 The "totalScore" and "Average engagement per post" values reflect real community upvotes/reactions. Use them to distinguish validated pain from keyword noise:
 
-- Average engagement <3: Low validation. Posts may just mention a keyword without expressing real pain. Score severity conservatively (1-4) unless the post text clearly describes acute suffering.
+- Average engagement <3: Limited community validation — the problem may be real but underexposed. Score severity based on the problem's inherent pain level described in the post text, not the vote count. Low engagement alone should not cap severity — many genuine problems appear in low-traffic threads.
 - Average engagement 3-20: Moderate validation. Some community agreement that this is a real problem. Severity 4-7 is typical.
 - Average engagement 20-100: Strong validation. Meaningful community resonance. Severity 7+ is warranted if the problem text confirms real pain.
 - Average engagement 100+: Exceptional validation. Widespread agreement. Severity 8-10 is appropriate for genuine blockers.
@@ -182,7 +182,7 @@ Use the FULL 1-10 range. Do not cluster scores in the 4-6 range.
 
 The "Engagement" and "Avg engagement" values reflect real community upvotes/reactions. Use them to distinguish validated pain from keyword noise:
 
-- Average engagement <3: Low validation. Posts may just mention a keyword without expressing real pain. Score severity conservatively (1-4) unless the post text clearly describes acute suffering.
+- Average engagement <3: Limited community validation — the problem may be real but underexposed. Score severity based on the problem's inherent pain level described in the post text, not the vote count. Low engagement alone should not cap severity — many genuine problems appear in low-traffic threads.
 - Average engagement 3-20: Moderate validation. Some community agreement that this is a real problem. Severity 4-7 is typical.
 - Average engagement 20-100: Strong validation. Meaningful community resonance. Severity 7+ is warranted if the problem text confirms real pain.
 - Average engagement 100+: Exceptional validation. Widespread agreement. Severity 8-10 is appropriate for genuine blockers.

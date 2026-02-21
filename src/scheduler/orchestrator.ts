@@ -58,7 +58,7 @@ const DEFAULT_MIN_FREQUENCY_FOR_GAP = 2;
 const DEFAULT_MAX_BRIEFS = 10;
 
 /** Minimum priority score for a problem to be included in brief generation */
-const DEFAULT_MIN_PRIORITY_SCORE = 5;
+const DEFAULT_MIN_PRIORITY_SCORE = 20;
 
 /** Heartbeat interval for renewing the pipeline lock while a run is active */
 const PIPELINE_LOCK_HEARTBEAT_INTERVAL_MS = 60_000;

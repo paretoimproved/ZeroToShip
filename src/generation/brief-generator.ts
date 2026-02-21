@@ -163,7 +163,7 @@ const TOKENS_PER_BRIEF_ESTIMATE = 3500;
 const BATCH_MAX_OUTPUT_TOKENS = 16000;
 
 /** Default max concurrent brief generation API calls */
-const DEFAULT_MAX_CONCURRENT = 2;
+const DEFAULT_MAX_CONCURRENT = 4;
 
 /** Default delay between brief generation API calls (ms) */
 const DEFAULT_DELAY_BETWEEN_CALLS_MS = 500;
@@ -590,8 +590,8 @@ export async function generateAllBriefs(
   const model = opts.model || getBriefModel(opts.userTier);
   logger.info({ count: scoredProblems.length, model, tier: opts.userTier }, 'Generating briefs');
 
-  // Batch size for brief generation — use 1 for full-context single prompts
-  const BRIEF_BATCH_SIZE = 1;
+  // Batch size for brief generation — process multiple briefs per batch
+  const BRIEF_BATCH_SIZE = 5;
 
   // Prepare all problems with their gap analyses
   const problemsWithGaps: Array<{

@@ -46,7 +46,7 @@ export class GraphGenerationProvider implements GenerationProvider {
 
   async generate(input: GenerationProviderInput): Promise<IdeaBrief[]> {
     const cfg = input.config ?? {};
-    const maxConcurrent = Math.max(1, cfg.maxConcurrent ?? 2);
+    const maxConcurrent = Math.max(1, cfg.maxConcurrent ?? 5);
     const budget = new GraphBudgetManager({
       runBudgetUsd: cfg.runBudgetUsd,
       runBudgetTokens: cfg.runBudgetTokens,
