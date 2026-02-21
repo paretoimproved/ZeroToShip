@@ -118,6 +118,13 @@ export interface PipelineRunResponse {
   config: Record<string, unknown>;
 }
 
+export interface PhaseStatsMap {
+  scrape?: { totalPosts: number; reddit: number; hn: number; github: number };
+  analyze?: { clusterCount: number; scoredCount: number; gapAnalysisCount: number };
+  generate?: { briefCount: number };
+  deliver?: { sent: number; failed: number; subscriberCount: number };
+}
+
 export interface PipelineStatus {
   status: 'ok' | 'error' | 'no_runs';
   runId?: string;
@@ -127,12 +134,7 @@ export interface PipelineStatus {
   generationMode?: GenerationMode | null;
   generationDiagnostics?: GenerationDiagnosticsSnapshot | null;
   phases?: Record<string, string>;
-  phaseStats?: {
-    scrape?: { totalPosts: number; reddit: number; hn: number; github: number };
-    analyze?: { clusterCount: number; scoredCount: number; gapAnalysisCount: number };
-    generate?: { briefCount: number };
-    deliver?: { sent: number; failed: number; subscriberCount: number };
-  };
+  phaseStats?: PhaseStatsMap;
   lastCompletedPhase?: string | null;
   updatedAt?: string;
   message?: string;
@@ -159,6 +161,9 @@ export interface PipelineRunRow {
   completedAt: string | null;
   config: Record<string, unknown>;
   phases: Record<string, string>;
+  phaseStats?: PhaseStatsMap;
+  updatedAt?: string;
+  lastCompletedPhase?: string | null;
   phaseResults?: Record<string, unknown> | null;
   stats: {
     postsScraped: number;
