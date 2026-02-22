@@ -128,31 +128,28 @@ describe("IdeaBriefCard", () => {
     expect(screen.getByText("Freemium")).toBeInTheDocument();
   });
 
-  it("shows gated overlay on protected tabs when gated=true", async () => {
+  it("shows no gated overlay since archive is open (gated prop has no effect)", async () => {
     const user = userEvent.setup();
     render(<IdeaBriefCard brief={makeBrief()} gated />);
 
-    // Problem tab is not gated, should show content
+    // Problem tab shows content
     expect(screen.getByText("People struggle with X")).toBeInTheDocument();
     expect(screen.queryByTestId("gated-content")).not.toBeInTheDocument();
 
-    // Switch to solution tab (gated)
+    // Solution tab is now open (no gating)
     await user.click(screen.getByRole("tab", { name: "Solution" }));
-    expect(screen.getByTestId("gated-content")).toBeInTheDocument();
-    expect(screen.getByText("Full Analysis Locked")).toBeInTheDocument();
-
-    // Switch to tech spec tab (gated)
-    await user.click(screen.getByRole("tab", { name: "Tech Spec" }));
-    expect(screen.getByTestId("gated-content")).toBeInTheDocument();
-
-    // Switch to business tab (gated)
-    await user.click(screen.getByRole("tab", { name: "Business" }));
-    expect(screen.getByTestId("gated-content")).toBeInTheDocument();
-
-    // Switch back to problem tab (not gated)
-    await user.click(screen.getByRole("tab", { name: "Problem" }));
     expect(screen.queryByTestId("gated-content")).not.toBeInTheDocument();
-    expect(screen.getByText("People struggle with X")).toBeInTheDocument();
+    expect(screen.getByText("Build a better Y")).toBeInTheDocument();
+
+    // Tech spec tab is now open
+    await user.click(screen.getByRole("tab", { name: "Tech Spec" }));
+    expect(screen.queryByTestId("gated-content")).not.toBeInTheDocument();
+    expect(screen.getByText("Monolith to start")).toBeInTheDocument();
+
+    // Business tab is now open
+    await user.click(screen.getByRole("tab", { name: "Business" }));
+    expect(screen.queryByTestId("gated-content")).not.toBeInTheDocument();
+    expect(screen.getByText("Freemium")).toBeInTheDocument();
   });
 
   it("does not show gated overlay when gated=false", async () => {
