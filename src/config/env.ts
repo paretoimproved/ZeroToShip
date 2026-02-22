@@ -129,7 +129,7 @@ const envSchema = z.object({
   ),
   GRAPH_MAX_CONCURRENT_BRIEFS: z.preprocess(
     (val) => (val === '' || val === undefined ? undefined : val),
-    z.coerce.number().int().positive().default(2)
+    z.coerce.number().int().positive().default(5)
   ),
   GRAPH_RUN_BUDGET_USD: z.preprocess(
     (val) => (val === '' || val === undefined ? undefined : val),
