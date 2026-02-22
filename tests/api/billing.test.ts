@@ -95,7 +95,7 @@ describe('Stripe Configuration', () => {
       expect(PRICE_INFO.pro_monthly).toEqual({
         amount: 1900,
         interval: 'month',
-        name: 'Builder Monthly',
+        name: 'Pro Monthly',
         tier: 'pro',
       });
     });
@@ -104,7 +104,7 @@ describe('Stripe Configuration', () => {
       expect(PRICE_INFO.pro_yearly).toEqual({
         amount: 19000, // 10 months, 2 free
         interval: 'year',
-        name: 'Builder Yearly',
+        name: 'Pro Yearly',
         tier: 'pro',
       });
     });

@@ -43,6 +43,7 @@ describe('FEATURE_ACCESS', () => {
       'ideas.archive',
       'ideas.fullBrief',
       'ideas.search',
+      'ideas.generateSpec',
       'ideas.export',
       'validate',
       'user.preferences',
@@ -84,26 +85,33 @@ describe('hasAccess', () => {
     });
   });
 
-  describe('pro-tier features (fullBrief, search, validate)', () => {
-    it('should allow archive access for all tiers (preview mode for lower tiers)', () => {
+  describe('open-tier features (fullBrief, archive) and gated features (search, validate)', () => {
+    it('should allow archive access for all tiers', () => {
       expect(hasAccess('anonymous', 'ideas.archive')).toBe(true);
       expect(hasAccess('free', 'ideas.archive')).toBe(true);
       expect(hasAccess('pro', 'ideas.archive')).toBe(true);
       expect(hasAccess('enterprise', 'ideas.archive')).toBe(true);
     });
 
-    it('should gate fullBrief at free tier', () => {
-      expect(hasAccess('anonymous', 'ideas.fullBrief')).toBe(false);
+    it('should allow fullBrief access for all tiers (open archive)', () => {
+      expect(hasAccess('anonymous', 'ideas.fullBrief')).toBe(true);
       expect(hasAccess('free', 'ideas.fullBrief')).toBe(true);
       expect(hasAccess('pro', 'ideas.fullBrief')).toBe(true);
       expect(hasAccess('enterprise', 'ideas.fullBrief')).toBe(true);
     });
 
-    it('should gate search at pro tier', () => {
+    it('should gate search at free tier', () => {
       expect(hasAccess('anonymous', 'ideas.search')).toBe(false);
-      expect(hasAccess('free', 'ideas.search')).toBe(false);
+      expect(hasAccess('free', 'ideas.search')).toBe(true);
       expect(hasAccess('pro', 'ideas.search')).toBe(true);
       expect(hasAccess('enterprise', 'ideas.search')).toBe(true);
+    });
+
+    it('should gate spec generation at free tier', () => {
+      expect(hasAccess('anonymous', 'ideas.generateSpec')).toBe(false);
+      expect(hasAccess('free', 'ideas.generateSpec')).toBe(true);
+      expect(hasAccess('pro', 'ideas.generateSpec')).toBe(true);
+      expect(hasAccess('enterprise', 'ideas.generateSpec')).toBe(true);
     });
 
     it('should gate validation at pro tier', () => {
@@ -170,8 +178,8 @@ describe('Helper functions', () => {
 
   describe('getIdeasLimit', () => {
     it('should return correct limits for each tier', () => {
-      expect(getIdeasLimit('anonymous')).toBe(3);
-      expect(getIdeasLimit('free')).toBe(3);
+      expect(getIdeasLimit('anonymous')).toBe(10);
+      expect(getIdeasLimit('free')).toBe(10);
       expect(getIdeasLimit('pro')).toBe(10);
       expect(getIdeasLimit('enterprise')).toBe(Infinity);
     });
@@ -179,9 +187,9 @@ describe('Helper functions', () => {
 });
 
 describe('getUpgradePrompt', () => {
-  it('should return correct prompt for free-gated features', () => {
+  it('should return correct prompt for anonymous-gated features (open)', () => {
     const prompt = getUpgradePrompt('ideas.fullBrief');
-    expect(prompt.requiredTier).toBe('free');
+    expect(prompt.requiredTier).toBe('anonymous');
     expect(prompt.message).toContain('Free');
     expect(prompt.upgradeUrl).toBeTruthy();
   });

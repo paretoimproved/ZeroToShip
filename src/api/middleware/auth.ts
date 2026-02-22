@@ -281,7 +281,7 @@ export async function requirePro(
   if (request.userTier !== 'pro' && request.userTier !== 'enterprise') {
     reply.status(403).send({
       code: 'PRO_REQUIRED',
-      message: 'This endpoint requires a Builder or Enterprise subscription',
+      message: 'This endpoint requires a Pro or Enterprise subscription',
     });
   }
 }

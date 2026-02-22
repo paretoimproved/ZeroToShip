@@ -88,8 +88,8 @@ describe('Rate Limits', () => {
 
   describe('IDEAS_LIMIT configuration', () => {
     it('should have correct limits for each tier', () => {
-      expect(IDEAS_LIMIT.anonymous).toBe(3);
-      expect(IDEAS_LIMIT.free).toBe(3);
+      expect(IDEAS_LIMIT.anonymous).toBe(10);
+      expect(IDEAS_LIMIT.free).toBe(10);
       expect(IDEAS_LIMIT.pro).toBe(10);
       expect(IDEAS_LIMIT.enterprise).toBe(Infinity);
     });

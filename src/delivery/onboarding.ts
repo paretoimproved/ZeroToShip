@@ -102,14 +102,14 @@ function buildOnboardingHtml(
     <ol>
       <li><strong>Check your inbox each morning</strong> -- Your daily ideas arrive</li>
       <li><strong>Review the scores</strong> -- Higher priority = bigger opportunity, less effort</li>
-      <li><strong>Click through for details</strong> -- See the full brief${isPro ? '' : ' (Builder only)'}</li>
+      <li><strong>Click through for details</strong> -- See the full brief${isPro ? '' : ''}</li>
       <li><strong>Start building</strong> -- Or wait for tomorrow's batch</li>
     </ol>
     <p><strong>Quick tip:</strong> The best ideas often have high "severity" scores -- those are the painful problems people will actually pay to solve.</p>
     <p style="text-align: center; margin: 24px 0;"><a href="${escapeHtml(dashboardUrl)}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-weight: 600;">Explore ZeroToShip</a></p>
     <p>Questions? Just reply to this email.</p>
     <p>-- The ZeroToShip Team</p>
-    ${!isPro ? `<hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" /><p style="color: #666; font-size: 14px;">P.S. Want more ideas? <a href="${escapeHtml(upgradeUrl)}" style="color: #667eea;">Upgrade to Builder</a> for 10 full briefs daily.</p>` : ''}
+    ${!isPro ? `<hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" /><p style="color: #666; font-size: 14px;">P.S. Want more ideas? <a href="${escapeHtml(upgradeUrl)}" style="color: #667eea;">Upgrade to Pro</a> for 10 full briefs daily.</p>` : ''}
   </div>
   <div style="padding: 16px 24px; text-align: center; background: #f5f5f5; color: #888; font-size: 12px;">
     <p>You're receiving this because you signed up for ZeroToShip.</p>
@@ -161,9 +161,9 @@ function buildOnboardingHtml(
     <p><strong>Business Model</strong> -- Monetization strategy, pricing recommendations, revenue projections</p>
     <p><strong>Go-to-Market</strong> -- Launch channels, first 100 customer strategy, content marketing angles</p>
     <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
-    <p>For $19/mo, you get 10 complete briefs every day. That's research that would take hours -- delivered before your morning coffee.</p>
-    <p><a href="${escapeHtml(upgradeUrl)}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Upgrade to Builder &rarr;</a></p>
-    <p style="color: #666; font-size: 14px;">Not ready? No problem. You'll keep getting 3 ideas daily on the free plan.</p>
+    <p>For $19/mo, you get 30 agent-ready specs per month. Transform any brief into a full technical spec with user stories, database schema, API routes, and CLAUDE.md -- ready to paste into your project.</p>
+    <p><a href="${escapeHtml(upgradeUrl)}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Upgrade to Pro &rarr;</a></p>
+    <p style="color: #666; font-size: 14px;">Not ready? No problem. Free users get 3 spec generations per month.</p>
     <p>-- The ZeroToShip Team</p>
   </div>
   <div style="padding: 16px 24px; text-align: center; background: #f5f5f5; color: #888; font-size: 12px;">
@@ -171,7 +171,7 @@ function buildOnboardingHtml(
     <p><a href="${escapeHtml(preferencesUrl)}" style="color: #888;">Manage preferences</a></p>
   </div>
 </div>`,
-      text: `Hey ${name},\n\nYou've seen 3 days of ideas. Here's what you're missing in the full briefs:\n\n- Technical Spec: Recommended tech stack, architecture, MVP scope\n- Competitor Analysis: Top solutions, strengths/weaknesses, market gaps\n- Business Model: Monetization, pricing, revenue projections\n- Go-to-Market: Launch channels, first 100 customers\n\nFor $19/mo, you get 10 complete briefs every day.\n\nUpgrade to Builder: ${upgradeUrl}\n\nNot ready? No problem. You'll keep getting 3 ideas daily on the free plan.\n\n-- The ZeroToShip Team`,
+      text: `Hey ${name},\n\nYou've seen 3 days of ideas. Here's what you're missing in the full briefs:\n\n- Technical Spec: Recommended tech stack, architecture, MVP scope\n- Competitor Analysis: Top solutions, strengths/weaknesses, market gaps\n- Business Model: Monetization, pricing, revenue projections\n- Go-to-Market: Launch channels, first 100 customers\n\nFor $19/mo, you get 30 agent-ready specs per month -- transform any brief into a full technical spec ready for your AI agent.\n\nUpgrade to Pro: ${upgradeUrl}\n\nNot ready? No problem. Free users get 3 spec generations per month.\n\n-- The ZeroToShip Team`,
     },
     day7: {
       html: `
@@ -194,7 +194,7 @@ function buildOnboardingHtml(
     <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
     ${isPro ? `
     <p><strong>What's Next?</strong></p>
-    <p>You're on Builder -- awesome! Here are some features you might have missed:</p>
+    <p>You're on Pro -- awesome! Here are some features you might have missed:</p>
     <ul>
       <li><strong>Archive search</strong> -- Find ideas from previous days</li>
       <li><strong>Category filters</strong> -- Focus on your niche</li>
@@ -203,15 +203,14 @@ function buildOnboardingHtml(
     <p><a href="${escapeHtml(dashboardUrl)}" style="color: #667eea; font-weight: 600;">Explore the Dashboard &rarr;</a></p>
     ` : `
     <p><strong>What's Next?</strong></p>
-    <p>You're on the free plan. Here's what Builder unlocks:</p>
+    <p>You're on the free plan. Here's what Pro unlocks:</p>
     <ul>
-      <li>10 ideas/day (vs 3)</li>
-      <li>Full technical specs</li>
-      <li>Competitor analysis</li>
-      <li>Business model guidance</li>
-      <li>Archive access</li>
+      <li>30 agent-ready spec generations/month (vs 3)</li>
+      <li>Custom problem submission</li>
+      <li>Problem watching with weekly re-analysis</li>
+      <li>Bulk export (Markdown/JSON)</li>
     </ul>
-    <p><a href="${escapeHtml(upgradeUrl)}" style="color: #667eea; font-weight: 600;">Try Builder for $19/mo &rarr;</a></p>
+    <p><a href="${escapeHtml(upgradeUrl)}" style="color: #667eea; font-weight: 600;">Try Pro for $19/mo &rarr;</a></p>
     `}
     <p>Thanks for being an early user. Seriously.</p>
     <p>-- Brandon, Founder of ZeroToShip</p>
@@ -222,7 +221,7 @@ function buildOnboardingHtml(
     <p><a href="${escapeHtml(preferencesUrl)}" style="color: #888;">Manage preferences</a></p>
   </div>
 </div>`,
-      text: `Hey ${name},\n\nYou've been with ZeroToShip for a week!\n\nI have a favor to ask.\n\nWhat would help me improve ZeroToShip for you?\n\nJust hit reply and answer any of these:\n1. What's working well?\n2. What's missing?\n3. Would you recommend it to a friend?\n\nYour feedback directly shapes the product. I read every reply.\n\n${isPro ? `You're on Builder! Features you might have missed:\n- Archive search\n- Category filters\n- Export to CSV\n\nExplore: ${dashboardUrl}` : `You're on the free plan. Builder unlocks:\n- 10 ideas/day\n- Full technical specs\n- Competitor analysis\n- Business model guidance\n\nTry Builder: ${upgradeUrl}`}\n\nThanks for being an early user.\n\n-- Brandon, Founder of ZeroToShip`,
+      text: `Hey ${name},\n\nYou've been with ZeroToShip for a week!\n\nI have a favor to ask.\n\nWhat would help me improve ZeroToShip for you?\n\nJust hit reply and answer any of these:\n1. What's working well?\n2. What's missing?\n3. Would you recommend it to a friend?\n\nYour feedback directly shapes the product. I read every reply.\n\n${isPro ? `You're on Pro! Features you might have missed:\n- Archive search\n- Category filters\n- Export to CSV\n\nExplore: ${dashboardUrl}` : `You're on the free plan. Pro unlocks:\n- 30 agent-ready spec generations/month\n- Custom problem submission\n- Problem watching with weekly re-analysis\n- Bulk export\n\nTry Pro: ${upgradeUrl}`}\n\nThanks for being an early user.\n\n-- Brandon, Founder of ZeroToShip`,
     },
   };
 

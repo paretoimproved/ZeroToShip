@@ -293,14 +293,14 @@ describe('Email Builder', () => {
       const result = buildDailyEmail(briefs, 'free');
 
       expect(result.html).toContain('Every idea. Every brief. Every day.');
-      expect(result.html).toContain('Upgrade to Builder');
+      expect(result.html).toContain('Upgrade to Pro');
     });
 
     it('hides upgrade CTA for pro tier users', () => {
       const briefs = createMockBriefs(5);
       const result = buildDailyEmail(briefs, 'pro');
 
-      expect(result.html).not.toContain('Upgrade to Builder');
+      expect(result.html).not.toContain('Upgrade to Pro');
     });
 
     it('includes unsubscribe link in footer', () => {
@@ -994,8 +994,8 @@ describe('Email Service', () => {
       const freeResult = previewDailyBrief('free', briefs);
       const proResult = previewDailyBrief('pro', briefs);
 
-      expect(freeResult.html).toContain('Upgrade to Builder');
-      expect(proResult.html).not.toContain('Upgrade to Builder');
+      expect(freeResult.html).toContain('Upgrade to Pro');
+      expect(proResult.html).not.toContain('Upgrade to Pro');
     });
 
     it('accepts custom config', () => {
@@ -1149,12 +1149,12 @@ describe('Tier-based content', () => {
       expect(result.text).toContain('Tagline for idea 3');
     });
 
-    it('marks ideas beyond limit as BUILDER in plain text', () => {
+    it('marks ideas beyond limit as PRO in plain text', () => {
       const briefs = createMockBriefs(10);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.text).toContain('#4 Idea 4 [BUILDER]');
-      expect(result.text).toContain('#10 Idea 10 [BUILDER]');
+      expect(result.text).toContain('#4 Idea 4 [PRO]');
+      expect(result.text).toContain('#10 Idea 10 [PRO]');
     });
 
     it('does not show taglines for locked ideas in plain text', () => {
@@ -1162,27 +1162,27 @@ describe('Tier-based content', () => {
       const result = buildDailyEmail(briefs, 'free');
 
       // Idea 4 is locked (rank 4 > limit 3)
-      expect(result.text).toContain('[BUILDER]');
+      expect(result.text).toContain('[PRO]');
       // The locked idea's tagline should not appear on the line after it
       const lines = result.text.split('\n');
-      const lockedLineIdx = lines.findIndex(l => l.includes('Idea 4 [BUILDER]'));
+      const lockedLineIdx = lines.findIndex(l => l.includes('Idea 4 [PRO]'));
       expect(lockedLineIdx).toBeGreaterThan(-1);
       // Next line should not have the tagline
       expect(lines[lockedLineIdx + 1]).not.toContain('Tagline for idea 4');
     });
 
-    it('shows BUILDER badge on HTML ideas beyond tier limit', () => {
+    it('shows PRO badge on HTML ideas beyond tier limit', () => {
       const briefs = createMockBriefs(6);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.html).toContain('BUILDER</span>');
+      expect(result.html).toContain('PRO</span>');
     });
 
-    it('shows "available with Builder" message for free tier', () => {
+    it('shows "available with Pro" message for free tier', () => {
       const briefs = createMockBriefs(10);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.html).toContain('available with Builder');
+      expect(result.html).toContain('available with Pro');
     });
 
     it('shows correct locked count for free tier', () => {
@@ -1191,14 +1191,14 @@ describe('Tier-based content', () => {
       const briefs = createMockBriefs(10);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.html).toContain('+7 more ideas available with Builder');
+      expect(result.html).toContain('+7 more ideas available with Pro');
     });
 
     it('shows upgrade URL in plain text', () => {
       const briefs = createMockBriefs(10);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.text).toContain('Upgrade to Builder:');
+      expect(result.text).toContain('Upgrade to Pro:');
     });
   });
 
@@ -1214,7 +1214,7 @@ describe('Tier-based content', () => {
       const briefs = createMockBriefs(10);
       const result = buildDailyEmail(briefs, 'pro');
 
-      expect(result.html).not.toContain('Upgrade to Builder');
+      expect(result.html).not.toContain('Upgrade to Pro');
       expect(result.html).not.toContain('Unlock all ideas');
     });
 
@@ -1222,15 +1222,15 @@ describe('Tier-based content', () => {
       const briefs = createMockBriefs(10);
       const result = buildDailyEmail(briefs, 'pro');
 
-      expect(result.text).not.toContain('Upgrade to Builder');
+      expect(result.text).not.toContain('Upgrade to Pro');
     });
 
-    it('does not show BUILDER badge for any idea rows', () => {
+    it('does not show PRO badge for any idea rows', () => {
       const briefs = createMockBriefs(10);
       const result = buildDailyEmail(briefs, 'pro');
 
-      // Pro tier sees all ideas unlocked - no BUILDER badges
-      expect(result.html).not.toContain('>BUILDER</span>');
+      // Pro tier sees all ideas unlocked - no PRO badges
+      expect(result.html).not.toContain('>PRO</span>');
     });
 
     it('shows taglines for all secondary ideas in plain text', () => {
@@ -1249,8 +1249,8 @@ describe('Tier-based content', () => {
       const briefs = createMockBriefs(3);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.text).not.toContain('[BUILDER]');
-      expect(result.html).not.toContain('>BUILDER</span>');
+      expect(result.text).not.toContain('[PRO]');
+      expect(result.html).not.toContain('>PRO</span>');
     });
 
     it('one above tier limit shows exactly 1 locked idea', () => {
@@ -1259,7 +1259,7 @@ describe('Tier-based content', () => {
       const briefs = createMockBriefs(4);
       const result = buildDailyEmail(briefs, 'free');
 
-      const lockedMatches = result.text.match(/\[BUILDER\]/g);
+      const lockedMatches = result.text.match(/\[PRO\]/g);
       expect(lockedMatches).toHaveLength(1);
     });
 
@@ -1279,7 +1279,7 @@ describe('Tier-based content', () => {
       const result = buildDailyEmail(briefs, 'free');
 
       expect(result.html).toContain("Today's Other Ideas");
-      expect(result.text).not.toContain('[BUILDER]');
+      expect(result.text).not.toContain('[PRO]');
     });
   });
 });

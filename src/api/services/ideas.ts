@@ -518,7 +518,7 @@ export async function getIdeaByIdForTier(
     return {
       idea: filtered,
       upgrade: {
-        message: 'Upgrade to Builder to see the full business brief',
+        message: 'Upgrade to Pro to see the full business brief',
         url: 'https://zerotoship.dev/pricing',
       },
     };

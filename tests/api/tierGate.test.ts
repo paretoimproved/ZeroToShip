@@ -22,7 +22,7 @@ describe('filterIdeaForTier', () => {
   const fullBrief = makeIdeaBrief();
 
   describe('anonymous tier', () => {
-    it('should return summary without brief for anonymous', () => {
+    it('should return full brief for anonymous (open archive)', () => {
       const result = filterIdeaForTier(fullBrief, 'anonymous');
       expect(result.id).toBe(fullBrief.id);
       expect(result.name).toBe(fullBrief.name);
@@ -31,7 +31,7 @@ describe('filterIdeaForTier', () => {
       expect(result.effortEstimate).toBe(fullBrief.effortEstimate);
       expect(result.category).toBe(fullBrief.category);
       expect(result.generatedAt).toBe(fullBrief.generatedAt);
-      expect(result.brief).toBeUndefined();
+      expect(result.brief).toBeDefined();
     });
   });
 
@@ -80,16 +80,16 @@ describe('filterIdeasForTier', () => {
   );
 
   describe('idea count limiting', () => {
-    it('should return 3 ideas for anonymous', () => {
+    it('should return 10 ideas for anonymous', () => {
       const result = filterIdeasForTier(ideas, 'anonymous');
-      expect(result.ideas).toHaveLength(3);
+      expect(result.ideas).toHaveLength(10);
       expect(result.total).toBe(15);
       expect(result.limited).toBe(true);
     });
 
-    it('should return 3 ideas for free', () => {
+    it('should return 10 ideas for free', () => {
       const result = filterIdeasForTier(ideas, 'free');
-      expect(result.ideas).toHaveLength(3);
+      expect(result.ideas).toHaveLength(10);
       expect(result.limited).toBe(true);
     });
 
@@ -107,10 +107,10 @@ describe('filterIdeasForTier', () => {
   });
 
   describe('brief inclusion based on tier', () => {
-    it('should not include briefs for anonymous tier', () => {
+    it('should include briefs for anonymous tier (open archive)', () => {
       const result = filterIdeasForTier(ideas, 'anonymous');
       for (const idea of result.ideas) {
-        expect(idea.brief).toBeUndefined();
+        expect(idea.brief).toBeDefined();
       }
     });
 

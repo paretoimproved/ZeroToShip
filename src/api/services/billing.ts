@@ -24,7 +24,7 @@ import { updateSubscription, getUserById } from './users';
 import type { UserTier } from '../schemas';
 
 const PLAN_NAMES: Record<'pro' | 'enterprise', string> = {
-  pro: 'Builder',
+  pro: 'Pro',
   enterprise: 'Enterprise',
 };
 

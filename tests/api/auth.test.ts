@@ -157,10 +157,10 @@ describe('Feature Access', () => {
       expect(hasAccess('free', 'user.preferences')).toBe(true);
     });
 
-    it('should allow free tier access to full briefs but deny pro features', () => {
+    it('should allow free tier access to full briefs and search but deny pro features', () => {
       expect(hasAccess('free', 'ideas.fullBrief')).toBe(true);
       expect(hasAccess('free', 'ideas.archive')).toBe(true);
-      expect(hasAccess('free', 'ideas.search')).toBe(false);
+      expect(hasAccess('free', 'ideas.search')).toBe(true);
       expect(hasAccess('free', 'validate')).toBe(false);
     });
 
@@ -193,8 +193,8 @@ describe('Feature Access', () => {
 
   describe('getIdeasLimit', () => {
     it('should return correct limits for each tier', () => {
-      expect(getIdeasLimit('anonymous')).toBe(3);
-      expect(getIdeasLimit('free')).toBe(3);
+      expect(getIdeasLimit('anonymous')).toBe(10);
+      expect(getIdeasLimit('free')).toBe(10);
       expect(getIdeasLimit('pro')).toBe(10);
       expect(getIdeasLimit('enterprise')).toBe(Infinity);
     });
@@ -244,8 +244,8 @@ describe('Tier Gate Middleware', () => {
     });
 
     it('should deny access with 403 when user tier is below minimum', async () => {
-      const gate = createTierGate('ideas.fullBrief'); // minTier: 'free'
-      const request = createMockRequest({ userTier: 'anonymous' });
+      const gate = createTierGate('validate'); // minTier: 'pro'
+      const request = createMockRequest({ userTier: 'free' });
       const reply = createMockReply();
 
       await gate(request, reply);
@@ -255,8 +255,8 @@ describe('Tier Gate Middleware', () => {
       expect(reply._body.code).toBe('TIER_RESTRICTED');
     });
 
-    it('should deny anonymous access to pro features with 403', async () => {
-      const gate = createTierGate('ideas.search'); // minTier: 'pro'
+    it('should deny anonymous access to free-gated features with 403', async () => {
+      const gate = createTierGate('ideas.search'); // minTier: 'free'
       const request = createMockRequest({ userTier: 'anonymous' });
       const reply = createMockReply();
 
@@ -265,7 +265,7 @@ describe('Tier Gate Middleware', () => {
       expect(reply.sent).toBe(true);
       expect(reply.statusCode).toBe(403);
       expect(reply._body.code).toBe('TIER_RESTRICTED');
-      expect(reply._body.details.requiredTier).toBe('pro');
+      expect(reply._body.details.requiredTier).toBe('free');
       expect(reply._body.details.currentTier).toBe('anonymous');
     });
 
@@ -314,7 +314,7 @@ describe('Tier Gate Middleware', () => {
 
     it('should include upgrade URL in 403 response', async () => {
       const gate = createTierGate('ideas.search');
-      const request = createMockRequest({ userTier: 'free' });
+      const request = createMockRequest({ userTier: 'anonymous' });
       const reply = createMockReply();
 
       await gate(request, reply);
@@ -448,9 +448,9 @@ describe('Route Auth Configuration', () => {
       expect(hasAccess('enterprise', 'validate')).toBe(true);
     });
 
-    it('should deny free users from all enterprise features', () => {
-      const enterpriseFeatures = ['ideas.search', 'ideas.export', 'validate', 'api.keys'];
-      for (const feature of enterpriseFeatures) {
+    it('should deny free users from all pro+ and enterprise features', () => {
+      const gatedFeatures = ['ideas.export', 'validate', 'api.keys'];
+      for (const feature of gatedFeatures) {
         expect(hasAccess('free', feature)).toBe(false);
       }
     });
@@ -612,7 +612,7 @@ describe('Auth Middleware Behavior', () => {
       if (request.userTier !== 'pro' && request.userTier !== 'enterprise') {
         reply.status(403).send({
           code: 'PRO_REQUIRED',
-          message: 'This endpoint requires a Builder or Enterprise subscription',
+          message: 'This endpoint requires a Pro or Enterprise subscription',
         });
       }
     }
@@ -798,9 +798,9 @@ describe('Route-by-Route Auth Verification', () => {
      * users who are not on the enterprise tier.
      */
 
-    it('free user accessing enterprise search should get 403', async () => {
+    it('anonymous user accessing search should get 403', async () => {
       const gate = createTierGate('ideas.search');
-      const request = createMockRequest({ userId: 'user-1', userTier: 'free' });
+      const request = createMockRequest({ userId: undefined, userTier: 'anonymous' });
       const reply = createMockReply();
 
       await gate(request, reply);
@@ -908,7 +908,7 @@ describe('Auth Error Response Format', () => {
     const reply = createMockReply();
     reply.status(403).send({
       code: 'PRO_REQUIRED',
-      message: 'This endpoint requires a Builder or Enterprise subscription',
+      message: 'This endpoint requires a Pro or Enterprise subscription',
     });
 
     expect(reply._body).toHaveProperty('code');
@@ -918,7 +918,7 @@ describe('Auth Error Response Format', () => {
 
   it('403 tier gate response should include details', async () => {
     const gate = createTierGate('ideas.search');
-    const request = createMockRequest({ userTier: 'free' });
+    const request = createMockRequest({ userTier: 'anonymous' });
     const reply = createMockReply();
 
     await gate(request, reply);

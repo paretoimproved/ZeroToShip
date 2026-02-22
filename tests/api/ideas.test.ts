@@ -27,7 +27,7 @@ import { mockIdea, makeIdeaBrief } from '../fixtures';
 
 describe('Tier Filtering', () => {
   describe('filterIdeaForTier', () => {
-    it('should return summary without brief for anonymous tier', () => {
+    it('should return full brief for anonymous tier (open archive)', () => {
       const result = filterIdeaForTier(mockIdea, 'anonymous');
 
       expect(result.id).toBe(mockIdea.id);
@@ -35,7 +35,7 @@ describe('Tier Filtering', () => {
       expect(result.tagline).toBe(mockIdea.tagline);
       expect(result.priorityScore).toBe(mockIdea.priorityScore);
       expect(result.effortEstimate).toBe(mockIdea.effortEstimate);
-      expect(result.brief).toBeUndefined();
+      expect(result.brief).toBeDefined();
     });
 
     it('should include full brief for free tier', () => {
@@ -69,18 +69,18 @@ describe('Tier Filtering', () => {
       priorityScore: 100 - i,
     }));
 
-    it('should limit anonymous tier to 3 ideas', () => {
+    it('should limit anonymous tier to 10 ideas', () => {
       const result = filterIdeasForTier(mockIdeas, 'anonymous');
 
-      expect(result.ideas.length).toBe(3);
+      expect(result.ideas.length).toBe(10);
       expect(result.total).toBe(20);
       expect(result.limited).toBe(true);
     });
 
-    it('should limit free tier to 3 ideas', () => {
+    it('should limit free tier to 10 ideas', () => {
       const result = filterIdeasForTier(mockIdeas, 'free');
 
-      expect(result.ideas.length).toBe(3);
+      expect(result.ideas.length).toBe(10);
       expect(result.limited).toBe(true);
     });
 
@@ -117,8 +117,8 @@ describe('Tier Filtering', () => {
 
 describe('Access Control Functions', () => {
   describe('canAccessFullBrief', () => {
-    it('should return false for anonymous', () => {
-      expect(canAccessFullBrief('anonymous')).toBe(false);
+    it('should return true for anonymous (open archive)', () => {
+      expect(canAccessFullBrief('anonymous')).toBe(true);
     });
 
     it('should return true for free', () => {
@@ -144,9 +144,9 @@ describe('Access Control Functions', () => {
   });
 
   describe('canSearch', () => {
-    it('should be available for pro and above', () => {
+    it('should be available for free and above', () => {
       expect(canSearch('anonymous')).toBe(false);
-      expect(canSearch('free')).toBe(false);
+      expect(canSearch('free')).toBe(true);
       expect(canSearch('pro')).toBe(true);
       expect(canSearch('enterprise')).toBe(true);
     });
@@ -167,7 +167,7 @@ describe('Upgrade Prompts', () => {
     it('should return correct prompt for fullBrief feature', () => {
       const prompt = getUpgradePrompt('ideas.fullBrief');
 
-      expect(prompt.requiredTier).toBe('free');
+      expect(prompt.requiredTier).toBe('anonymous');
       expect(prompt.message).toContain('Free');
       expect(prompt.upgradeUrl).toBe('https://zerotoship.dev/pricing');
     });
@@ -175,8 +175,8 @@ describe('Upgrade Prompts', () => {
     it('should return correct prompt for search feature', () => {
       const prompt = getUpgradePrompt('ideas.search');
 
-      expect(prompt.requiredTier).toBe('pro');
-      expect(prompt.message).toContain('Builder');
+      expect(prompt.requiredTier).toBe('free');
+      expect(prompt.message).toContain('Free');
     });
 
     it('should return default prompt for unknown feature', () => {
