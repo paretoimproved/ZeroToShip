@@ -146,6 +146,12 @@ const envSchema = z.object({
     z.coerce.number().int().nonnegative().optional()
   ),
 
+  // Brief generation timeout (ms) — must exceed Sonnet's worst-case generation time
+  BRIEF_GENERATION_TIMEOUT_MS: z.preprocess(
+    (val) => (val === '' || val === undefined ? undefined : val),
+    z.coerce.number().int().positive().default(180_000)
+  ),
+
   // Agent-to-agent handoff (Phase 4)
   HANDOFF_PROVIDER: z.enum(['off', 'mock', 'n8n']).default('off'),
   N8N_HANDOFF_URL: z.preprocess(

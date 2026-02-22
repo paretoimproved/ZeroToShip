@@ -21,7 +21,6 @@ import type {
   PipelineConfig,
   QualityFailureReasonCode,
 } from '../types';
-import { getPipelineBriefModel } from '../../config/models';
 import { config as envConfig } from '../../config/env';
 import { db, ideas } from '../../api/db/client';
 
@@ -272,7 +271,6 @@ export async function runGeneratePhase(
       scoredProblems: filteredProblems,
       gapAnalyses,
       config: {
-        model: getPipelineBriefModel(),
         maxAttempts: envConfig.GRAPH_MAX_ATTEMPTS,
         maxSectionRetries: envConfig.GRAPH_MAX_SECTION_RETRIES,
         maxConcurrent: envConfig.GRAPH_MAX_CONCURRENT_BRIEFS,

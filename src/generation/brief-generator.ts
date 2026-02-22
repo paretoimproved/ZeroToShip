@@ -281,7 +281,7 @@ async function callClaude(
       prompt,
       maxTokens: SINGLE_BRIEF_MAX_TOKENS,
       temperature,
-      timeoutMs: 120_000,
+      timeoutMs: envConfig.BRIEF_GENERATION_TIMEOUT_MS,
       module: 'brief-generator',
     });
 
