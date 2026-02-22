@@ -59,7 +59,7 @@ const DEFAULT_SEARCH_RATE_LIMIT_DELAY_MS = 1200;
 const DEFAULT_MAX_COMPETITORS = 10;
 
 /** Default concurrent gap analysis operations */
-const DEFAULT_GAP_CONCURRENCY = 1;
+const DEFAULT_GAP_CONCURRENCY = 3;
 
 /** Default minimum post frequency to trigger web search analysis */
 const DEFAULT_MIN_FREQUENCY_FOR_SEARCH = 1;
@@ -76,12 +76,16 @@ const MIN_GAPS_FOR_DIFFERENTIATION = 3;
 /** Minimum differentiation angles for "challenging but possible" recommendation */
 const MIN_ANGLES_FOR_CHALLENGING = 2;
 
+/** Default overall gap analysis phase timeout (ms) */
+const DEFAULT_GAP_ANALYSIS_TIMEOUT_MS = 600_000;
+
 export interface GapAnalysisConfig {
   webSearch?: WebSearchConfig;
   competitor?: CompetitorAnalysisOptions;
   concurrency?: number;
   skipSearchForLowFrequency?: boolean;
   minFrequencyForSearch?: number;
+  timeoutMs?: number;
 }
 
 const DEFAULT_CONFIG: Required<GapAnalysisConfig> = {
@@ -97,6 +101,7 @@ const DEFAULT_CONFIG: Required<GapAnalysisConfig> = {
   concurrency: DEFAULT_GAP_CONCURRENCY,
   skipSearchForLowFrequency: true,
   minFrequencyForSearch: DEFAULT_MIN_FREQUENCY_FOR_SEARCH,
+  timeoutMs: DEFAULT_GAP_ANALYSIS_TIMEOUT_MS,
 };
 
 /**
@@ -282,11 +287,20 @@ export async function analyzeAllGaps(
 
   logger.info({ count: toAnalyze.length }, 'Analyzing gaps in batches');
 
+  const deadline = Date.now() + opts.timeoutMs;
+
   // Step 1: Run all web searches (with concurrency limit)
   const searchClient = new WebSearchClient(opts.webSearch);
   const searchResults = new Map<string, SearchResult[]>();
+  let timedOut = false;
 
   for (let i = 0; i < toAnalyze.length; i += opts.concurrency) {
+    if (Date.now() >= deadline) {
+      timedOut = true;
+      logger.warn({ completed: i, total: toAnalyze.length }, 'Gap analysis web search timed out — returning partial results');
+      break;
+    }
+
     const batch = toAnalyze.slice(i, i + opts.concurrency);
 
     const searchPromises = batch.map(async problem => {
@@ -312,9 +326,19 @@ export async function analyzeAllGaps(
     }
   }
 
+  // Only analyze problems that completed web search
+  const searchedProblems = timedOut
+    ? toAnalyze.filter(p => searchResults.has(p.id))
+    : toAnalyze;
+
   // Step 2: Batch competitor analysis
-  for (let i = 0; i < toAnalyze.length; i += COMPETITOR_BATCH_SIZE) {
-    const batch = toAnalyze.slice(i, i + COMPETITOR_BATCH_SIZE);
+  for (let i = 0; i < searchedProblems.length; i += COMPETITOR_BATCH_SIZE) {
+    if (Date.now() >= deadline) {
+      logger.warn({ completed: i, total: searchedProblems.length }, 'Gap analysis competitor phase timed out — returning partial results');
+      break;
+    }
+
+    const batch = searchedProblems.slice(i, i + COMPETITOR_BATCH_SIZE);
 
     const batchInput = batch.map(p => ({
       id: p.id,

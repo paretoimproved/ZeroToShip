@@ -232,7 +232,7 @@ async function main(): Promise<void> {
     case 'schedule': {
       console.log('Starting ZeroToShip scheduler...\n');
 
-      startScheduler({
+      await startScheduler({
         pipelineConfig: {
           dryRun: options.dryRun,
           hoursBack: options.hoursBack,

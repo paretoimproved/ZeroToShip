@@ -63,6 +63,11 @@ vi.mock('../../src/scheduler/watchdog', () => ({
   checkPipelineFreshness: vi.fn(),
 }));
 
+// Mock persistence (cleanupStaleRuns is called on scheduler startup)
+vi.mock('../../src/scheduler/utils/persistence', () => ({
+  cleanupStaleRuns: vi.fn().mockResolvedValue(0),
+}));
+
 // --- Helpers ---
 
 function makePipelineResult(overrides: Partial<PipelineResult> = {}): PipelineResult {
@@ -109,7 +114,7 @@ describe('startScheduler config merging', () => {
     // so DEFAULT_SCHEDULER_CONFIG.pipelineConfig.generationMode = 'legacy'
     const { startScheduler } = await import('../../src/scheduler/index');
 
-    startScheduler({
+    await startScheduler({
       pipelineConfig: {
         dryRun: true,
         hoursBack: 12,
@@ -133,7 +138,7 @@ describe('startScheduler config merging', () => {
   it('should allow caller to explicitly override generationMode', async () => {
     const { startScheduler } = await import('../../src/scheduler/index');
 
-    startScheduler({
+    await startScheduler({
       pipelineConfig: {
         dryRun: true,
         generationMode: 'graph',
@@ -153,7 +158,7 @@ describe('startScheduler config merging', () => {
   it('should preserve all caller pipelineConfig fields alongside defaults', async () => {
     const { startScheduler } = await import('../../src/scheduler/index');
 
-    startScheduler({
+    await startScheduler({
       pipelineConfig: {
         dryRun: true,
         hoursBack: 72,
@@ -176,7 +181,7 @@ describe('startScheduler config merging', () => {
   it('should use DEFAULT_SCHEDULER_CONFIG when no config is provided', async () => {
     const { startScheduler } = await import('../../src/scheduler/index');
 
-    startScheduler();
+    await startScheduler();
 
     await triggerCronCallback();
 
@@ -187,7 +192,7 @@ describe('startScheduler config merging', () => {
   it('should not start when scheduler is disabled', async () => {
     const { startScheduler } = await import('../../src/scheduler/index');
 
-    startScheduler({ enabled: false });
+    await startScheduler({ enabled: false });
 
     expect(mockCronSchedule).not.toHaveBeenCalled();
   });
@@ -196,7 +201,7 @@ describe('startScheduler config merging', () => {
     const { startScheduler } = await import('../../src/scheduler/index');
     mockCronValidate.mockReturnValueOnce(false);
 
-    expect(() => startScheduler({ cronExpression: 'bad cron' })).toThrow(
+    await expect(startScheduler({ cronExpression: 'bad cron' })).rejects.toThrow(
       'Invalid cron expression'
     );
   });
@@ -250,11 +255,14 @@ describe('startScheduler e2e: env → config → runPipeline', () => {
     vi.doMock('../../src/scheduler/watchdog', () => ({
       checkPipelineFreshness: vi.fn(),
     }));
+    vi.doMock('../../src/scheduler/utils/persistence', () => ({
+      cleanupStaleRuns: vi.fn().mockResolvedValue(0),
+    }));
 
     const { startScheduler } = await import('../../src/scheduler/index');
 
     // Call startScheduler with partial config (no generationMode) — like the cron job does
-    startScheduler({
+    await startScheduler({
       pipelineConfig: {
         dryRun: true,
         hoursBack: 24,

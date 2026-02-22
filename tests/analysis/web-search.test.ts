@@ -674,6 +674,101 @@ describe('WebSearchClient', () => {
   });
 });
 
+  describe('fetch timeout', () => {
+    beforeEach(() => {
+      vi.useRealTimers();
+      mockFetch.mockReset();
+      global.fetch = mockFetch;
+      WebSearchClient.resetForTesting();
+    });
+
+    it('aborts SerpAPI request after fetchTimeoutMs', async () => {
+      // Make fetch hang until aborted
+      mockFetch.mockImplementation((_url: string, init?: RequestInit) => {
+        return new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            reject(new DOMException('The operation was aborted.', 'AbortError'));
+          });
+        });
+      });
+
+      const client = new WebSearchClient({
+        serpApiKey: 'test-key',
+        fetchTimeoutMs: 50,
+        maxRetries: 0,
+        rateLimitDelay: 0,
+      });
+
+      await expect(client.search('timeout query')).rejects.toThrow();
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+
+      // Verify AbortSignal was passed
+      const callOptions = mockFetch.mock.calls[0][1];
+      expect(callOptions.signal).toBeInstanceOf(AbortSignal);
+    });
+
+    it('aborts Brave request after fetchTimeoutMs', async () => {
+      mockFetch.mockImplementation((_url: string, init?: RequestInit) => {
+        return new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            reject(new DOMException('The operation was aborted.', 'AbortError'));
+          });
+        });
+      });
+
+      const client = new WebSearchClient({
+        braveApiKey: 'test-key',
+        fetchTimeoutMs: 50,
+        maxRetries: 0,
+        rateLimitDelay: 0,
+      });
+
+      await expect(client.search('timeout query')).rejects.toThrow();
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+
+      const callOptions = mockFetch.mock.calls[0][1];
+      expect(callOptions.signal).toBeInstanceOf(AbortSignal);
+    });
+
+    it('clears timeout after successful fetch', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          organic_results: [
+            { title: 'Result', link: 'https://example.com', snippet: 'test', position: 1 },
+          ],
+          search_information: { total_results: 1 },
+        }),
+      });
+
+      const client = new WebSearchClient({
+        serpApiKey: 'test-key',
+        fetchTimeoutMs: 5000,
+        rateLimitDelay: 0,
+      });
+
+      const result = await client.search('fast query');
+      expect(result.results).toHaveLength(1);
+    });
+
+    it('passes AbortSignal to fetch', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ organic_results: [] }),
+      });
+
+      const client = new WebSearchClient({
+        serpApiKey: 'key',
+        rateLimitDelay: 0,
+      });
+
+      await client.search('signal check query');
+
+      const callOptions = mockFetch.mock.calls[0]?.[1];
+      expect(callOptions?.signal).toBeInstanceOf(AbortSignal);
+    });
+  });
+
 describe('Domain Extraction', () => {
   it('extracts domain from search results correctly', async () => {
     const mockFetch = vi.fn().mockResolvedValue({

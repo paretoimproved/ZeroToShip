@@ -18,7 +18,7 @@ import type {
 } from '../types';
 
 /** Analyze this many top-ranked clusters per requested brief */
-const GAP_ANALYSIS_BRIEF_BUFFER = 5;
+const GAP_ANALYSIS_BRIEF_BUFFER = 1.5;
 
 /** Minimum gap-analysis candidate pool for stable quality */
 const GAP_ANALYSIS_MIN_CANDIDATES = 15;

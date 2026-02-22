@@ -8,6 +8,7 @@
 import cron from 'node-cron';
 import { config as envConfig } from '../config/env';
 import { runPipeline, DEFAULT_PIPELINE_CONFIG } from './orchestrator';
+import { cleanupStaleRuns } from './utils/persistence';
 import { logger } from './utils/logger';
 import type { PipelineConfig, SchedulerConfig } from './types';
 
@@ -25,7 +26,7 @@ let scheduledTask: cron.ScheduledTask | null = null;
 /**
  * Start the scheduler
  */
-export function startScheduler(config: Partial<SchedulerConfig> = {}): void {
+export async function startScheduler(config: Partial<SchedulerConfig> = {}): Promise<void> {
   const fullConfig = {
     ...DEFAULT_SCHEDULER_CONFIG,
     ...config,
@@ -52,6 +53,9 @@ export function startScheduler(config: Partial<SchedulerConfig> = {}): void {
     { cronExpression: fullConfig.cronExpression, timezone: fullConfig.timezone },
     'Starting scheduler'
   );
+
+  // Clean up stale runs from previous crashes before scheduling new work
+  await cleanupStaleRuns();
 
   scheduledTask = cron.schedule(
     fullConfig.cronExpression,

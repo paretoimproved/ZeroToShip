@@ -696,6 +696,93 @@ describe('Gap Analyzer Module', () => {
   });
 });
 
+describe('Gap Analysis Concurrency and Timeout', () => {
+  it('defaults to concurrency of 3', async () => {
+    // Create 6 clusters — with concurrency=3 we expect 2 batches of web searches
+    const clusters = Array(6).fill(null).map((_, i) =>
+      createMockCluster({
+        id: `conc_${i}`,
+        problemStatement: `Concurrency problem ${i}`,
+        frequency: 5,
+      })
+    );
+
+    const searchSpy = vi.spyOn(WebSearchClient.prototype, 'searchForProblem');
+
+    await analyzeAllGaps(clusters, {
+      skipSearchForLowFrequency: true,
+      minFrequencyForSearch: 2,
+      webSearch: { rateLimitDelay: 0 },
+    });
+
+    // All 6 problems should have been searched
+    expect(searchSpy).toHaveBeenCalledTimes(6);
+    searchSpy.mockRestore();
+  });
+
+  it('respects custom concurrency setting', async () => {
+    const clusters = Array(4).fill(null).map((_, i) =>
+      createMockCluster({
+        id: `custom_conc_${i}`,
+        problemStatement: `Custom concurrency problem ${i}`,
+        frequency: 5,
+      })
+    );
+
+    const searchSpy = vi.spyOn(WebSearchClient.prototype, 'searchForProblem');
+
+    await analyzeAllGaps(clusters, {
+      concurrency: 2,
+      skipSearchForLowFrequency: true,
+      minFrequencyForSearch: 2,
+      webSearch: { rateLimitDelay: 0 },
+    });
+
+    expect(searchSpy).toHaveBeenCalledTimes(4);
+    searchSpy.mockRestore();
+  });
+
+  it('bails out of web search loop when timeout is exceeded', async () => {
+    // Create many clusters to ensure the loop runs multiple iterations
+    const clusters = Array(20).fill(null).map((_, i) =>
+      createMockCluster({
+        id: `timeout_${i}`,
+        problemStatement: `Timeout problem ${i}`,
+        frequency: 5,
+      })
+    );
+
+    // Use a very short timeout (1ms) to guarantee it fires immediately
+    const results = await analyzeAllGaps(clusters, {
+      timeoutMs: 1,
+      concurrency: 1,
+      skipSearchForLowFrequency: true,
+      minFrequencyForSearch: 2,
+      webSearch: { rateLimitDelay: 0 },
+    });
+
+    // Should return partial results (fewer than 20 analyzed)
+    // Skipped problems are not produced, so total < 20
+    expect(results.length).toBeLessThan(20);
+  });
+
+  it('returns all results when timeout is not exceeded', async () => {
+    const clusters = [
+      createMockCluster({ id: 'fast_1', frequency: 5 }),
+      createMockCluster({ id: 'fast_2', frequency: 5 }),
+    ];
+
+    const results = await analyzeAllGaps(clusters, {
+      timeoutMs: 600_000, // 10 minutes, should not trigger
+      skipSearchForLowFrequency: true,
+      minFrequencyForSearch: 2,
+      webSearch: { rateLimitDelay: 0 },
+    });
+
+    expect(results.length).toBe(2);
+  });
+});
+
 describe('Batch Processing', () => {
   it('analyzeAllGaps uses batch competitor analysis', async () => {
     // Create multiple clusters

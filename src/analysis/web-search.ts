@@ -44,7 +44,11 @@ export interface WebSearchConfig {
   cacheTtlMs?: number;
   minUniqueResultsBeforeExpansion?: number;
   maxQueriesPerProblem?: number;
+  fetchTimeoutMs?: number;
 }
+
+/** Default per-request fetch timeout (ms) */
+const DEFAULT_FETCH_TIMEOUT_MS = 15_000;
 
 const DEFAULT_CONFIG: Required<WebSearchConfig> = {
   provider: 'auto',
@@ -57,6 +61,7 @@ const DEFAULT_CONFIG: Required<WebSearchConfig> = {
   cacheTtlMs: 30 * 60 * 1000,
   minUniqueResultsBeforeExpansion: 8,
   maxQueriesPerProblem: 3,
+  fetchTimeoutMs: DEFAULT_FETCH_TIMEOUT_MS,
 };
 
 /** Maximum backoff delay for retry attempts */
@@ -227,7 +232,17 @@ export class WebSearchClient {
       num: String(this.config.maxResults),
     });
 
-    const response = await fetch(`https://serpapi.com/search?${params}`);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.config.fetchTimeoutMs);
+
+    let response: Response;
+    try {
+      response = await fetch(`https://serpapi.com/search?${params}`, {
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
 
     if (!response.ok) {
       throw new SearchRequestError(
@@ -273,12 +288,21 @@ export class WebSearchClient {
       count: String(this.config.maxResults),
     });
 
-    const response = await fetch(`https://api.search.brave.com/res/v1/web/search?${params}`, {
-      headers: {
-        'Accept': 'application/json',
-        'X-Subscription-Token': this.config.braveApiKey,
-      },
-    });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.config.fetchTimeoutMs);
+
+    let response: Response;
+    try {
+      response = await fetch(`https://api.search.brave.com/res/v1/web/search?${params}`, {
+        headers: {
+          'Accept': 'application/json',
+          'X-Subscription-Token': this.config.braveApiKey,
+        },
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
 
     if (!response.ok) {
       throw new SearchRequestError(
