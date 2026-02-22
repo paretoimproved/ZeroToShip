@@ -69,8 +69,6 @@ export default function IdeaBriefCard({
 
   const showGatedOverlay = gated && gatedTabs.has(activeTab);
 
-  const revenueEstimate = humanizeText(brief.revenueEstimate);
-
   return (
     <article
       className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden animate-fade-in-up opacity-0"
@@ -100,18 +98,6 @@ export default function IdeaBriefCard({
           <div className="flex flex-wrap items-center gap-2 sm:flex-shrink-0 sm:max-w-[55%] min-w-0">
             <ScoreBadge score={brief.priorityScore} size="sm" />
             <EffortBadge effort={brief.effortEstimate} size="sm" />
-            <span
-              title={revenueEstimate}
-              className={[
-                // Prevent long AI-generated strings from blowing up the layout.
-                // We show the full value on hover via `title`.
-                "hidden sm:inline-flex items-center text-xs font-medium",
-                "px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
-                "min-w-0 max-w-full sm:max-w-[360px] truncate whitespace-nowrap",
-              ].join(" ")}
-            >
-              <span className="min-w-0 truncate whitespace-nowrap">{revenueEstimate}</span>
-            </span>
             {bookmarkSlot}
           </div>
         </div>
