@@ -184,7 +184,7 @@ describe('Generate Phase', () => {
       expect(generateAllBriefs).toHaveBeenCalledWith(
         expect.any(Array),
         gapAnalyses,
-        expect.not.objectContaining({ model: expect.anything() })
+        expect.objectContaining({ model: 'claude-sonnet-4-5-20250929' })
       );
     });
 
