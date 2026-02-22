@@ -1,44 +1,66 @@
 # ZeroToShip
 
-Automated SaaS that scrapes the web for technical pain points and generates prioritized entrepreneurial ideas.
+Automated SaaS that scrapes the web for technical pain points and generates prioritized business briefs for aspiring founders. Pipeline runs daily, delivers ideas by email, and serves a tier-gated web dashboard.
 
-## Career Demo Docs
+**Live**: [zerotoship.dev](https://zerotoship.dev)
 
-For interview-ready project evidence, start here:
+---
 
-1. `reviews/career/README.md`
-2. `reviews/career/impact-scoreboard.md`
-3. `reviews/career/experiment-log.md`
-4. `reviews/career/decision-log.md`
-5. `reviews/career/weekly-build-log.md`
-6. `demos/README.md`
+## Architecture
 
-## Current MVP Surface (2026-02-13)
-
-This repository now runs as a monorepo with:
-
-1. API (`src/api`)
-2. Scheduler and pipeline orchestration (`src/scheduler`)
-3. Web app (`web/`)
-
-Common commands:
-
-```bash
-# API
-npm run dev:api
-
-# Scheduler
-npm run scheduler:run
-
-# Web
-npm run web:dev
+```
+┌───────────────────────────────────────────────────────────────┐
+│  DAILY PIPELINE (cron, 5 AM PT)                               │
+├───────────────────────────────────────────────────────────────┤
+│                                                               │
+│  Scrape (Parallel)         Analyze (Parallel)      Deliver   │
+│  ┌─────────────────┐       ┌───────────────┐      ┌────────┐│
+│  │ Reddit Scraper   │──┐    │ Deduplicator  │──┐   │ Email  ││
+│  ├─────────────────┤  │    ├───────────────┤  │   │Delivery││
+│  │ HN Scraper       │──┼──▶│ Scorer        │──┼──▶├────────┤│
+│  ├─────────────────┤  │    ├───────────────┤  │   │  Web   ││
+│  │ GitHub Scraper   │──┘    │ Gap Analyzer  │──┤   │Dashboard││
+│  └─────────────────┘       ├───────────────┤  │   ├────────┤│
+│                             │Brief Generator│──┘   │  API   ││
+│                             └───────────────┘      └────────┘│
+└───────────────────────────────────────────────────────────────┘
 ```
 
-## Features
+## Tech Stack
 
-- **Reddit Scraper**: Collects posts from entrepreneurship and developer subreddits
-- **Signal Detection**: Identifies pain points, frustrations, and product opportunities
-- **Multiple Output Formats**: JSON, CSV, summary, and full text
+| Layer | Technology |
+|-------|-----------|
+| **Backend** | TypeScript, Fastify, Drizzle ORM, Zod |
+| **Frontend** | Next.js 15 (App Router), React 19, Tailwind CSS |
+| **Database** | PostgreSQL (Supabase) |
+| **AI** | Anthropic Claude (scoring + briefs), OpenAI (embeddings) |
+| **Email** | Resend |
+| **Payments** | Stripe (checkout, webhooks, billing portal) |
+| **Hosting** | Railway (API + scheduler), Vercel (web) |
+| **Cache** | Redis (ioredis) with in-memory fallback |
+| **CI/CD** | GitHub Actions → Vercel auto-deploy |
+| **Analytics** | PostHog |
+| **Monitoring** | Sentry, pipeline watchdog, alerting (Slack/SMS/PagerDuty) |
+
+## Monorepo Structure
+
+```
+src/
+  scrapers/       Data collection (Reddit, HN, GitHub)
+  analysis/       Clustering, scoring, gap analysis, embeddings
+  generation/     AI brief generation (legacy + graph providers)
+  delivery/       Email sending, onboarding drip
+  api/            Fastify REST API, middleware, services
+  api/db/         Drizzle schema and database client
+  scheduler/      Pipeline orchestration, cron, watchdog
+  config/         Environment, models, Redis
+  lib/            Logger, Anthropic client, semaphore, errors
+packages/shared/  Types shared between backend and frontend
+web/              Next.js frontend (separate workspace)
+tests/            Mirrors src/ structure
+drizzle/          SQL migrations
+scripts/          DB seed, Stripe setup, utilities
+```
 
 ## Quick Start
 
@@ -46,163 +68,136 @@ npm run web:dev
 # Install dependencies
 npm install
 
-# Run Reddit scraper
-npm run dev reddit
+# Copy environment template
+cp .env.example .env
+# Fill in: ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, etc.
 
-# Run with options
-npm run dev reddit --hours 48 --format json
+# Run database migrations
+npm run db:push
 
-# Run tests
-npm test
+# Start API server
+npm run dev:api
+
+# Start web frontend (separate terminal)
+npm run web:dev
+
+# Run pipeline once
+npm run scheduler:run
+
+# Start cron scheduler
+npm run scheduler:start
 ```
 
-## Usage
-
-### Reddit Scraper
+## Key Commands
 
 ```bash
-# Default: scrape all subreddits for last 24 hours
-npm run dev reddit
+# Backend
+npm run build              # Compile TypeScript
+npm test                   # Run backend tests (Vitest)
+npm run dev:api            # Start Fastify API server
 
-# Specify time range
-npm run dev reddit --hours 48
+# Frontend
+npm run web:dev            # Next.js dev server
+npm run web:build          # Production build
+npm run web:test           # Frontend unit tests
+npm run web:test:e2e       # Playwright E2E tests
 
-# Specify subreddits
-npm run dev reddit --subreddits webdev,programming,startups
+# Scheduler
+npm run scheduler:run      # Run pipeline once
+npm run scheduler:dry-run  # Dry run (no emails)
+npm run scheduler:start    # Start cron scheduler
+npm run scheduler:health   # Check environment
+npm run scheduler:watchdog # Monitor pipeline health
 
-# Different output formats
-npm run dev reddit --format json    # JSON output
-npm run dev reddit --format csv     # CSV output
-npm run dev reddit --format full    # Full post details
-npm run dev reddit --format summary # Summary with top 10 (default)
+# Database
+npm run db:generate        # Generate Drizzle migrations
+npm run db:push            # Push schema to DB
+npm run db:studio          # Open Drizzle Studio
+npm run db:seed            # Seed with sample data
 
-# Include posts without signals
-npm run dev reddit --all
+# Validation
+npm run validate-costs     # Validate AI cost estimates
+npx tsc --noEmit           # Type check
 ```
 
-### Programmatic Usage
+## Pipeline
 
-```typescript
-import { scrapeReddit, detectSignals, getScrapeStats } from 'zerotoship';
+The scheduler runs four phases daily:
 
-// Scrape Reddit
-const posts = await scrapeReddit(['webdev', 'programming'], 24);
-console.log(`Found ${posts.length} posts with pain points`);
+1. **Scrape** — Collects posts from Reddit (28 subreddits), Hacker News (Algolia API), and GitHub (issues from 500+ star repos). 50+ pain point signal patterns.
+2. **Analyze** — Deduplicates via OpenAI embeddings (cosine similarity 0.85), scores with AI + heuristic hybrid, runs gap analysis (SerpAPI/Brave + AI competitor research).
+3. **Generate** — Produces structured business briefs via Claude. Two modes:
+   - **Legacy**: Single Claude call per brief (default)
+   - **Graph**: Multi-node pipeline with model cascade, section-aware retries, synthesis, budget controls. Enable with `GENERATION_MODE=graph`.
+4. **Deliver** — Sends tier-based email digests via Resend and persists briefs to the database for the web dashboard.
 
-// Get statistics
-const stats = getScrapeStats(posts);
-console.log(stats.bySubreddit);
+## Generation Modes
 
-// Detect signals in any text
-const signals = detectSignals('I wish there was a better tool for this');
-console.log(signals); // ['i wish', 'wish there was']
-```
+| Mode | Model | Description |
+|------|-------|-------------|
+| **Legacy** | Sonnet 4.6 | Single-pass brief generation. Stable default. |
+| **Graph** | Cascade (configurable) | Multi-attempt with critic evaluation, section retries, synthesis node, budget caps, trace visualization. |
 
-## Default Subreddits
+Graph mode is controlled by environment variables:
+- `GENERATION_MODE=graph` — Enable graph provider
+- `GRAPH_MAX_ATTEMPTS` — Max retry attempts per brief (default: 2)
+- `GRAPH_MAX_SECTION_RETRIES` — Per-section retry cap (default: 1)
+- `GRAPH_MAX_CONCURRENT_BRIEFS` — Concurrent brief generation (default: 5)
+- `GRAPH_RUN_BUDGET_USD` / `GRAPH_RUN_BUDGET_TOKENS` — Run-level budget caps
+- `BRIEF_GENERATION_TIMEOUT_MS` — API call timeout (default: 180000)
 
-- r/SideProject
-- r/startups
-- r/Entrepreneur
-- r/webdev
-- r/programming
-- r/devops
-- r/selfhosted
-- r/software
+## Tiers
 
-## Pain Point Signals
-
-The scraper detects these categories of signals:
-
-| Category | Examples |
-|----------|----------|
-| **Wishful** | "I wish", "wish there was", "would be nice if" |
-| **Frustration** | "frustrated", "annoying", "hate when", "sick of" |
-| **Seeking** | "why isn't there", "looking for a tool", "is there a way" |
-| **Willingness to Pay** | "I'd pay for", "shut up and take my money" |
-| **Feature Requests** | "feature request", "enhancement", "help wanted" |
-| **Problems** | "the problem is", "struggling with", "doesn't work" |
-
-## API Rate Limiting
-
-The scraper respects Reddit's rate limits:
-- 60 requests per minute maximum
-- 1 second delay between requests by default
-- Automatic pagination through results
-
-## Project Structure
-
-```
-src/
-  scrapers/
-    reddit.ts       # Main scraper logic
-    types.ts        # Shared interfaces
-    signals.ts      # Pain point detection
-  index.ts          # Entry point & CLI
-
-tests/
-  scrapers/
-    reddit.test.ts  # Unit tests
-```
+| Tier | Price | Features |
+|------|-------|----------|
+| **Free** | $0 | 3 ideas/day, problem + solution summary |
+| **Builder** | $19/mo | 10 ideas/day, full briefs, archive, priority delivery |
+| **Enterprise** | $99/mo | Unlimited, API access, custom filters, export, history |
 
 ## Configuration
 
-Create a `.env` file (optional):
+See `.env.example` for all environment variables. Key categories:
 
-```env
-# Use `.env.example` as the canonical reference; these are the most common knobs.
+- **AI**: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`
+- **Database**: `DATABASE_URL` or `SUPABASE_DB_URL`
+- **Auth**: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, Google OAuth
+- **Email**: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`
+- **Payments**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, price IDs
+- **Scheduler**: `SCHEDULER_CRON`, `SCHEDULER_TIMEZONE`, `GENERATION_MODE`
+- **Monitoring**: `SENTRY_DSN`, `ALERT_EMAIL`, `ALERT_SLACK_WEBHOOK`
 
-# Scheduler: run daily at 5:00 AM PST (example)
-SCHEDULER_CRON=0 5 * * *
-SCHEDULER_TIMEZONE=America/Los_Angeles
-SCHEDULER_ENABLED=true
-
-# Generation mode: `graph` enables the LangGraph-style generation provider.
-# Scheduler can override the mode independently.
-GENERATION_MODE=legacy
-SCHEDULER_GENERATION_MODE=graph
-
-# Email delivery (Resend)
-RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxx
-# Optional sender identity (recommended in production; must be verified in Resend)
-RESEND_FROM_EMAIL=briefs@zerotoship.dev
-RESEND_FROM_NAME=ZeroToShip
-```
-
-## Output Schema
-
-```typescript
-interface RawPost {
-  id: string;              // UUID
-  source: 'reddit';        // Source platform
-  sourceId: string;        // Reddit post ID
-  title: string;           // Post title
-  body: string;            // Post content
-  url: string;             // Direct link
-  author: string;          // Reddit username
-  score: number;           // Upvotes
-  commentCount: number;    // Number of comments
-  createdAt: Date;         // When posted
-  scrapedAt: Date;         // When scraped
-  subreddit: string;       // Subreddit name
-  signals: string[];       // Detected pain point phrases
-}
-```
-
-## Development
+## Testing
 
 ```bash
-# Run tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Build TypeScript
-npm run build
-
-# Lint
-npm run lint
+npm test                   # 1395+ backend tests across 55 files
+npm run web:test           # Frontend unit tests
+npm run web:test:e2e       # Playwright E2E (journeys, accessibility, edge cases)
 ```
+
+Tests mock all external APIs. No real API calls in tests.
+
+## Documentation
+
+| Document | Purpose |
+|----------|---------|
+| `Context.md` | Current project state and working memory |
+| `Feature-Plan.md` | Architecture, roadmap, competitive analysis |
+| `Strategy-Analysis.md` | Market sizing, competitive landscape, 90-day plan |
+| `docs/architecture/` | C4 architecture diagrams (context, container, component, deployment) |
+| `docs/planning/` | LangGraph migration roadmap, decision log, KPIs |
+| `reviews/` | Code reviews, plan review (16/16 complete) |
+| `reviews/career/` | Interview-ready project evidence |
+
+## Career Demo Docs
+
+For interview-ready project evidence:
+
+1. `reviews/career/README.md`
+2. `reviews/career/impact-scoreboard.md`
+3. `reviews/career/experiment-log.md`
+4. `reviews/career/decision-log.md`
+5. `reviews/career/weekly-build-log.md`
+6. `demos/README.md`
 
 ## License
 
