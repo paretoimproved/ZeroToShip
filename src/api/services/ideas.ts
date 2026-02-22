@@ -5,7 +5,7 @@
  */
 
 import { eq, desc, asc, gte, lt, lte, and, like, sql, ilike, or } from 'drizzle-orm';
-import { db, ideas, savedIdeas, viewedIdeas, validationRequests } from '../db/client';
+import { db, ideas, savedIdeas, viewedIdeas, validationRequests, specGenerations } from '../db/client';
 import { config as envConfig } from '../../config/env';
 import { getTodayWindowUtc } from '../../lib/timezone';
 import type {
@@ -23,7 +23,8 @@ import {
   filterIdeaForTier,
   canAccessFullBrief,
 } from '../middleware/tierGate';
-import { ARCHIVE_PREVIEW_LIMIT } from '../config/tiers';
+import { getMonthlySpecLimit } from '../config/tiers';
+import { callSpecGeneration } from '../../generation/agent-spec-generator';
 
 /**
  * Convert database row to IdeaBrief
@@ -476,24 +477,12 @@ export async function getTodaysIdeasForTier(
 
 /**
  * Get archived ideas filtered by tier, with pagination metadata.
- * For anonymous/free users: returns a capped preview set.
- * For pro/enterprise: returns full paginated results.
+ * All tiers now get the full paginated archive.
  */
 export async function getArchivedIdeasForTier(
   query: ArchiveQuery,
   tier: UserTier
 ): Promise<{ ideas: IdeaSummary[]; total: number; hasMore: boolean; preview: boolean }> {
-  const isPreview = tier === 'anonymous' || tier === 'free';
-
-  if (isPreview) {
-    // Override pagination AND filters to return a fixed preview set.
-    // Free users always see the same 6 newest ideas — sort/filter params are ignored.
-    const previewQuery: ArchiveQuery = { page: 1, pageSize: ARCHIVE_PREVIEW_LIMIT, sort: 'newest' };
-    const { ideas: allIdeas, total } = await getArchivedIdeas(previewQuery);
-    const filtered = allIdeas.map((idea) => filterIdeaForTier(idea, tier));
-    return { ideas: filtered, total, hasMore: false, preview: true };
-  }
-
   const { ideas: allIdeas, total } = await getArchivedIdeas(query);
   const filtered = allIdeas.map((idea) => filterIdeaForTier(idea, tier));
   const hasMore = (Number(query.page) || 1) * (Number(query.pageSize) || 10) < total;
@@ -556,4 +545,68 @@ export async function saveIdeaForUser(
     success,
     message: success ? 'Idea saved' : 'Already saved',
   };
+}
+
+/**
+ * Count spec generations for a user in the current calendar month
+ */
+export async function getMonthlySpecCount(userId: string): Promise<number> {
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const result = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(specGenerations)
+    .where(
+      and(
+        eq(specGenerations.userId, userId),
+        gte(specGenerations.createdAt, monthStart)
+      )
+    );
+
+  return result[0]?.count || 0;
+}
+
+/**
+ * Generate an agent-ready spec for an idea.
+ * Checks tier limits, calls AI, stores result, returns spec.
+ */
+export async function generateSpecForIdea(
+  ideaId: string,
+  userId: string,
+  tier: UserTier
+): Promise<
+  | { spec: unknown; generationId: string }
+  | { limitReached: true; message: string }
+  | null
+> {
+  // Check idea exists
+  const idea = await getIdeaById(ideaId);
+  if (!idea) return null;
+
+  // Check monthly limit
+  const limit = getMonthlySpecLimit(tier);
+  const used = await getMonthlySpecCount(userId);
+
+  if (used >= limit) {
+    return {
+      limitReached: true,
+      message: `You've used ${used}/${limit} spec generations this month. Upgrade to Pro for 30/month.`,
+    };
+  }
+
+  // Generate the spec using AI
+  const spec = await callSpecGeneration(idea);
+
+  // Store the generation
+  const [row] = await db
+    .insert(specGenerations)
+    .values({
+      userId,
+      ideaId,
+      spec,
+    })
+    .returning({ id: specGenerations.id });
+
+  return { spec, generationId: row.id };
 }

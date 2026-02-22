@@ -21,6 +21,7 @@ import {
   getIdeaByIdForTier,
   saveIdeaForUser,
   getSavedIdeasForUser,
+  generateSpecForIdea,
 } from '../services/ideas';
 import {
   IdeaListResponseSchema,
@@ -277,6 +278,51 @@ export const ideasRoutes: FastifyPluginAsync = async (fastify) => {
         success,
         message: success ? 'Idea removed from saved' : 'Was not saved',
       });
+    }
+  );
+
+  /**
+   * POST /api/v1/ideas/:id/generate-spec
+   * Generate an agent-ready spec for an idea
+   */
+  app.post(
+    '/:id/generate-spec',
+    {
+      preHandler: [requireAuth, rateLimitMiddleware],
+      schema: {
+        params: z.object({
+          id: z.string().uuid(),
+        }),
+        response: {
+          200: z.object({
+            spec: z.unknown(),
+            generationId: z.string().uuid(),
+          }),
+          402: ApiErrorSchema,
+          404: ApiErrorSchema,
+          429: ApiErrorSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const result = await generateSpecForIdea(id, request.userId!, request.userTier);
+
+      if (!result) {
+        return reply.status(404).send({
+          code: 'NOT_FOUND',
+          message: 'Idea not found',
+        });
+      }
+
+      if ('limitReached' in result) {
+        return reply.status(429).send({
+          code: 'GENERATION_LIMIT_REACHED',
+          message: result.message,
+        });
+      }
+
+      return reply.send(result);
     }
   );
 };

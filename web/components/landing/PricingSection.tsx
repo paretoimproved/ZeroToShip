@@ -30,57 +30,38 @@ const plans: Plan[] = [
     annualPrice: 0,
     annualTotal: 0,
     annualSavingsPercent: 0,
-    description: "Perfect for exploring what's possible",
+    description: "Full archive access + 3 agent specs/month",
     features: [
-      { text: "3 ideas per day", included: true },
-      { text: "1 featured brief per email", included: true },
-      { text: "Problem + audience summary", included: true },
-      { text: "Daily email delivery", included: true },
-      { text: "Full briefs for all ideas", included: false },
-      { text: "Archive & search", included: false },
+      { text: "Full archive access — every brief, every section", included: true },
+      { text: "Daily email with complete briefs", included: true },
+      { text: "Search & filter all ideas", included: true },
+      { text: "Save & bookmark ideas", included: true },
+      { text: "3 agent-spec generations per month", included: true },
+      { text: "Custom problem submission", included: false },
+      { text: "Problem watching & re-analysis", included: false },
     ],
     cta: "Get Started Free",
     ctaRoute: "/signup",
     highlighted: false,
   },
   {
-    name: "Builder",
+    name: "Pro",
     monthlyPrice: 19,
     annualPrice: 15.83,
     annualTotal: 190,
     annualSavingsPercent: 17,
-    description: "Full briefs for every idea, every day",
+    description: "30 agent specs/month + custom problems",
     features: [
-      { text: "10 full briefs per day", included: true },
-      { text: "Complete market analysis", included: true },
-      { text: "Tech stack recommendations", included: true },
-      { text: "Go-to-market playbook", included: true },
-      { text: "Full archive access", included: true },
-      { text: "Search across all ideas", included: true },
-      { text: "CSV export", included: true },
-    ],
-    cta: "Start Building",
-    ctaRoute: "/signup?plan=pro",
-    highlighted: true,
-  },
-  {
-    name: "Enterprise",
-    monthlyPrice: 99,
-    annualPrice: 82.5,
-    annualTotal: 990,
-    annualSavingsPercent: 17,
-    description: "For agencies and serial builders",
-    features: [
-      { text: "Everything in Builder", included: true },
-      { text: "Unlimited ideas", included: true },
-      { text: "API access & keys", included: true },
-      { text: "JSON & CSV export", included: true },
-      { text: "Team sharing (coming soon)", included: true },
+      { text: "Everything in Free", included: true },
+      { text: "30 agent-spec generations per month", included: true },
+      { text: "Custom problem submission", included: true },
+      { text: "Problem watching with weekly re-analysis", included: true },
+      { text: "Bulk export (Markdown & JSON)", included: true },
       { text: "Priority support", included: true },
     ],
-    cta: "Contact Us",
-    ctaRoute: "/signup?plan=enterprise",
-    highlighted: false,
+    cta: "Go Pro",
+    ctaRoute: "/signup?plan=pro",
+    highlighted: true,
   },
 ];
 
@@ -169,10 +150,10 @@ export default function PricingSection() {
           id="pricing-heading"
           className="text-3xl font-bold text-center text-gray-900 dark:text-white mb-4"
         >
-          Simple Pricing, Serious Value
+          Simple Pricing, Real Value
         </h2>
         <p className="text-center text-gray-600 dark:text-gray-400 mb-10 max-w-2xl mx-auto">
-          Start free. Upgrade when you&apos;re ready to ship faster.
+          Full archive access is free. Pay only for agent-spec generation.
         </p>
 
         {/* Billing toggle */}
@@ -215,7 +196,7 @@ export default function PricingSection() {
         </div>
 
         {/* Plan cards */}
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
           {plans.map((plan) => {
             const price =
               billing === "monthly" ? plan.monthlyPrice : plan.annualPrice;

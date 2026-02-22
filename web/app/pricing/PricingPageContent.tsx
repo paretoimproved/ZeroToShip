@@ -28,7 +28,7 @@ interface Plan {
   cta: string;
   highlighted: boolean;
   priceKey: { monthly: string; annual: string } | null;
-  ctaAction: "signup" | "checkout" | "contact";
+  ctaAction: "signup" | "checkout";
 }
 
 const plans: Plan[] = [
@@ -38,14 +38,15 @@ const plans: Plan[] = [
     annualPrice: 0,
     annualTotal: 0,
     annualSavingsPercent: 0,
-    description: "Perfect for exploring what's possible",
+    description: "Full archive access + 3 agent specs/month",
     features: [
-      { text: "3 ideas per day", included: true },
-      { text: "1 featured brief per email", included: true },
-      { text: "Problem + audience summary", included: true },
-      { text: "Daily email delivery", included: true },
-      { text: "Full briefs for all ideas", included: false },
-      { text: "Archive & search", included: false },
+      { text: "Full archive access — every brief, every section", included: true },
+      { text: "Daily email with complete briefs", included: true },
+      { text: "Search & filter all ideas", included: true },
+      { text: "Save & bookmark ideas", included: true },
+      { text: "3 agent-spec generations per month", included: true },
+      { text: "Custom problem submission", included: false },
+      { text: "Problem watching & re-analysis", included: false },
     ],
     cta: "Get Started Free",
     highlighted: false,
@@ -53,45 +54,24 @@ const plans: Plan[] = [
     ctaAction: "signup",
   },
   {
-    name: "Builder",
+    name: "Pro",
     monthlyPrice: 19,
     annualPrice: 15.83,
     annualTotal: 190,
     annualSavingsPercent: 17,
-    description: "Full briefs for every idea, every day",
+    description: "30 agent specs/month + custom problems",
     features: [
-      { text: "10 full briefs per day", included: true },
-      { text: "Complete market analysis", included: true },
-      { text: "Tech stack recommendations", included: true },
-      { text: "Go-to-market playbook", included: true },
-      { text: "Full archive access", included: true },
-      { text: "Search across all ideas", included: true },
-      { text: "CSV export", included: true },
+      { text: "Everything in Free", included: true },
+      { text: "30 agent-spec generations per month", included: true },
+      { text: "Custom problem submission", included: true },
+      { text: "Problem watching with weekly re-analysis", included: true },
+      { text: "Bulk export (Markdown & JSON)", included: true },
+      { text: "Priority support", included: true },
     ],
-    cta: "Start Building",
+    cta: "Go Pro",
     highlighted: true,
     priceKey: { monthly: "pro_monthly", annual: "pro_yearly" },
     ctaAction: "checkout",
-  },
-  {
-    name: "Enterprise",
-    monthlyPrice: 99,
-    annualPrice: 82.5,
-    annualTotal: 990,
-    annualSavingsPercent: 17,
-    description: "For agencies and serial builders",
-    features: [
-      { text: "Everything in Builder", included: true },
-      { text: "Unlimited ideas", included: true },
-      { text: "API access & keys", included: true },
-      { text: "JSON & CSV export", included: true },
-      { text: "Team sharing (coming soon)", included: true },
-      { text: "Priority support", included: true },
-    ],
-    cta: "Contact Us",
-    highlighted: false,
-    priceKey: { monthly: "enterprise_monthly", annual: "enterprise_yearly" },
-    ctaAction: "contact",
   },
 ];
 
@@ -393,8 +373,7 @@ export default function PricingPageContent() {
       });
 
       if (res.status === 401) {
-        const plan = priceKey.startsWith("pro") ? "pro" : "enterprise";
-        router.push(`/signup?plan=${plan}`);
+        router.push(`/signup?plan=pro`);
         return;
       }
 
@@ -412,9 +391,6 @@ export default function PricingPageContent() {
   function handleCta(plan: Plan) {
     if (plan.ctaAction === "signup") {
       router.push("/signup");
-    } else if (plan.ctaAction === "contact") {
-      trackUpgradeClicked({ from_tier: "unknown", to_tier: "enterprise", location: "pricing_page" });
-      window.location.href = "mailto:hello@zerotoship.dev";
     } else if (plan.ctaAction === "checkout" && plan.priceKey) {
       const toTier = plan.name.toLowerCase();
       trackUpgradeClicked({ from_tier: "unknown", to_tier: toTier, location: "pricing_page" });
@@ -442,10 +418,10 @@ export default function PricingPageContent() {
             id="pricing-heading"
             className="text-4xl font-bold text-center text-gray-900 dark:text-white mb-4"
           >
-            Simple Pricing, Serious Value
+            Simple Pricing, Real Value
           </h1>
           <p className="text-center text-gray-600 dark:text-gray-400 mb-10 max-w-2xl mx-auto text-lg">
-            Start free. Upgrade when you&apos;re ready to ship faster.
+            Full archive access is free. Pay only for agent-spec generation.
           </p>
 
           {/* Billing toggle */}
@@ -488,7 +464,7 @@ export default function PricingPageContent() {
           </div>
 
           {/* Plan cards */}
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
             {plans.map((plan) => {
               const price =
                 billing === "monthly" ? plan.monthlyPrice : plan.annualPrice;
@@ -601,7 +577,7 @@ export default function PricingPageContent() {
 
           {/* Guarantee */}
           <p className="text-center text-gray-500 dark:text-gray-400 text-sm mt-10">
-            All plans include a 14-day money-back guarantee.
+            All plans include a 14-day money-back guarantee. No credit card required for Free.
           </p>
         </div>
       </section>
@@ -638,8 +614,8 @@ export default function PricingPageContent() {
         data={{
           "@context": "https://schema.org",
           "@type": "Product",
-          name: "ZeroToShip Starter",
-          description: "Perfect for exploring what's possible",
+          name: "ZeroToShip Free",
+          description: "Full archive access + 3 agent specs/month",
           offers: {
             "@type": "Offer",
             price: "0",
@@ -652,25 +628,11 @@ export default function PricingPageContent() {
         data={{
           "@context": "https://schema.org",
           "@type": "Product",
-          name: "ZeroToShip Builder",
-          description: "Full briefs for every idea, every day",
+          name: "ZeroToShip Pro",
+          description: "30 agent specs/month + custom problems",
           offers: {
             "@type": "Offer",
             price: "19",
-            priceCurrency: "USD",
-            availability: "https://schema.org/InStock",
-          },
-        }}
-      />
-      <JsonLd
-        data={{
-          "@context": "https://schema.org",
-          "@type": "Product",
-          name: "ZeroToShip Team",
-          description: "For agencies and serial builders",
-          offers: {
-            "@type": "Offer",
-            price: "99",
             priceCurrency: "USD",
             availability: "https://schema.org/InStock",
           },

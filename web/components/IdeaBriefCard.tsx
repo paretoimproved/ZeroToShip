@@ -18,7 +18,7 @@ const tabLabels: Record<TabId, string> = {
   sources: "Sources",
 };
 
-const gatedTabs: Set<TabId> = new Set(["solution", "tech", "business"]);
+const gatedTabs: Set<TabId> = new Set<TabId>();
 
 interface IdeaBriefCardProps {
   brief: IdeaBrief;

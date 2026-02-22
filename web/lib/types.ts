@@ -82,6 +82,50 @@ export interface IdeaBrief {
   generatedAt: string;
 }
 
+export interface AgentSpec {
+  projectName: string;
+  problem: string;
+  evidence: {
+    sourceCount: number;
+    platforms: string[];
+    signalScore: number;
+    trend: 'rising' | 'stable' | 'falling';
+  };
+  userStories: Array<{
+    persona: string;
+    capability: string;
+    outcome: string;
+    acceptanceCriteria: string[];
+  }>;
+  technicalArchitecture: {
+    stack: string[];
+    stackRationale: string;
+    databaseSchema: Array<{
+      table: string;
+      keyColumns: string[];
+      relations: string;
+    }>;
+    apiEndpoints: Array<{
+      method: string;
+      route: string;
+      purpose: string;
+    }>;
+    keyComponents: string;
+  };
+  mvpScope: {
+    mustHave: string[];
+    skipForNow: string[];
+  };
+  agentInstructions: string;
+  sources: Array<{
+    title: string;
+    url: string;
+    platform: string;
+    score: number;
+    comments: number;
+  }>;
+}
+
 export interface User {
   id: string;
   email: string;

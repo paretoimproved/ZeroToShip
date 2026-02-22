@@ -12,7 +12,7 @@ import { MODEL_PRICING, type ClaudeModel } from '../../config/models';
  */
 export interface ApiCallRecord {
   timestamp: Date;
-  module: 'scorer' | 'deduplicator' | 'competitor' | 'brief-generator';
+  module: 'scorer' | 'deduplicator' | 'competitor' | 'brief-generator' | 'spec-generation';
   model: string;
   batchSize: number;
   itemsProcessed: number;

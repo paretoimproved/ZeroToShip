@@ -385,6 +385,29 @@ export const emailLogs = pgTable(
   })
 );
 
+/**
+ * Spec generations — tracks per-user agent spec generation usage
+ */
+export const specGenerations = pgTable(
+  'spec_generations',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    ideaId: uuid('idea_id')
+      .notNull()
+      .references(() => ideas.id, { onDelete: 'cascade' }),
+    spec: jsonb('spec').notNull(), // The generated agent spec
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    userIdx: index('spec_generations_user_idx').on(table.userId),
+    ideaIdx: index('spec_generations_idea_idx').on(table.ideaId),
+    createdAtIdx: index('spec_generations_created_at_idx').on(table.createdAt),
+  })
+);
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   preferences: one(userPreferences, {
@@ -402,6 +425,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   usageRecords: many(usageTracking),
   onboardingEmails: many(onboardingEmails),
   emailLogs: many(emailLogs),
+  specGenerations: many(specGenerations),
 }));
 
 export const emailLogsRelations = relations(emailLogs, ({ one }) => ({
@@ -436,6 +460,7 @@ export const ideasRelations = relations(ideas, ({ many }) => ({
   savedBy: many(savedIdeas),
   viewedBy: many(viewedIdeas),
   validationRequests: many(validationRequests),
+  specGenerations: many(specGenerations),
 }));
 
 export const savedIdeasRelations = relations(savedIdeas, ({ one }) => ({
@@ -467,6 +492,17 @@ export const validationRequestsRelations = relations(validationRequests, ({ one 
   }),
   idea: one(ideas, {
     fields: [validationRequests.ideaId],
+    references: [ideas.id],
+  }),
+}));
+
+export const specGenerationsRelations = relations(specGenerations, ({ one }) => ({
+  user: one(users, {
+    fields: [specGenerations.userId],
+    references: [users.id],
+  }),
+  idea: one(ideas, {
+    fields: [specGenerations.ideaId],
     references: [ideas.id],
   }),
 }));

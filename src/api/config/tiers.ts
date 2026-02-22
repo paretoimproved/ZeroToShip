@@ -26,11 +26,28 @@ export const RATE_LIMITS: Record<UserTier, { requests: number; windowMs: number 
  * Ideas returned per tier
  */
 export const IDEAS_LIMIT: Record<UserTier, number> = {
-  anonymous: 3,
-  free: 3,
+  anonymous: 10,
+  free: 10,
   pro: 10,
   enterprise: Infinity,
 };
+
+/**
+ * Monthly spec generation limits per tier
+ */
+export const SPEC_GENERATION_LIMITS: Record<UserTier, number> = {
+  anonymous: 0,
+  free: 3,
+  pro: 30,
+  enterprise: Infinity,
+};
+
+/**
+ * Get the monthly spec generation limit for a tier
+ */
+export function getMonthlySpecLimit(tier: UserTier): number {
+  return SPEC_GENERATION_LIMITS[tier];
+}
 
 /**
  * Usage limits per tier for API rate limiting
@@ -64,8 +81,9 @@ export const FEATURE_ACCESS: Record<string, { minTier: UserTier; description: st
   'ideas.today': { minTier: 'anonymous', description: "Get today's ideas" },
   'ideas.detail': { minTier: 'anonymous', description: 'Get idea details' },
   'ideas.archive': { minTier: 'anonymous', description: 'Access idea archive' },
-  'ideas.fullBrief': { minTier: 'free', description: 'View full business briefs' },
-  'ideas.search': { minTier: 'pro', description: 'Full-text search' },
+  'ideas.fullBrief': { minTier: 'anonymous', description: 'View full business briefs' },
+  'ideas.search': { minTier: 'free', description: 'Full-text search' },
+  'ideas.generateSpec': { minTier: 'free', description: 'Generate agent-ready spec' },
   'ideas.export': { minTier: 'enterprise', description: 'Export ideas' },
   'validate': { minTier: 'pro', description: 'Request idea validation' },
   'user.preferences': { minTier: 'free', description: 'Manage preferences' },
@@ -152,7 +170,7 @@ export function getUpgradePrompt(feature: string): {
   const tierNames: Record<UserTier, string> = {
     anonymous: 'Free',
     free: 'Free',
-    pro: 'Builder',
+    pro: 'Pro',
     enterprise: 'Enterprise',
   };
 

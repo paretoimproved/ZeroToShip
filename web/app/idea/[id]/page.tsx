@@ -4,11 +4,12 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import IdeaBriefCard from "@/components/IdeaBriefCard";
+import AgentSpecDisplay, { formatSpecAsMarkdown } from "@/components/AgentSpecDisplay";
 import ProtectedLayout from "@/components/ProtectedLayout";
 import { useAuth } from "@/components/AuthProvider";
 import { api } from "@/lib/api";
 import { trackIdeaViewed } from "@/lib/analytics";
-import type { IdeaBrief } from "@/lib/types";
+import type { IdeaBrief, AgentSpec } from "@/lib/types";
 
 // Mock data for fallback when API is unavailable
 const mockBrief: IdeaBrief = {
@@ -78,6 +79,9 @@ export default function IdeaPage() {
 
   const [brief, setBrief] = useState<IdeaBrief | null>(null);
   const [loading, setLoading] = useState(true);
+  const [spec, setSpec] = useState<AgentSpec | null>(null);
+  const [specLoading, setSpecLoading] = useState(false);
+  const [specError, setSpecError] = useState<string | null>(null);
   const { isAuthenticated } = useAuth();
 
   useEffect(() => {
@@ -101,6 +105,27 @@ export default function IdeaPage() {
 
     fetchIdea();
   }, [id, isAuthenticated]);
+
+  async function handleGenerateSpec() {
+    if (!brief) return;
+    setSpecLoading(true);
+    setSpecError(null);
+    try {
+      const result = await api.generateSpec(brief.id);
+      setSpec(result.spec);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to generate spec';
+      setSpecError(message);
+    } finally {
+      setSpecLoading(false);
+    }
+  }
+
+  function copySpecToClipboard() {
+    if (!spec) return;
+    const markdown = formatSpecAsMarkdown(spec);
+    navigator.clipboard.writeText(markdown);
+  }
 
   return (
     <ProtectedLayout>
@@ -165,6 +190,53 @@ export default function IdeaPage() {
             </Link>
 
             <IdeaBriefCard brief={brief} gated={!isAuthenticated} />
+
+            {/* Generate Agent Spec Section */}
+            <div className="mt-8">
+              {!spec ? (
+                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg p-8 text-center">
+                  <div className="mx-auto w-14 h-14 rounded-full bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center mb-4">
+                    <svg className="w-7 h-7 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                    Generate Agent-Ready Spec
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                    Transform this brief into a technical spec with user stories, database schema, API routes, and CLAUDE.md — ready to paste into your project.
+                  </p>
+                  {specError && (
+                    <p className="text-red-600 dark:text-red-400 text-sm mb-4">{specError}</p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleGenerateSpec}
+                    disabled={specLoading}
+                    className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+                  >
+                    {specLoading ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Generating Spec...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                        </svg>
+                        Generate Agent Spec
+                      </>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <AgentSpecDisplay spec={spec} onCopy={copySpecToClipboard} />
+              )}
+            </div>
           </>
         )}
       </div>

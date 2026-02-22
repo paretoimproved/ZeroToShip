@@ -4,6 +4,7 @@
 
 import type {
   IdeaBrief,
+  AgentSpec,
   User,
   UserPreferences,
   Subscription,
@@ -279,6 +280,12 @@ class ApiClient {
 
   async getSavedIdeas(): Promise<IdeaBrief[]> {
     return this.request<IdeaBrief[]>("/ideas/saved");
+  }
+
+  async generateSpec(ideaId: string): Promise<{ spec: AgentSpec; generationId: string }> {
+    return this.request<{ spec: AgentSpec; generationId: string }>(`/ideas/${ideaId}/generate-spec`, {
+      method: "POST",
+    });
   }
 }
 
