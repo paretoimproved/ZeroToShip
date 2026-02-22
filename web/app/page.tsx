@@ -22,7 +22,7 @@ const faqJsonLd: Record<string, unknown> = {
       name: "How is this different from browsing Reddit or Hacker News myself?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "We scrape 300+ posts daily across 8 subreddits, Hacker News, and GitHub. Then AI clusters similar problems, scores them by opportunity, and generates technical specs. You'd spend hours doing this manually \u2014 we do it in minutes and deliver the best ideas to your inbox.",
+        text: "We scrape 300+ posts daily across 8 subreddits, Hacker News, and GitHub. Then AI clusters similar problems, scores them by opportunity, and generates agent-ready specs. You'd spend hours doing this manually \u2014 we do it in minutes and surface the highest-signal problems in a searchable library.",
       },
     },
     {
@@ -35,15 +35,15 @@ const faqJsonLd: Record<string, unknown> = {
     },
     {
       "@type": "Question",
-      name: "Can I get ideas for specific niches?",
+      name: "Can I filter problems by category?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes! Builder members can set category preferences (developer tools, SaaS, AI/ML, consumer apps, etc.) and we'll prioritize matching ideas.",
+        text: "Yes! Pro members can set category preferences (developer tools, SaaS, AI/ML, consumer apps, etc.) and we'll prioritize matching problems.",
       },
     },
     {
       "@type": "Question",
-      name: "How are ideas scored?",
+      name: "How are problems scored?",
       acceptedAnswer: {
         "@type": "Answer",
         text: "Our AI evaluates frequency (how often mentioned), severity (how painful), market size (how many affected), technical complexity, and time to MVP. The priority score balances opportunity against effort.",
@@ -51,18 +51,18 @@ const faqJsonLd: Record<string, unknown> = {
     },
     {
       "@type": "Question",
-      name: "What's included in the full brief?",
+      name: "What's included in an agent-ready spec?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Problem statement, target audience, existing solutions, market gaps, technical spec (stack, architecture, MVP scope), business model, pricing strategy, go-to-market plan, and risk assessment.",
+        text: "Problem statement, target audience, existing solutions, market gaps, technical spec (stack, architecture, MVP scope), business model, pricing strategy, go-to-market plan, and risk assessment — structured so you can paste it directly into Claude Code, Cursor, or any AI coding agent.",
       },
     },
     {
       "@type": "Question",
-      name: "How fresh are the ideas?",
+      name: "How fresh are the problems?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Ideas are generated fresh every morning based on the previous 24\u201348 hours of posts. You'll never see the same idea twice.",
+        text: "The problem library is updated daily with new problems from the previous 24\u201348 hours of posts. Problems are continuously re-scored as new evidence appears.",
       },
     },
     {
@@ -70,7 +70,7 @@ const faqJsonLd: Record<string, unknown> = {
       name: "Is my data private?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Absolutely. Your preferences, saved ideas, and browsing activity are never shared. We scrape publicly available posts \u2014 we don't access any private data.",
+        text: "Absolutely. Your preferences, saved problems, and browsing activity are never shared. We scrape publicly available posts \u2014 we don't access any private data.",
       },
     },
     {
@@ -90,7 +90,7 @@ const organizationJsonLd: Record<string, unknown> = {
   name: "ZeroToShip",
   url: "https://zerotoship.dev",
   logo: "https://zerotoship.dev/favicon.svg",
-  description: "AI-powered startup idea discovery platform",
+  description: "AI-powered validated problem discovery and agent-ready spec generation platform",
   sameAs: ["https://twitter.com/zerotoship"],
 };
 

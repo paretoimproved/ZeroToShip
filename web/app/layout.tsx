@@ -19,25 +19,25 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://zerotoship.dev"),
-  title: "ZeroToShip — Ship Ideas, Not Guesses",
+  title: "ZeroToShip — Real Problems, Agent-Ready Specs",
   description:
-    "Every morning, ZeroToShip scrapes 300+ posts from Reddit, Hacker News, and GitHub, clusters real pain points, and delivers 10 scored startup ideas with full business briefs. Wake up to signal, not noise.",
+    "ZeroToShip scrapes Reddit, Hacker News, and GitHub daily, clusters validated problems people are complaining about, and generates agent-ready specs you can hand to Claude Code or Cursor. Find a real problem, start building tonight.",
   icons: {
     icon: "/favicon.svg",
     apple: "/apple-touch-icon.png",
   },
   manifest: "/site.webmanifest",
   openGraph: {
-    title: "ZeroToShip — Ship Ideas, Not Guesses",
+    title: "ZeroToShip — Real Problems, Agent-Ready Specs",
     description:
-      "Scrapes Reddit, Hacker News, and GitHub daily. Delivers 10 scored startup ideas with full business briefs every morning.",
+      "Scrapes Reddit, Hacker News, and GitHub daily. Surfaces validated problems and generates agent-ready specs you can ship tonight.",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "ZeroToShip — Ship Ideas, Not Guesses",
+    title: "ZeroToShip — Real Problems, Agent-Ready Specs",
     description:
-      "Scrapes Reddit, Hacker News, and GitHub daily. Delivers 10 scored startup ideas with full business briefs every morning.",
+      "Scrapes Reddit, Hacker News, and GitHub daily. Surfaces validated problems and generates agent-ready specs you can ship tonight.",
   },
 };
 

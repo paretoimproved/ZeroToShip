@@ -50,15 +50,16 @@ export default function HeroSection() {
         >
           The Internet Complains.{" "}
           <span className="text-primary-600 dark:text-primary-400">
-            We Find Your Next Startup.
+            We Turn It Into Buildable Specs.
           </span>
         </h1>
 
         {/* Subheadline */}
         <p className="mx-auto mt-6 max-w-2xl text-balance text-lg leading-relaxed text-gray-600 dark:text-gray-400 sm:text-xl">
           Every morning, ZeroToShip scrapes 300+ posts from Reddit, Hacker News,
-          and GitHub, clusters real pain points, and delivers 10 scored startup
-          ideas with full business briefs. Wake up to signal, not noise.
+          and GitHub, clusters real pain points, and builds a searchable library
+          of validated problems with agent-ready specs. Find a real problem,
+          generate a spec, hand it to your AI agent, start building tonight.
         </p>
 
         {/* Email capture form / Dashboard CTA */}
@@ -113,7 +114,7 @@ export default function HeroSection() {
               type="submit"
               className="shrink-0 rounded-lg bg-primary-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
             >
-              Get Tomorrow&apos;s Ideas
+              Explore the Problem Library
             </button>
           </form>
         )}
@@ -124,7 +125,7 @@ export default function HeroSection() {
             href="#sample-brief"
             className="text-sm font-medium text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
           >
-            See a sample brief ↓
+            See a sample spec ↓
           </a>
         </p>
 
@@ -179,7 +180,7 @@ export default function HeroSection() {
                 d="M5 13l4 4L19 7"
               />
             </svg>
-            Full technical specs
+            Agent-ready specs
           </li>
         </ul>
       </div>

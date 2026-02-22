@@ -36,7 +36,7 @@ const steps = [
     number: 2,
     title: "AI Analyzes",
     description:
-      "Our AI clusters similar problems, scores them by opportunity (frequency \u00d7 severity \u00d7 market size), and generates complete business briefs with tech specs.",
+      "Our AI clusters similar problems, scores them by opportunity (frequency \u00d7 severity \u00d7 market size), and generates agent-ready specs with technical architecture and MVP scope.",
     icon: (
       <svg
         width={32}
@@ -63,9 +63,9 @@ const steps = [
   },
   {
     number: 3,
-    title: "You Build",
+    title: "You Ship",
     description:
-      "Open your inbox to 10 scored startup ideas with full technical specs, business models, and go-to-market strategies. Pick one and start building.",
+      "Browse the problem library, generate a spec, and hand it to Claude Code, Cursor, or your favorite AI agent. Go from validated problem to working code tonight.",
     icon: (
       <svg
         width={32}
@@ -137,7 +137,7 @@ export default function HowItWorks() {
           How ZeroToShip Works
         </h2>
         <p className="text-center text-gray-600 dark:text-gray-400 mb-16 max-w-2xl mx-auto">
-          From raw social media posts to validated business briefs &mdash; fully automated, delivered
+          From raw social media posts to agent-ready specs &mdash; fully automated, updated
           daily.
         </p>
 

@@ -26,12 +26,12 @@ export default function FinalCTA() {
           id="cta-heading"
           className="text-3xl font-bold text-white mb-4"
         >
-          {isAuthenticated ? "Your Ideas Are Waiting" : "Your next startup is in tomorrow\u2019s inbox."}
+          {isAuthenticated ? "Your Problem Library Awaits" : "Your next project starts with a real problem."}
         </h2>
         <p className="text-primary-100 mb-8">
           {isAuthenticated
-            ? "Head to your dashboard to see today's ideas."
-            : "Sign up in 30 seconds. Get your first ideas tomorrow morning. No credit card required."}
+            ? "Head to your dashboard to browse today's problems."
+            : "Sign up in 30 seconds. Browse validated problems and generate your first spec tonight. No credit card required."}
         </p>
 
         {isAuthenticated ? (
@@ -63,12 +63,12 @@ export default function FinalCTA() {
                 type="submit"
                 className="px-6 py-3 rounded-lg bg-white text-primary-600 font-semibold text-sm hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-primary-600"
               >
-                Get Your First Ideas Free
+                Start Exploring Free
               </button>
             </form>
 
             <p className="text-primary-200 text-sm mt-6">
-              3 ideas/day on the free plan. Upgrade anytime.
+              Full library access free. 3 specs/month included. Upgrade anytime.
             </p>
           </>
         )}

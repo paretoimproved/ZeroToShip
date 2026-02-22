@@ -9,7 +9,7 @@ interface ComparisonRow {
 
 const COMPARISON_DATA: ComparisonRow[] = [
   {
-    feature: "Daily fresh ideas",
+    feature: "Daily problem discovery",
     zerotoship: { status: "yes", label: "Yes" },
     manual: { status: "no", label: "No" },
     aiTools: { status: "no", label: "No" },
@@ -27,7 +27,7 @@ const COMPARISON_DATA: ComparisonRow[] = [
     aiTools: { status: "no", label: "No" },
   },
   {
-    feature: "Full business brief",
+    feature: "Agent-ready specs",
     zerotoship: { status: "yes", label: "Yes" },
     manual: { status: "no", label: "No" },
     aiTools: { status: "partial", label: "Partial" },
@@ -318,7 +318,7 @@ export default function ComparisonTable() {
             id="comparison-heading"
             className="text-3xl font-bold text-gray-900 dark:text-white sm:text-4xl"
           >
-            ZeroToShip vs. Doing It Yourself
+            ZeroToShip vs. Finding Problems Yourself
           </h2>
           <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
             See how much time and effort you save.

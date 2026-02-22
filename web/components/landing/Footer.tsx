@@ -160,7 +160,7 @@ export default function Footer() {
               <Logo size="sm" />
             </div>
             <p className="text-sm text-gray-400 mt-2">
-              Daily startup ideas, scraped and scored by AI.
+              Validated problems and agent-ready specs, powered by AI.
             </p>
             <div className="flex items-center gap-3 mt-4">
               <RedditIcon />
@@ -225,7 +225,7 @@ export default function Footer() {
         <div className="mt-12 pt-8 border-t border-gray-800 text-center text-sm">
           <p>&copy; {new Date().getFullYear()} ZeroToShip. All rights reserved.</p>
           <p className="text-gray-500 mt-1">
-            Ship ideas, not guesses.
+            Ship solutions, not guesses.
           </p>
         </div>
       </div>

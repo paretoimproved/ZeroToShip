@@ -43,7 +43,7 @@ const TABS: TabDefinition[] = [
           </svg>
         ),
         title: "300+ Posts Daily",
-        description: "Hundreds of posts analyzed every morning before you wake up.",
+        description: "Hundreds of posts analyzed every morning to keep the problem library current.",
       },
       {
         icon: (
@@ -113,7 +113,7 @@ const TABS: TabDefinition[] = [
           </svg>
         ),
         title: "Quick Wins Filter",
-        description: "Surface ideas you can ship this weekend and start earning.",
+        description: "Surface problems you can solve this weekend and start earning.",
       },
     ],
   },
@@ -128,8 +128,8 @@ const TABS: TabDefinition[] = [
             <line x1="12" y1="3" x2="8" y2="17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
         ),
-        title: "Full Technical Specs",
-        description: "Recommended stack, architecture, and MVP scope for every idea.",
+        title: "Agent-Ready Specs",
+        description: "Structured specs you can paste directly into Claude Code, Cursor, or any AI coding agent.",
       },
       {
         icon: (
@@ -164,7 +164,7 @@ const TABS: TabDefinition[] = [
           </svg>
         ),
         title: "Business Model",
-        description: "Pricing strategy, monetization path, and revenue projections.",
+        description: "Pricing strategy, monetization path, and revenue projections included in every spec.",
       },
     ],
   },
@@ -226,10 +226,10 @@ export default function FeatureTabs() {
           id="features-heading"
           className="text-3xl font-bold text-gray-900 dark:text-white sm:text-4xl"
         >
-          Everything You Need to Ship Faster
+          Everything You Need to Go from Problem to Product
         </h2>
         <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
-          From discovery to launch — ZeroToShip covers the full journey.
+          From raw complaints to agent-ready specs — ZeroToShip covers the full journey.
         </p>
 
         <div className="mt-10 flex justify-center">

@@ -153,7 +153,7 @@ export default function PricingSection() {
           Simple Pricing, Real Value
         </h2>
         <p className="text-center text-gray-600 dark:text-gray-400 mb-10 max-w-2xl mx-auto">
-          Full archive access is free. Pay only for agent-spec generation.
+          Full problem library access is free. Pay only for agent-ready spec generation.
         </p>
 
         {/* Billing toggle */}

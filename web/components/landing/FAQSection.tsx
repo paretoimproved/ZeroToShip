@@ -2,7 +2,7 @@ const faqItems = [
   {
     question: "How is this different from browsing Reddit or Hacker News myself?",
     answer:
-      "We scrape 300+ posts daily across 8 subreddits, Hacker News, and GitHub. Then AI clusters similar problems, scores them by opportunity, and generates technical specs. You'd spend hours doing this manually \u2014 we do it in minutes and deliver the best ideas to your inbox.",
+      "We scrape 300+ posts daily across 8 subreddits, Hacker News, and GitHub. Then AI clusters similar problems, scores them by opportunity, and generates agent-ready specs. You'd spend hours doing this manually \u2014 we do it in minutes and surface the highest-signal problems in a searchable library.",
   },
   {
     question: "What sources do you scrape?",
@@ -10,29 +10,29 @@ const faqItems = [
       "Reddit (r/startups, r/SideProject, r/webdev, and 5 more), Hacker News (Ask HN, Show HN, comments), and GitHub issues from repos with 500+ stars.",
   },
   {
-    question: "Can I get ideas for specific niches?",
+    question: "Can I filter problems by category?",
     answer:
-      "Yes! Builder members can set category preferences (developer tools, SaaS, AI/ML, consumer apps, etc.) and we'll prioritize matching ideas.",
+      "Yes! Pro members can set category preferences (developer tools, SaaS, AI/ML, consumer apps, etc.) and we'll prioritize matching problems.",
   },
   {
-    question: "How are ideas scored?",
+    question: "How are problems scored?",
     answer:
       "Our AI evaluates frequency (how often mentioned), severity (how painful), market size (how many affected), technical complexity, and time to MVP. The priority score balances opportunity against effort.",
   },
   {
-    question: "What's included in the full brief?",
+    question: "What's included in an agent-ready spec?",
     answer:
-      "Problem statement, target audience, existing solutions, market gaps, technical spec (stack, architecture, MVP scope), business model, pricing strategy, go-to-market plan, and risk assessment.",
+      "Problem statement, target audience, existing solutions, market gaps, technical spec (stack, architecture, MVP scope), business model, pricing strategy, go-to-market plan, and risk assessment — structured so you can paste it directly into Claude Code, Cursor, or any AI coding agent.",
   },
   {
-    question: "How fresh are the ideas?",
+    question: "How fresh are the problems?",
     answer:
-      "Ideas are generated fresh every morning based on the previous 24\u201348 hours of posts. You'll never see the same idea twice.",
+      "The problem library is updated daily with new problems from the previous 24\u201348 hours of posts. Problems are continuously re-scored as new evidence appears.",
   },
   {
     question: "Is my data private?",
     answer:
-      "Absolutely. Your preferences, saved ideas, and browsing activity are never shared. We scrape publicly available posts \u2014 we don't access any private data.",
+      "Absolutely. Your preferences, saved problems, and browsing activity are never shared. We scrape publicly available posts \u2014 we don't access any private data.",
   },
   {
     question: "Is there a refund policy?",

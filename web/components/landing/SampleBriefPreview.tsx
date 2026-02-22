@@ -144,7 +144,7 @@ export default function SampleBriefPreview() {
           id="sample-heading"
           className="text-3xl font-bold text-center text-gray-900 dark:text-white mb-12"
         >
-          Here&apos;s What You Get Every Morning
+          Here&apos;s What a Spec Looks Like
         </h2>
 
         {/* Card */}
@@ -226,14 +226,14 @@ export default function SampleBriefPreview() {
 
         {/* Below card CTA */}
         <p className="text-center mt-8 text-gray-600 dark:text-gray-400">
-          This is one of 10 ideas you&apos;d get tomorrow morning.
+          This is one problem from the library. Generate a full agent-ready spec with one click.
         </p>
         <div className="text-center">
           <a
             href="#hero"
             className="inline-block mt-4 px-8 py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg transition-colors"
           >
-            Get Started Free
+            Explore the Library
           </a>
         </div>
       </div>
