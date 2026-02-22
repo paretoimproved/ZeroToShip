@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { callAnthropicApi, AnthropicApiError } from '../../src/lib/anthropic';
+import { callAnthropicApi, AnthropicApiError, resetApiSemaphore } from '../../src/lib/anthropic';
 import { resetGlobalMetrics, getGlobalMetrics } from '../../src/scheduler/utils/api-metrics';
 
 // Mock fetch globally
@@ -13,6 +13,7 @@ vi.stubGlobal('fetch', mockFetch);
 beforeEach(() => {
   vi.clearAllMocks();
   resetGlobalMetrics();
+  resetApiSemaphore();
 });
 
 /** Helper to create a successful Anthropic-shaped Response */

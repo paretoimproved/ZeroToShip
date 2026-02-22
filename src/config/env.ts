@@ -118,6 +118,12 @@ const envSchema = z.object({
     z.enum(['legacy', 'graph']).optional()
   ),
 
+  // API concurrency
+  MAX_CONCURRENT_API_CALLS: z.preprocess(
+    (val) => (val === '' || val === undefined ? undefined : val),
+    z.coerce.number().int().positive().default(10)
+  ),
+
   // Graph generation (Phase 3 controls)
   GRAPH_MAX_ATTEMPTS: z.preprocess(
     (val) => (val === '' || val === undefined ? undefined : val),

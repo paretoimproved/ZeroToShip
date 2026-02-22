@@ -10,6 +10,8 @@ import logger from './logger';
 import { getGlobalMetrics } from '../scheduler/utils/api-metrics';
 import { estimateTokens } from '../scheduler/utils/token-estimator';
 import type { ApiCallRecord } from '../scheduler/utils/api-metrics';
+import { Semaphore } from './semaphore';
+import { config } from '../config/env';
 
 /** Anthropic Messages API URL */
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
@@ -24,6 +26,25 @@ const DEFAULT_TIMEOUT_MS = 60_000;
 const DEFAULT_MAX_RETRIES = 2;
 
 const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504, 529]);
+
+/** Global API concurrency semaphore (lazy singleton). */
+let _apiSemaphore: Semaphore | null = null;
+
+function getApiSemaphore(): Semaphore {
+  if (!_apiSemaphore) {
+    _apiSemaphore = new Semaphore(config.MAX_CONCURRENT_API_CALLS);
+    logger.info(
+      { maxConcurrent: config.MAX_CONCURRENT_API_CALLS },
+      'API semaphore initialised'
+    );
+  }
+  return _apiSemaphore;
+}
+
+/** Reset the API semaphore singleton. Use in tests only. */
+export function resetApiSemaphore(): void {
+  _apiSemaphore = null;
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -131,17 +152,26 @@ export async function callAnthropicApi(
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
+    const semaphore = getApiSemaphore();
+
     try {
-      const response = await fetch(ANTHROPIC_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': ANTHROPIC_VERSION,
-        },
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      });
+      // Acquire a semaphore slot before the HTTP call to cap concurrency.
+      await semaphore.acquire();
+      let response: Response;
+      try {
+        response = await fetch(ANTHROPIC_API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': ANTHROPIC_VERSION,
+          },
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        });
+      } finally {
+        semaphore.release();
+      }
 
       if (!response.ok) {
         const errorBody = await response.text();
