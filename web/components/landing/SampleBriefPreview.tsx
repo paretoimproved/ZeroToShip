@@ -75,10 +75,10 @@ function TechSpecPanel() {
 function BusinessPanel() {
   return (
     <dl>
-      <SectionLabel>Pricing Strategy</SectionLabel>
+      <SectionLabel>Value Model</SectionLabel>
       <SectionValue>{sampleBrief.businessModel.pricing}</SectionValue>
 
-      <SectionLabel>Revenue Projection</SectionLabel>
+      <SectionLabel>Adoption Path</SectionLabel>
       <SectionValue>{sampleBrief.businessModel.revenueProjection}</SectionValue>
 
       <SectionLabel>Launch Strategy</SectionLabel>

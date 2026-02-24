@@ -1,8 +1,8 @@
 # Day 1 Email (24 hours after signup)
 
 ## Subject Line Options
-- Did any ideas spark your interest?
-- Quick question about yesterday's ideas
+- Did any problems spark your interest?
+- Quick question about yesterday's problems
 - What did you think of your first batch?
 
 ---
@@ -11,7 +11,7 @@
 
 Hey {{name}},
 
-You got your first batch of ideas yesterday.
+You got your first batch of problems yesterday.
 
 Quick question: **Did any stand out?**
 
@@ -21,9 +21,9 @@ If so, here's what to do next:
 2. **Check the market gaps** — Where can you differentiate?
 3. **Validate fast** — 5 quick customer conversations beats weeks of building
 
-If nothing clicked, no worries. Tomorrow's ideas will be completely different—scraped fresh from overnight discussions.
+If nothing clicked, no worries. Tomorrow's problems will be completely different—scraped fresh from overnight discussions.
 
-**Pro tip:** Filter by effort level. Looking for a weekend project? Sort by "weekend" ideas. Have more time? The "month" projects tend to have bigger revenue potential.
+**Pro tip:** Filter by effort level. Looking for a weekend project? Sort by "weekend" problems. Have more time? The "month" problems tend to have bigger impact potential.
 
 **Yesterday's Quick Wins:**
 
@@ -31,7 +31,7 @@ If nothing clicked, no worries. Tomorrow's ideas will be completely different—
 - **{{this.name}}** ({{this.effortEstimate}}) — {{this.tagline}}
 {{/each}}
 
-[View All Ideas →]({{dashboardUrl}})
+[View All Problems →]({{dashboardUrl}})
 
 Still exploring? That's fine. The best builders I know evaluated dozens of ideas before committing.
 

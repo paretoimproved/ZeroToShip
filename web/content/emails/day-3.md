@@ -11,7 +11,7 @@
 
 Hey {{name}},
 
-You've seen 3 days of ideas. Here's what you're missing in the full briefs:
+You've seen 3 days of problems. Here's what you're missing in the full specs:
 
 **Technical Spec**
 - Recommended tech stack by effort level
@@ -25,11 +25,11 @@ You've seen 3 days of ideas. Here's what you're missing in the full briefs:
 - Pricing models
 - Market gaps you can exploit
 
-**Business Model**
-- Monetization strategy (SaaS, one-time, freemium)
-- Pricing recommendations
-- Revenue projections
-- Path to first paying customers
+**Validation Strategy**
+- User validation approach
+- Distribution channels
+- Early adopter targeting
+- Problem severity scoring
 
 **Go-to-Market**
 - Launch channels ranked by fit
@@ -55,11 +55,11 @@ Pro users also saw:
 
 ---
 
-For $19/mo, you get 10 complete briefs every day. That's research that would take hours—delivered before your morning coffee.
+For $19/mo, you get full specs for every problem, every day. That's research that would take hours—delivered before your morning coffee.
 
 [Upgrade to Pro →]({{upgradeUrl}})
 
-Not ready? No problem. You'll keep getting 3 ideas daily on the free plan.
+Not ready? No problem. You'll keep getting daily problems on the free plan. Generate up to 3 specs/month.
 
 — The ZeroToShip Team
 

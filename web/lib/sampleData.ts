@@ -56,11 +56,11 @@ export const sampleBrief: IdeaBrief = {
 
   businessModel: {
     pricing:
-      "Free tier: 2 connected repos, 7-day history. Pro ($9/mo): unlimited repos, 90-day history, Slack/Discord alerts. Team ($19/mo per seat): shared dashboards, role-based access, priority support.",
+      "Free tier for individual developers: 2 connected repos, 7-day history. Pro ($9/mo): unlimited repos, 90-day history, shared dashboards and priority alerting. Team ($19/mo per seat): role-based access and org-wide visibility.",
     revenueProjection:
-      "Month 3: 200 free users, 30 Pro subscribers ($270 per month). Month 6: 800 free users, 120 Pro + 15 Team ($1,365 per month). Month 12: 2,500 free users, 400 Pro + 80 Team ($5,120 per month). Break-even at ~60 Pro subscribers.",
+      "Month 3: 200 developers using the dashboard. Month 6: first paid team accounts, 800 active users. Month 12: 2,500 developers, 80 teams onboarded. Break-even at ~60 Pro accounts.",
     monetizationPath:
-      "Start with Pro subscriptions as primary revenue. Introduce Team tier at month 4. Explore a marketplace for community-built provider adapters (take 20% commission) at month 9. Long-term: API access tier for developers building on top of ShipWatch data.",
+      "Launch with a generous free tier to drive adoption. Add Pro tier for power users needing longer history and integrations. Introduce Team tier for orgs. Expand provider adapter ecosystem via community contributions. Long-term: become the default CI/CD observability layer for small teams.",
   },
 
   goToMarket: {

@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Email Builder > HTML template snapshots > matches snapshot for empty briefs 1`] = `"<p>No startup ideas found today. Check back tomorrow!</p>"`;
+exports[`Email Builder > HTML template snapshots > matches snapshot for empty briefs 1`] = `"<p>No new problems found today. Check back tomorrow!</p>"`;
 
 exports[`Email Builder > HTML template snapshots > matches snapshot for multiple briefs (free tier) 1`] = `
 "<!DOCTYPE html>
@@ -10,7 +10,7 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for multiple
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="supported-color-schemes" content="light dark">
-<title>5 ideas today: Idea 1</title>
+<title>ZeroToShip: Idea 1</title>
 <!--[if mso]>
 <style type="text/css">
 table { border-collapse: collapse; }
@@ -19,7 +19,7 @@ td { font-family: Arial, sans-serif; }
 <![endif]-->
 </head>
 <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-<span style="display:none;font-size:0;line-height:0;max-height:0;max-width:0;mso-hide:all;overflow:hidden;">5 ideas scored today. #1 is a weekend build.&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;</span>
+<span style="display:none;font-size:0;line-height:0;max-height:0;max-width:0;mso-hide:all;overflow:hidden;">5 problems scored today. #1 is a weekend build.&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;</span>
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #f5f5f5;">
 <tr>
 <td align="center" style="padding: 16px 0;">
@@ -42,7 +42,7 @@ td { font-family: Arial, sans-serif; }
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #f9fafb;">
 <tr>
 <td style="padding: 12px 24px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; color: #6b7280; text-align: center;">
-<strong style="color: #111827;">5</strong> ideas found &nbsp;&middot;&nbsp;
+<strong style="color: #111827;">5</strong> problems found &nbsp;&middot;&nbsp;
 <strong style="color: #111827;">4</strong> communities scraped &nbsp;&middot;&nbsp;
 Top score: <strong style="color: #6366f1;">10.0</strong>
 </td>
@@ -53,25 +53,20 @@ Top score: <strong style="color: #6366f1;">10.0</strong>
 <tr>
 <td style="padding: 24px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
 
-<span style="display: inline-block; background-color: #6366f1; color: #ffffff; padding: 4px 12px; border-radius: 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Today's #1 Idea</span>
+<span style="display: inline-block; background-color: #6366f1; color: #ffffff; padding: 4px 12px; border-radius: 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Today's #1 Problem</span>
 <h2 style="margin: 12px 0 4px 0; font-size: 24px; font-weight: 700; color: #111827; line-height: 1.3;">Idea 1</h2>
 <p style="margin: 0 0 16px 0; font-size: 16px; color: #6b7280; font-style: italic;">Tagline for idea 1</p>
 
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 0 20px 0;">
 <tr>
-<td width="31%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
+<td width="48%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
 <div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Priority</div>
 <div style="font-size: 18px; font-weight: 700; color: #6366f1; margin-top: 2px;">10.0</div>
 </td>
-<td width="3%"></td>
-<td width="31%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
+<td width="4%"></td>
+<td width="48%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
 <div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Build time</div>
 <div style="font-size: 18px; font-weight: 700; color: #111827; margin-top: 2px;">Weekend</div>
-</td>
-<td width="3%"></td>
-<td width="31%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
-<div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Opportunity</div>
-<div style="font-size: 22px; font-weight: 700; color: #d97706; margin-top: 2px; letter-spacing: 1px;">$$</div>
 </td>
 </tr>
 </table>
@@ -80,7 +75,7 @@ Top score: <strong style="color: #6366f1;">10.0</strong>
 <table cellpadding="0" cellspacing="0" role="presentation">
 <tr>
 <td style="background-color: #6366f1; border-radius: 8px;">
-<a href="https://test.zerotoship.dev/login?next=%2Fidea%2Fb0000000-0000-0000-0000-000000000001" style="display: inline-block; padding: 14px 28px; color: #ffffff; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px;">Read the full brief &#8594;</a>
+<a href="https://test.zerotoship.dev/login?next=%2Fidea%2Fb0000000-0000-0000-0000-000000000001" style="display: inline-block; padding: 14px 28px; color: #ffffff; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px;">Read the full spec &#8594;</a>
 </td>
 </tr>
 </table>
@@ -94,8 +89,8 @@ Top score: <strong style="color: #6366f1;">10.0</strong>
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #f5f3ff; border-left: 3px solid #6366f1; border-radius: 0 8px 8px 0;">
 <tr>
 <td style="padding: 14px 20px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; color: #374151; line-height: 1.5;">
-Today's lineup has 4 more ideas just like this one.
-<a href="https://test.zerotoship.dev/upgrade" style="color: #6366f1; font-weight: 600; text-decoration: none;"> Unlock all ideas &#8594;</a>
+You're seeing 1 of today's 5 problems. Pro members get full specs for every one.
+<a href="https://test.zerotoship.dev/upgrade" style="color: #6366f1; font-weight: 600; text-decoration: none;"> Unlock all problems &#8594;</a>
 </td>
 </tr>
 </table>
@@ -106,7 +101,7 @@ Today's lineup has 4 more ideas just like this one.
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
 <tr>
 <td style="padding: 24px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-<div style="font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px;">Today's Other Ideas</div>
+<div style="font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px;">More Problems Today</div>
 
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom: 8px;">
 <tr>
@@ -126,7 +121,7 @@ Today's lineup has 4 more ideas just like this one.
 <tr>
 <td></td>
 <td colspan="2" style="padding-top: 8px;">
-<a href="https://test.zerotoship.dev/login?next=%2Fidea%2Fb0000000-0000-0000-0000-000000000002" style="color: #6366f1; font-size: 14px; font-weight: 600; text-decoration: none;">Read brief &#8594;</a>
+<a href="https://test.zerotoship.dev/login?next=%2Fidea%2Fb0000000-0000-0000-0000-000000000002" style="color: #6366f1; font-size: 14px; font-weight: 600; text-decoration: none;">View problem &#8594;</a>
 </td>
 </tr>
 </table>
@@ -152,7 +147,7 @@ Today's lineup has 4 more ideas just like this one.
 <tr>
 <td></td>
 <td colspan="2" style="padding-top: 8px;">
-<a href="https://test.zerotoship.dev/login?next=%2Fidea%2Fb0000000-0000-0000-0000-000000000003" style="color: #6366f1; font-size: 14px; font-weight: 600; text-decoration: none;">Read brief &#8594;</a>
+<a href="https://test.zerotoship.dev/login?next=%2Fidea%2Fb0000000-0000-0000-0000-000000000003" style="color: #6366f1; font-size: 14px; font-weight: 600; text-decoration: none;">View problem &#8594;</a>
 </td>
 </tr>
 </table>
@@ -201,7 +196,7 @@ Today's lineup has 4 more ideas just like this one.
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top: 8px;">
 <tr>
 <td style="text-align: center; padding: 12px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-<span style="font-size: 14px; color: #6b7280;">+2 more ideas available with Pro &#8212; including 2 weekend builds</span>
+<span style="font-size: 14px; color: #6b7280;">+2 more problems available with Pro &#8212; including 2 weekend builds</span>
 </td>
 </tr>
 </table>
@@ -212,8 +207,8 @@ Today's lineup has 4 more ideas just like this one.
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #111827;">
 <tr>
 <td style="padding: 32px 24px; text-align: center; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-<div style="font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 8px;">You saw 3 ideas today. Pro members saw 5.</div>
-<div style="font-size: 16px; color: rgba(255,255,255,0.7); margin-bottom: 20px;">Every idea. Every brief. Every day.</div>
+<div style="font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 8px;">You browsed 3 problems today. Pro members get full specs for all of them.</div>
+<div style="font-size: 16px; color: rgba(255,255,255,0.7); margin-bottom: 20px;">Every problem. Every spec. Every day.</div>
 <table cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 auto;">
 <tr>
 <td style="background-color: #ffffff; border-radius: 8px;">
@@ -255,7 +250,7 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for multiple
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="supported-color-schemes" content="light dark">
-<title>5 ideas today: Idea 1</title>
+<title>ZeroToShip: Idea 1</title>
 <!--[if mso]>
 <style type="text/css">
 table { border-collapse: collapse; }
@@ -264,7 +259,7 @@ td { font-family: Arial, sans-serif; }
 <![endif]-->
 </head>
 <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-<span style="display:none;font-size:0;line-height:0;max-height:0;max-width:0;mso-hide:all;overflow:hidden;">5 ideas scored today. #1 is a weekend build.&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;</span>
+<span style="display:none;font-size:0;line-height:0;max-height:0;max-width:0;mso-hide:all;overflow:hidden;">5 problems scored today. #1 is a weekend build.&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;</span>
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #f5f5f5;">
 <tr>
 <td align="center" style="padding: 16px 0;">
@@ -287,7 +282,7 @@ td { font-family: Arial, sans-serif; }
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #f9fafb;">
 <tr>
 <td style="padding: 12px 24px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; color: #6b7280; text-align: center;">
-<strong style="color: #111827;">5</strong> ideas found &nbsp;&middot;&nbsp;
+<strong style="color: #111827;">5</strong> problems found &nbsp;&middot;&nbsp;
 <strong style="color: #111827;">4</strong> communities scraped &nbsp;&middot;&nbsp;
 Top score: <strong style="color: #6366f1;">10.0</strong>
 </td>
@@ -298,25 +293,20 @@ Top score: <strong style="color: #6366f1;">10.0</strong>
 <tr>
 <td style="padding: 24px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
 
-<span style="display: inline-block; background-color: #6366f1; color: #ffffff; padding: 4px 12px; border-radius: 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Today's #1 Idea</span>
+<span style="display: inline-block; background-color: #6366f1; color: #ffffff; padding: 4px 12px; border-radius: 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Today's #1 Problem</span>
 <h2 style="margin: 12px 0 4px 0; font-size: 24px; font-weight: 700; color: #111827; line-height: 1.3;">Idea 1</h2>
 <p style="margin: 0 0 16px 0; font-size: 16px; color: #6b7280; font-style: italic;">Tagline for idea 1</p>
 
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 0 20px 0;">
 <tr>
-<td width="31%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
+<td width="48%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
 <div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Priority</div>
 <div style="font-size: 18px; font-weight: 700; color: #6366f1; margin-top: 2px;">10.0</div>
 </td>
-<td width="3%"></td>
-<td width="31%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
+<td width="4%"></td>
+<td width="48%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
 <div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Build time</div>
 <div style="font-size: 18px; font-weight: 700; color: #111827; margin-top: 2px;">Weekend</div>
-</td>
-<td width="3%"></td>
-<td width="31%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
-<div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Opportunity</div>
-<div style="font-size: 22px; font-weight: 700; color: #d97706; margin-top: 2px; letter-spacing: 1px;">$$</div>
 </td>
 </tr>
 </table>
@@ -352,7 +342,7 @@ Top score: <strong style="color: #6366f1;">10.0</strong>
 <table cellpadding="0" cellspacing="0" role="presentation">
 <tr>
 <td style="background-color: #6366f1; border-radius: 8px;">
-<a href="https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000001" style="display: inline-block; padding: 14px 28px; color: #ffffff; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px;">View full brief on dashboard &#8594;</a>
+<a href="https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000001" style="display: inline-block; padding: 14px 28px; color: #ffffff; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px;">View full spec on dashboard &#8594;</a>
 </td>
 </tr>
 </table>
@@ -364,7 +354,7 @@ Top score: <strong style="color: #6366f1;">10.0</strong>
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
 <tr>
 <td style="padding: 24px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-<div style="font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px;">Today's Other Ideas</div>
+<div style="font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px;">More Problems Today</div>
 
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom: 8px;">
 <tr>
@@ -384,7 +374,7 @@ Top score: <strong style="color: #6366f1;">10.0</strong>
 <tr>
 <td></td>
 <td colspan="2" style="padding-top: 8px;">
-<a href="https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000002" style="color: #6366f1; font-size: 14px; font-weight: 600; text-decoration: none;">Read brief &#8594;</a>
+<a href="https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000002" style="color: #6366f1; font-size: 14px; font-weight: 600; text-decoration: none;">View problem &#8594;</a>
 </td>
 </tr>
 </table>
@@ -410,7 +400,7 @@ Top score: <strong style="color: #6366f1;">10.0</strong>
 <tr>
 <td></td>
 <td colspan="2" style="padding-top: 8px;">
-<a href="https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000003" style="color: #6366f1; font-size: 14px; font-weight: 600; text-decoration: none;">Read brief &#8594;</a>
+<a href="https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000003" style="color: #6366f1; font-size: 14px; font-weight: 600; text-decoration: none;">View problem &#8594;</a>
 </td>
 </tr>
 </table>
@@ -436,7 +426,7 @@ Top score: <strong style="color: #6366f1;">10.0</strong>
 <tr>
 <td></td>
 <td colspan="2" style="padding-top: 8px;">
-<a href="https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000004" style="color: #6366f1; font-size: 14px; font-weight: 600; text-decoration: none;">Read brief &#8594;</a>
+<a href="https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000004" style="color: #6366f1; font-size: 14px; font-weight: 600; text-decoration: none;">View problem &#8594;</a>
 </td>
 </tr>
 </table>
@@ -462,7 +452,7 @@ Top score: <strong style="color: #6366f1;">10.0</strong>
 <tr>
 <td></td>
 <td colspan="2" style="padding-top: 8px;">
-<a href="https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000005" style="color: #6366f1; font-size: 14px; font-weight: 600; text-decoration: none;">Read brief &#8594;</a>
+<a href="https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000005" style="color: #6366f1; font-size: 14px; font-weight: 600; text-decoration: none;">View problem &#8594;</a>
 </td>
 </tr>
 </table>
@@ -499,44 +489,44 @@ Top score: <strong style="color: #6366f1;">10.0</strong>
 
 exports[`Email Builder > HTML template snapshots > matches snapshot for plain text (free tier) 1`] = `
 "ZEROTOSHIP | DATE_PLACEHOLDER
-5 ideas found | 4 communities scraped | Top score: 10.0
+5 problems found | 4 communities scraped | Top score: 10.0
 ============================================================
 
-#1 TODAY'S TOP IDEA
+#1 TODAY'S TOP PROBLEM
 
 Idea 1
 "Tagline for idea 1"
 
-Score: 10.0/100 | Build time: Weekend | Opportunity: $$
+Score: 10.0/100 | Build time: Weekend
 
 Users struggle with testing email systems
 The brief covers feature 1 and 3 more technical approaches.
 
-Read the full brief: https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000001
+Read the full spec: https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000001
 
 ------------------------------------------------------------
 
-TODAY'S OTHER IDEAS
+MORE PROBLEMS TODAY
 
 #2 Idea 2 — Score: 9.5 [Weekend]
 "Tagline for idea 2"
-Read brief: https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000002
+View problem: https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000002
 
 #3 Idea 3 — Score: 9.0 [Weekend]
 "Tagline for idea 3"
-Read brief: https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000003
+View problem: https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000003
 
 #4 Idea 4 [PRO]
 
 #5 Idea 5 [PRO]
 
 ------------------------------------------------------------
-+2 more ideas with full briefs available on Pro.
-Unlock all ideas: https://test.zerotoship.dev/upgrade
++2 more problems with full specs available on Pro.
+Unlock all problems: https://test.zerotoship.dev/upgrade
 
 ------------------------------------------------------------
-You saw 3 ideas today. Pro members saw 5.
-Every idea. Every brief. Every day.
+You browsed 3 problems today. Pro members get full specs for all of them.
+Every problem. Every spec. Every day.
 Upgrade to Pro: https://test.zerotoship.dev/upgrade
 
 ------------------------------------------------------------
@@ -547,15 +537,15 @@ ZeroToShip YEAR"
 
 exports[`Email Builder > HTML template snapshots > matches snapshot for plain text (pro tier) 1`] = `
 "ZEROTOSHIP | DATE_PLACEHOLDER
-5 ideas found | 4 communities scraped | Top score: 10.0
+5 problems found | 4 communities scraped | Top score: 10.0
 ============================================================
 
-#1 TODAY'S TOP IDEA
+#1 TODAY'S TOP PROBLEM
 
 Idea 1
 "Tagline for idea 1"
 
-Score: 10.0/100 | Build time: Weekend | Opportunity: $$
+Score: 10.0/100 | Build time: Weekend
 
 THE PROBLEM
 Users struggle with testing email systems
@@ -575,27 +565,27 @@ KEY FEATURES
 GO-TO-MARKET
 Launch on Product Hunt
 
-View full brief on dashboard: https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000001
+View full spec on dashboard: https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000001
 
 ------------------------------------------------------------
 
-TODAY'S OTHER IDEAS
+MORE PROBLEMS TODAY
 
 #2 Idea 2 — Score: 9.5 [Weekend]
 "Tagline for idea 2"
-Read brief: https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000002
+View problem: https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000002
 
 #3 Idea 3 — Score: 9.0 [Weekend]
 "Tagline for idea 3"
-Read brief: https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000003
+View problem: https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000003
 
 #4 Idea 4 — Score: 8.5 [Weekend]
 "Tagline for idea 4"
-Read brief: https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000004
+View problem: https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000004
 
 #5 Idea 5 — Score: 8.0 [Weekend]
 "Tagline for idea 5"
-Read brief: https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000005
+View problem: https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000005
 
 ------------------------------------------------------------
 Manage preferences: https://test.zerotoship.dev/settings
@@ -611,7 +601,7 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for single b
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="supported-color-schemes" content="light dark">
-<title>1 ideas today: SnapshotApp</title>
+<title>ZeroToShip: SnapshotApp</title>
 <!--[if mso]>
 <style type="text/css">
 table { border-collapse: collapse; }
@@ -620,7 +610,7 @@ td { font-family: Arial, sans-serif; }
 <![endif]-->
 </head>
 <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-<span style="display:none;font-size:0;line-height:0;max-height:0;max-width:0;mso-hide:all;overflow:hidden;">1 ideas scored today. #1 is a weekend build.&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;</span>
+<span style="display:none;font-size:0;line-height:0;max-height:0;max-width:0;mso-hide:all;overflow:hidden;">1 problems scored today. #1 is a weekend build.&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;</span>
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #f5f5f5;">
 <tr>
 <td align="center" style="padding: 16px 0;">
@@ -643,7 +633,7 @@ td { font-family: Arial, sans-serif; }
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #f9fafb;">
 <tr>
 <td style="padding: 12px 24px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; color: #6b7280; text-align: center;">
-<strong style="color: #111827;">1</strong> ideas found &nbsp;&middot;&nbsp;
+<strong style="color: #111827;">1</strong> problems found &nbsp;&middot;&nbsp;
 <strong style="color: #111827;">4</strong> communities scraped &nbsp;&middot;&nbsp;
 Top score: <strong style="color: #6366f1;">8.5</strong>
 </td>
@@ -654,25 +644,20 @@ Top score: <strong style="color: #6366f1;">8.5</strong>
 <tr>
 <td style="padding: 24px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
 
-<span style="display: inline-block; background-color: #6366f1; color: #ffffff; padding: 4px 12px; border-radius: 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Today's #1 Idea</span>
+<span style="display: inline-block; background-color: #6366f1; color: #ffffff; padding: 4px 12px; border-radius: 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Today's #1 Problem</span>
 <h2 style="margin: 12px 0 4px 0; font-size: 24px; font-weight: 700; color: #111827; line-height: 1.3;">SnapshotApp</h2>
 <p style="margin: 0 0 16px 0; font-size: 16px; color: #6b7280; font-style: italic;">A test idea for testing purposes</p>
 
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 0 20px 0;">
 <tr>
-<td width="31%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
+<td width="48%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
 <div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Priority</div>
 <div style="font-size: 18px; font-weight: 700; color: #6366f1; margin-top: 2px;">8.5</div>
 </td>
-<td width="3%"></td>
-<td width="31%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
+<td width="4%"></td>
+<td width="48%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
 <div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Build time</div>
 <div style="font-size: 18px; font-weight: 700; color: #111827; margin-top: 2px;">Weekend</div>
-</td>
-<td width="3%"></td>
-<td width="31%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
-<div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Opportunity</div>
-<div style="font-size: 22px; font-weight: 700; color: #d97706; margin-top: 2px; letter-spacing: 1px;">$$</div>
 </td>
 </tr>
 </table>
@@ -681,7 +666,7 @@ Top score: <strong style="color: #6366f1;">8.5</strong>
 <table cellpadding="0" cellspacing="0" role="presentation">
 <tr>
 <td style="background-color: #6366f1; border-radius: 8px;">
-<a href="https://test.zerotoship.dev/login?next=%2Fidea%2Fb0000000-0000-0000-0000-0000000000aa" style="display: inline-block; padding: 14px 28px; color: #ffffff; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px;">Read the full brief &#8594;</a>
+<a href="https://test.zerotoship.dev/login?next=%2Fidea%2Fb0000000-0000-0000-0000-0000000000aa" style="display: inline-block; padding: 14px 28px; color: #ffffff; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px;">Read the full spec &#8594;</a>
 </td>
 </tr>
 </table>
@@ -695,8 +680,8 @@ Top score: <strong style="color: #6366f1;">8.5</strong>
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #f5f3ff; border-left: 3px solid #6366f1; border-radius: 0 8px 8px 0;">
 <tr>
 <td style="padding: 14px 20px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; color: #374151; line-height: 1.5;">
-Today's lineup has 0 more ideas just like this one.
-<a href="https://test.zerotoship.dev/upgrade" style="color: #6366f1; font-weight: 600; text-decoration: none;"> Unlock all ideas &#8594;</a>
+You're seeing 1 of today's 1 problems. Pro members get full specs for every one.
+<a href="https://test.zerotoship.dev/upgrade" style="color: #6366f1; font-weight: 600; text-decoration: none;"> Unlock all problems &#8594;</a>
 </td>
 </tr>
 </table>
@@ -708,8 +693,8 @@ Today's lineup has 0 more ideas just like this one.
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #111827;">
 <tr>
 <td style="padding: 32px 24px; text-align: center; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-<div style="font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 8px;">You saw 1 ideas today. Pro members saw 1.</div>
-<div style="font-size: 16px; color: rgba(255,255,255,0.7); margin-bottom: 20px;">Every idea. Every brief. Every day.</div>
+<div style="font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 8px;">You browsed 1 problems today. Pro members get full specs for all of them.</div>
+<div style="font-size: 16px; color: rgba(255,255,255,0.7); margin-bottom: 20px;">Every problem. Every spec. Every day.</div>
 <table cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 auto;">
 <tr>
 <td style="background-color: #ffffff; border-radius: 8px;">

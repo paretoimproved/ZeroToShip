@@ -169,9 +169,9 @@ describe('Email Builder', () => {
     it('returns empty message when no briefs provided', () => {
       const result = buildDailyEmail([], 'free');
 
-      expect(result.subject).toContain('No ideas today');
-      expect(result.html).toContain('No startup ideas found today');
-      expect(result.text).toContain('No startup ideas found today');
+      expect(result.subject).toContain('No problems today');
+      expect(result.html).toContain('No new problems found today');
+      expect(result.text).toContain('No new problems found today');
     });
 
     it('generates a subject line referencing top idea', () => {
@@ -226,11 +226,11 @@ describe('Email Builder', () => {
       expect(result.html).toContain('A CLI tool that auto-deploys with zero config.');
     });
 
-    it('includes CTA to view brief on dashboard for pro', () => {
+    it('includes CTA to view spec on dashboard for pro', () => {
       const brief = createMockBrief();
       const result = buildDailyEmail([brief], 'pro');
 
-      expect(result.html).toContain('View full brief on dashboard');
+      expect(result.html).toContain('View full spec on dashboard');
     });
 
     it('includes effort estimate in score bar', () => {
@@ -239,17 +239,6 @@ describe('Email Builder', () => {
 
       expect(result.html).toContain('Build time');
       expect(result.html).toContain('Weekend');
-    });
-
-    it('includes opportunity scale in score bar', () => {
-      const brief = createMockBrief({
-        revenueEstimate: '$50K-$100K MRR within first year',
-      });
-      const result = buildDailyEmail([brief], 'free');
-
-      expect(result.html).toContain('Opportunity');
-      // $100K falls in the $$$ tier
-      expect(result.html).toContain('$$$');
     });
 
     it('includes idea name and tagline in hero', () => {
@@ -267,7 +256,7 @@ describe('Email Builder', () => {
       const briefs = createMockBriefs(5);
       const result = buildDailyEmail(briefs, 'pro');
 
-      expect(result.html).toContain("Today's Other Ideas");
+      expect(result.html).toContain("More Problems Today");
       expect(result.html).toContain('Idea 2');
       expect(result.html).toContain('Idea 3');
     });
@@ -276,7 +265,7 @@ describe('Email Builder', () => {
       const briefs = [createMockBrief()];
       const result = buildDailyEmail(briefs, 'pro');
 
-      expect(result.html).not.toContain("Today's Other Ideas");
+      expect(result.html).not.toContain("More Problems Today");
     });
 
     it('caps other ideas to max 9 (ranks 2-10)', () => {
@@ -292,7 +281,7 @@ describe('Email Builder', () => {
       const briefs = createMockBriefs(5);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.html).toContain('Every idea. Every brief. Every day.');
+      expect(result.html).toContain('Every problem. Every spec. Every day.');
       expect(result.html).toContain('Upgrade to Pro');
     });
 
@@ -424,7 +413,7 @@ describe('Email Builder', () => {
 
       expect(result.text).toContain('ZEROTOSHIP');
       expect(result.text).toContain('PlainTextIdea');
-      expect(result.text).toContain("TODAY'S TOP IDEA");
+      expect(result.text).toContain("TODAY'S TOP PROBLEM");
     });
 
     it('includes priority score and effort in plain text', () => {
@@ -458,7 +447,7 @@ describe('Email Builder', () => {
       const briefs = createMockBriefs(4);
       const result = buildDailyEmail(briefs, 'pro');
 
-      expect(result.text).toContain("TODAY'S OTHER IDEAS");
+      expect(result.text).toContain("MORE PROBLEMS TODAY");
     });
 
     it('includes unsubscribe URL in plain text', () => {
@@ -473,7 +462,7 @@ describe('Email Builder', () => {
     it('returns simple text for empty briefs', () => {
       const result = buildDailyEmail([], 'pro');
 
-      expect(result.text).toBe('No startup ideas found today. Check back tomorrow!');
+      expect(result.text).toBe('No new problems found today. Check back tomorrow!');
     });
 
     it('shows unlocked taglines for ideas within tier limit', () => {
@@ -1191,7 +1180,7 @@ describe('Tier-based content', () => {
       const briefs = createMockBriefs(10);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.html).toContain('+7 more ideas available with Pro');
+      expect(result.html).toContain('+7 more problems available with Pro');
     });
 
     it('shows upgrade URL in plain text', () => {
@@ -1215,7 +1204,7 @@ describe('Tier-based content', () => {
       const result = buildDailyEmail(briefs, 'pro');
 
       expect(result.html).not.toContain('Upgrade to Pro');
-      expect(result.html).not.toContain('Unlock all ideas');
+      expect(result.html).not.toContain('Unlock all problems');
     });
 
     it('does not show upgrade message in plain text', () => {
@@ -1269,8 +1258,8 @@ describe('Tier-based content', () => {
       const freeResult = buildDailyEmail(briefs, 'free');
       const proResult = buildDailyEmail(briefs, 'pro');
 
-      expect(freeResult.html).not.toContain("Today's Other Ideas");
-      expect(proResult.html).not.toContain("Today's Other Ideas");
+      expect(freeResult.html).not.toContain("More Problems Today");
+      expect(proResult.html).not.toContain("More Problems Today");
     });
 
     it('two briefs shows 1 other idea, no locked indicators for free', () => {
@@ -1278,7 +1267,7 @@ describe('Tier-based content', () => {
       const briefs = createMockBriefs(2);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.html).toContain("Today's Other Ideas");
+      expect(result.html).toContain("More Problems Today");
       expect(result.text).not.toContain('[PRO]');
     });
   });
@@ -1340,7 +1329,7 @@ describe('Data assembly', () => {
     // New template shows problem hook and key features teaser
     expect(result.html).toContain('Big problem here.');
     expect(result.html).toContain('automated testing');
-    expect(result.html).toContain('View full brief on dashboard');
+    expect(result.html).toContain('View full spec on dashboard');
   });
 
   it('displays score for each secondary idea in HTML', () => {

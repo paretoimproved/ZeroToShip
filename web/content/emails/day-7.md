@@ -2,7 +2,7 @@
 
 ## Subject Line Options
 - Your first week with ZeroToShip (quick recap)
-- 7 days, {{totalIdeas}} ideas — what's next?
+- 7 days, {{totalProblems}} problems — what's next?
 - Help me make ZeroToShip better for you
 
 ---
@@ -19,7 +19,7 @@ You've been with ZeroToShip for a week. Here's your recap:
 
 | Metric | Value |
 |--------|-------|
-| Ideas delivered | {{totalIdeas}} |
+| Problems delivered | {{totalProblems}} |
 | Top scoring idea | {{topIdea.name}} ({{topIdea.priorityScore}}/100) |
 | Most common category | {{topCategory}} |
 | Quick wins (weekend projects) | {{quickWinCount}} |
@@ -53,10 +53,10 @@ You're on Pro—awesome! Here are some features you might have missed:
 {{else}}
 You're on the free plan. Here's what Pro unlocks:
 
-- 10 ideas/day (vs 3)
+- Unlimited spec generation (vs 3/month)
+- Custom problem submission
+- Problem watching
 - Full technical specs
-- Competitor analysis
-- Business model guidance
 - Archive access
 
 [Try Pro for $19/mo →]({{upgradeUrl}})
@@ -68,7 +68,7 @@ Thanks for being an early user. Seriously.
 
 — {{senderName}}, Founder of ZeroToShip
 
-P.S. Found an idea you're excited about? Reply and tell me—I'd love to hear what you're building.
+P.S. Found a problem you want to solve? Reply and tell me—I'd love to hear what you're building.
 
 ---
 
@@ -80,7 +80,7 @@ You're receiving this because you signed up for ZeroToShip.
 
 ## Template Variables
 - `{{name}}` - User's first name
-- `{{totalIdeas}}` - Total ideas delivered (21 for free, 70 for pro)
+- `{{totalProblems}}` - Total problems delivered
 - `{{topIdea.name}}` - Highest scoring idea of the week
 - `{{topIdea.priorityScore}}` - Score
 - `{{topCategory}}` - Most frequent category in their ideas

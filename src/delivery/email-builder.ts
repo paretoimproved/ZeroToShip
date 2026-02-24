@@ -74,35 +74,15 @@ function formatEffortLabel(effort: string): string {
   return effort;
 }
 
-function revenueToScale(estimate: string): { label: string; color: string } {
-  if (!estimate) return { label: '$', color: '#9ca3af' };
-  const text = estimate.toLowerCase().replace(/,/g, '');
-  // Look for the largest dollar figure in the string
-  const amounts = [...text.matchAll(/\$\s*([\d.]+)\s*(k|m|b)?/gi)];
-  let maxAmount = 0;
-  for (const m of amounts) {
-    let val = parseFloat(m[1]);
-    const suffix = (m[2] || '').toLowerCase();
-    if (suffix === 'k') val *= 1_000;
-    else if (suffix === 'm') val *= 1_000_000;
-    else if (suffix === 'b') val *= 1_000_000_000;
-    if (val > maxAmount) maxAmount = val;
-  }
-  if (maxAmount >= 1_000_000) return { label: '$$$$', color: '#059669' };
-  if (maxAmount >= 100_000) return { label: '$$$', color: '#059669' };
-  if (maxAmount >= 10_000) return { label: '$$', color: '#d97706' };
-  return { label: '$', color: '#9ca3af' };
-}
-
 function generateSubjectLine(topIdea: IdeaBrief, ideaCount: number): string {
   const name = topIdea.name.trim();
 
   // Keep subjects short and factual. Avoid hypey templates (revenue / scores / "could you build this").
   const templates = [
     `ZeroToShip: ${name}`,
-    `Today's ideas: ${name}`,
-    `${ideaCount} ideas today: ${name}`,
-    `Top idea: ${name}`,
+    `Today's problems: ${name}`,
+    `${ideaCount} problems today: ${name}`,
+    `Top problem: ${name}`,
   ];
 
   // Deterministic daily selection based on date
@@ -114,7 +94,7 @@ function generateSubjectLine(topIdea: IdeaBrief, ideaCount: number): string {
 }
 
 function generatePreviewText(topIdea: IdeaBrief, ideaCount: number): string {
-  return `${ideaCount} ideas scored today. #1 is a ${formatEffortLabel(topIdea.effortEstimate).toLowerCase()} build.`;
+  return `${ideaCount} problems scored today. #1 is a ${formatEffortLabel(topIdea.effortEstimate).toLowerCase()} build.`;
 }
 
 function buildPreheader(text: string): string {
@@ -143,7 +123,7 @@ function buildStatBar(ideaCount: number, topScore: string): string {
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #f9fafb;">
       <tr>
         <td style="padding: 12px 24px; font-family: ${FONT_STACK}; font-size: 13px; color: #6b7280; text-align: center;">
-          <strong style="color: #111827;">${ideaCount}</strong> ideas found &nbsp;&middot;&nbsp;
+          <strong style="color: #111827;">${ideaCount}</strong> problems found &nbsp;&middot;&nbsp;
           <strong style="color: #111827;">4</strong> communities scraped &nbsp;&middot;&nbsp;
           Top score: <strong style="color: #6366f1;">${topScore}</strong>
         </td>
@@ -151,24 +131,19 @@ function buildStatBar(ideaCount: number, topScore: string): string {
     </table>`;
 }
 
-function buildScoreChips(brief: IdeaBrief, revenue: { label: string; color: string }): string {
+function buildScoreChips(brief: IdeaBrief): string {
   const effortLabel = formatEffortLabel(brief.effortEstimate);
   return `
           <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 0 20px 0;">
             <tr>
-              <td width="31%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
+              <td width="48%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
                 <div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Priority</div>
                 <div style="font-size: 18px; font-weight: 700; color: #6366f1; margin-top: 2px;">${formatScore(brief.priorityScore)}</div>
               </td>
-              <td width="3%"></td>
-              <td width="31%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
+              <td width="4%"></td>
+              <td width="48%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
                 <div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Build time</div>
                 <div style="font-size: 18px; font-weight: 700; color: #111827; margin-top: 2px;">${escapeHtml(effortLabel)}</div>
-              </td>
-              <td width="3%"></td>
-              <td width="31%" style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
-                <div style="font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">Opportunity</div>
-                <div style="font-size: 22px; font-weight: 700; color: ${revenue.color}; margin-top: 2px; letter-spacing: 1px;">${revenue.label}</div>
               </td>
             </tr>
           </table>`;
@@ -183,7 +158,6 @@ function buildSectionBlock(label: string, content: string): string {
 }
 
 function buildHeroSection(brief: IdeaBrief, tier: SubscriberTier, config: Required<EmailBuilderConfig>): string {
-  const revenue = revenueToScale(brief.revenueEstimate);
   const ideaPath = `/idea/${brief.id || ''}`;
   // Email links are often opened in a logged-out browser session. For free users,
   // route through login with `next` so they land on a fully-unlocked brief after auth.
@@ -192,7 +166,7 @@ function buildHeroSection(brief: IdeaBrief, tier: SubscriberTier, config: Requir
     : `${config.baseUrl}${ideaPath}`;
 
   const headerHtml = `
-          <span style="display: inline-block; background-color: #6366f1; color: #ffffff; padding: 4px 12px; border-radius: 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Today's #1 Idea</span>
+          <span style="display: inline-block; background-color: #6366f1; color: #ffffff; padding: 4px 12px; border-radius: 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Today's #1 Problem</span>
           <h2 style="margin: 12px 0 4px 0; font-size: 24px; font-weight: 700; color: #111827; line-height: 1.3;">${escapeHtml(brief.name)}</h2>
           <p style="margin: 0 0 16px 0; font-size: 16px; color: #6b7280; font-style: italic;">${escapeHtml(brief.tagline)}</p>`;
 
@@ -230,14 +204,14 @@ function buildHeroSection(brief: IdeaBrief, tier: SubscriberTier, config: Requir
           <p style="margin: 0 0 20px 0; font-size: 16px; color: #374151; line-height: 1.6;">${escapeHtml(hook)}${featureTeaser}</p>`;
   }
 
-  const ctaLabel = tier === 'pro' ? 'View full brief on dashboard' : 'Read the full brief';
+  const ctaLabel = tier === 'pro' ? 'View full spec on dashboard' : 'Read the full spec';
 
   return `
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
       <tr>
         <td style="padding: 24px; font-family: ${FONT_STACK};">
           ${headerHtml}
-          ${buildScoreChips(brief, revenue)}
+          ${buildScoreChips(brief)}
           ${bodyHtml}
           <table cellpadding="0" cellspacing="0" role="presentation">
             <tr>
@@ -260,11 +234,11 @@ function buildInlineUpgradeBanner(
   // Rotate copy based on day
   const dateHash = new Date().toISOString().slice(0, 10).split('').reduce((a, c) => a + c.charCodeAt(0), 0);
   const variants = [
-    `You're seeing 1 of today's ${ideaCount} ideas. Pro members get the full brief for every one.`,
-    `Today's lineup has ${ideaCount - 1} more ideas just like this one.`,
+    `You're seeing 1 of today's ${ideaCount} problems. Pro members get full specs for every one.`,
+    `Today's lineup has ${ideaCount - 1} more problems just like this one.`,
     briefs.length >= 3
-      ? `Today's #3 idea scored ${formatScore(briefs[2].priorityScore)} &#8212; and it's a ${formatEffortLabel(briefs[2].effortEstimate).toLowerCase()} build.`
-      : `There are ${ideaCount - 1} more ideas waiting for you today.`,
+      ? `Today's #3 problem scored ${formatScore(briefs[2].priorityScore)} &#8212; and it's a ${formatEffortLabel(briefs[2].effortEstimate).toLowerCase()} build.`
+      : `There are ${ideaCount - 1} more problems waiting for you today.`,
   ];
   const copy = variants[dateHash % variants.length];
 
@@ -276,7 +250,7 @@ function buildInlineUpgradeBanner(
             <tr>
               <td style="padding: 14px 20px; font-family: ${FONT_STACK}; font-size: 14px; color: #374151; line-height: 1.5;">
                 ${copy}
-                <a href="${escapeHtml(config.upgradeUrl)}" style="color: #6366f1; font-weight: 600; text-decoration: none;"> Unlock all ideas &#8594;</a>
+                <a href="${escapeHtml(config.upgradeUrl)}" style="color: #6366f1; font-weight: 600; text-decoration: none;"> Unlock all problems &#8594;</a>
               </td>
             </tr>
           </table>
@@ -343,7 +317,7 @@ function buildIdeaCard(
             <tr>
               <td></td>
               <td colspan="2" style="padding-top: 8px;">
-                <a href="${escapeHtml(ideaUrl)}" style="color: #6366f1; font-size: 14px; font-weight: 600; text-decoration: none;">Read brief &#8594;</a>
+                <a href="${escapeHtml(ideaUrl)}" style="color: #6366f1; font-size: 14px; font-weight: 600; text-decoration: none;">View problem &#8594;</a>
               </td>
             </tr>
           </table>
@@ -383,7 +357,7 @@ function buildOtherIdeasSection(
       <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top: 8px;">
         <tr>
           <td style="text-align: center; padding: 12px 0; font-family: ${FONT_STACK};">
-            <span style="font-size: 14px; color: #6b7280;">+${lockedCount} more idea${lockedCount > 1 ? 's' : ''} available with Pro${weekendBuilds > 0 ? ` &#8212; including ${weekendBuilds} weekend build${weekendBuilds > 1 ? 's' : ''}` : ''}</span>
+            <span style="font-size: 14px; color: #6b7280;">+${lockedCount} more problem${lockedCount > 1 ? 's' : ''} available with Pro${weekendBuilds > 0 ? ` &#8212; including ${weekendBuilds} weekend build${weekendBuilds > 1 ? 's' : ''}` : ''}</span>
           </td>
         </tr>
       </table>`
@@ -393,7 +367,7 @@ function buildOtherIdeasSection(
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
       <tr>
         <td style="padding: 24px; font-family: ${FONT_STACK};">
-          <div style="font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px;">Today's Other Ideas</div>
+          <div style="font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px;">More Problems Today</div>
           ${rows}
           ${lockedFooter}
         </td>
@@ -413,8 +387,8 @@ function buildBottomCta(
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #111827;">
       <tr>
         <td style="padding: 32px 24px; text-align: center; font-family: ${FONT_STACK};">
-          <div style="font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 8px;">You saw ${freeCount} ideas today. Pro members saw ${totalCount}.</div>
-          <div style="font-size: 16px; color: rgba(255,255,255,0.7); margin-bottom: 20px;">Every idea. Every brief. Every day.</div>
+          <div style="font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 8px;">You browsed ${freeCount} problems today. Pro members get full specs for all of them.</div>
+          <div style="font-size: 16px; color: rgba(255,255,255,0.7); margin-bottom: 20px;">Every problem. Every spec. Every day.</div>
           <table cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 auto;">
             <tr>
               <td style="background-color: #ffffff; border-radius: 8px;">
@@ -453,9 +427,9 @@ export function buildDailyEmail(
 
   if (briefs.length === 0) {
     return {
-      subject: 'ZeroToShip: No ideas today',
-      html: '<p>No startup ideas found today. Check back tomorrow!</p>',
-      text: 'No startup ideas found today. Check back tomorrow!',
+      subject: 'ZeroToShip: No problems today',
+      html: '<p>No new problems found today. Check back tomorrow!</p>',
+      text: 'No new problems found today. Check back tomorrow!',
     };
   }
 
@@ -522,7 +496,7 @@ function buildPlainTextEmail(
   config: Required<EmailBuilderConfig>
 ): string {
   if (briefs.length === 0) {
-    return 'No startup ideas found today. Check back tomorrow!';
+    return 'No new problems found today. Check back tomorrow!';
   }
 
   const limit = TIER_LIMITS[tier];
@@ -536,16 +510,16 @@ function buildPlainTextEmail(
   const lines: string[] = [];
 
   lines.push(`ZEROTOSHIP | ${dateStr}`);
-  lines.push(`${ideaCount} ideas found | 4 communities scraped | Top score: ${formatScore(topIdea.priorityScore)}`);
+  lines.push(`${ideaCount} problems found | 4 communities scraped | Top score: ${formatScore(topIdea.priorityScore)}`);
   lines.push('='.repeat(60));
   lines.push('');
 
-  lines.push("#1 TODAY'S TOP IDEA");
+  lines.push("#1 TODAY'S TOP PROBLEM");
   lines.push('');
   lines.push(topIdea.name);
   lines.push(`"${topIdea.tagline}"`);
   lines.push('');
-  lines.push(`Score: ${formatScore(topIdea.priorityScore)}/100 | Build time: ${formatEffortLabel(topIdea.effortEstimate)} | Opportunity: ${revenueToScale(topIdea.revenueEstimate).label}`);
+  lines.push(`Score: ${formatScore(topIdea.priorityScore)}/100 | Build time: ${formatEffortLabel(topIdea.effortEstimate)}`);
   lines.push('');
 
   if (tier === 'pro') {
@@ -568,21 +542,21 @@ function buildPlainTextEmail(
       lines.push(topIdea.goToMarket.launchStrategy);
       lines.push('');
     }
-    lines.push(`View full brief on dashboard: ${config.baseUrl}/idea/${topIdea.id || ''}`);
+    lines.push(`View full spec on dashboard: ${config.baseUrl}/idea/${topIdea.id || ''}`);
   } else {
     lines.push(firstSentence(topIdea.problemStatement));
     if (topIdea.keyFeatures.length > 0) {
       lines.push(`The brief covers ${topIdea.keyFeatures[0].toLowerCase()}${topIdea.keyFeatures.length > 1 ? ` and ${topIdea.keyFeatures.length - 1} more technical approaches` : ''}.`);
     }
     lines.push('');
-    lines.push(`Read the full brief: ${config.baseUrl}/idea/${topIdea.id || ''}`);
+    lines.push(`Read the full spec: ${config.baseUrl}/idea/${topIdea.id || ''}`);
   }
   lines.push('');
   lines.push('-'.repeat(60));
   lines.push('');
 
   if (briefs.length > 1) {
-    lines.push("TODAY'S OTHER IDEAS");
+    lines.push("MORE PROBLEMS TODAY");
     lines.push('');
 
     briefs.slice(1, MAX_EMAIL_IDEAS).forEach((brief, index) => {
@@ -594,7 +568,7 @@ function buildPlainTextEmail(
       } else {
         lines.push(`#${rank} ${brief.name} — Score: ${formatScore(brief.priorityScore)} [${formatEffortLabel(brief.effortEstimate)}]`);
         lines.push(`   "${brief.tagline}"`);
-        lines.push(`   Read brief: ${config.baseUrl}/idea/${brief.id || ''}`);
+        lines.push(`   View problem: ${config.baseUrl}/idea/${brief.id || ''}`);
       }
       lines.push('');
     });
@@ -604,14 +578,14 @@ function buildPlainTextEmail(
     const lockedCount = Math.max(0, Math.min(briefs.length, MAX_EMAIL_IDEAS) - TIER_LIMITS.free);
     if (lockedCount > 0) {
       lines.push('-'.repeat(60));
-      lines.push(`+${lockedCount} more ideas with full briefs available on Pro.`);
-      lines.push(`Unlock all ideas: ${config.upgradeUrl}`);
+      lines.push(`+${lockedCount} more problems with full specs available on Pro.`);
+      lines.push(`Unlock all problems: ${config.upgradeUrl}`);
       lines.push('');
     }
 
     lines.push('-'.repeat(60));
-    lines.push(`You saw ${Math.min(briefs.length, TIER_LIMITS.free)} ideas today. Pro members saw ${Math.min(briefs.length, MAX_EMAIL_IDEAS)}.`);
-    lines.push('Every idea. Every brief. Every day.');
+    lines.push(`You browsed ${Math.min(briefs.length, TIER_LIMITS.free)} problems today. Pro members get full specs for all of them.`);
+    lines.push('Every problem. Every spec. Every day.');
     lines.push(`Upgrade to Pro: ${config.upgradeUrl}`);
     lines.push('');
   }

@@ -281,26 +281,21 @@
 
       <!-- Hero: Top Idea -->
       <div class="hero">
-        <span class="hero-badge">#1 TODAY'S TOP IDEA</span>
+        <span class="hero-badge">#1 TODAY'S TOP PROBLEM</span>
         <h2>{{topIdea.name}}</h2>
         <p class="tagline">{{topIdea.tagline}}</p>
 
         <!-- Score boxes using table for email compatibility -->
         <table width="100%" cellpadding="0" cellspacing="0" style="margin: 16px 0;">
           <tr>
-            <td width="32%" class="score-box">
+            <td width="48%" class="score-box">
               <div class="score-label">Priority</div>
               <div class="score-value">{{topIdea.priorityScore}}</div>
             </td>
-            <td width="2%"></td>
-            <td width="32%" class="score-box">
+            <td width="4%"></td>
+            <td width="48%" class="score-box">
               <div class="score-label">Effort</div>
               <div class="score-value">{{topIdea.effortEstimate}}</div>
-            </td>
-            <td width="2%"></td>
-            <td width="32%" class="score-box">
-              <div class="score-label">Revenue</div>
-              <div class="score-value">{{topIdea.revenueEstimate}}</div>
             </td>
           </tr>
         </table>
@@ -340,7 +335,7 @@
       <!-- Other Ideas Section -->
       {{#if hasMoreIdeas}}
       <div class="other-ideas">
-        <h3>More Ideas Today</h3>
+        <h3>More Problems Today</h3>
 
         {{#each otherIdeas}}
         <div class="idea-row" style="position: relative;">
@@ -358,7 +353,7 @@
 
         {{#if lockedCount}}
         <p style="text-align: center; color: #888; margin-top: 16px;">
-          {{lockedCount}} more idea{{#if lockedCountPlural}}s{{/if}} available with Pro
+          {{lockedCount}} more problem{{#if lockedCountPlural}}s{{/if}} available with Pro
         </p>
         {{/if}}
       </div>
@@ -367,9 +362,9 @@
       <!-- CTA Section (Free tier only) -->
       {{#if showUpgrade}}
       <div class="cta-section">
-        <h3>Every Brief. Every Day.</h3>
-        <p>You're seeing 1 featured brief per email. Pro members get the full brief for every idea, plus archive access and search.</p>
-        <a href="{{upgradeUrl}}" class="cta-button">Unlock Every Brief</a>
+        <h3>Every Problem. Every Spec.</h3>
+        <p>You're seeing 1 featured problem per email. Pro members get full specs for every problem, plus search and export.</p>
+        <a href="{{upgradeUrl}}" class="cta-button">Unlock Every Spec</a>
       </div>
       {{/if}}
 
