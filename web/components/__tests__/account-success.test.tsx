@@ -14,8 +14,10 @@ vi.mock('@/lib/api', () => ({
   api: {
     getSubscription: vi.fn().mockResolvedValue({
       id: '1',
+      userId: 'user_1',
       plan: 'free',
       status: 'active',
+      currentPeriodEnd: new Date(Date.now() + 30 * 86400000).toISOString(),
       cancelAtPeriodEnd: false,
     }),
     getCurrentUser: vi.fn().mockResolvedValue({
@@ -135,8 +137,10 @@ describe('Account Page - Checkout Success', () => {
   it('shows Builder label for pro current plan', async () => {
     vi.mocked(api.getSubscription).mockResolvedValueOnce({
       id: 'sub_pro',
+      userId: 'user_1',
       plan: 'pro',
       status: 'active',
+      currentPeriodEnd: new Date(Date.now() + 30 * 86400000).toISOString(),
       cancelAtPeriodEnd: false,
     });
 
