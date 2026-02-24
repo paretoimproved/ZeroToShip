@@ -3,7 +3,8 @@
 import { useRef, useState } from "react";
 import { sampleBrief } from "@/lib/sampleData";
 import { ScoreBadge, EffortBadge } from "@/components/ScoreBadge";
-import { SectionLabel, SectionValue, PillBadge, MonoPill } from "@/components/ui";
+import { SectionLabel, SectionValue, MarkdownSection, PillBadge, MonoPill } from "@/components/ui";
+import { humanizeText } from "@/lib/humanize";
 
 const tabs = ["problem", "solution", "tech", "business"] as const;
 type TabId = (typeof tabs)[number];
@@ -19,34 +20,38 @@ function ProblemPanel() {
   return (
     <dl>
       <SectionLabel>The Problem</SectionLabel>
-      <SectionValue>{sampleBrief.problemStatement}</SectionValue>
+      <MarkdownSection>{sampleBrief.problemStatement}</MarkdownSection>
 
       <SectionLabel>Target Audience</SectionLabel>
-      <SectionValue>{sampleBrief.targetAudience}</SectionValue>
+      <MarkdownSection>{sampleBrief.targetAudience}</MarkdownSection>
 
       <SectionLabel>Market Size</SectionLabel>
-      <SectionValue>{sampleBrief.marketSize}</SectionValue>
+      <MarkdownSection>{sampleBrief.marketSize}</MarkdownSection>
+
+      <SectionLabel>Existing Solutions</SectionLabel>
+      <MarkdownSection>{sampleBrief.existingSolutions}</MarkdownSection>
+
+      <SectionLabel>Market Gaps</SectionLabel>
+      <MarkdownSection>{sampleBrief.gaps}</MarkdownSection>
     </dl>
   );
 }
 
 function SolutionPanel() {
+  const featuresMarkdown = sampleBrief.keyFeatures
+    .map((feature, i) => `${i + 1}. ${feature}`)
+    .join("\n");
+
   return (
     <dl>
       <SectionLabel>Proposed Solution</SectionLabel>
-      <SectionValue>{sampleBrief.proposedSolution}</SectionValue>
+      <MarkdownSection>{sampleBrief.proposedSolution}</MarkdownSection>
 
       <SectionLabel>Key Features</SectionLabel>
-      <SectionValue>
-        <div className="flex flex-wrap gap-2">
-          {sampleBrief.keyFeatures.map((feature) => (
-            <PillBadge key={feature}>{feature}</PillBadge>
-          ))}
-        </div>
-      </SectionValue>
+      <MarkdownSection>{featuresMarkdown}</MarkdownSection>
 
       <SectionLabel>MVP Scope</SectionLabel>
-      <SectionValue>{sampleBrief.mvpScope}</SectionValue>
+      <MarkdownSection>{sampleBrief.mvpScope}</MarkdownSection>
     </dl>
   );
 }
@@ -64,37 +69,47 @@ function TechSpecPanel() {
       </SectionValue>
 
       <SectionLabel>Architecture</SectionLabel>
-      <SectionValue>{sampleBrief.technicalSpec.architecture}</SectionValue>
+      <MarkdownSection>{sampleBrief.technicalSpec.architecture}</MarkdownSection>
 
       <SectionLabel>Estimated Effort</SectionLabel>
-      <SectionValue>{sampleBrief.technicalSpec.estimatedEffort}</SectionValue>
+      <MarkdownSection>{sampleBrief.technicalSpec.estimatedEffort}</MarkdownSection>
     </dl>
   );
 }
 
 function BusinessPanel() {
+  const risksMarkdown = sampleBrief.risks
+    .map((risk, i) => `${i + 1}. ${risk}`)
+    .join("\n");
+
   return (
     <dl>
-      <SectionLabel>Value Model</SectionLabel>
-      <SectionValue>{sampleBrief.businessModel.pricing}</SectionValue>
+      <SectionLabel>Pricing Strategy</SectionLabel>
+      <MarkdownSection>{sampleBrief.businessModel.pricing}</MarkdownSection>
 
-      <SectionLabel>Adoption Path</SectionLabel>
-      <SectionValue>{sampleBrief.businessModel.revenueProjection}</SectionValue>
+      <SectionLabel>Revenue Projection</SectionLabel>
+      <MarkdownSection>{sampleBrief.businessModel.revenueProjection}</MarkdownSection>
+
+      <SectionLabel>Monetization Path</SectionLabel>
+      <MarkdownSection>{sampleBrief.businessModel.monetizationPath}</MarkdownSection>
 
       <SectionLabel>Launch Strategy</SectionLabel>
-      <SectionValue>{sampleBrief.goToMarket.launchStrategy}</SectionValue>
+      <MarkdownSection>{sampleBrief.goToMarket.launchStrategy}</MarkdownSection>
 
       <SectionLabel>Channels</SectionLabel>
       <SectionValue>
         <div className="flex flex-wrap gap-2">
           {sampleBrief.goToMarket.channels.map((channel) => (
-            <PillBadge key={channel}>{channel}</PillBadge>
+            <PillBadge key={channel}>{humanizeText(channel)}</PillBadge>
           ))}
         </div>
       </SectionValue>
 
       <SectionLabel>First Customers</SectionLabel>
-      <SectionValue>{sampleBrief.goToMarket.firstCustomers}</SectionValue>
+      <MarkdownSection>{sampleBrief.goToMarket.firstCustomers}</MarkdownSection>
+
+      <SectionLabel>Risks</SectionLabel>
+      <MarkdownSection>{risksMarkdown}</MarkdownSection>
     </dl>
   );
 }
@@ -161,16 +176,6 @@ export default function SampleBriefPreview() {
               <div className="flex flex-wrap items-center gap-2 flex-shrink-0 min-w-0">
                 <ScoreBadge score={sampleBrief.priorityScore} size="sm" />
                 <EffortBadge effort={sampleBrief.effortEstimate} size="sm" />
-                <span
-                  title={sampleBrief.revenueEstimate}
-                  className={[
-                    "inline-flex items-center text-xs font-medium",
-                    "px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
-                    "min-w-0 max-w-full sm:max-w-[360px] truncate whitespace-nowrap",
-                  ].join(" ")}
-                >
-                  {sampleBrief.revenueEstimate}
-                </span>
               </div>
             </div>
           </div>
