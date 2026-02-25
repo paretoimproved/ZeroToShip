@@ -20,7 +20,7 @@ You've been with ZeroToShip for a week. Here's your recap:
 | Metric | Value |
 |--------|-------|
 | Problems delivered | {{totalProblems}} |
-| Top scoring idea | {{topIdea.name}} ({{topIdea.priorityScore}}/100) |
+| Top scoring problem | {{topIdea.name}} ({{topIdea.priorityScore}}/100) |
 | Most common category | {{topCategory}} |
 | Quick wins (weekend projects) | {{quickWinCount}} |
 

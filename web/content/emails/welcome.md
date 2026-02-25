@@ -22,7 +22,7 @@ Starting tomorrow morning, you'll get validated problems delivered to your inbox
 3. **Click through for details** — See the full brief (Pro only)
 4. **Start building** — Or wait for tomorrow's batch
 
-**Today's Top Idea Preview:**
+**Today's Top Problem Preview:**
 
 > **{{topIdea.name}}**
 > {{topIdea.tagline}}
@@ -32,7 +32,7 @@ Starting tomorrow morning, you'll get validated problems delivered to your inbox
 >
 > *{{topIdea.problemStatement}}*
 
-[View Full Brief →]({{topIdea.url}})
+[View Full Spec →]({{topIdea.url}})
 
 **Quick tip:** The best ideas often have high "severity" scores—those are the painful problems people will actually pay to solve.
 

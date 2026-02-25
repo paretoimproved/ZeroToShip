@@ -39,7 +39,7 @@ You've seen 3 days of problems. Here's what you're missing in the full specs:
 
 ---
 
-**Example: Yesterday's #1 Idea**
+**Example: Yesterday's #1 Problem**
 
 You saw: *"{{topIdea.name}} — {{topIdea.tagline}}"*
 

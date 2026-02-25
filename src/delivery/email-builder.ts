@@ -76,13 +76,15 @@ function formatEffortLabel(effort: string): string {
 
 function generateSubjectLine(topIdea: IdeaBrief, ideaCount: number): string {
   const name = topIdea.name.trim();
+  const effort = formatEffortLabel(topIdea.effortEstimate).toLowerCase();
 
-  // Keep subjects short and factual. Avoid hypey templates (revenue / scores / "could you build this").
+  // Specific > generic. Lead with the product name or effort level so
+  // the subject conveys value at a glance. Avoid revenue claims and questions.
   const templates = [
-    `ZeroToShip: ${name}`,
-    `Today's problems: ${name}`,
-    `${ideaCount} problems today: ${name}`,
-    `Top problem: ${name}`,
+    `Today's #1: ${name} (${effort} build)`,
+    `${name} — ${effort} build, ${formatScore(topIdea.priorityScore)}/100`,
+    `${ideaCount} problems scored — ${name} leads`,
+    `${name} tops today's ${ideaCount} problems`,
   ];
 
   // Deterministic daily selection based on date
