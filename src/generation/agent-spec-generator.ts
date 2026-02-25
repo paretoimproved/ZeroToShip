@@ -24,6 +24,7 @@ export async function callSpecGeneration(brief: IdeaBrief): Promise<AgentSpec> {
     system: AGENT_SPEC_SYSTEM_PROMPT,
     prompt,
     maxTokens: 8192,
+    timeoutMs: 180_000,
     module: 'spec-generation',
   });
 
