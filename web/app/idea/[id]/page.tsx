@@ -80,6 +80,7 @@ export default function IdeaPage() {
   const [brief, setBrief] = useState<IdeaBrief | null>(null);
   const [loading, setLoading] = useState(true);
   const [spec, setSpec] = useState<AgentSpec | null>(null);
+  const [generationId, setGenerationId] = useState<string | null>(null);
   const [specLoading, setSpecLoading] = useState(false);
   const [specError, setSpecError] = useState<string | null>(null);
   const { isAuthenticated } = useAuth();
@@ -113,6 +114,7 @@ export default function IdeaPage() {
     try {
       const result = await api.generateSpec(brief.id);
       setSpec(result.spec);
+      setGenerationId(result.generationId);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to generate spec';
       setSpecError(message);
@@ -234,7 +236,22 @@ export default function IdeaPage() {
                   </button>
                 </div>
               ) : (
+                <>
                 <AgentSpecDisplay spec={spec} onCopy={copySpecToClipboard} />
+                {generationId && (
+                  <div className="mt-4 text-center">
+                    <Link
+                      href={`/specs/${generationId}`}
+                      className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
+                    >
+                      View in My Specs
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
+                    </Link>
+                  </div>
+                )}
+                </>
               )}
             </div>
           </>

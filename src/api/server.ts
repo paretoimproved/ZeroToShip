@@ -28,6 +28,7 @@ import { webhookRoutes } from './routes/webhooks';
 import { authRoutes } from './routes/auth';
 import { adminRoutes } from './routes/admin';
 import { resendWebhookRoutes } from './routes/resendWebhooks';
+import { specsRoutes } from './routes/specs';
 import { validateStripeConfig } from './config/stripe';
 import type { UserTier } from './schemas';
 
@@ -135,6 +136,7 @@ export async function createServer(config: ServerConfig = {}): Promise<FastifyIn
   await server.register(authRoutes, { prefix: '/api/v1/auth' });
   await server.register(adminRoutes, { prefix: '/api/v1/admin' });
   await server.register(enterpriseRoutes, { prefix: '/api/v1' });
+  await server.register(specsRoutes, { prefix: '/api/v1/specs' });
 
   // Webhooks need separate registration to avoid global JSON parsing
   // The webhook route has its own content type parser for raw body

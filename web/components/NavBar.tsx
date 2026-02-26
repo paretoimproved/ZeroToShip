@@ -10,6 +10,7 @@ import Logo from "./Logo";
 const navItems = [
   { href: "/dashboard", label: "Today" },
   { href: "/archive", label: "Archive" },
+  { href: "/specs", label: "My Specs" },
   { href: "/settings", label: "Settings" },
   { href: "/account", label: "Account" },
 ];

@@ -332,3 +332,15 @@ export interface EmailLogRow {
   deliveredAt: string | null;
   openedAt: string | null;
 }
+
+export interface SpecListItem {
+  id: string;
+  ideaId: string;
+  ideaName: string;
+  projectName: string;
+  createdAt: string;
+}
+
+export interface SpecDetail extends SpecListItem {
+  spec: AgentSpec;
+}

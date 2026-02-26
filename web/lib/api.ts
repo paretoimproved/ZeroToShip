@@ -17,6 +17,8 @@ import type {
   PipelineStatus,
   PipelineRunRow,
   EmailLogRow,
+  SpecListItem,
+  SpecDetail,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
@@ -286,6 +288,15 @@ class ApiClient {
     return this.request<{ spec: AgentSpec; generationId: string }>(`/ideas/${ideaId}/generate-spec`, {
       method: "POST",
     });
+  }
+
+  // Specs endpoints
+  async getSpecs(page = 1, limit = 20): Promise<{ specs: SpecListItem[]; total: number; page: number; limit: number }> {
+    return this.request(`/specs?page=${page}&limit=${limit}`);
+  }
+
+  async getSpec(id: string): Promise<SpecDetail> {
+    return this.request<SpecDetail>(`/specs/${id}`);
   }
 }
 

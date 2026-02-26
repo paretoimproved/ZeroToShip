@@ -25,6 +25,8 @@ import {
 } from '../middleware/tierGate';
 import { getMonthlySpecLimit } from '../config/tiers';
 import { callSpecGeneration } from '../../generation/agent-spec-generator';
+import { sendSpecNotificationEmail } from '../../delivery/spec-notification';
+import logger from '../../lib/logger';
 
 /**
  * Convert database row to IdeaBrief
@@ -607,6 +609,11 @@ export async function generateSpecForIdea(
       spec,
     })
     .returning({ id: specGenerations.id });
+
+  // Fire-and-forget notification email
+  sendSpecNotificationEmail(userId, row.id, spec, idea.name).catch((err) =>
+    logger.error({ err, userId, specId: row.id }, 'Failed to send spec notification email')
+  );
 
   return { spec, generationId: row.id };
 }
