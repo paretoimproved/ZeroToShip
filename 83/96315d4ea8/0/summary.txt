@@ -1,0 +1,23 @@
+Everything looks good. Here's a summary of all the changes:
+
+**What changed in `src/delivery/email-builder.ts`:**
+
+1. **`stripMarkdown()` helper** — strips `**bold**`, `*italic*`, and `` `code` `` from AI-generated text. Applied to all brief content in both HTML and plain text emails.
+
+2. **`truncateFeatureName()` helper** — extracts just the concept name from `keyFeatures[0]` by cutting at ` — `, ` - `, or `: ` delimiters, capped at 60 chars. No more paragraph-length feature dumps in the teaser.
+
+3. **`PLATFORM_LABELS` map** — translates `reddit` → `"Reddit"`, `hn` → `"Hacker News"`, etc. for human-friendly display.
+
+4. **Stat bar** — now shows `"From Reddit, Hacker News"` (extracted from actual brief sources) instead of hardcoded `"4 communities scraped"`. Falls back to `"Curated daily"` if no sources.
+
+5. **Hero section reordered (free tier)** — new layout:
+   - Badge → Name → Tagline → **CTA Button** → Score Chips → Short hook text
+   - CTA is now visible above the fold on mobile
+   - Teaser text moved below chips, styled lighter (`#6b7280`) as secondary content
+   - Feature teaser uses bold feature name instead of raw dump
+
+6. **Hero section visual upgrade** — gradient background (`#eef2ff → #faf5ff`) with bottom border separator. CTA button has slightly more padding (`16px 32px`).
+
+7. **Pro tier** — CTA moved to bottom of content sections (makes sense since pros have more to read). All content runs through `stripMarkdown()`.
+
+8. **Plain text version** — same content fixes: community names, markdown stripping, truncated feature names, CTA link moved up right after the name/tagline.

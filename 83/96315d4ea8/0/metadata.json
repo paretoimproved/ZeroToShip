@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.7",
+  "checkpoint_id": "8396315d4ea8",
+  "session_id": "db65d7a3-feb2-4a1a-9daf-cafa63623227",
+  "strategy": "auto-commit",
+  "created_at": "2026-02-27T20:46:37.94562Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/delivery/email-builder.ts"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "476de53650e5",
+  "checkpoint_transcript_start": 94,
+  "transcript_lines_at_start": 94,
+  "token_usage": {
+    "input_tokens": 32,
+    "cache_creation_tokens": 35307,
+    "cache_read_tokens": 2059550,
+    "output_tokens": 12089,
+    "api_call_count": 30,
+    "subagent_tokens": {
+      "input_tokens": 40,
+      "cache_creation_tokens": 54688,
+      "cache_read_tokens": 277326,
+      "output_tokens": 3086,
+      "api_call_count": 7
+    }
+  }
+}
