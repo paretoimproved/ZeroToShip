@@ -227,12 +227,12 @@ describe('OAuth utilities', () => {
 
       // Should NOT call Supabase exchangeCodeForSession
       expect(mockExchangeCodeForSession).not.toHaveBeenCalled();
-      // Should call our backend
+      // Should call our backend with code and redirect_uri
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('/auth/google'),
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({ code: 'google-redirect-code' }),
+          body: JSON.stringify({ code: 'google-redirect-code', redirect_uri: 'http://localhost:3000/login' }),
         })
       );
       expect(result?.token).toBe('google-backend-token');
@@ -273,7 +273,7 @@ describe('OAuth utilities', () => {
       expect(result.user.name).toBe('Google User');
     });
 
-    it('should POST code when type is "code"', async () => {
+    it('should POST code with redirect_uri when type is "code"', async () => {
       mockFetch.mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({
@@ -292,7 +292,7 @@ describe('OAuth utilities', () => {
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('/auth/google'),
         expect.objectContaining({
-          body: JSON.stringify({ code: 'google-auth-code-123' }),
+          body: JSON.stringify({ code: 'google-auth-code-123', redirect_uri: 'http://localhost:3000/login' }),
         })
       );
     });

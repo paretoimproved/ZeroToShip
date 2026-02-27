@@ -117,7 +117,9 @@ export async function loginWithOAuth(provider: OAuthProvider): Promise<void> {
  * The backend verifies the token with Supabase and returns a session.
  */
 export async function loginWithGoogleCode(codeOrCredential: string, type: "credential" | "code" = "credential"): Promise<OAuthCallbackResult> {
-  const body = type === "credential" ? { credential: codeOrCredential } : { code: codeOrCredential };
+  const body = type === "credential"
+    ? { credential: codeOrCredential }
+    : { code: codeOrCredential, redirect_uri: `${window.location.origin}/login` };
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1"}/auth/google`,
     {

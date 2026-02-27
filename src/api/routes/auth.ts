@@ -25,6 +25,7 @@ const LoginRequestSchema = z.object({
 const GoogleAuthRequestSchema = z.object({
   code: z.string().min(1).optional(),
   credential: z.string().min(1).optional(),
+  redirect_uri: z.string().url().optional(),
 }).refine((data) => data.code || data.credential, {
   message: 'Either code or credential is required',
 });
@@ -220,7 +221,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request, reply) => {
-      const { code, credential } = request.body;
+      const { code, credential, redirect_uri: clientRedirectUri } = request.body;
 
       if (!supabase) {
         return reply.status(500).send({
@@ -252,7 +253,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
               code,
               client_id: config.GOOGLE_CLIENT_ID,
               client_secret: config.GOOGLE_CLIENT_SECRET,
-              redirect_uri: 'postmessage',
+              redirect_uri: clientRedirectUri || 'postmessage',
               grant_type: 'authorization_code',
             }),
           });
