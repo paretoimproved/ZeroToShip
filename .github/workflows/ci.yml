@@ -1,16 +1,8 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
-  workflow_dispatch:
-    inputs:
-      deploy_prod:
-        description: 'Deploy to Vercel production (manual; avoids free-tier deployment quota exhaustion)'
-        required: false
-        default: 'false'
 
 jobs:
   build-and-test:
@@ -27,23 +19,3 @@ jobs:
       - run: npm run web:test
       - run: npm run build
       - run: npx tsc --noEmit
-
-  deploy:
-    needs: build-and-test
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_prod == 'true'))
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: npm install -g vercel
-      - run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-      - run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-      - run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}

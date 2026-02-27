@@ -1,0 +1,5 @@
+{
+  "buildCommand": "cd .. && npm run build --workspace=@zerotoship/shared && cd web && npx tsc --noEmit && next build",
+  "framework": "nextjs",
+  "installCommand": "cd .. && npm install"
+}
