@@ -23,7 +23,10 @@ const LoginRequestSchema = z.object({
 });
 
 const GoogleAuthRequestSchema = z.object({
-  code: z.string().min(1),
+  code: z.string().min(1).optional(),
+  credential: z.string().min(1).optional(),
+}).refine((data) => data.code || data.credential, {
+  message: 'Either code or credential is required',
 });
 
 const AuthResponseSchema = z.object({
@@ -217,7 +220,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request, reply) => {
-      const { code } = request.body;
+      const { code, credential } = request.body;
 
       if (!supabase) {
         return reply.status(500).send({
@@ -226,44 +229,57 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
         });
       }
 
-      if (!config.GOOGLE_CLIENT_ID || !config.GOOGLE_CLIENT_SECRET) {
-        return reply.status(500).send({
-          code: 'GOOGLE_NOT_CONFIGURED',
-          message: 'Google OAuth is not configured',
-        });
-      }
+      let idToken: string;
 
-      // Exchange authorization code with Google for tokens
-      let googleTokens;
-      try {
-        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            code,
-            client_id: config.GOOGLE_CLIENT_ID,
-            client_secret: config.GOOGLE_CLIENT_SECRET,
-            redirect_uri: 'postmessage',
-            grant_type: 'authorization_code',
-          }),
-        });
+      if (credential) {
+        // Credential flow: frontend sent the Google ID token directly
+        idToken = credential;
+      } else if (code) {
+        // Auth-code flow: exchange authorization code with Google for tokens
+        if (!config.GOOGLE_CLIENT_ID || !config.GOOGLE_CLIENT_SECRET) {
+          return reply.status(500).send({
+            code: 'GOOGLE_NOT_CONFIGURED',
+            message: 'Google OAuth is not configured',
+          });
+        }
 
-        googleTokens = await tokenResponse.json() as { id_token?: string; error?: string };
+        let googleTokens;
+        try {
+          const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              code,
+              client_id: config.GOOGLE_CLIENT_ID,
+              client_secret: config.GOOGLE_CLIENT_SECRET,
+              redirect_uri: 'postmessage',
+              grant_type: 'authorization_code',
+            }),
+          });
 
-        if (!tokenResponse.ok || !googleTokens.id_token) {
-          return reply.status(400).send({
-            code: 'GOOGLE_EXCHANGE_FAILED',
+          googleTokens = await tokenResponse.json() as { id_token?: string; error?: string };
+
+          if (!tokenResponse.ok || !googleTokens.id_token) {
+            return reply.status(400).send({
+              code: 'GOOGLE_EXCHANGE_FAILED',
+              message: sanitizeMessage(
+                googleTokens.error || 'Failed to exchange Google authorization code'
+              ),
+            });
+          }
+        } catch (err) {
+          return reply.status(500).send({
+            code: 'GOOGLE_EXCHANGE_ERROR',
             message: sanitizeMessage(
-              googleTokens.error || 'Failed to exchange Google authorization code'
+              err instanceof Error ? err.message : 'Google token exchange failed'
             ),
           });
         }
-      } catch (err) {
-        return reply.status(500).send({
-          code: 'GOOGLE_EXCHANGE_ERROR',
-          message: sanitizeMessage(
-            err instanceof Error ? err.message : 'Google token exchange failed'
-          ),
+        idToken = googleTokens.id_token;
+      } else {
+        return reply.status(400).send({
+          code: 'MISSING_AUTH',
+          message: 'Either code or credential is required',
         });
       }
 
@@ -273,7 +289,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
       try {
         const result = await supabase.auth.signInWithIdToken({
           provider: 'google',
-          token: googleTokens.id_token,
+          token: idToken,
         });
         data = result.data;
         error = result.error;

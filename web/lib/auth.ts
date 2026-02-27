@@ -113,16 +113,17 @@ export async function loginWithOAuth(provider: OAuthProvider): Promise<void> {
 }
 
 /**
- * Complete Google sign-in by sending an authorization code to the backend.
- * The backend exchanges the code with Google and returns a Supabase session.
+ * Complete Google sign-in by sending a credential (ID token) or authorization code to the backend.
+ * The backend verifies the token with Supabase and returns a session.
  */
-export async function loginWithGoogleCode(code: string): Promise<OAuthCallbackResult> {
+export async function loginWithGoogleCode(codeOrCredential: string, type: "credential" | "code" = "credential"): Promise<OAuthCallbackResult> {
+  const body = type === "credential" ? { credential: codeOrCredential } : { code: codeOrCredential };
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1"}/auth/google`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code }),
+      body: JSON.stringify(body),
     }
   );
 
@@ -188,7 +189,7 @@ export async function handleOAuthCallback(): Promise<OAuthCallbackResult | null>
     // On mobile, useGoogleLogin falls back to a redirect flow, so the Google
     // auth code lands here. Route it to our backend instead of Supabase.
     if (params.has("scope")) {
-      const result = await loginWithGoogleCode(code);
+      const result = await loginWithGoogleCode(code, "code");
       window.history.replaceState(null, "", window.location.pathname);
       return result;
     }

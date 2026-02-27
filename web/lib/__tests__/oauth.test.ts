@@ -243,7 +243,7 @@ describe('OAuth utilities', () => {
   });
 
   describe('loginWithGoogleCode', () => {
-    it('should POST code to backend /auth/google endpoint', async () => {
+    it('should POST credential to backend /auth/google by default', async () => {
       mockFetch.mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({
@@ -257,20 +257,44 @@ describe('OAuth utilities', () => {
         }),
       });
 
-      const result = await loginWithGoogleCode('google-auth-code-123');
+      const result = await loginWithGoogleCode('google-id-token-123');
 
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('/auth/google'),
         expect.objectContaining({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: 'google-auth-code-123' }),
+          body: JSON.stringify({ credential: 'google-id-token-123' }),
         })
       );
       expect(result.token).toBe('backend-session-token');
       expect(result.user.id).toBe('google-user-456');
       expect(result.user.email).toBe('google@example.com');
       expect(result.user.name).toBe('Google User');
+    });
+
+    it('should POST code when type is "code"', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          token: 'backend-session-token',
+          user: {
+            id: 'google-user-456',
+            email: 'google@example.com',
+            name: 'Google User',
+            tier: 'free',
+          },
+        }),
+      });
+
+      await loginWithGoogleCode('google-auth-code-123', 'code');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/auth/google'),
+        expect.objectContaining({
+          body: JSON.stringify({ code: 'google-auth-code-123' }),
+        })
+      );
     });
 
     it('should store the token from backend in localStorage', async () => {
@@ -287,7 +311,7 @@ describe('OAuth utilities', () => {
         }),
       });
 
-      await loginWithGoogleCode('google-auth-code');
+      await loginWithGoogleCode('google-id-token');
 
       expect(mockLocalStorage.setItem).toHaveBeenCalledWith('zerotoship_token', 'stored-backend-token');
     });
@@ -298,7 +322,7 @@ describe('OAuth utilities', () => {
         json: () => Promise.resolve({ message: 'Invalid authorization code' }),
       });
 
-      await expect(loginWithGoogleCode('bad-code')).rejects.toThrow('Invalid authorization code');
+      await expect(loginWithGoogleCode('bad-token')).rejects.toThrow('Invalid authorization code');
     });
 
     it('should throw a default message when backend error has no message', async () => {
@@ -307,7 +331,7 @@ describe('OAuth utilities', () => {
         json: () => Promise.reject(new Error('parse error')),
       });
 
-      await expect(loginWithGoogleCode('bad-code')).rejects.toThrow('Google sign-in failed');
+      await expect(loginWithGoogleCode('bad-token')).rejects.toThrow('Google sign-in failed');
     });
   });
 });

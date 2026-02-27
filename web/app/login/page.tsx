@@ -94,11 +94,15 @@ function LoginPageContent() {
 
   const handleGoogleSuccess = async (code: string) => {
     setError(null);
-    trackLoginCompleted("google");
-    await loginWithGoogleCode(code);
-    toast.success("Signed in", "Welcome back.");
-    sessionStorage.removeItem("z2s_next");
-    router.push(redirectTo);
+    try {
+      trackLoginCompleted("google");
+      await loginWithGoogleCode(code);
+      toast.success("Signed in", "Welcome back.");
+      sessionStorage.removeItem("z2s_next");
+      router.push(redirectTo);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Google sign-in failed");
+    }
   };
 
   const handleSubmit = async (data: { email: string; password: string }) => {

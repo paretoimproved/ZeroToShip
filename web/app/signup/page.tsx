@@ -45,13 +45,17 @@ function SignupForm() {
     await loginWithOAuth(provider);
   };
 
-  const handleGoogleSuccess = async (code: string) => {
+  const handleGoogleSuccess = async (credential: string) => {
     setError(null);
-    trackSignupCompleted("google");
-    await loginWithGoogleCode(code);
-    toast.success("Account created", "You're signed in.");
-    sessionStorage.removeItem("z2s_next");
-    router.push(redirectTo);
+    try {
+      trackSignupCompleted("google");
+      await loginWithGoogleCode(credential);
+      toast.success("Account created", "You're signed in.");
+      sessionStorage.removeItem("z2s_next");
+      router.push(redirectTo);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Google sign-up failed");
+    }
   };
 
   const handleSubmit = async (data: { email: string; password: string; name?: string }) => {
