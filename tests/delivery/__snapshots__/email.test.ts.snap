@@ -10,7 +10,7 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for multiple
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="supported-color-schemes" content="light dark">
-<title>Idea 1 — weekend build, 10.0/100</title>
+<title>Idea 1 tops today&#39;s 5 problems</title>
 <!--[if mso]>
 <style type="text/css">
 table { border-collapse: collapse; }
@@ -43,7 +43,7 @@ td { font-family: Arial, sans-serif; }
 <tr>
 <td style="padding: 12px 24px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; color: #6b7280; text-align: center;">
 <strong style="color: #111827;">5</strong> problems found &nbsp;&middot;&nbsp;
-<strong style="color: #111827;">4</strong> communities scraped &nbsp;&middot;&nbsp;
+From <strong style="color: #111827;">Reddit</strong> &nbsp;&middot;&nbsp;
 Top score: <strong style="color: #6366f1;">10.0</strong>
 </td>
 </tr>
@@ -51,11 +51,20 @@ Top score: <strong style="color: #6366f1;">10.0</strong>
 
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
 <tr>
-<td style="padding: 24px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-
+<td style="padding: 24px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: linear-gradient(135deg, #eef2ff 0%, #faf5ff 100%); border-bottom: 1px solid #e5e7eb;">
 <span style="display: inline-block; background-color: #6366f1; color: #ffffff; padding: 4px 12px; border-radius: 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Today's #1 Problem</span>
 <h2 style="margin: 12px 0 4px 0; font-size: 24px; font-weight: 700; color: #111827; line-height: 1.3;">Idea 1</h2>
 <p style="margin: 0 0 16px 0; font-size: 16px; color: #6b7280; font-style: italic;">Tagline for idea 1</p>
+
+
+
+<table cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 0 20px 0;">
+<tr>
+<td style="background-color: #6366f1; border-radius: 8px; mso-padding-alt: 0;">
+<a href="https://test.zerotoship.dev/login?next=%2Fidea%2Fb0000000-0000-0000-0000-000000000001" style="display: inline-block; padding: 16px 32px; color: #ffffff; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px;">Read the full spec &#8594;</a>
+</td>
+</tr>
+</table>
 
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 0 20px 0;">
 <tr>
@@ -70,15 +79,7 @@ Top score: <strong style="color: #6366f1;">10.0</strong>
 </td>
 </tr>
 </table>
-
-<p style="margin: 0 0 20px 0; font-size: 16px; color: #374151; line-height: 1.6;">Users struggle with testing email systems The brief covers feature 1 and 3 more technical approaches.</p>
-<table cellpadding="0" cellspacing="0" role="presentation">
-<tr>
-<td style="background-color: #6366f1; border-radius: 8px;">
-<a href="https://test.zerotoship.dev/login?next=%2Fidea%2Fb0000000-0000-0000-0000-000000000001" style="display: inline-block; padding: 14px 28px; color: #ffffff; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px;">Read the full spec &#8594;</a>
-</td>
-</tr>
-</table>
+<p style="margin: 0; font-size: 15px; color: #6b7280; line-height: 1.6;">Users struggle with testing email systems The brief covers <strong>feature 1</strong> and 3 more approaches.</p>
 </td>
 </tr>
 </table>
@@ -89,7 +90,7 @@ Top score: <strong style="color: #6366f1;">10.0</strong>
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #f5f3ff; border-left: 3px solid #6366f1; border-radius: 0 8px 8px 0;">
 <tr>
 <td style="padding: 14px 20px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; color: #374151; line-height: 1.5;">
-Today's lineup has 4 more problems just like this one.
+You're seeing 1 of today's 5 problems. Pro members get full specs for every one.
 <a href="https://test.zerotoship.dev/upgrade" style="color: #6366f1; font-weight: 600; text-decoration: none;"> Unlock all problems &#8594;</a>
 </td>
 </tr>
@@ -250,7 +251,7 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for multiple
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="supported-color-schemes" content="light dark">
-<title>Idea 1 — weekend build, 10.0/100</title>
+<title>Idea 1 tops today&#39;s 5 problems</title>
 <!--[if mso]>
 <style type="text/css">
 table { border-collapse: collapse; }
@@ -283,7 +284,7 @@ td { font-family: Arial, sans-serif; }
 <tr>
 <td style="padding: 12px 24px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; color: #6b7280; text-align: center;">
 <strong style="color: #111827;">5</strong> problems found &nbsp;&middot;&nbsp;
-<strong style="color: #111827;">4</strong> communities scraped &nbsp;&middot;&nbsp;
+From <strong style="color: #111827;">Reddit</strong> &nbsp;&middot;&nbsp;
 Top score: <strong style="color: #6366f1;">10.0</strong>
 </td>
 </tr>
@@ -291,8 +292,7 @@ Top score: <strong style="color: #6366f1;">10.0</strong>
 
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
 <tr>
-<td style="padding: 24px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-
+<td style="padding: 24px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: linear-gradient(135deg, #eef2ff 0%, #faf5ff 100%); border-bottom: 1px solid #e5e7eb;">
 <span style="display: inline-block; background-color: #6366f1; color: #ffffff; padding: 4px 12px; border-radius: 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Today's #1 Problem</span>
 <h2 style="margin: 12px 0 4px 0; font-size: 24px; font-weight: 700; color: #111827; line-height: 1.3;">Idea 1</h2>
 <p style="margin: 0 0 16px 0; font-size: 16px; color: #6b7280; font-style: italic;">Tagline for idea 1</p>
@@ -339,10 +339,11 @@ Top score: <strong style="color: #6366f1;">10.0</strong>
 <div style="font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Go-to-Market</div>
 <p style="margin: 0; font-size: 15px; color: #374151; line-height: 1.6;">Launch on Product Hunt</p>
 </div>
-<table cellpadding="0" cellspacing="0" role="presentation">
+
+<table cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 0 20px 0;">
 <tr>
-<td style="background-color: #6366f1; border-radius: 8px;">
-<a href="https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000001" style="display: inline-block; padding: 14px 28px; color: #ffffff; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px;">View full spec on dashboard &#8594;</a>
+<td style="background-color: #6366f1; border-radius: 8px; mso-padding-alt: 0;">
+<a href="https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000001" style="display: inline-block; padding: 16px 32px; color: #ffffff; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px;">View full spec on dashboard &#8594;</a>
 </td>
 </tr>
 </table>
@@ -489,7 +490,7 @@ Top score: <strong style="color: #6366f1;">10.0</strong>
 
 exports[`Email Builder > HTML template snapshots > matches snapshot for plain text (free tier) 1`] = `
 "ZEROTOSHIP | DATE_PLACEHOLDER
-5 problems found | 4 communities scraped | Top score: 10.0
+5 problems found | From Reddit | Top score: 10.0
 ============================================================
 
 #1 TODAY'S TOP PROBLEM
@@ -497,10 +498,12 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for plain te
 Idea 1
 "Tagline for idea 1"
 
+Read the full spec: https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000001
+
 Score: 10.0/100 | Build time: Weekend
 
 Users struggle with testing email systems
-The brief covers feature 1 and 3 more technical approaches.
+The brief covers feature 1 and 3 more approaches.
 
 Read the full spec: https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000001
 
@@ -537,13 +540,15 @@ ZeroToShip YEAR"
 
 exports[`Email Builder > HTML template snapshots > matches snapshot for plain text (pro tier) 1`] = `
 "ZEROTOSHIP | DATE_PLACEHOLDER
-5 problems found | 4 communities scraped | Top score: 10.0
+5 problems found | From Reddit | Top score: 10.0
 ============================================================
 
 #1 TODAY'S TOP PROBLEM
 
 Idea 1
 "Tagline for idea 1"
+
+Read the full spec: https://test.zerotoship.dev/idea/b0000000-0000-0000-0000-000000000001
 
 Score: 10.0/100 | Build time: Weekend
 
@@ -601,7 +606,7 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for single b
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="supported-color-schemes" content="light dark">
-<title>SnapshotApp — weekend build, 8.5/100</title>
+<title>SnapshotApp tops today&#39;s 1 problems</title>
 <!--[if mso]>
 <style type="text/css">
 table { border-collapse: collapse; }
@@ -634,7 +639,7 @@ td { font-family: Arial, sans-serif; }
 <tr>
 <td style="padding: 12px 24px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; color: #6b7280; text-align: center;">
 <strong style="color: #111827;">1</strong> problems found &nbsp;&middot;&nbsp;
-<strong style="color: #111827;">4</strong> communities scraped &nbsp;&middot;&nbsp;
+From <strong style="color: #111827;">Reddit</strong> &nbsp;&middot;&nbsp;
 Top score: <strong style="color: #6366f1;">8.5</strong>
 </td>
 </tr>
@@ -642,11 +647,20 @@ Top score: <strong style="color: #6366f1;">8.5</strong>
 
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
 <tr>
-<td style="padding: 24px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-
+<td style="padding: 24px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: linear-gradient(135deg, #eef2ff 0%, #faf5ff 100%); border-bottom: 1px solid #e5e7eb;">
 <span style="display: inline-block; background-color: #6366f1; color: #ffffff; padding: 4px 12px; border-radius: 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Today's #1 Problem</span>
 <h2 style="margin: 12px 0 4px 0; font-size: 24px; font-weight: 700; color: #111827; line-height: 1.3;">SnapshotApp</h2>
 <p style="margin: 0 0 16px 0; font-size: 16px; color: #6b7280; font-style: italic;">A test idea for testing purposes</p>
+
+
+
+<table cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 0 20px 0;">
+<tr>
+<td style="background-color: #6366f1; border-radius: 8px; mso-padding-alt: 0;">
+<a href="https://test.zerotoship.dev/login?next=%2Fidea%2Fb0000000-0000-0000-0000-0000000000aa" style="display: inline-block; padding: 16px 32px; color: #ffffff; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px;">Read the full spec &#8594;</a>
+</td>
+</tr>
+</table>
 
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 0 20px 0;">
 <tr>
@@ -661,15 +675,7 @@ Top score: <strong style="color: #6366f1;">8.5</strong>
 </td>
 </tr>
 </table>
-
-<p style="margin: 0 0 20px 0; font-size: 16px; color: #374151; line-height: 1.6;">Users struggle with testing email systems The brief covers feature 1 and 3 more technical approaches.</p>
-<table cellpadding="0" cellspacing="0" role="presentation">
-<tr>
-<td style="background-color: #6366f1; border-radius: 8px;">
-<a href="https://test.zerotoship.dev/login?next=%2Fidea%2Fb0000000-0000-0000-0000-0000000000aa" style="display: inline-block; padding: 14px 28px; color: #ffffff; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px;">Read the full spec &#8594;</a>
-</td>
-</tr>
-</table>
+<p style="margin: 0; font-size: 15px; color: #6b7280; line-height: 1.6;">Users struggle with testing email systems The brief covers <strong>feature 1</strong> and 3 more approaches.</p>
 </td>
 </tr>
 </table>
@@ -680,7 +686,7 @@ Top score: <strong style="color: #6366f1;">8.5</strong>
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #f5f3ff; border-left: 3px solid #6366f1; border-radius: 0 8px 8px 0;">
 <tr>
 <td style="padding: 14px 20px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; color: #374151; line-height: 1.5;">
-Today's lineup has 0 more problems just like this one.
+You're seeing 1 of today's 1 problems. Pro members get full specs for every one.
 <a href="https://test.zerotoship.dev/upgrade" style="color: #6366f1; font-weight: 600; text-decoration: none;"> Unlock all problems &#8594;</a>
 </td>
 </tr>
