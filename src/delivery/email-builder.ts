@@ -49,6 +49,33 @@ function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, char => htmlEscapes[char]);
 }
 
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/\*(.+?)\*/g, '$1')
+    .replace(/`(.+?)`/g, '$1');
+}
+
+function truncateFeatureName(feature: string): string {
+  const delimiters = [' — ', ' - ', ': ', ' — '];
+  let name = feature;
+  for (const d of delimiters) {
+    const idx = name.indexOf(d);
+    if (idx > 0) {
+      name = name.slice(0, idx);
+      break;
+    }
+  }
+  return name.length > 60 ? name.slice(0, 57) + '...' : name;
+}
+
+const PLATFORM_LABELS: Record<string, string> = {
+  reddit: 'Reddit',
+  hn: 'Hacker News',
+  twitter: 'Twitter/X',
+  github: 'GitHub',
+};
+
 function formatScore(score: number | string): string {
   return Number(score).toFixed(1);
 }
@@ -120,13 +147,17 @@ function buildHeader(dateStr: string): string {
     </table>`;
 }
 
-function buildStatBar(ideaCount: number, topScore: string): string {
+function buildStatBar(ideaCount: number, topScore: string, platforms: string[]): string {
+  const sourceLabel = platforms.length > 0
+    ? `From <strong style="color: #111827;">${platforms.join(', ')}</strong>`
+    : 'Curated daily';
+
   return `
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #f9fafb;">
       <tr>
         <td style="padding: 12px 24px; font-family: ${FONT_STACK}; font-size: 13px; color: #6b7280; text-align: center;">
           <strong style="color: #111827;">${ideaCount}</strong> problems found &nbsp;&middot;&nbsp;
-          <strong style="color: #111827;">4</strong> communities scraped &nbsp;&middot;&nbsp;
+          ${sourceLabel} &nbsp;&middot;&nbsp;
           Top score: <strong style="color: #6366f1;">${topScore}</strong>
         </td>
       </tr>
@@ -167,61 +198,63 @@ function buildHeroSection(brief: IdeaBrief, tier: SubscriberTier, config: Requir
     ? `${config.baseUrl}/login?next=${encodeURIComponent(ideaPath)}`
     : `${config.baseUrl}${ideaPath}`;
 
-  const headerHtml = `
-          <span style="display: inline-block; background-color: #6366f1; color: #ffffff; padding: 4px 12px; border-radius: 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Today's #1 Problem</span>
-          <h2 style="margin: 12px 0 4px 0; font-size: 24px; font-weight: 700; color: #111827; line-height: 1.3;">${escapeHtml(brief.name)}</h2>
-          <p style="margin: 0 0 16px 0; font-size: 16px; color: #6b7280; font-style: italic;">${escapeHtml(brief.tagline)}</p>`;
+  const ctaLabel = tier === 'pro' ? 'View full spec on dashboard' : 'Read the full spec';
+
+  const ctaHtml = `
+          <table cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 0 20px 0;">
+            <tr>
+              <td style="background-color: #6366f1; border-radius: 8px; mso-padding-alt: 0;">
+                <a href="${escapeHtml(ideaUrl)}" style="display: inline-block; padding: 16px 32px; color: #ffffff; font-family: ${FONT_STACK}; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px;">${ctaLabel} &#8594;</a>
+              </td>
+            </tr>
+          </table>`;
 
   let bodyHtml: string;
 
   if (tier === 'pro') {
-    // Pro: full brief sections in the email
+    // Pro: full brief sections in the email, CTA at bottom
     const features = brief.keyFeatures.slice(0, 5);
     const featureListHtml = features.length > 0
       ? `
           <div style="margin-bottom: 16px;">
             <div style="font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Key Features</div>
-            ${features.map(f => `<div style="padding: 4px 0 4px 16px; font-size: 15px; color: #374151; line-height: 1.5; position: relative;"><span style="color: #059669; position: absolute; left: 0;">&#10003;</span> ${escapeHtml(f)}</div>`).join('\n            ')}
+            ${features.map(f => `<div style="padding: 4px 0 4px 16px; font-size: 15px; color: #374151; line-height: 1.5; position: relative;"><span style="color: #059669; position: absolute; left: 0;">&#10003;</span> ${escapeHtml(stripMarkdown(f))}</div>`).join('\n            ')}
           </div>`
       : '';
 
     const gtmHtml = brief.goToMarket
-      ? buildSectionBlock('Go-to-Market', `${escapeHtml(brief.goToMarket.launchStrategy)}`)
+      ? buildSectionBlock('Go-to-Market', `${escapeHtml(stripMarkdown(brief.goToMarket.launchStrategy))}`)
       : '';
 
     bodyHtml = `
-          ${buildSectionBlock('The Problem', escapeHtml(brief.problemStatement))}
-          ${buildSectionBlock('Target Audience', escapeHtml(brief.targetAudience))}
-          ${buildSectionBlock('Proposed Solution', escapeHtml(brief.proposedSolution))}
+          ${buildSectionBlock('The Problem', escapeHtml(stripMarkdown(brief.problemStatement)))}
+          ${buildSectionBlock('Target Audience', escapeHtml(stripMarkdown(brief.targetAudience)))}
+          ${buildSectionBlock('Proposed Solution', escapeHtml(stripMarkdown(brief.proposedSolution)))}
           ${featureListHtml}
-          ${gtmHtml}`;
+          ${gtmHtml}
+          ${ctaHtml}`;
   } else {
-    // Free: teaser hook only
-    const hook = firstSentence(brief.problemStatement);
+    // Free: CTA first (above the fold), then teaser hook below
+    const hook = firstSentence(stripMarkdown(brief.problemStatement));
     const featureTeaser = brief.keyFeatures.length > 0
-      ? ` The brief covers ${escapeHtml(brief.keyFeatures[0].toLowerCase())}${brief.keyFeatures.length > 1 ? ` and ${brief.keyFeatures.length - 1} more technical approaches` : ''}.`
+      ? ` The brief covers <strong>${escapeHtml(truncateFeatureName(stripMarkdown(brief.keyFeatures[0].toLowerCase())))}</strong>${brief.keyFeatures.length > 1 ? ` and ${brief.keyFeatures.length - 1} more approaches` : ''}.`
       : '';
 
     bodyHtml = `
-          <p style="margin: 0 0 20px 0; font-size: 16px; color: #374151; line-height: 1.6;">${escapeHtml(hook)}${featureTeaser}</p>`;
+          ${ctaHtml}
+          ${buildScoreChips(brief)}
+          <p style="margin: 0; font-size: 15px; color: #6b7280; line-height: 1.6;">${escapeHtml(hook)}${featureTeaser}</p>`;
   }
-
-  const ctaLabel = tier === 'pro' ? 'View full spec on dashboard' : 'Read the full spec';
 
   return `
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
       <tr>
-        <td style="padding: 24px; font-family: ${FONT_STACK};">
-          ${headerHtml}
-          ${buildScoreChips(brief)}
+        <td style="padding: 24px; font-family: ${FONT_STACK}; background: linear-gradient(135deg, #eef2ff 0%, #faf5ff 100%); border-bottom: 1px solid #e5e7eb;">
+          <span style="display: inline-block; background-color: #6366f1; color: #ffffff; padding: 4px 12px; border-radius: 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Today's #1 Problem</span>
+          <h2 style="margin: 12px 0 4px 0; font-size: 24px; font-weight: 700; color: #111827; line-height: 1.3;">${escapeHtml(brief.name)}</h2>
+          <p style="margin: 0 0 16px 0; font-size: 16px; color: #6b7280; font-style: italic;">${escapeHtml(stripMarkdown(brief.tagline))}</p>
+          ${tier === 'pro' ? buildScoreChips(brief) : ''}
           ${bodyHtml}
-          <table cellpadding="0" cellspacing="0" role="presentation">
-            <tr>
-              <td style="background-color: #6366f1; border-radius: 8px;">
-                <a href="${escapeHtml(ideaUrl)}" style="display: inline-block; padding: 14px 28px; color: #ffffff; font-family: ${FONT_STACK}; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px;">${ctaLabel} &#8594;</a>
-              </td>
-            </tr>
-          </table>
         </td>
       </tr>
     </table>`;
@@ -450,6 +483,18 @@ export function buildDailyEmail(
   const subject = generateSubjectLine(topIdea, ideaCount);
   const previewText = generatePreviewText(topIdea, ideaCount);
 
+  // Extract unique platform names from all briefs' sources
+  const platformSet = new Set<string>();
+  for (const b of briefs) {
+    if (b.sources) {
+      for (const s of b.sources) {
+        const label = PLATFORM_LABELS[s.platform];
+        if (label) platformSet.add(label);
+      }
+    }
+  }
+  const platforms = [...platformSet];
+
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -473,7 +518,7 @@ export function buildDailyEmail(
         <table width="600" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 8px; overflow: hidden;">
           <tr><td>
             ${buildHeader(dateStr)}
-            ${buildStatBar(ideaCount, formatScore(topIdea.priorityScore))}
+            ${buildStatBar(ideaCount, formatScore(topIdea.priorityScore), platforms)}
             ${buildHeroSection(topIdea, tier, opts)}
             ${tier === 'free' ? buildInlineUpgradeBanner(briefs, opts) : ''}
             ${buildOtherIdeasSection(briefs, tier, opts)}
@@ -511,44 +556,58 @@ function buildPlainTextEmail(
   });
   const lines: string[] = [];
 
+  // Extract unique platform names for stat line
+  const platformSet = new Set<string>();
+  for (const b of briefs) {
+    if (b.sources) {
+      for (const s of b.sources) {
+        const label = PLATFORM_LABELS[s.platform];
+        if (label) platformSet.add(label);
+      }
+    }
+  }
+  const sourceLabel = platformSet.size > 0 ? `From ${[...platformSet].join(', ')}` : 'Curated daily';
+
   lines.push(`ZEROTOSHIP | ${dateStr}`);
-  lines.push(`${ideaCount} problems found | 4 communities scraped | Top score: ${formatScore(topIdea.priorityScore)}`);
+  lines.push(`${ideaCount} problems found | ${sourceLabel} | Top score: ${formatScore(topIdea.priorityScore)}`);
   lines.push('='.repeat(60));
   lines.push('');
 
   lines.push("#1 TODAY'S TOP PROBLEM");
   lines.push('');
   lines.push(topIdea.name);
-  lines.push(`"${topIdea.tagline}"`);
+  lines.push(`"${stripMarkdown(topIdea.tagline)}"`);
+  lines.push('');
+  lines.push(`Read the full spec: ${config.baseUrl}/idea/${topIdea.id || ''}`);
   lines.push('');
   lines.push(`Score: ${formatScore(topIdea.priorityScore)}/100 | Build time: ${formatEffortLabel(topIdea.effortEstimate)}`);
   lines.push('');
 
   if (tier === 'pro') {
     lines.push('THE PROBLEM');
-    lines.push(topIdea.problemStatement);
+    lines.push(stripMarkdown(topIdea.problemStatement));
     lines.push('');
     lines.push('TARGET AUDIENCE');
-    lines.push(topIdea.targetAudience);
+    lines.push(stripMarkdown(topIdea.targetAudience));
     lines.push('');
     lines.push('PROPOSED SOLUTION');
-    lines.push(topIdea.proposedSolution);
+    lines.push(stripMarkdown(topIdea.proposedSolution));
     lines.push('');
     if (topIdea.keyFeatures.length > 0) {
       lines.push('KEY FEATURES');
-      topIdea.keyFeatures.slice(0, 5).forEach(f => lines.push(`  ✓ ${f}`));
+      topIdea.keyFeatures.slice(0, 5).forEach(f => lines.push(`  ✓ ${stripMarkdown(f)}`));
       lines.push('');
     }
     if (topIdea.goToMarket) {
       lines.push('GO-TO-MARKET');
-      lines.push(topIdea.goToMarket.launchStrategy);
+      lines.push(stripMarkdown(topIdea.goToMarket.launchStrategy));
       lines.push('');
     }
     lines.push(`View full spec on dashboard: ${config.baseUrl}/idea/${topIdea.id || ''}`);
   } else {
-    lines.push(firstSentence(topIdea.problemStatement));
+    lines.push(firstSentence(stripMarkdown(topIdea.problemStatement)));
     if (topIdea.keyFeatures.length > 0) {
-      lines.push(`The brief covers ${topIdea.keyFeatures[0].toLowerCase()}${topIdea.keyFeatures.length > 1 ? ` and ${topIdea.keyFeatures.length - 1} more technical approaches` : ''}.`);
+      lines.push(`The brief covers ${truncateFeatureName(stripMarkdown(topIdea.keyFeatures[0].toLowerCase()))}${topIdea.keyFeatures.length > 1 ? ` and ${topIdea.keyFeatures.length - 1} more approaches` : ''}.`);
     }
     lines.push('');
     lines.push(`Read the full spec: ${config.baseUrl}/idea/${topIdea.id || ''}`);
