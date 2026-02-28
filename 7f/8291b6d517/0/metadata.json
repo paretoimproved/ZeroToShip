@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.7",
+  "checkpoint_id": "7f8291b6d517",
+  "session_id": "ce8b29a3-be76-45ce-812c-61fd6c647951",
+  "strategy": "auto-commit",
+  "created_at": "2026-02-28T18:42:00.664034Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/api/services/billing.ts",
+    "src/delivery/email.ts",
+    "src/delivery/onboarding.ts",
+    "src/delivery/spec-notification.ts",
+    "src/lib/alerts.ts",
+    "src/lib/resend.ts",
+    "tests/delivery/email.test.ts",
+    "tests/lib/pipeline-lock.test.ts"
+  ],
+  "agent": "Claude Code",
+  "token_usage": {
+    "input_tokens": 112,
+    "cache_creation_tokens": 140129,
+    "cache_read_tokens": 12726881,
+    "output_tokens": 42563,
+    "api_call_count": 110
+  }
+}

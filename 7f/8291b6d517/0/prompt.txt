@@ -1,0 +1,277 @@
+Implement the following plan:
+
+# ZeroToShip Audit Roadmap — P0 through P3
+
+## Context
+7 expert agents audited the entire codebase and produced 138 actionable findings across security, code quality, accessibility, product, growth, analytics, and finance. This roadmap synthesizes and prioritizes all findings into 4 tiers based on severity, user impact, and dependencies.
+
+**Prioritization criteria:**
+- **P0 (Ship-blocking):** Security vulnerabilities, data loss risks, things that would embarrass us in production
+- **P1 (This sprint):** High-impact conversion/activation fixes, critical UX gaps, code quality that affects reliability
+- **P2 (Next sprint):** Feature gaps for PMF, growth experiments, analytics instrumentation
+- **P3 (Backlog):** Polish, optimization, nice-to-haves, longer-term features
+
+---
+
+## P0 — Ship-Blocking (Do Now)
+
+### P0-1: Fix unsubscribe token IDOR vulnerability
+- **Why:** Unsubscribe uses predictable user UUID — anyone can mass-unsubscribe users by iterating UUIDs
+- **Source:** Security C-1
+- **Files:** `src/delivery/email.ts:180`, `src/api/routes/user.ts:47-73`
+- **Fix:** Generate cryptographic random tokens, store in DB, validate on unsubscribe
+- **Effort:** Medium
+
+### P0-2: Fix Docker secrets leak
+- **Why:** `.env` with Stripe/Supabase keys gets copied into Docker image via `COPY . .`
+- **Source:** Security C-2
+- **Files:** `Dockerfile:10`, `.dockerignore`
+- **Fix:** Add `.env`, `.env.*`, `web/`, `tests/`, `docs/` to `.dockerignore`
+- **Effort:** Small
+
+### P0-3: Add Zod validation to admin routes (eliminate `as any`)
+- **Why:** JSONB `phaseResults` accessed with `as any` — malformed data crashes the server
+- **Source:** Staff Engineer C-1, Security H-3, UX C-13
+- **Files:** `src/api/routes/admin.ts:104-116, 315, 322-325, 347, 353, 362, 412, 419-420`
+- **Fix:** Add Zod schemas for all admin request bodies and JSONB field access
+- **Effort:** Medium
+
+### P0-4: Fix `requireAuth` middleware control flow
+- **Why:** Missing `return` after `reply.send()` allows unauthenticated requests to continue
+- **Source:** Security H-2, Staff Engineer C-2
+- **Files:** `src/api/middleware/auth.ts:237-249`
+- **Fix:** Add `return` after 401 response
+- **Effort:** Small
+
+### P0-5: Provision Redis on Railway
+- **Why:** In-memory fallback loses rate-limit state, cache, and session data on restart
+- **Source:** Product, CFO
+- **Fix:** Provision Redis add-on on Railway, verify `src/config/redis.ts` connects
+- **Effort:** Small (ops)
+
+### P0-6: Set up monitoring (UptimeRobot + Sentry)
+- **Why:** No production alerting — outages and errors are invisible
+- **Source:** Product
+- **Fix:** Configure UptimeRobot for health endpoint, Sentry for error tracking
+- **Effort:** Small (ops)
+
+---
+
+## P1 — This Sprint (High-Impact, 1-2 Weeks)
+
+### P1-1: Remove email confirmation gate
+- **Why:** 2-step signup creates 20-30% dropout. Let users access dashboard immediately, verify email async.
+- **Source:** Growth 2.2
+- **Files:** `web/app/signup/page.tsx:68-106`
+- **Effort:** Medium
+
+### P1-2: Add social proof to landing page
+- **Why:** Zero testimonials, user counts, or trust badges anywhere. Expected +15-25% signup rate.
+- **Source:** Growth 1.4
+- **Files:** `web/app/page.tsx`, new `SocialProof` component
+- **Effort:** Medium
+
+### P1-3: Expose source links on idea cards
+- **Why:** Source data already exists in JSONB `sources` field — users can't see where ideas came from, eroding trust
+- **Source:** Product 2 (RICE 38.0)
+- **Files:** `web/components/IdeaBriefCard.tsx`, `web/app/idea/[id]/page.tsx`
+- **Effort:** Small
+
+### P1-4: Configure 7-day free trial in Stripe
+- **Why:** Industry-standard conversion mechanism — users can't experience Pro value before buying
+- **Source:** Product 3 (RICE 40.8), CFO M-2
+- **Files:** `src/api/config/stripe.ts`, Stripe dashboard
+- **Effort:** Medium
+
+### P1-5: Add first-time user onboarding on dashboard
+- **Why:** New users land on empty dashboard with no guidance — no welcome banner, no usage hints
+- **Source:** Growth 2.3, Product 4
+- **Files:** `web/app/dashboard/page.tsx`
+- **Effort:** Medium
+
+### P1-6: Fix critical accessibility (modals, landmarks, keyboard nav)
+- **Why:** 14 critical WCAG failures — modals lack focus traps, no `<main>` landmark, no skip-to-content on auth pages
+- **Source:** UX C-01 through C-14
+- **Key files:**
+  - `web/app/archive/page.tsx` (dialog role, focus trap, keyboard on CompactCard)
+  - `web/components/FeedbackModal.tsx` (dialog role, focus trap, NPS labels)
+  - `web/app/dashboard/page.tsx`, `web/app/archive/page.tsx` (`<main>` landmark)
+  - `web/components/NavBar.tsx` (skip-to-content)
+  - `web/app/settings/page.tsx` (radio semantics, SVG aria-hidden)
+  - `web/app/idea/[id]/page.tsx` (heading hierarchy)
+- **Effort:** Medium (batch all ARIA fixes together)
+
+### P1-7: Centralize Resend email client
+- **Why:** 4 independent fetch-to-Resend implementations with inconsistent retry/error handling
+- **Source:** Staff Engineer W-3
+- **Files:** `src/delivery/email.ts`, `src/lib/alerts.ts`, `src/api/services/billing.ts` → new `src/lib/resend.ts`
+- **Effort:** Medium
+
+### P1-8: Migrate alerts.ts to centralized config + Pino logger
+- **Why:** 6x direct `process.env` access, 10x `console.*` calls — inconsistent with codebase conventions
+- **Source:** Staff Engineer W-1/W-2, Security H-4/I-1
+- **Files:** `src/lib/alerts.ts`
+- **Effort:** Small
+
+### P1-9: Rewrite hero CTA and subheadline copy
+- **Why:** "Explore the Problem Library" is passive, subheadline is 47 words. Expected +5-10% conversion.
+- **Source:** Growth 1.2, 1.3
+- **Files:** `web/components/landing/HeroSection.tsx:51-117`
+- **Effort:** Small
+
+### P1-10: Fix pricing inconsistency ("Pro" vs "Builder")
+- **Why:** Landing page says "Pro", account page says "Builder" — confuses users
+- **Source:** Growth 6.2
+- **Files:** `web/components/landing/PricingSection.tsx`, `web/app/account/page.tsx`
+- **Effort:** Small
+
+---
+
+## P2 — Next Sprint (PMF & Growth, 2-4 Weeks)
+
+### P2-1: Server-render idea pages for SEO
+- **Why:** Individual idea pages are CSR — search engines see loading skeleton. Opens programmatic SEO channel.
+- **Source:** Growth 4.7
+- **Files:** `web/app/idea/[id]/page.tsx`
+- **Effort:** High
+
+### P2-2: Add page view + UTM attribution tracking
+- **Why:** Can't measure landing page performance, can't attribute signups to channels
+- **Source:** Data Analyst G-1, G-2
+- **Files:** `src/api/db/schema.ts` (new columns/table), frontend tracking
+- **Effort:** Medium
+
+### P2-3: Add email click tracking
+- **Why:** Have open tracking but no CTR — can't measure which email content drives engagement
+- **Source:** Data Analyst G-3
+- **Files:** `src/delivery/email.ts`, `src/api/db/schema.ts`
+- **Effort:** Medium
+
+### P2-4: Tighten free tier to motivate upgrades
+- **Why:** Free tier gives 90% of product value — no motivation to upgrade
+- **Source:** Growth 6.1, CFO
+- **Files:** Multiple (tier gates, archive limits, brief truncation)
+- **Effort:** High (needs careful A/B testing)
+
+### P2-5: Add "Why This Idea" explainer
+- **Why:** Users don't understand scoring — surfacing signal counts and source breakdown builds confidence
+- **Source:** Product 5 (RICE 28.8)
+- **Files:** `web/components/IdeaBriefCard.tsx`, `web/app/idea/[id]/page.tsx`
+- **Effort:** Small
+
+### P2-6: Share idea as public link
+- **Why:** Creates organic growth channel via shareable pages with OG meta tags
+- **Source:** Product 6 (RICE 11.9)
+- **Files:** New public route, OG image generation
+- **Effort:** Medium
+
+### P2-7: Raise Enterprise tier pricing to $149/mo
+- **Why:** Currently $99/mo — underpriced by 34-50% vs market benchmarks ($112-249)
+- **Source:** CFO C-1
+- **Files:** `src/api/config/stripe.ts`, Stripe dashboard
+- **Effort:** Small
+
+### P2-8: Implement validation add-on ($79/idea)
+- **Why:** Schema and routes already exist — near-zero marginal cost, expansion revenue
+- **Source:** CFO H-3
+- **Files:** Existing schema + route completion
+- **Effort:** Medium
+
+### P2-9: Refactor orchestrator phase boilerplate
+- **Why:** 700-line function with 4x repeated phase-handling pattern — hard to maintain
+- **Source:** Staff Engineer W-4
+- **Files:** `src/scheduler/orchestrator.ts:266-738`
+- **Effort:** Large
+
+### P2-10: Fix remaining security issues (password policy, brute force, CSP)
+- **Why:** 6-char minimum password, no login brute force protection, CSP disabled
+- **Source:** Security M-1, M-2, M-3
+- **Files:** `src/api/routes/auth.ts`, `src/api/server.ts`, `web/next.config.ts`
+- **Effort:** Medium
+
+### P2-11: Add missing legal pages (Privacy, Terms)
+- **Why:** Required for Stripe compliance, missing entirely
+- **Source:** Growth 1.8
+- **Files:** New pages in `web/app/`
+- **Effort:** Medium
+
+### P2-12: Fix Enterprise stats endpoint (hardcoded zeros)
+- **Why:** Enterprise stats return fake data — useless for paying customers
+- **Source:** Data Analyst G-5
+- **Files:** `src/api/routes/user.ts`
+- **Effort:** Small
+
+---
+
+## P3 — Backlog (Polish & Long-Term)
+
+### Features
+- **P3-1:** Keyword monitoring & saved searches (Product 1 — large, 3+ weeks, GummySearch feature)
+- **P3-2:** Idea portfolio with progress tracking (Product 7 — medium)
+- **P3-3:** Weekly trend report email (Product 8 — medium)
+- **P3-4:** One-click idea dismissal for personalization (Product 9 — small)
+- **P3-5:** Replace Twitter scraper with Bluesky/dev.to/Lobsters (Product 10 — medium)
+- **P3-6:** Slack/Discord bot for Enterprise (Product 11 — large)
+- **P3-7:** Mobile PWA (Product 12 — large)
+- **P3-8:** Idea comparison tool, side-by-side (Product 13 — small)
+- **P3-9:** In-app notification system (Growth 5.3 — high effort)
+- **P3-10:** Re-engagement emails for inactive users (Growth 5.4 — medium)
+
+### Code Quality
+- **P3-11:** Move `IdeaBrief` and `UserTier` to `packages/shared/` (Staff S-1, S-2)
+- **P3-12:** Fix GitHub scraper unbounded `repoStarsCache` memory leak (Staff W-6)
+- **P3-13:** Add full-text search index for `searchIdeas()` ILIKE (Staff W-8)
+- **P3-14:** Remove dead Twitter scraper code (Ops H-2, Staff W-7)
+- **P3-15:** Fix `sendViaResend` unsafe response type assertions (Staff C-2)
+- **P3-16:** Sanitize blog `dangerouslySetInnerHTML` (Security M-4)
+- **P3-17:** Fix `sendDailyBriefsBatch` concurrency exceeding Resend limits (Staff W-10)
+- **P3-18:** Email sending optimization for scale (CFO H-2 — batch/parallel before 500 users)
+
+### UX Polish
+- **P3-19:** Fix UX usability issues — settings save feedback, unsubscribe contrast, dead footer links (UX U-01 through U-19)
+- **P3-20:** UI polish — button sizing, filter reset, skeleton shimmer, toast animations (Polish 01-12)
+- **P3-21:** Add `aria-expanded` to FAQ accordion, verify FeatureTabs ARIA pattern (UX U-14, U-15)
+- **P3-22:** Add focus ring styles to pricing CTAs, footer links, explore cards (UX U-16 through U-19)
+
+### Analytics
+- **P3-23:** Frontend event tracking (button clicks, scroll depth) (Data G-7 — high effort)
+- **P3-24:** Search query logging for content gap analysis (Data G-6)
+- **P3-25:** Subscription lifecycle events table (Data G-9)
+- **P3-26:** Per-idea engagement aggregates (Data G-10)
+
+### Growth Experiments
+- **P3-27:** Add dynamic OG images for idea pages (Growth 4.4)
+- **P3-28:** Add canonical URLs to all pages (Growth 4.3)
+- **P3-29:** Contextual blog-to-product CTAs (Growth 7.3)
+- **P3-30:** Archive upgrade wall triggered by behavior (Growth 7.2)
+- **P3-31:** Anchor annual discount against monthly equivalent (Growth 6.4)
+- **P3-32:** Surface money-back guarantee on pricing cards (Growth 6.5)
+
+---
+
+## Execution Summary
+
+| Priority | Items | Estimated Effort | Theme |
+|----------|-------|-----------------|-------|
+| **P0** | 6 items | ~1 week | Security holes, infrastructure gaps |
+| **P1** | 10 items | ~2 weeks | Conversion, a11y, code reliability |
+| **P2** | 12 items | ~3-4 weeks | PMF features, growth, analytics |
+| **P3** | 32 items | Ongoing | Polish, scale, long-term features |
+
+### Key Dependencies
+- P0-3 (admin validation) unblocks safe admin operations
+- P1-4 (free trial) + P2-4 (tighten free tier) work together for conversion
+- P2-2 (tracking) must be in place before P2-4 (free tier changes) to measure impact
+- P1-7 (centralize Resend) should precede P3-18 (email scaling)
+- P2-1 (SSR idea pages) unblocks P2-6 (shareable links) and P3-27 (OG images)
+
+## Verification
+After each tier is complete:
+```bash
+npm run build && npm test
+```
+
+
+If you need specific details from before exiting plan mode (like exact code snippets, error messages, or content you generated), read the full transcript at: /Users/brandonqueener/.claude/projects/-Users-brandonqueener-Desktop-github-Projects-IdeaForge/01d07886-8a02-45d9-8502-a3acdf0fd225.jsonl
+
+If this plan can be broken down into multiple independent tasks, consider using the TeamCreate tool to create a team and parallelize the work.

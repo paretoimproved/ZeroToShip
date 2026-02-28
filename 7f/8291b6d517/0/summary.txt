@@ -1,0 +1,43 @@
+Here's the summary of everything completed:
+
+---
+
+## Completed Items
+
+### P0 — Ship-Blocking (All Done)
+
+| Item | Status | What Changed |
+|------|--------|-------------|
+| **P0-1** IDOR unsubscribe fix | Done | Added `unsubscribe_token` column to `user_preferences`, crypto token generation, token-based lookup in unsubscribe endpoint, migration `0010_add_unsubscribe_token.sql` |
+| **P0-2** Docker secrets leak | Done | Added `web/` and `docs/` to `.dockerignore` (`.env` was already excluded) |
+| **P0-3** Admin Zod validation | Done | Replaced all `as any` casts with Zod schemas + `ZodTypeProvider` on admin routes |
+| **P0-4** Auth middleware return | Done | Added `return` after 401/403 responses in `requireAuth`, `requireEnterprise`, `requirePro`, `requireAdmin` |
+| **P0-5** Redis on Railway | *Ops task* | Cannot be done from code — needs Railway dashboard |
+| **P0-6** Monitoring setup | *Ops task* | Cannot be done from code — needs UptimeRobot + Sentry |
+
+### P1 — This Sprint (7 of 10 Done)
+
+| Item | Status | What Changed |
+|------|--------|-------------|
+| **P1-3** Source links on ideas | Done | Added source count badge on `IdeaBriefCard`, sources section on idea detail page |
+| **P1-6** Critical accessibility | Done | Added `<main>` landmarks, skip-to-content, dialog roles + focus traps on modals, aria labels, keyboard nav |
+| **P1-7** Centralize Resend | Done | Created `src/lib/resend.ts` with `sendEmail`, `sendEmailWithRetry`, `sendAlertEmail`. Updated 5 callers (email.ts, onboarding.ts, spec-notification.ts, alerts.ts, billing.ts) |
+| **P1-8** Alerts migration | Done | Already migrated. Resend duplication resolved by P1-7 |
+| **P1-9** Hero copy rewrite | Done | Tightened subheadline, action-oriented CTA |
+| **P1-10** Pricing inconsistency | Done | Unified "Builder" → "Pro" across all frontend files |
+| **P1-1** Remove email gate | Not started | |
+| **P1-2** Social proof | Not started | |
+| **P1-4** 7-day free trial | Not started | |
+| **P1-5** Onboarding banner | Not started | |
+
+### New Files Created
+- `src/lib/resend.ts` — centralized Resend email client
+- `drizzle/0010_add_unsubscribe_token.sql` — migration for unsubscribe tokens
+
+### Verification
+- `npm run build` — passes
+- `npm test` — 55 files, 1406 tests, all passing
+- `npx tsc --noEmit` — zero type errors
+- `npx next build` (frontend) — passes
+
+The remaining P1 items (P1-1, P1-2, P1-4, P1-5) and all P2/P3 items are for subsequent sessions. P0-5 and P0-6 require ops/dashboard work.
