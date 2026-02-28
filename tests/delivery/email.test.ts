@@ -281,7 +281,7 @@ describe('Email Builder', () => {
       const briefs = createMockBriefs(5);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.html).toContain('Every problem. Every spec. Every day.');
+      expect(result.html).toContain('Get the full spec for every problem, every day.');
       expect(result.html).toContain('Upgrade to Pro');
     });
 
@@ -1138,12 +1138,12 @@ describe('Tier-based content', () => {
       expect(result.text).toContain('Tagline for idea 3');
     });
 
-    it('marks ideas beyond limit as PRO in plain text', () => {
+    it('shows locked ideas with effort badge and unlock link in plain text', () => {
       const briefs = createMockBriefs(10);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.text).toContain('#4 Idea 4 [PRO]');
-      expect(result.text).toContain('#10 Idea 10 [PRO]');
+      expect(result.text).toContain('#4 Idea 4 [Weekend]');
+      expect(result.text).toContain('Unlock spec:');
     });
 
     it('does not show taglines for locked ideas in plain text', () => {
@@ -1151,20 +1151,20 @@ describe('Tier-based content', () => {
       const result = buildDailyEmail(briefs, 'free');
 
       // Idea 4 is locked (rank 4 > limit 3)
-      expect(result.text).toContain('[PRO]');
+      expect(result.text).toContain('Unlock spec:');
       // The locked idea's tagline should not appear on the line after it
       const lines = result.text.split('\n');
-      const lockedLineIdx = lines.findIndex(l => l.includes('Idea 4 [PRO]'));
+      const lockedLineIdx = lines.findIndex(l => l.includes('#4 Idea 4'));
       expect(lockedLineIdx).toBeGreaterThan(-1);
       // Next line should not have the tagline
       expect(lines[lockedLineIdx + 1]).not.toContain('Tagline for idea 4');
     });
 
-    it('shows PRO badge on HTML ideas beyond tier limit', () => {
+    it('shows unlock link on HTML ideas beyond tier limit', () => {
       const briefs = createMockBriefs(6);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.html).toContain('PRO</span>');
+      expect(result.html).toContain('Unlock spec');
     });
 
     it('shows "available with Pro" message for free tier', () => {
@@ -1214,12 +1214,12 @@ describe('Tier-based content', () => {
       expect(result.text).not.toContain('Upgrade to Pro');
     });
 
-    it('does not show PRO badge for any idea rows', () => {
+    it('does not show unlock links for any idea rows', () => {
       const briefs = createMockBriefs(10);
       const result = buildDailyEmail(briefs, 'pro');
 
-      // Pro tier sees all ideas unlocked - no PRO badges
-      expect(result.html).not.toContain('>PRO</span>');
+      // Pro tier sees all ideas unlocked - no unlock links
+      expect(result.html).not.toContain('Unlock spec');
     });
 
     it('shows taglines for all secondary ideas in plain text', () => {
@@ -1238,8 +1238,8 @@ describe('Tier-based content', () => {
       const briefs = createMockBriefs(3);
       const result = buildDailyEmail(briefs, 'free');
 
-      expect(result.text).not.toContain('[PRO]');
-      expect(result.html).not.toContain('>PRO</span>');
+      expect(result.text).not.toContain('Unlock spec:');
+      expect(result.html).not.toContain('Unlock spec');
     });
 
     it('one above tier limit shows exactly 1 locked idea', () => {
@@ -1248,7 +1248,7 @@ describe('Tier-based content', () => {
       const briefs = createMockBriefs(4);
       const result = buildDailyEmail(briefs, 'free');
 
-      const lockedMatches = result.text.match(/\[PRO\]/g);
+      const lockedMatches = result.text.match(/Unlock spec:/g);
       expect(lockedMatches).toHaveLength(1);
     });
 
@@ -1268,7 +1268,7 @@ describe('Tier-based content', () => {
       const result = buildDailyEmail(briefs, 'free');
 
       expect(result.html).toContain("More Problems Today");
-      expect(result.text).not.toContain('[PRO]');
+      expect(result.text).not.toContain('Unlock spec:');
     });
   });
 });

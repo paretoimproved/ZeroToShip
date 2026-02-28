@@ -1,0 +1,126 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Field Notes #1</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; line-height: 1.5; color: #111; margin: 48px; }
+    h1 { font-size: 30px; margin-bottom: 16px; }
+    h2 { font-size: 22px; margin-top: 28px; margin-bottom: 10px; }
+    p { margin: 10px 0; }
+    ul, ol { margin: 8px 0 8px 26px; }
+    li { margin: 6px 0; }
+    .small { color: #444; }
+  </style>
+</head>
+<body>
+  <h1>Field Notes #1: I Built and Launched ZeroToShip.dev in 2 Weekends</h1>
+
+  <p>I’m starting a build journal on learning agentic workflows in public.<br/>
+  I’ll publish on my own cadence, when there is enough real signal to share.</p>
+
+  <p>I’m an engineering manager at Coinbase, leading 10-12 engineers across two stakeholder groups. This journal is how I keep my builder edge sharp.</p>
+
+  <p>This first note covers two separate projects:</p>
+
+  <ol>
+    <li>
+      <strong>A small open-source tooling project:</strong> <strong>git-to-log</strong> (commit-to-log context tracking)<br/>
+      Repo: <a href="PASTE_GIT_TO_LOG_REPO_URL">PASTE_GIT_TO_LOG_REPO_URL</a>
+    </li>
+    <li>
+      <strong>A product sprint:</strong> <strong>ZeroToShip.dev</strong> (end-to-end web app)<br/>
+      App: <a href="https://zerotoship.dev">https://zerotoship.dev</a><br/>
+      Repo: <a href="https://github.com/paretoimproved/ZeroToShip">https://github.com/paretoimproved/ZeroToShip</a>
+    </li>
+  </ol>
+
+  <h2>What I tested</h2>
+  <ol>
+    <li>Build quickly with Claude Code (Opus 4.6)</li>
+    <li>Transition parts of iteration and review to Codex (5.3)</li>
+    <li>See if I could go from build to launch in two weekends</li>
+  </ol>
+
+  <h2>What shipped (ZeroToShip)</h2>
+  <p><strong>Weekend 1</strong></p>
+  <ul>
+    <li>Working API + scheduler/pipeline + web path</li>
+    <li>Initial deployment path</li>
+    <li>End-to-end MVP baseline</li>
+  </ul>
+
+  <p><strong>Weekend 2</strong></p>
+  <ul>
+    <li>CI/deploy guardrails</li>
+    <li>More test coverage</li>
+    <li>Reliability fixes across auth, data flow, and UX</li>
+    <li>Launch-ready path</li>
+  </ul>
+
+  <h2>Velocity snapshot (ZeroToShip repo)</h2>
+  <p>Window measured: Jan 31-Feb 1 and Feb 7-Feb 8, 2026</p>
+  <ul>
+    <li>71 commits</li>
+    <li>296 unique files touched</li>
+    <li>+101,683 / -22,274 lines changed (net +79,409)</li>
+    <li>Commit mix: 27 feature-like, 19 fixes, 6 test-focused, 5 refactor-like, 6 docs</li>
+  </ul>
+  <p>Numbers pulled from git-to-log.</p>
+
+  <h2>What broke</h2>
+  <ul>
+    <li>OAuth/mobile auth regressions</li>
+    <li>CI/test instability before gates were reliable</li>
+    <li>UX/data assumptions that did not hold under real usage</li>
+  </ul>
+
+  <h2>Tradeoff I made</h2>
+  <p>I chose <strong>ship and launch fast, then harden aggressively</strong> over trying to polish everything before launch.</p>
+  <ul>
+    <li>Cost: more visible bugs short-term</li>
+    <li>Benefit: faster real-world feedback and clearer prioritization</li>
+  </ul>
+
+  <h2>What I learned</h2>
+  <p>In the last 1-2 months, model capability has moved faster than I expected, especially with Opus 4.6 and Codex 5.3.</p>
+
+  <p>The main blocker for me is no longer writing code.<br/>
+  The blocker is judgment:</p>
+  <ul>
+    <li>Picking the right direction</li>
+    <li>Choosing the right scope</li>
+    <li>Making good tradeoffs early</li>
+  </ul>
+
+  <p>I’m also seeing fewer looping failure patterns where the model keeps retrying the same broken fix. With clear constraints and tests, both tools converge much more reliably.</p>
+
+  <p>The heaviest lift is now front-loaded:</p>
+  <ol>
+    <li>Writing a strong plan doc</li>
+    <li>Tailoring Claude/Codex context docs</li>
+    <li>Defining solid workflows up front</li>
+  </ol>
+
+  <p>Once CI/CD is in place (GitHub Actions + automated front-end/back-end deploys after green checks), incremental shipping gets very fast.</p>
+
+  <p>I’m currently preferring the Codex CLI over my Claude Code + Ghostty workflow. It feels like a more modern, AI-native version of VS Code: I can stay terminal-first, still use project explorer context, and review diffs before commit/push.</p>
+
+  <p>I also noticed Codex picks up my custom skills without much explicit prompting. Skills like C4 Architecture, Gepetto, and Mermaid Diagrams have been especially useful while planning architecture and shaping roadmap steps.</p>
+
+  <h2>Next focus</h2>
+  <ul>
+    <li>Keep tightening auth and pipeline reliability</li>
+    <li>Keep comparing Claude vs Codex by task category</li>
+    <li>Shift from velocity proxies toward product/outcome metrics</li>
+    <li>Integrate LangGraph into ZeroToShip’s agentic workflow for better orchestration, observability, and controlled rollout of graph-based generation</li>
+  </ul>
+
+  <h2>Closing thought</h2>
+  <p>This is one of the most energizing times I can remember to be a builder.</p>
+
+  <p>Tooling and model capability are moving so quickly that parts of this note will probably look outdated in 1 month, 6 months, and definitely in 1 year. That is exactly why I’m writing these logs: to document what actually works, what breaks, and how my approach changes over time.</p>
+
+  <p>If you’re running similar experiments, I’d love to compare notes.</p>
+</body>
+</html>

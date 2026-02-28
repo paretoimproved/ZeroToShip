@@ -147,7 +147,7 @@ function buildHeader(dateStr: string): string {
     </table>`;
 }
 
-function buildStatBar(ideaCount: number, topScore: string, platforms: string[]): string {
+function buildStatBar(ideaCount: number, topEffort: string, platforms: string[]): string {
   const sourceLabel = platforms.length > 0
     ? `From <strong style="color: #111827;">${platforms.join(', ')}</strong>`
     : 'Curated daily';
@@ -158,7 +158,7 @@ function buildStatBar(ideaCount: number, topScore: string, platforms: string[]):
         <td style="padding: 12px 24px; font-family: ${FONT_STACK}; font-size: 13px; color: #6b7280; text-align: center;">
           <strong style="color: #111827;">${ideaCount}</strong> problems found &nbsp;&middot;&nbsp;
           ${sourceLabel} &nbsp;&middot;&nbsp;
-          Top score: <strong style="color: #6366f1;">${topScore}</strong>
+          Top pick: <strong style="color: #6366f1;">${escapeHtml(topEffort)} build</strong>
         </td>
       </tr>
     </table>`;
@@ -253,6 +253,7 @@ function buildHeroSection(brief: IdeaBrief, tier: SubscriberTier, config: Requir
           <span style="display: inline-block; background-color: #6366f1; color: #ffffff; padding: 4px 12px; border-radius: 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Today's #1 Problem</span>
           <h2 style="margin: 12px 0 4px 0; font-size: 24px; font-weight: 700; color: #111827; line-height: 1.3;">${escapeHtml(brief.name)}</h2>
           <p style="margin: 0 0 16px 0; font-size: 16px; color: #6b7280; font-style: italic;">${escapeHtml(stripMarkdown(brief.tagline))}</p>
+          ${tier === 'free' ? `<p style="margin: 0 0 16px 0; font-size: 15px; color: #374151; line-height: 1.5;">${escapeHtml(firstSentence(stripMarkdown(brief.proposedSolution)))}</p>` : ''}
           ${tier === 'pro' ? buildScoreChips(brief) : ''}
           ${bodyHtml}
         </td>
@@ -315,16 +316,16 @@ function buildIdeaCard(
     return `
       <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom: 8px;">
         <tr>
-          <td style="background-color: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; padding: 14px 16px; font-family: ${FONT_STACK}; opacity: 0.6;">
+          <td style="background-color: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; padding: 14px 16px; font-family: ${FONT_STACK};">
             <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
               <tr>
                 <td width="28" style="vertical-align: top; font-size: 14px; font-weight: 700; color: #6366f1;">#${rank}</td>
                 <td style="vertical-align: top; padding-left: 12px;">
                   <div style="font-size: 15px; font-weight: 600; color: #111827;">${escapeHtml(brief.name)}</div>
-                  <div style="background-color: #d1d5db; border-radius: 4px; height: 12px; width: 70%; margin-top: 6px;"></div>
+                  <span style="display: inline-block; background-color: ${effortStyle.bg}; color: ${effortStyle.text}; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-top: 6px;">${escapeHtml(effortLabel)}</span>
                 </td>
                 <td width="48" style="vertical-align: top; text-align: right;">
-                  <span style="display: inline-block; background-color: #6366f1; color: #ffffff; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">PRO</span>
+                  <a href="${escapeHtml(config.upgradeUrl)}" style="color: #6366f1; font-size: 13px; font-weight: 600; text-decoration: none;">Unlock spec &#8594;</a>
                 </td>
               </tr>
             </table>
@@ -341,18 +342,12 @@ function buildIdeaCard(
             <tr>
               <td width="28" style="vertical-align: top; font-size: 14px; font-weight: 700; color: #6366f1;">#${rank}</td>
               <td style="vertical-align: top; padding-left: 12px;">
-                <div style="font-size: 15px; font-weight: 600; color: #111827; margin-bottom: 2px;">${escapeHtml(brief.name)}</div>
+                <a href="${escapeHtml(ideaUrl)}" style="font-size: 15px; font-weight: 600; color: #111827; text-decoration: none; margin-bottom: 2px; display: inline-block;">${escapeHtml(brief.name)}</a>
                 <div style="font-size: 13px; color: #6b7280; margin-bottom: 6px;">${escapeHtml(tagline)}</div>
                 <span style="display: inline-block; background-color: ${effortStyle.bg}; color: ${effortStyle.text}; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">${escapeHtml(effortLabel)}</span>
               </td>
               <td width="48" style="vertical-align: top; text-align: right;">
                 <div style="font-size: 18px; font-weight: 700; color: #6366f1;">${formatScore(brief.priorityScore)}</div>
-              </td>
-            </tr>
-            <tr>
-              <td></td>
-              <td colspan="2" style="padding-top: 8px;">
-                <a href="${escapeHtml(ideaUrl)}" style="color: #6366f1; font-size: 14px; font-weight: 600; text-decoration: none;">View problem &#8594;</a>
               </td>
             </tr>
           </table>
@@ -412,18 +407,30 @@ function buildOtherIdeasSection(
 
 function buildBottomCta(
   tier: SubscriberTier,
-  freeCount: number,
-  totalCount: number,
+  briefs: IdeaBrief[],
   config: Required<EmailBuilderConfig>
 ): string {
   if (tier === 'pro') return '';
+
+  // Count effort levels across all briefs for a specific headline
+  const effortCounts: Record<string, number> = {};
+  for (const b of briefs) {
+    const label = formatEffortLabel(b.effortEstimate).toLowerCase();
+    effortCounts[label] = (effortCounts[label] || 0) + 1;
+  }
+
+  // Pick the most common effort level for the headline
+  const topEffort = Object.entries(effortCounts).sort((a, b) => b[1] - a[1])[0];
+  const headline = topEffort
+    ? `Today's lineup has ${topEffort[1]} ${topEffort[0]} build${topEffort[1] > 1 ? 's' : ''}`
+    : `Today's lineup has ${briefs.length} problems`;
 
   return `
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #111827;">
       <tr>
         <td style="padding: 32px 24px; text-align: center; font-family: ${FONT_STACK};">
-          <div style="font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 8px;">You browsed ${freeCount} problems today. Pro members get full specs for all of them.</div>
-          <div style="font-size: 16px; color: rgba(255,255,255,0.7); margin-bottom: 20px;">Every problem. Every spec. Every day.</div>
+          <div style="font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 8px;">${escapeHtml(headline)}</div>
+          <div style="font-size: 16px; color: rgba(255,255,255,0.7); margin-bottom: 20px;">Get the full spec for every problem, every day.</div>
           <table cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 auto;">
             <tr>
               <td style="background-color: #ffffff; border-radius: 8px;">
@@ -473,7 +480,6 @@ export function buildDailyEmail(
 
   const topIdea = briefs[0];
   const ideaCount = Math.min(briefs.length, MAX_EMAIL_IDEAS);
-  const freeCount = Math.min(briefs.length, TIER_LIMITS.free);
   const dateStr = new Date().toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'short',
@@ -518,11 +524,10 @@ export function buildDailyEmail(
         <table width="600" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 8px; overflow: hidden;">
           <tr><td>
             ${buildHeader(dateStr)}
-            ${buildStatBar(ideaCount, formatScore(topIdea.priorityScore), platforms)}
+            ${buildStatBar(ideaCount, formatEffortLabel(topIdea.effortEstimate).toLowerCase(), platforms)}
             ${buildHeroSection(topIdea, tier, opts)}
-            ${tier === 'free' ? buildInlineUpgradeBanner(briefs, opts) : ''}
             ${buildOtherIdeasSection(briefs, tier, opts)}
-            ${buildBottomCta(tier, freeCount, ideaCount, opts)}
+            ${buildBottomCta(tier, briefs, opts)}
             ${buildFooter(opts)}
           </td></tr>
         </table>
@@ -569,7 +574,7 @@ function buildPlainTextEmail(
   const sourceLabel = platformSet.size > 0 ? `From ${[...platformSet].join(', ')}` : 'Curated daily';
 
   lines.push(`ZEROTOSHIP | ${dateStr}`);
-  lines.push(`${ideaCount} problems found | ${sourceLabel} | Top score: ${formatScore(topIdea.priorityScore)}`);
+  lines.push(`${ideaCount} problems found | ${sourceLabel} | Top pick: ${formatEffortLabel(topIdea.effortEstimate).toLowerCase()} build`);
   lines.push('='.repeat(60));
   lines.push('');
 
@@ -577,6 +582,9 @@ function buildPlainTextEmail(
   lines.push('');
   lines.push(topIdea.name);
   lines.push(`"${stripMarkdown(topIdea.tagline)}"`);
+  if (tier === 'free') {
+    lines.push(firstSentence(stripMarkdown(topIdea.proposedSolution)));
+  }
   lines.push('');
   lines.push(`Read the full spec: ${config.baseUrl}/idea/${topIdea.id || ''}`);
   lines.push('');
@@ -625,11 +633,10 @@ function buildPlainTextEmail(
       const locked = rank > limit;
 
       if (locked) {
-        lines.push(`#${rank} ${brief.name} [PRO]`);
+        lines.push(`#${rank} ${brief.name} [${formatEffortLabel(brief.effortEstimate)}] — Unlock spec: ${config.upgradeUrl}`);
       } else {
         lines.push(`#${rank} ${brief.name} — Score: ${formatScore(brief.priorityScore)} [${formatEffortLabel(brief.effortEstimate)}]`);
         lines.push(`   "${brief.tagline}"`);
-        lines.push(`   View problem: ${config.baseUrl}/idea/${brief.id || ''}`);
       }
       lines.push('');
     });
@@ -644,9 +651,20 @@ function buildPlainTextEmail(
       lines.push('');
     }
 
+    // Bottom CTA — match HTML: effort-based headline + aspirational sub-copy
+    const effortCounts: Record<string, number> = {};
+    for (const b of briefs) {
+      const label = formatEffortLabel(b.effortEstimate).toLowerCase();
+      effortCounts[label] = (effortCounts[label] || 0) + 1;
+    }
+    const topEffort = Object.entries(effortCounts).sort((a, b) => b[1] - a[1])[0];
+    const ctaHeadline = topEffort
+      ? `Today's lineup has ${topEffort[1]} ${topEffort[0]} build${topEffort[1] > 1 ? 's' : ''}`
+      : `Today's lineup has ${briefs.length} problems`;
+
     lines.push('-'.repeat(60));
-    lines.push(`You browsed ${Math.min(briefs.length, TIER_LIMITS.free)} problems today. Pro members get full specs for all of them.`);
-    lines.push('Every problem. Every spec. Every day.');
+    lines.push(ctaHeadline);
+    lines.push('Get the full spec for every problem, every day.');
     lines.push(`Upgrade to Pro: ${config.upgradeUrl}`);
     lines.push('');
   }
