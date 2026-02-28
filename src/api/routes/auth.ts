@@ -13,13 +13,13 @@ import { config } from '../../config/env';
 
 const SignupRequestSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(6),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
   name: z.string().min(1),
 });
 
 const LoginRequestSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(6),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
 const GoogleAuthRequestSchema = z.object({
@@ -147,15 +147,23 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
 
   /**
    * POST /api/v1/auth/login
+   * Rate-limited to 10 attempts per 15 minutes per IP to prevent brute force.
    */
   app.post(
     '/login',
     {
+      config: {
+        rateLimit: {
+          max: 10,
+          timeWindow: '15 minutes',
+        },
+      },
       schema: {
         body: LoginRequestSchema,
         response: {
           200: AuthResponseSchema,
           401: ApiErrorSchema,
+          429: ApiErrorSchema,
           500: ApiErrorSchema,
         },
       },

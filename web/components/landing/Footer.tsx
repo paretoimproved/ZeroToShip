@@ -27,6 +27,11 @@ const companyLinks = [
   },
 ] as const;
 
+const legalLinks = [
+  { label: "Privacy Policy", href: "/privacy" },
+  { label: "Terms of Service", href: "/terms" },
+] as const;
+
 function RedditIcon() {
   return (
     <svg
@@ -153,7 +158,7 @@ export default function Footer() {
   return (
     <footer className="py-12 px-4 bg-gray-900 text-gray-400">
       <div className="max-w-5xl mx-auto">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Brand */}
           <div>
             <div className="text-white">
@@ -216,6 +221,22 @@ export default function Footer() {
                 >
                   {link.label}
                 </a>
+              ))}
+            </nav>
+          </div>
+
+          {/* Legal */}
+          <div>
+            <p className="font-semibold text-white mb-4">Legal</p>
+            <nav aria-label="Legal links">
+              {legalLinks.map((link) => (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className="text-sm hover:text-white transition-colors block py-1"
+                >
+                  {link.label}
+                </Link>
               ))}
             </nav>
           </div>

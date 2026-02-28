@@ -13,6 +13,8 @@ import { z } from 'zod';
 import { requireEnterprise } from '../middleware/auth';
 import { rateLimitMiddleware } from '../middleware/rateLimit';
 import { createTierGate } from '../middleware/tierGate';
+import { eq, and, gte, count } from 'drizzle-orm';
+import { db, savedIdeas, validationRequests, specGenerations } from '../db/client';
 import {
   searchIdeas,
   exportIdeas,
@@ -249,12 +251,40 @@ export const enterpriseRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request, reply) => {
+      const userId = request.userId!;
+
       // Get rate limit info from headers (already set by middleware)
       const limit = parseInt(reply.getHeader('X-RateLimit-Limit') as string) || 10000;
       const remaining = parseInt(reply.getHeader('X-RateLimit-Remaining') as string) || 10000;
       const resetAt = (reply.getHeader('X-RateLimit-Reset') as string) || new Date().toISOString();
 
-      // TODO: Implement actual usage tracking
+      // Query real usage from the database (current billing period — last 30 days)
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+      const [savedCount, validationCount, specCount] = await Promise.all([
+        db.select({ value: count() })
+          .from(savedIdeas)
+          .where(and(
+            eq(savedIdeas.userId, userId),
+            gte(savedIdeas.savedAt, thirtyDaysAgo),
+          ))
+          .then(rows => rows[0]?.value ?? 0),
+        db.select({ value: count() })
+          .from(validationRequests)
+          .where(and(
+            eq(validationRequests.userId, userId),
+            gte(validationRequests.requestedAt, thirtyDaysAgo),
+          ))
+          .then(rows => rows[0]?.value ?? 0),
+        db.select({ value: count() })
+          .from(specGenerations)
+          .where(and(
+            eq(specGenerations.userId, userId),
+            gte(specGenerations.createdAt, thirtyDaysAgo),
+          ))
+          .then(rows => rows[0]?.value ?? 0),
+      ]);
+
       return reply.send({
         tier: request.userTier,
         rateLimit: {
@@ -263,10 +293,10 @@ export const enterpriseRoutes: FastifyPluginAsync = async (fastify) => {
           resetAt,
         },
         usage: {
-          ideasViewed: 0, // Would query from analytics
-          searchQueries: 0,
-          validationRequests: 0,
-          exports: 0,
+          ideasViewed: savedCount,
+          searchQueries: specCount,
+          validationRequests: validationCount,
+          exports: 0, // Export tracking not yet instrumented
         },
       });
     }

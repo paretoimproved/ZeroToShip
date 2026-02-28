@@ -33,6 +33,7 @@ import {
   getResumePhase,
   cleanupStaleRuns,
 } from './utils/persistence';
+import type { PhaseStats } from './utils/persistence';
 import { db, pipelineRuns } from '../api/db/client';
 import { DEFAULT_SIMILARITY_THRESHOLD } from '../analysis/similarity';
 import type {
@@ -365,212 +366,158 @@ export async function runPipeline(
     await initRunStatus(runId, fullConfig);
   }
 
-  // Phase 1: Scrape
-  let scrapeResult: PhaseResult<ScrapePhaseOutput>;
+  // --- Generic phase executor (handles resume, persist, error, lock-loss) ---
 
-  if (shouldSkipPhase(resumePhase, 'scrape')) {
-    const cached = await loadPhaseResult<ScrapePhaseOutput>(runId, 'scrape');
-    if (!cached) {
-      throw new Error(`Resume failed: could not load persisted scrape data for run "${runId}"`);
-    }
-    scrapeResult = {
-      success: true,
-      data: cached,
-      duration: 0,
-      phase: 'scrape',
-      timestamp: new Date(),
-    };
-    logger.info('Scrape phase: loaded from persisted data');
-  } else {
-    metrics.startPhase('scrape');
-    scrapeResult = await runScrapePhase(runId, fullConfig);
-    metrics.completePhase('scrape', scrapeResult.success, scrapeResult.data?.totalPosts || 0);
+  type PhaseAccumulator = {
+    scrape?: PhaseResult<ScrapePhaseOutput>;
+    analyze?: PhaseResult<AnalyzePhaseOutput>;
+    generate?: PhaseResult<GeneratePhaseOutput>;
+    deliver?: PhaseResult<DeliverPhaseOutput>;
+  };
 
-    if (scrapeResult.success && scrapeResult.data) {
-      await savePhaseResult(runId, 'scrape', scrapeResult.data);
-      await updatePhaseStatus(runId, 'scrape', 'completed');
-      await updatePhaseStats(runId, 'scrape', {
-        totalPosts: scrapeResult.data.totalPosts,
-        reddit: scrapeResult.data.reddit.count,
-        hn: scrapeResult.data.hn.count,
-        twitter: scrapeResult.data.twitter.count,
-        github: scrapeResult.data.github.count,
-      });
+  /**
+   * Execute a pipeline phase with full boilerplate:
+   * 1. Resume/skip check — load cached data if the phase already completed
+   * 2. Run the phase — record metrics
+   * 3. Persist result + update phase status/stats
+   * 4. Handle failure — log, push error, capture exception, send alert
+   * 5. Check for lock loss — abort if lost
+   *
+   * Returns `{ phaseResult, earlyReturn }`. If `earlyReturn` is set, the
+   * caller must return it immediately (fatal failure or lock loss).
+   */
+  async function executePhase<T, P extends PhaseName>(opts: {
+    phase: P;
+    runner: () => Promise<PhaseResult<T>>;
+    statsExtractor: (data: T) => NonNullable<PhaseStats[P]>;
+    metricCountExtractor: (data: T | null) => number;
+    priorPhases: PhaseAccumulator;
+  }): Promise<{
+    phaseResult: PhaseResult<T>;
+    earlyReturn: PipelineResult | null;
+  }> {
+    const { phase, runner, statsExtractor, metricCountExtractor, priorPhases } = opts;
+    let phaseResult: PhaseResult<T>;
+
+    // Step 1: Resume/skip check
+    if (shouldSkipPhase(resumePhase, phase)) {
+      const cached = await loadPhaseResult<T>(runId, phase);
+      if (!cached) {
+        throw new Error(`Resume failed: could not load persisted ${phase} data for run "${runId}"`);
+      }
+      phaseResult = {
+        success: true,
+        data: cached,
+        duration: 0,
+        phase,
+        timestamp: new Date(),
+      };
+      logger.info(`${phase.charAt(0).toUpperCase() + phase.slice(1)} phase: loaded from persisted data`);
     } else {
-      await updatePhaseStatus(runId, 'scrape', 'failed');
+      // Step 2: Run the phase and record metrics
+      metrics.startPhase(phase);
+      phaseResult = await runner();
+      metrics.completePhase(phase, phaseResult.success, metricCountExtractor(phaseResult.data));
+
+      // Step 3: Persist result + update status/stats
+      if (phaseResult.success && phaseResult.data) {
+        await savePhaseResult(runId, phase, phaseResult.data);
+        await updatePhaseStatus(runId, phase, 'completed');
+        await updatePhaseStats(runId, phase, statsExtractor(phaseResult.data));
+      } else {
+        await updatePhaseStatus(runId, phase, 'failed');
+      }
     }
+
+    // Include this phase's result alongside prior phases for buildResult/abortForLockLoss
+    const phasesIncludingSelf: PhaseAccumulator = {
+      ...priorPhases,
+      [phase]: phaseResult,
+    };
+
+    // Step 4: Handle failure
+    if (!phaseResult.success || !phaseResult.data) {
+      const isFatal = phaseResult.severity !== 'degraded';
+      const phaseLabel = phase.charAt(0).toUpperCase() + phase.slice(1);
+      logger.error({ severity: phaseResult.severity ?? 'fatal' }, `${phaseLabel} phase failed`);
+      errors.push({
+        phase,
+        message: phaseResult.error || 'Unknown error',
+        timestamp: new Date(),
+        recoverable: !isFatal,
+        severity: phaseResult.severity,
+      });
+      captureException(
+        new Error(phaseResult.error || `${phaseLabel} phase failed`),
+        { runId, phase, severity: phaseResult.severity }
+      );
+      sendPipelineFailureAlert(runId, phase, phaseResult.error || 'Unknown error', phaseResult.severity ?? 'fatal');
+      if (isFatal) {
+        const earlyReturn = buildResult(runId, startedAt, fullConfig, phasesIncludingSelf, errors);
+        return { phaseResult, earlyReturn };
+      }
+    }
+
+    // Step 5: Check for lock loss
+    const lockLossResult = abortForLockLoss(phase, phasesIncludingSelf);
+    if (lockLossResult) {
+      return { phaseResult, earlyReturn: lockLossResult };
+    }
+
+    return { phaseResult, earlyReturn: null };
   }
 
-  if (!scrapeResult.success || !scrapeResult.data) {
-    const isFatal = scrapeResult.severity !== 'degraded';
-    logger.error({ severity: scrapeResult.severity ?? 'fatal' }, 'Scrape phase failed');
-    errors.push({
-      phase: 'scrape',
-      message: scrapeResult.error || 'Unknown error',
-      timestamp: new Date(),
-      recoverable: !isFatal,
-      severity: scrapeResult.severity,
-    });
-    captureException(
-      new Error(scrapeResult.error || 'Scrape phase failed'),
-      { runId, phase: 'scrape', severity: scrapeResult.severity }
-    );
-    sendPipelineFailureAlert(runId, 'scrape', scrapeResult.error || 'Unknown error', scrapeResult.severity ?? 'fatal');
-    if (isFatal) {
-      result = buildResult(runId, startedAt, fullConfig, { scrape: scrapeResult }, errors);
-      return result;
-    }
-  }
-
-  const lockLossAfterScrape = abortForLockLoss('scrape', { scrape: scrapeResult });
-  if (lockLossAfterScrape) { result = lockLossAfterScrape; return result; }
+  // Phase 1: Scrape
+  const { phaseResult: scrapeResult, earlyReturn: scrapeEarly } = await executePhase<ScrapePhaseOutput, 'scrape'>({
+    phase: 'scrape',
+    runner: () => runScrapePhase(runId, fullConfig),
+    statsExtractor: (data) => ({
+      totalPosts: data.totalPosts,
+      reddit: data.reddit.count,
+      hn: data.hn.count,
+      twitter: data.twitter.count,
+      github: data.github.count,
+    }),
+    metricCountExtractor: (data) => data?.totalPosts || 0,
+    priorPhases: {},
+  });
+  if (scrapeEarly) { result = scrapeEarly; return result; }
 
   // Phase 2: Analyze (requires scrape data)
-  let analyzeResult: PhaseResult<AnalyzePhaseOutput>;
-
-  if (shouldSkipPhase(resumePhase, 'analyze')) {
-    const cached = await loadPhaseResult<AnalyzePhaseOutput>(runId, 'analyze');
-    if (!cached) {
-      throw new Error(`Resume failed: could not load persisted analyze data for run "${runId}"`);
-    }
-    analyzeResult = {
-      success: true,
-      data: cached,
-      duration: 0,
-      phase: 'analyze',
-      timestamp: new Date(),
-    };
-    logger.info('Analyze phase: loaded from persisted data');
-  } else {
-    metrics.startPhase('analyze');
-    analyzeResult = scrapeResult.data?.posts?.length
-      ? await runAnalyzePhase(runId, fullConfig, scrapeResult.data.posts)
-      : { success: false, data: null, error: 'No posts from scrape phase', severity: 'fatal' as const, duration: 0, phase: 'analyze' as const, timestamp: new Date() };
-    metrics.completePhase('analyze', analyzeResult.success, analyzeResult.data?.scoredCount || 0);
-
-    if (analyzeResult.success && analyzeResult.data) {
-      await savePhaseResult(runId, 'analyze', analyzeResult.data);
-      await updatePhaseStatus(runId, 'analyze', 'completed');
-      await updatePhaseStats(runId, 'analyze', {
-        clusterCount: analyzeResult.data.clusterCount,
-        scoredCount: analyzeResult.data.scoredCount,
-        gapAnalysisCount: analyzeResult.data.gapAnalysisCount,
-      });
-    } else {
-      await updatePhaseStatus(runId, 'analyze', 'failed');
-    }
-  }
-
-  if (!analyzeResult.success || !analyzeResult.data) {
-    const isFatal = analyzeResult.severity !== 'degraded';
-    logger.error({ severity: analyzeResult.severity ?? 'fatal' }, 'Analyze phase failed');
-    errors.push({
-      phase: 'analyze',
-      message: analyzeResult.error || 'Unknown error',
-      timestamp: new Date(),
-      recoverable: !isFatal,
-      severity: analyzeResult.severity,
-    });
-    captureException(
-      new Error(analyzeResult.error || 'Analyze phase failed'),
-      { runId, phase: 'analyze', severity: analyzeResult.severity }
-    );
-    sendPipelineFailureAlert(runId, 'analyze', analyzeResult.error || 'Unknown error', analyzeResult.severity ?? 'fatal');
-    if (isFatal) {
-      result = buildResult(
-        runId,
-        startedAt,
-        fullConfig,
-        { scrape: scrapeResult, analyze: analyzeResult },
-        errors
-      );
-      return result;
-    }
-  }
-
-  const lockLossAfterAnalyze = abortForLockLoss('analyze', {
-    scrape: scrapeResult,
-    analyze: analyzeResult,
+  const { phaseResult: analyzeResult, earlyReturn: analyzeEarly } = await executePhase<AnalyzePhaseOutput, 'analyze'>({
+    phase: 'analyze',
+    runner: () => scrapeResult.data?.posts?.length
+      ? runAnalyzePhase(runId, fullConfig, scrapeResult.data.posts)
+      : Promise.resolve({ success: false, data: null, error: 'No posts from scrape phase', severity: 'fatal' as const, duration: 0, phase: 'analyze' as const, timestamp: new Date() }),
+    statsExtractor: (data) => ({
+      clusterCount: data.clusterCount,
+      scoredCount: data.scoredCount,
+      gapAnalysisCount: data.gapAnalysisCount,
+    }),
+    metricCountExtractor: (data) => data?.scoredCount || 0,
+    priorPhases: { scrape: scrapeResult },
   });
-  if (lockLossAfterAnalyze) { result = lockLossAfterAnalyze; return result; }
+  if (analyzeEarly) { result = analyzeEarly; return result; }
 
   // Phase 3: Generate (requires analyze data)
-  let generateResult: PhaseResult<GeneratePhaseOutput>;
-
-  if (shouldSkipPhase(resumePhase, 'generate')) {
-    const cached = await loadPhaseResult<GeneratePhaseOutput>(runId, 'generate');
-    if (!cached) {
-      throw new Error(`Resume failed: could not load persisted generate data for run "${runId}"`);
-    }
-    generateResult = {
-      success: true,
-      data: cached,
-      duration: 0,
-      phase: 'generate',
-      timestamp: new Date(),
-    };
-    logger.info('Generate phase: loaded from persisted data');
-  } else {
-    metrics.startPhase('generate');
-    generateResult = analyzeResult.data?.scoredProblems?.length
-      ? await runGeneratePhase(
+  const { phaseResult: generateResult, earlyReturn: generateEarly } = await executePhase<GeneratePhaseOutput, 'generate'>({
+    phase: 'generate',
+    runner: () => analyzeResult.data?.scoredProblems?.length
+      ? runGeneratePhase(
           runId,
           fullConfig,
           analyzeResult.data.scoredProblems,
           analyzeResult.data.gapAnalyses,
           requestedGenerationMode,
         )
-      : { success: false, data: null, error: 'No scored problems from analyze phase', severity: 'fatal' as const, duration: 0, phase: 'generate' as const, timestamp: new Date() };
-    metrics.completePhase('generate', generateResult.success, generateResult.data?.briefCount || 0);
-
-    if (generateResult.success && generateResult.data) {
-      await savePhaseResult(runId, 'generate', generateResult.data);
-      await updatePhaseStatus(runId, 'generate', 'completed');
-      await updatePhaseStats(runId, 'generate', {
-        briefCount: generateResult.data.briefCount,
-      });
-    } else {
-      await updatePhaseStatus(runId, 'generate', 'failed');
-    }
-  }
-
-  if (!generateResult.success || !generateResult.data) {
-    const isFatal = generateResult.severity !== 'degraded';
-    logger.error({ severity: generateResult.severity ?? 'fatal' }, 'Generate phase failed');
-    errors.push({
-      phase: 'generate',
-      message: generateResult.error || 'Unknown error',
-      timestamp: new Date(),
-      recoverable: !isFatal,
-      severity: generateResult.severity,
-    });
-    captureException(
-      new Error(generateResult.error || 'Generate phase failed'),
-      { runId, phase: 'generate', severity: generateResult.severity }
-    );
-    sendPipelineFailureAlert(runId, 'generate', generateResult.error || 'Unknown error', generateResult.severity ?? 'fatal');
-    if (isFatal) {
-      result = buildResult(
-        runId,
-        startedAt,
-        fullConfig,
-        {
-          scrape: scrapeResult,
-          analyze: analyzeResult,
-          generate: generateResult,
-        },
-        errors
-      );
-      return result;
-    }
-  }
-
-  const lockLossAfterGenerate = abortForLockLoss('generate', {
-    scrape: scrapeResult,
-    analyze: analyzeResult,
-    generate: generateResult,
+      : Promise.resolve({ success: false, data: null, error: 'No scored problems from analyze phase', severity: 'fatal' as const, duration: 0, phase: 'generate' as const, timestamp: new Date() }),
+    statsExtractor: (data) => ({
+      briefCount: data.briefCount,
+    }),
+    metricCountExtractor: (data) => data?.briefCount || 0,
+    priorPhases: { scrape: scrapeResult, analyze: analyzeResult },
   });
-  if (lockLossAfterGenerate) { result = lockLossAfterGenerate; return result; }
+  if (generateEarly) { result = generateEarly; return result; }
 
   // Phase 4: Deliver (degraded by default — delivery failures don't stop pipeline)
   metrics.startPhase('deliver');

@@ -566,7 +566,7 @@ describe('Auth Routes E2E', () => {
       expect(response.statusCode).toBe(400);
     });
 
-    it('should return 400 for password shorter than 6 characters', async () => {
+    it('should return 400 for password shorter than 8 characters', async () => {
       const response = await server.inject({
         method: 'POST',
         url: '/api/v1/auth/signup',
@@ -795,7 +795,7 @@ describe('Auth Routes E2E', () => {
       expect(response.statusCode).toBe(400);
     });
 
-    it('should return 400 for password shorter than 6 characters', async () => {
+    it('should return 400 for password shorter than 8 characters', async () => {
       const response = await server.inject({
         method: 'POST',
         url: '/api/v1/auth/login',
