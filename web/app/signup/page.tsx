@@ -17,8 +17,6 @@ function SignupForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [defaultEmail, setDefaultEmail] = useState("");
-  const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
-  const [submittedEmail, setSubmittedEmail] = useState("");
 
   const nextParam = sanitizeNextPath(searchParams.get("next"));
   const redirectTo = getPostAuthRedirect(
@@ -63,14 +61,8 @@ function SignupForm() {
     setLoading(true);
 
     try {
-      const result = await signup(data.email, data.password, data.name ?? "");
+      await signup(data.email, data.password, data.name ?? "");
       trackSignupCompleted("email");
-      if (result.needsEmailConfirmation) {
-        setSubmittedEmail(data.email);
-        setNeedsEmailConfirmation(true);
-        toast.info("Confirm your email", "Check your inbox for the verification link.");
-        return;
-      }
       toast.success("Account created", "Welcome to ZeroToShip.");
       sessionStorage.removeItem("z2s_next");
       router.push(redirectTo);
@@ -80,31 +72,6 @@ function SignupForm() {
       setLoading(false);
     }
   };
-
-  if (needsEmailConfirmation) {
-    return (
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
-        <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white text-center">
-          Confirm your email
-        </h1>
-        <p className="text-sm text-gray-600 dark:text-gray-400 text-center mt-2">
-          We sent a confirmation link to{" "}
-          <span className="font-semibold text-gray-900 dark:text-white">{submittedEmail}</span>.
-        </p>
-        <p className="text-sm text-gray-600 dark:text-gray-400 text-center mt-2">
-          Click the link, then come back and sign in. If you don&apos;t see it, check spam.
-        </p>
-        <div className="mt-6 flex justify-center">
-          <a
-            href={`/login?signup=1&email=${encodeURIComponent(submittedEmail)}${nextParam ? `&next=${encodeURIComponent(nextParam)}` : ""}`}
-            className="inline-block rounded-lg bg-primary-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
-          >
-            Go to Sign In
-          </a>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <AuthForm

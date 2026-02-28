@@ -24,6 +24,7 @@ const mockSignUp = vi.fn();
 const mockSignInWithPassword = vi.fn();
 const mockSignInWithIdToken = vi.fn();
 const mockGetUser = vi.fn();
+const mockAdminUpdateUserById = vi.fn();
 
 vi.mock('@supabase/supabase-js', () => ({
   createClient: () => ({
@@ -32,6 +33,9 @@ vi.mock('@supabase/supabase-js', () => ({
       signInWithPassword: mockSignInWithPassword,
       signInWithIdToken: mockSignInWithIdToken,
       getUser: mockGetUser,
+      admin: {
+        updateUserById: mockAdminUpdateUserById,
+      },
     },
   }),
 }));
@@ -392,7 +396,7 @@ describe('Auth Routes E2E', () => {
       );
     });
 
-    it('should handle email confirmation flow (no session returned)', async () => {
+    it('should auto-confirm and sign in when no session returned', async () => {
       // Supabase returns user but no session when email confirmation is required
       mockSignUp.mockResolvedValue({
         data: {
@@ -402,7 +406,10 @@ describe('Auth Routes E2E', () => {
         error: null,
       });
 
-      // signInWithPassword is called as fallback
+      // Admin auto-confirm succeeds
+      mockAdminUpdateUserById.mockResolvedValue({ data: {}, error: null });
+
+      // signInWithPassword succeeds after auto-confirm
       mockSignInWithPassword.mockResolvedValue({
         data: {
           user: supabaseUser(),
@@ -426,13 +433,17 @@ describe('Auth Routes E2E', () => {
       expect(response.statusCode).toBe(200);
       const body = JSON.parse(response.payload);
       expect(body.token).toBe('fallback-token');
+      expect(mockAdminUpdateUserById).toHaveBeenCalledWith(
+        TEST_USER.id,
+        { email_confirm: true }
+      );
       expect(mockSignInWithPassword).toHaveBeenCalledWith({
         email: TEST_USER.email,
         password: 'securepass123',
       });
     });
 
-    it('should return empty token when email confirmation blocks sign-in', async () => {
+    it('should return 500 when auto-confirm succeeds but sign-in still fails', async () => {
       mockSignUp.mockResolvedValue({
         data: {
           user: supabaseUser({ email_confirmed_at: null }),
@@ -441,13 +452,14 @@ describe('Auth Routes E2E', () => {
         error: null,
       });
 
-      // signInWithPassword fails because email not confirmed
+      // Admin auto-confirm succeeds
+      mockAdminUpdateUserById.mockResolvedValue({ data: {}, error: null });
+
+      // signInWithPassword fails despite auto-confirm
       mockSignInWithPassword.mockResolvedValue({
         data: { user: null, session: null },
         error: { message: 'Email not confirmed' },
       });
-
-      mockGetOrCreateUser.mockResolvedValue(TEST_USER);
 
       const response = await server.inject({
         method: 'POST',
@@ -459,10 +471,9 @@ describe('Auth Routes E2E', () => {
         },
       });
 
-      expect(response.statusCode).toBe(200);
+      expect(response.statusCode).toBe(500);
       const body = JSON.parse(response.payload);
-      expect(body.token).toBe('');
-      expect(body.user.id).toBe(TEST_USER.id);
+      expect(body.code).toBe('SIGNUP_SESSION_FAILED');
     });
 
     it('should return 400 when Supabase signup fails', async () => {

@@ -201,6 +201,7 @@ export async function createCheckoutSession(
       userId,
     },
     subscription_data: {
+      trial_period_days: 7,
       metadata: {
         userId,
       },
@@ -282,7 +283,7 @@ async function handleCheckoutCompleted(
     stripeCustomerId: session.customer as string,
     stripeSubscriptionId: subscriptionId,
     plan: tier,
-    status: subscription.status === 'active' ? 'active' : 'past_due',
+    status: (subscription.status === 'active' || subscription.status === 'trialing') ? 'active' : 'past_due',
     currentPeriodStart: new Date(periodStart * 1000),
     currentPeriodEnd: new Date(periodEnd * 1000),
     cancelAtPeriodEnd: subscription.cancel_at_period_end,
@@ -341,7 +342,7 @@ async function syncSubscription(
   const priceId = subscription.items.data[0]?.price.id;
   const tier = priceId ? getTierFromPriceId(priceId) : 'free';
 
-  // Map Stripe status to our status
+  // Map Stripe status to our status (trialing is treated as active)
   let status: 'active' | 'canceled' | 'past_due' = 'active';
   if (subscription.status === 'past_due' || subscription.status === 'unpaid') {
     status = 'past_due';

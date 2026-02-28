@@ -59,7 +59,7 @@ const plans: Plan[] = [
       { text: "Bulk export (Markdown & JSON)", included: true },
       { text: "Priority support", included: true },
     ],
-    cta: "Go Pro",
+    cta: "Start 7-Day Free Trial",
     ctaRoute: "/signup?plan=pro",
     highlighted: true,
   },
@@ -254,6 +254,13 @@ export default function PricingSection() {
                 )}
                 {(billing === "monthly" || plan.annualTotal === 0) && (
                   <div className="mb-4" />
+                )}
+
+                {/* Trial badge for Pro */}
+                {plan.highlighted && (
+                  <p className="text-xs font-medium text-primary-600 dark:text-primary-400 mb-4">
+                    7-day free trial — no credit card charged until day 8
+                  </p>
                 )}
 
                 {/* Description */}

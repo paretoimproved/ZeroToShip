@@ -114,18 +114,21 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       // If email confirmation is required, session may be null.
-      // Auto-confirm by signing in immediately with the service role client.
+      // Auto-confirm via admin API so the user can access the dashboard
+      // immediately — email verification happens asynchronously.
       let token = data.session?.access_token;
       if (!token) {
+        // Auto-confirm the user's email using the service-role admin API
+        await supabase.auth.admin.updateUserById(data.user.id, {
+          email_confirm: true,
+        });
+
+        // Now sign in to get a valid session
         const signIn = await supabase.auth.signInWithPassword({ email, password });
         if (signIn.error || !signIn.data.session) {
-          // User created but can't sign in yet — return with a placeholder token
-          const user = await getOrCreateUser(data.user.id, email, name);
-          const tier = await getUserTierById(data.user.id);
-          return reply.send({
-            token: '',
-            needsEmailConfirmation: true,
-            user: { ...user, tier },
+          return reply.status(500).send({
+            code: 'SIGNUP_SESSION_FAILED',
+            message: 'Account created but sign-in failed. Please try logging in.',
           });
         }
         token = signIn.data.session.access_token;
