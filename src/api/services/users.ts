@@ -4,6 +4,7 @@
  * Business logic for user management, preferences, and subscriptions
  */
 
+import { randomBytes } from 'crypto';
 import { eq, desc, and } from 'drizzle-orm';
 import {
   db,
@@ -25,6 +26,13 @@ import type {
 import { generateApiKey, hashApiKey, invalidateTierCache } from '../middleware/auth';
 import { sendOnboardingEmail } from '../../delivery/onboarding';
 import logger from '../../lib/logger';
+
+/**
+ * Generate a cryptographic random unsubscribe token (32 bytes hex = 64 chars)
+ */
+function generateUnsubscribeToken(): string {
+  return randomBytes(32).toString('hex');
+}
 
 /**
  * Get user by ID
@@ -72,8 +80,8 @@ export async function getOrCreateUser(
     .values({ id, email, name: name || null })
     .returning();
 
-  // Create default preferences
-  await db.insert(userPreferences).values({ userId: id });
+  // Create default preferences with a secure unsubscribe token
+  await db.insert(userPreferences).values({ userId: id, unsubscribeToken: generateUnsubscribeToken() });
 
   // Create default subscription (free tier)
   await db.insert(subscriptions).values({ userId: id, plan: 'free', status: 'active' });
@@ -144,9 +152,14 @@ export async function updateUserPreferences(
   if (existing.length === 0) {
     await db.insert(userPreferences).values({
       userId,
+      unsubscribeToken: generateUnsubscribeToken(),
       ...updateData,
     });
   } else {
+    // Backfill unsubscribe token if missing
+    if (!existing[0].unsubscribeToken) {
+      updateData.unsubscribeToken = generateUnsubscribeToken();
+    }
     await db
       .update(userPreferences)
       .set(updateData)
@@ -154,6 +167,56 @@ export async function updateUserPreferences(
   }
 
   return getUserPreferences(userId);
+}
+
+/**
+ * Unsubscribe a user via their cryptographic unsubscribe token.
+ * Returns true if the token was valid and the user was unsubscribed.
+ */
+export async function unsubscribeByToken(token: string): Promise<boolean> {
+  const rows = await db
+    .select({ userId: userPreferences.userId })
+    .from(userPreferences)
+    .where(eq(userPreferences.unsubscribeToken, token))
+    .limit(1);
+
+  if (rows.length === 0) {
+    return false;
+  }
+
+  await db
+    .update(userPreferences)
+    .set({ emailFrequency: 'never', updatedAt: new Date() })
+    .where(eq(userPreferences.unsubscribeToken, token));
+
+  return true;
+}
+
+/**
+ * Get the unsubscribe token for a user. Generates one if missing.
+ */
+export async function getUnsubscribeToken(userId: string): Promise<string | null> {
+  const rows = await db
+    .select({ unsubscribeToken: userPreferences.unsubscribeToken })
+    .from(userPreferences)
+    .where(eq(userPreferences.userId, userId))
+    .limit(1);
+
+  if (rows.length === 0) {
+    return null;
+  }
+
+  // Backfill if missing
+  if (!rows[0].unsubscribeToken) {
+    const token = generateUnsubscribeToken();
+    await db
+      .update(userPreferences)
+      .set({ unsubscribeToken: token })
+      .where(eq(userPreferences.userId, userId));
+    return token;
+  }
+
+  return rows[0].unsubscribeToken;
 }
 
 /**

@@ -52,19 +52,26 @@ export const users = pgTable(
 /**
  * User preferences for filtering ideas
  */
-export const userPreferences = pgTable('user_preferences', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' })
-    .unique(),
-  categories: jsonb('categories').$type<string[]>().default([]),
-  maxEffort: varchar('max_effort', { length: 20 }).default('quarter'),
-  emailFrequency: varchar('email_frequency', { length: 20 }).default('daily'),
-  minPriorityScore: decimal('min_priority_score', { precision: 5, scale: 2 }).default('0'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-});
+export const userPreferences = pgTable(
+  'user_preferences',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' })
+      .unique(),
+    categories: jsonb('categories').$type<string[]>().default([]),
+    maxEffort: varchar('max_effort', { length: 20 }).default('quarter'),
+    emailFrequency: varchar('email_frequency', { length: 20 }).default('daily'),
+    minPriorityScore: decimal('min_priority_score', { precision: 5, scale: 2 }).default('0'),
+    unsubscribeToken: varchar('unsubscribe_token', { length: 64 }).unique(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    unsubscribeTokenIdx: uniqueIndex('user_prefs_unsub_token_idx').on(table.unsubscribeToken),
+  })
+);
 
 /**
  * API keys for enterprise tier

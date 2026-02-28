@@ -26,6 +26,7 @@ import {
   createApiKey,
   deleteApiKey,
   deactivateApiKey,
+  unsubscribeByToken,
 } from '../services/users';
 import { getUsageStatus } from '../services/usage';
 import type { UserTier } from '../config/tiers';
@@ -49,7 +50,7 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
     {
       schema: {
         body: z.object({
-          token: z.string().uuid(),
+          token: z.string().min(1).max(128),
         }),
         response: {
           200: z.object({ success: z.boolean(), message: z.string() }),
@@ -59,9 +60,9 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, reply) => {
       const { token } = request.body;
-      const result = await updateUserPreferences(token, { emailFrequency: 'never' });
+      const success = await unsubscribeByToken(token);
 
-      if (!result) {
+      if (!success) {
         return reply.status(404).send({
           code: 'NOT_FOUND',
           message: 'Invalid unsubscribe token',

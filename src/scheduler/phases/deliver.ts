@@ -30,6 +30,7 @@ async function getActiveSubscribers(): Promise<Subscriber[]> {
       email: users.email,
       tier: subscriptions.plan,
       emailFrequency: userPreferences.emailFrequency,
+      unsubscribeToken: userPreferences.unsubscribeToken,
     })
     .from(users)
     .innerJoin(subscriptions, eq(subscriptions.userId, users.id))
@@ -42,6 +43,7 @@ async function getActiveSubscribers(): Promise<Subscriber[]> {
       id: row.id,
       email: row.email,
       tier: row.tier as Subscriber['tier'],
+      unsubscribeToken: row.unsubscribeToken ?? undefined,
     }));
 }
 
