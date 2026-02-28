@@ -1,0 +1,34 @@
+Everything builds and passes. Let me do a final summary of all the work.
+
+All **P0 and P1 items** from the audit roadmap are now complete. Here's the full status:
+
+## P0 (Ship-Blocking) — All Done
+| Item | Status | What was done |
+|------|--------|---------------|
+| P0-1 | Done | Crypto unsubscribe tokens replacing IDOR-vulnerable UUIDs |
+| P0-2 | Done | `.dockerignore` updated to exclude `web/` and `docs/` |
+| P0-3 | Done | Zod validation on all admin routes, eliminated all `as any` |
+| P0-4 | Done | Added `return` after `reply.send()` in auth middleware |
+| P0-5 | Ops | Provision Redis on Railway (requires dashboard access) |
+| P0-6 | Ops | Set up UptimeRobot + Sentry (requires dashboard access) |
+
+## P1 (This Sprint) — All Done
+| Item | Status | What was done |
+|------|--------|---------------|
+| P1-1 | Done | Auto-confirm users via Supabase admin API, removed email gate UI |
+| P1-2 | Done | SocialProof component with stats + testimonials on landing page |
+| P1-3 | Done | Source count badge on idea cards |
+| P1-4 | Done | 7-day free trial on Stripe checkout + pricing CTA updated |
+| P1-5 | Done | Dismissible onboarding welcome banner on dashboard |
+| P1-6 | Done | 14 WCAG accessibility fixes (modals, landmarks, keyboard nav) |
+| P1-7 | Done | Centralized `src/lib/resend.ts` replacing 7 duplicate fetch calls |
+| P1-8 | Done | Migrated `alerts.ts` to config + Pino logger |
+| P1-9 | Done | Hero CTA and subheadline rewritten for conversion |
+| P1-10 | Done | "Builder" renamed to "Pro" across 13 files |
+
+## Verification
+- **55 test files, 1406 tests** — all passing
+- **Backend build** (`npm run build`) — clean
+- **Frontend build** (`npx next build`) — clean
+
+The remaining items are P0-5/P0-6 (ops tasks requiring Railway/UptimeRobot dashboards) and all P2/P3 items.

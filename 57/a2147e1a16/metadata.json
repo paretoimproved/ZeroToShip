@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.4.7",
+  "checkpoint_id": "57a2147e1a16",
+  "strategy": "auto-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/api/routes/auth.ts",
+    "src/api/services/billing.ts",
+    "tests/api/auth-routes.test.ts",
+    "web/app/signup/page.tsx",
+    "web/components/landing/PricingSection.tsx",
+    "web/components/landing/SocialProof.tsx"
+  ],
+  "sessions": [
+    {
+      "metadata": "/57/a2147e1a16/0/metadata.json",
+      "transcript": "/57/a2147e1a16/0/full.jsonl",
+      "context": "",
+      "content_hash": "/57/a2147e1a16/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 8619,
+    "cache_creation_tokens": 228318,
+    "cache_read_tokens": 17358714,
+    "output_tokens": 58480,
+    "api_call_count": 161
+  }
+}

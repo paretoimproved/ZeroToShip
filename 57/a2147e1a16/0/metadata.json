@@ -1,0 +1,25 @@
+{
+  "cli_version": "0.4.7",
+  "checkpoint_id": "57a2147e1a16",
+  "session_id": "ce8b29a3-be76-45ce-812c-61fd6c647951",
+  "strategy": "auto-commit",
+  "created_at": "2026-02-28T19:07:04.11388Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/api/routes/auth.ts",
+    "src/api/services/billing.ts",
+    "tests/api/auth-routes.test.ts",
+    "web/app/signup/page.tsx",
+    "web/components/landing/PricingSection.tsx",
+    "web/components/landing/SocialProof.tsx"
+  ],
+  "agent": "Claude Code",
+  "token_usage": {
+    "input_tokens": 8619,
+    "cache_creation_tokens": 228318,
+    "cache_read_tokens": 17358714,
+    "output_tokens": 58480,
+    "api_call_count": 161
+  }
+}
