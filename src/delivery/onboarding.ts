@@ -8,21 +8,8 @@
 import { eq, and, sql, isNull } from 'drizzle-orm';
 import { db, users, subscriptions, onboardingEmails } from '../api/db/client';
 import type { OnboardingEmailType } from '../api/db/schema';
-import { config as envConfig } from '../config/env';
-import { DeliveryError } from '../lib/errors';
 import logger from '../lib/logger';
-
-/** Resend API response for successful sends */
-interface ResendSuccessResponse {
-  id: string;
-}
-
-/** Resend API error response */
-interface ResendErrorResponse {
-  statusCode: number;
-  message: string;
-  name: string;
-}
+import { sendEmail } from '../lib/resend';
 
 /** Subject lines for each onboarding email type */
 const SUBJECT_LINES: Record<OnboardingEmailType, string> = {
@@ -325,14 +312,6 @@ export async function sendOnboardingEmail(
   }
 
   const user = userRows[0];
-  const apiKey = envConfig.RESEND_API_KEY;
-
-  if (!apiKey) {
-    result.error = 'No Resend API key configured';
-    logger.warn({ emailType }, 'Onboarding email skipped: no Resend API key');
-    return result;
-  }
-
   // Build email content
   const subject = SUBJECT_LINES[emailType];
   const { html, text } = buildOnboardingHtml(
@@ -341,51 +320,21 @@ export async function sendOnboardingEmail(
     user.tier || 'free'
   );
 
-  // Send via Resend
-  try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: 'ZeroToShip <briefs@zerotoship.dev>',
-        to: [user.email],
-        reply_to: 'hello@zerotoship.dev',
-        subject,
-        html,
-        text,
-      }),
-    });
+  // Send via centralized Resend client
+  const sendResult = await sendEmail({ to: user.email, subject, html, text });
 
-    if (!response.ok) {
-      const errorBody = (await response.json()) as ResendErrorResponse;
-      const errorMsg = `Resend API error (${response.status}): ${errorBody.message}`;
-      result.error = errorMsg;
-      logger.error(
-        { userId, emailType, statusCode: response.status },
-        errorMsg
-      );
-      return result;
-    }
-
-    const data = (await response.json()) as ResendSuccessResponse;
+  if (sendResult.success) {
     result.sent = true;
-    result.messageId = data.id;
-
-    // Record in tracking table
+    result.messageId = sendResult.messageId;
     await recordEmailSent(userId, emailType);
-
     logger.info(
-      { userId, emailType, messageId: data.id },
+      { userId, emailType, messageId: sendResult.messageId },
       'Onboarding email sent successfully'
     );
-  } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : 'Unknown error sending onboarding email';
-    result.error = errorMsg;
+  } else {
+    result.error = sendResult.error;
     logger.error(
-      { userId, emailType, error: errorMsg },
+      { userId, emailType, statusCode: sendResult.statusCode, error: sendResult.error },
       'Failed to send onboarding email'
     );
   }
@@ -409,51 +358,19 @@ async function sendOnboardingEmailDirect(
     skipped: false,
   };
 
-  const apiKey = envConfig.RESEND_API_KEY;
-  if (!apiKey) {
-    result.error = 'No Resend API key configured';
-    logger.warn({ emailType }, 'Onboarding email skipped: no Resend API key');
-    return result;
-  }
-
   const subject = SUBJECT_LINES[emailType];
   const { html, text } = buildOnboardingHtml(emailType, user.name || '', user.tier || 'free');
 
-  try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: 'ZeroToShip <briefs@zerotoship.dev>',
-        to: [user.email],
-        reply_to: 'hello@zerotoship.dev',
-        subject,
-        html,
-        text,
-      }),
-    });
+  const sendResult = await sendEmail({ to: user.email, subject, html, text });
 
-    if (!response.ok) {
-      const errorBody = (await response.json()) as ResendErrorResponse;
-      const errorMsg = `Resend API error (${response.status}): ${errorBody.message}`;
-      result.error = errorMsg;
-      logger.error({ userId: user.id, emailType, statusCode: response.status }, errorMsg);
-      return result;
-    }
-
-    const data = (await response.json()) as ResendSuccessResponse;
+  if (sendResult.success) {
     result.sent = true;
-    result.messageId = data.id;
-
+    result.messageId = sendResult.messageId;
     await recordEmailSent(user.id, emailType);
-    logger.info({ userId: user.id, emailType, messageId: data.id }, 'Onboarding email sent successfully');
-  } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : 'Unknown error sending onboarding email';
-    result.error = errorMsg;
-    logger.error({ userId: user.id, emailType, error: errorMsg }, 'Failed to send onboarding email');
+    logger.info({ userId: user.id, emailType, messageId: sendResult.messageId }, 'Onboarding email sent successfully');
+  } else {
+    result.error = sendResult.error;
+    logger.error({ userId: user.id, emailType, statusCode: sendResult.statusCode, error: sendResult.error }, 'Failed to send onboarding email');
   }
 
   return result;

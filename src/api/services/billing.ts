@@ -9,6 +9,7 @@ import { eq } from 'drizzle-orm';
 import { db, subscriptions, users, webhookEvents } from '../db/client';
 import logger from '../../lib/logger';
 import { config } from '../../config/env';
+import { sendEmail } from '../../lib/resend';
 import {
   stripe,
   STRIPE_PRICES,
@@ -106,54 +107,25 @@ async function sendSubscriptionConfirmationEmail(params: {
   ].filter(Boolean);
   const text = textLines.join('\n');
 
-  try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${config.RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: 'ZeroToShip <briefs@zerotoship.dev>',
-        to: [params.email],
-        reply_to: 'hello@zerotoship.dev',
-        subject,
-        html,
-        text,
-      }),
-    });
+  const result = await sendEmail({ to: params.email, subject, html, text });
 
-    if (!response.ok) {
-      let errorMessage = `Resend API error (${response.status})`;
-      try {
-        const body = (await response.json()) as { message?: string };
-        if (body.message) errorMessage = `${errorMessage}: ${body.message}`;
-      } catch {
-        // Keep default fallback message when body isn't JSON.
-      }
-      logger.error(
-        { userId: params.userId, tier: params.tier, statusCode: response.status },
-        errorMessage
-      );
-      return;
-    }
-
-    const data = (await response.json()) as { id?: string };
+  if (result.success) {
     logger.info(
       {
         userId: params.userId,
         tier: params.tier,
         recipient: params.email,
-        messageId: data.id,
+        messageId: result.messageId,
       },
       'Subscription confirmation email sent'
     );
-  } catch (error) {
+  } else {
     logger.error(
       {
         userId: params.userId,
         tier: params.tier,
-        error: error instanceof Error ? error.message : String(error),
+        statusCode: result.statusCode,
+        error: result.error,
       },
       'Failed to send subscription confirmation email'
     );

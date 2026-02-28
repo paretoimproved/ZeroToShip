@@ -7,8 +7,8 @@
 
 import { eq } from 'drizzle-orm';
 import { db, users } from '../api/db/client';
-import { config as envConfig } from '../config/env';
 import logger from '../lib/logger';
+import { sendEmail } from '../lib/resend';
 
 /** Escape HTML special characters */
 function escapeHtml(text: string): string {
@@ -49,12 +49,6 @@ export async function sendSpecNotificationEmail(
   spec: unknown,
   ideaName: string
 ): Promise<void> {
-  const apiKey = envConfig.RESEND_API_KEY;
-  if (!apiKey) {
-    logger.warn('Spec notification email skipped: no Resend API key');
-    return;
-  }
-
   // Fetch user email
   const userRows = await db
     .select({ email: users.email, name: users.name })
@@ -128,41 +122,16 @@ View your spec: ${viewUrl}
 
 -- The ZeroToShip Team`;
 
-  try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: 'ZeroToShip <briefs@zerotoship.dev>',
-        to: [user.email],
-        reply_to: 'hello@zerotoship.dev',
-        subject,
-        html,
-        text,
-      }),
-    });
+  const result = await sendEmail({ to: user.email, subject, html, text });
 
-    if (!response.ok) {
-      const errorBody = await response.json().catch(() => ({ message: 'Unknown error' }));
-      logger.error(
-        { userId, specId, statusCode: response.status, error: (errorBody as { message: string }).message },
-        'Failed to send spec notification email'
-      );
-      return;
-    }
-
-    const data = await response.json() as { id: string };
+  if (result.success) {
     logger.info(
-      { userId, specId, messageId: data.id },
+      { userId, specId, messageId: result.messageId },
       'Spec notification email sent successfully'
     );
-  } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+  } else {
     logger.error(
-      { userId, specId, error: errorMsg },
+      { userId, specId, statusCode: result.statusCode, error: result.error },
       'Failed to send spec notification email'
     );
   }

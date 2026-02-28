@@ -11,6 +11,13 @@ vi.mock('../../src/lib/redis', () => ({
   getRedisClient: vi.fn(),
 }));
 
+// Mock the db module so DB fallback doesn't hit a real connection
+vi.mock('../../src/api/db/client', () => ({
+  db: {
+    execute: vi.fn().mockRejectedValue(new Error('No DB in test')),
+  },
+}));
+
 import { getRedisClient } from '../../src/lib/redis';
 import {
   acquirePipelineLock,

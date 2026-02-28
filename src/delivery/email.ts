@@ -13,7 +13,7 @@ import {
   type EmailContent,
   type EmailBuilderConfig,
 } from './email-builder';
-import { DeliveryError } from '../lib/errors';
+import { sendEmailWithRetry } from '../lib/resend';
 
 /** Send one email at a time — Resend free tier allows only 2 req/s and concurrent
  *  sends + retries easily blow past that. Sequential is the only safe approach. */
@@ -76,109 +76,16 @@ const DEFAULT_CONFIG: Required<Omit<EmailServiceConfig, 'builderConfig'>> & {
   builderConfig: {},
 };
 
-/**
- * Resend API response types
- */
-interface ResendSuccessResponse {
-  id: string;
-}
-
-interface ResendErrorResponse {
-  statusCode: number;
-  message: string;
-  name: string;
-}
-
-/**
- * Send a single email via Resend API
- */
-async function sendViaResend(
-  apiKey: string,
-  from: string,
-  to: string,
-  replyTo: string,
-  content: EmailContent
-): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-  const isRetryableStatus = (status: number) => status === 429 || status >= 500;
-
-  const MAX_ATTEMPTS = 3;
-  const BACKOFF_BASE_MS = envConfig.isTest ? 0 : 1_000;
-  const jitterMs = () => (envConfig.isTest ? 0 : Math.floor(Math.random() * 300));
-
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    try {
-      const response = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from,
-          to: [to],
-          reply_to: replyTo,
-          subject: content.subject,
-          html: content.html,
-          text: content.text,
-        }),
-      });
-
-      if (!response.ok) {
-        let parsed: Partial<ResendErrorResponse> | null = null;
-        let raw = '';
-        try {
-          if (typeof (response as unknown as { json?: unknown }).json === 'function') {
-            parsed = (await (response as unknown as { json: () => Promise<unknown> }).json()) as Partial<ResendErrorResponse>;
-          } else if (typeof (response as unknown as { text?: unknown }).text === 'function') {
-            raw = await (response as unknown as { text: () => Promise<string> }).text();
-          }
-        } catch {
-          // ignore parse errors; we'll fall back to an unknown message
-        }
-
-        const message = parsed?.message || raw || 'Unknown Resend API error';
-        const err = new DeliveryError(
-          `Resend API error (${response.status}): ${message}`,
-          { context: { to, statusCode: response.status, attempt } }
-        );
-
-        if (attempt < MAX_ATTEMPTS && isRetryableStatus(response.status)) {
-          const backoffMs = BACKOFF_BASE_MS * (2 ** (attempt - 1)) + jitterMs();
-          await sleep(backoffMs);
-          continue;
-        }
-
-        return { success: false, error: err.message };
-      }
-
-      const data = (await response.json()) as ResendSuccessResponse;
-      return { success: true, messageId: data.id };
-    } catch (error) {
-      const err = new DeliveryError(
-        error instanceof Error ? error.message : 'Unknown error',
-        { context: { to, attempt }, cause: error instanceof Error ? error : undefined }
-      );
-
-      if (attempt < MAX_ATTEMPTS) {
-        const backoffMs = BACKOFF_BASE_MS * (2 ** (attempt - 1)) + jitterMs();
-        await sleep(backoffMs);
-        continue;
-      }
-
-      return { success: false, error: err.message };
-    }
-  }
-
-  return { success: false, error: 'Email send failed after retries' };
-}
+// sendViaResend is now centralized in src/lib/resend.ts as sendEmailWithRetry
 
 /**
  * Build personalized unsubscribe URL for a subscriber
  */
-function buildUnsubscribeUrl(baseUrl: string, subscriber: Subscriber): string {
-  const token = subscriber.unsubscribeToken || subscriber.id;
-  return `${baseUrl}/unsubscribe?token=${encodeURIComponent(token)}`;
+function buildUnsubscribeUrl(baseUrl: string, subscriber: Subscriber): string | undefined {
+  if (!subscriber.unsubscribeToken) {
+    return undefined;
+  }
+  return `${baseUrl}/unsubscribe?token=${encodeURIComponent(subscriber.unsubscribeToken)}`;
 }
 
 /**
@@ -190,7 +97,6 @@ export async function sendDailyBrief(
   config: EmailServiceConfig = {}
 ): Promise<DeliveryStatus> {
   const opts = { ...DEFAULT_CONFIG, ...config };
-  const apiKey = opts.resendApiKey || envConfig.RESEND_API_KEY;
 
   const status: DeliveryStatus = {
     subscriberId: subscriber.id,
@@ -200,33 +106,28 @@ export async function sendDailyBrief(
     sentAt: new Date(),
   };
 
-  // Validate API key
-  if (!apiKey) {
-    status.status = 'failed';
-    status.error = 'No Resend API key configured';
-    return status;
-  }
-
   // Build personalized email content
+  const tokenUrl = buildUnsubscribeUrl(
+    opts.builderConfig?.baseUrl || 'https://zerotoship.dev',
+    subscriber
+  );
   const builderConfig: EmailBuilderConfig = {
     ...opts.builderConfig,
-    unsubscribeUrl: buildUnsubscribeUrl(
-      opts.builderConfig?.baseUrl || 'https://zerotoship.dev',
-      subscriber
-    ),
+    ...(tokenUrl ? { unsubscribeUrl: tokenUrl } : {}),
   };
 
   const emailContent = buildDailyEmail(briefs, subscriber.tier, builderConfig);
 
-  // Send via Resend
+  // Send via centralized Resend client (with 3x retry)
   const from = `${opts.fromName} <${opts.fromEmail}>`;
-  const result = await sendViaResend(
-    apiKey,
+  const result = await sendEmailWithRetry({
+    to: subscriber.email,
+    subject: emailContent.subject,
+    html: emailContent.html,
+    text: emailContent.text,
     from,
-    subscriber.email,
-    opts.replyTo,
-    emailContent
-  );
+    replyTo: opts.replyTo,
+  });
 
   if (result.success) {
     status.status = 'sent';

@@ -573,7 +573,6 @@ describe('Email Service', () => {
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
-            'Authorization': 'Bearer test_api_key',
             'Content-Type': 'application/json',
           }),
         })
@@ -718,7 +717,7 @@ describe('Email Service', () => {
       expect(callBody.html).toContain('my-unsub-token');
     });
 
-    it('falls back to subscriber id when no unsubscribe token', async () => {
+    it('does not leak subscriber id when no unsubscribe token', async () => {
       mockResendSuccess();
 
       const subscriber: Subscriber = {
@@ -732,7 +731,7 @@ describe('Email Service', () => {
       });
 
       const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(callBody.html).toContain('sub_fallback');
+      expect(callBody.html).not.toContain('sub_fallback');
     });
 
     it('returns pending-initialized delivery status with subscriber info', async () => {

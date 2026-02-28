@@ -5,6 +5,8 @@
  */
 
 import { config } from '../config/env';
+import logger from './logger';
+import { sendAlertEmail } from './resend';
 
 /** In-memory cooldown map: alert key → last sent timestamp */
 const alertCooldownMap = new Map<string, number>();
@@ -35,21 +37,15 @@ export async function sendPipelineFailureAlert(
   error: string,
   severity: string = 'error'
 ): Promise<void> {
-  const apiKey = config.RESEND_API_KEY;
-  const alertEmail = process.env.ALERT_EMAIL;
-
-  if (!apiKey) {
-    console.warn('[Alerts] RESEND_API_KEY not set - skipping alert');
-    return;
-  }
+  const alertEmail = config.ALERT_EMAIL;
 
   if (!alertEmail) {
-    console.warn('[Alerts] ALERT_EMAIL not set - skipping alert');
+    logger.warn('[Alerts] ALERT_EMAIL not set - skipping alert');
     return;
   }
 
   // Dedup: skip if same alert was sent within cooldown window
-  const cooldownMinutes = Number(process.env.ALERT_COOLDOWN_MINUTES) || 60;
+  const cooldownMinutes = config.ALERT_COOLDOWN_MINUTES;
   const alertKey = `${phase}:${error}`;
   const now = Date.now();
   const lastSent = alertCooldownMap.get(alertKey);
@@ -60,43 +56,31 @@ export async function sendPipelineFailureAlert(
 
   const timestamp = new Date().toISOString();
 
-  try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: 'ZeroToShip Alerts <alerts@zerotoship.dev>',
-        to: [alertEmail],
-        subject: `[ZeroToShip] Pipeline ${severity.toUpperCase()}: ${phase} phase failed`,
-        html: `
-          <h2>Pipeline Failure Alert</h2>
-          <table style="border-collapse: collapse; width: 100%;">
-            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Run ID</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(runId)}</td></tr>
-            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Phase</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(phase)}</td></tr>
-            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Severity</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(severity)}</td></tr>
-            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Error</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(error)}</td></tr>
-            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Timestamp</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(timestamp)}</td></tr>
-          </table>
-        `,
-        text: `Pipeline Failure Alert\n\nRun ID: ${runId}\nPhase: ${phase}\nSeverity: ${severity}\nError: ${error}\nTimestamp: ${timestamp}`,
-      }),
-    });
+  const result = await sendAlertEmail(
+    alertEmail,
+    `[ZeroToShip] Pipeline ${severity.toUpperCase()}: ${phase} phase failed`,
+    `
+      <h2>Pipeline Failure Alert</h2>
+      <table style="border-collapse: collapse; width: 100%;">
+        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Run ID</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(runId)}</td></tr>
+        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Phase</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(phase)}</td></tr>
+        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Severity</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(severity)}</td></tr>
+        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Error</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(error)}</td></tr>
+        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Timestamp</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(timestamp)}</td></tr>
+      </table>
+    `,
+    `Pipeline Failure Alert\n\nRun ID: ${runId}\nPhase: ${phase}\nSeverity: ${severity}\nError: ${error}\nTimestamp: ${timestamp}`
+  );
 
-    if (!response.ok) {
-      console.error('[Alerts] Failed to send alert email:', response.status);
-    }
-  } catch (err) {
-    console.error('[Alerts] Error sending alert:', err instanceof Error ? err.message : err);
+  if (!result.success) {
+    logger.error({ error: result.error, statusCode: result.statusCode }, '[Alerts] Failed to send alert email');
   }
 
   // Send SMS via Twilio for fatal alerts when configured
-  const smsTo = process.env.ALERT_SMS_TO;
-  const smsFrom = process.env.ALERT_SMS_FROM;
-  const twilioSid = process.env.TWILIO_ACCOUNT_SID;
-  const twilioToken = process.env.TWILIO_AUTH_TOKEN;
+  const smsTo = config.ALERT_SMS_TO;
+  const smsFrom = config.ALERT_SMS_FROM;
+  const twilioSid = config.TWILIO_ACCOUNT_SID;
+  const twilioToken = config.TWILIO_AUTH_TOKEN;
 
   if (severity === 'fatal' && smsTo && smsFrom && twilioSid && twilioToken) {
     try {
@@ -113,10 +97,10 @@ export async function sendPipelineFailureAlert(
         },
       );
       if (!smsResponse.ok) {
-        console.error('[Alerts] Failed to send SMS alert:', smsResponse.status);
+        logger.error('[Alerts] Failed to send SMS alert: %d', smsResponse.status);
       }
     } catch (err) {
-      console.error('[Alerts] Error sending SMS:', err instanceof Error ? err.message : err);
+      logger.error('[Alerts] Error sending SMS: %s', err instanceof Error ? err.message : err);
     }
   }
 }
@@ -133,56 +117,35 @@ export async function sendPipelineMissedRunAlert(input: {
   latestRunId?: string;
   latestRunStatus?: string;
 }): Promise<void> {
-  const apiKey = config.RESEND_API_KEY;
-  const alertEmail = process.env.ALERT_EMAIL;
-
-  if (!apiKey) {
-    console.warn('[Alerts] RESEND_API_KEY not set - skipping missed-run alert');
-    return;
-  }
+  const alertEmail = config.ALERT_EMAIL;
 
   if (!alertEmail) {
-    console.warn('[Alerts] ALERT_EMAIL not set - skipping missed-run alert');
+    logger.warn('[Alerts] ALERT_EMAIL not set - skipping missed-run alert');
     return;
   }
 
   const timestamp = new Date().toISOString();
   const subject = `[ZeroToShip] Pipeline WARNING: missed run window (${input.ageHours.toFixed(2)}h > ${input.maxAgeHours}h)`;
 
-  try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: 'ZeroToShip Alerts <alerts@zerotoship.dev>',
-        to: [alertEmail],
-        subject,
-        html: `
-          <h2>Pipeline Missed Run Alert</h2>
-          <table style="border-collapse: collapse; width: 100%;">
-            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Max Age (hours)</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(String(input.maxAgeHours))}</td></tr>
-            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Age (hours)</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(input.ageHours.toFixed(2))}</td></tr>
-            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Latest Successful Run</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(input.latestSuccessfulRunId || 'N/A')}</td></tr>
-            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Latest Successful Completed</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(input.latestSuccessfulCompletedAt || 'N/A')}</td></tr>
-            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Latest Run</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(input.latestRunId || 'N/A')}</td></tr>
-            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Latest Run Status</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(input.latestRunStatus || 'N/A')}</td></tr>
-            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Timestamp</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(timestamp)}</td></tr>
-          </table>
-        `,
-        text: `Pipeline Missed Run Alert\n\nMax age (hours): ${input.maxAgeHours}\nAge (hours): ${input.ageHours.toFixed(2)}\nLatest successful run: ${input.latestSuccessfulRunId || 'N/A'}\nLatest successful completed: ${input.latestSuccessfulCompletedAt || 'N/A'}\nLatest run: ${input.latestRunId || 'N/A'}\nLatest run status: ${input.latestRunStatus || 'N/A'}\nTimestamp: ${timestamp}`,
-      }),
-    });
+  const result = await sendAlertEmail(
+    alertEmail,
+    subject,
+    `
+      <h2>Pipeline Missed Run Alert</h2>
+      <table style="border-collapse: collapse; width: 100%;">
+        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Max Age (hours)</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(String(input.maxAgeHours))}</td></tr>
+        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Age (hours)</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(input.ageHours.toFixed(2))}</td></tr>
+        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Latest Successful Run</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(input.latestSuccessfulRunId || 'N/A')}</td></tr>
+        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Latest Successful Completed</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(input.latestSuccessfulCompletedAt || 'N/A')}</td></tr>
+        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Latest Run</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(input.latestRunId || 'N/A')}</td></tr>
+        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Latest Run Status</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(input.latestRunStatus || 'N/A')}</td></tr>
+        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Timestamp</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(timestamp)}</td></tr>
+      </table>
+    `,
+    `Pipeline Missed Run Alert\n\nMax age (hours): ${input.maxAgeHours}\nAge (hours): ${input.ageHours.toFixed(2)}\nLatest successful run: ${input.latestSuccessfulRunId || 'N/A'}\nLatest successful completed: ${input.latestSuccessfulCompletedAt || 'N/A'}\nLatest run: ${input.latestRunId || 'N/A'}\nLatest run status: ${input.latestRunStatus || 'N/A'}\nTimestamp: ${timestamp}`
+  );
 
-    if (!response.ok) {
-      console.error('[Alerts] Failed to send missed-run alert email:', response.status);
-    }
-  } catch (err) {
-    console.error(
-      '[Alerts] Error sending missed-run alert:',
-      err instanceof Error ? err.message : err
-    );
+  if (!result.success) {
+    logger.error({ error: result.error, statusCode: result.statusCode }, '[Alerts] Failed to send missed-run alert email');
   }
 }
