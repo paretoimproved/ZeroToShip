@@ -1,0 +1,16 @@
+All 5 issues implemented. Here's a summary of the changes:
+
+### `src/delivery/email-builder.ts`
+
+| Issue | Change |
+|-------|--------|
+| **1: Tagline too abstract** | Added `firstSentence(proposedSolution)` description line below the tagline in the free tier hero section (HTML + plain text) |
+| **2: Too many CTAs** | Removed `buildInlineUpgradeBanner` call from `buildDailyEmail`. Replaced "View problem →" link row with the idea name itself being a link. Removed "View problem" lines from plain text |
+| **3: Locked cards punitive** | Removed `opacity: 0.6`, replaced gray placeholder bar with effort badge, replaced "PRO" badge with "Unlock spec →" link to pricing. Plain text uses `[Weekend] — Unlock spec: {url}` format |
+| **4: Bottom CTA lacks urgency** | Rewritten to compute effort-level counts from actual briefs (e.g., "Today's lineup has 4 weekend builds") with aspirational sub-copy. Updated signature to accept `briefs` array instead of `freeCount`/`totalCount` |
+| **5: "Top score" insider-speak** | `buildStatBar` now shows "Top pick: weekend build" instead of "Top score: 52.0". Same change in plain text stat line |
+
+### `tests/delivery/email.test.ts`
+- Updated 6 assertions that checked for `[PRO]`, `>PRO</span>`, `"Every problem. Every spec. Every day."` to match the new content
+- 5 snapshots auto-updated
+- **All 1406 tests pass, build clean, types clean**
