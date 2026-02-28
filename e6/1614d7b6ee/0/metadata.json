@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.4.7",
+  "checkpoint_id": "e61614d7b6ee",
+  "session_id": "d2ca0992-246c-410b-b221-47e739652b9c",
+  "strategy": "auto-commit",
+  "created_at": "2026-02-28T20:01:29.373162Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/api/routes/specs.ts",
+    "src/api/services/ideas.ts",
+    "src/delivery/spec-notification.ts",
+    "web/app/archive/page.tsx",
+    "web/app/idea/[id]/page.tsx",
+    "web/components/GenerateSpecCta.tsx",
+    "web/components/IdeaBriefCard.tsx",
+    "web/components/ToastProvider.tsx",
+    "web/lib/api.ts"
+  ],
+  "agent": "Claude Code",
+  "token_usage": {
+    "input_tokens": 60,
+    "cache_creation_tokens": 87991,
+    "cache_read_tokens": 4159644,
+    "output_tokens": 15098,
+    "api_call_count": 59
+  }
+}

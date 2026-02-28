@@ -1,0 +1,194 @@
+Implement the following plan:
+
+# Fix Generate Spec — Visibility, Incentive, UX, Notifications
+
+## Context
+The "Generate Spec" feature lets users turn an idea brief into a developer-ready spec (user stories, DB schema, API routes, CLAUDE.md). The user reported 4 problems:
+1. The button is hidden below the fold on idea pages and completely missing from the archive modal
+2. Free users have no preview/demo of what a spec contains — no incentive to upgrade
+3. After clicking generate, errors cause a page refresh with no persistent feedback
+4. No notification or link when the spec completes — user doesn't know where to find it
+
+## Plan
+
+### 1. Backend: Add `GET /specs/usage` endpoint
+**File:** `src/api/routes/specs.ts`
+
+Add a new route **before** the `/:id` route (so Fastify doesn't parse "usage" as a UUID param):
+
+```
+GET /api/v1/specs/usage → { used: number, limit: number, tier: string }
+```
+
+- Import `getMonthlySpecCount` from `../services/ideas` and `getMonthlySpecLimit` from `../config/tiers`
+- Requires `requireAuth` middleware
+- Returns the user's current month spec count, their tier limit, and tier name
+
+### 2. Backend: Add quota info to notification email
+**File:** `src/api/services/ideas.ts` (line 614)
+
+Pass `{ used: used + 1, limit }` to `sendSpecNotificationEmail` so the email shows remaining quota.
+
+**File:** `src/delivery/spec-notification.ts`
+
+- Add optional `quotaInfo?: { used: number; limit: number }` param to `sendSpecNotificationEmail`
+- Add a line to HTML + text templates: "You've used X of Y spec generations this month."
+
+### 3. Frontend: Widen toast `description` to `React.ReactNode`
+**File:** `web/components/ToastProvider.tsx`
+
+Change `description` type from `string` to `React.ReactNode` in:
+- `ToastInput` interface (line 10)
+- `ToastItem` interface (line 17)
+- `ToastContextValue` helper method signatures (lines 23-25)
+
+This is backward-compatible (strings are valid ReactNode) and lets us put a link in the toast.
+
+### 4. Frontend: Add `specCta` slot to IdeaBriefCard
+**File:** `web/components/IdeaBriefCard.tsx`
+
+- Add `specCta?: React.ReactNode` to `IdeaBriefCardProps` (line 23)
+- Render it as a footer section **inside** the `<article>`, after the tab panel (after line 178, before closing `</article>`):
+  ```tsx
+  {specCta && (
+    <div className="px-6 pb-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+      {specCta}
+    </div>
+  )}
+  ```
+
+This is the same slot pattern used by `bookmarkSlot` — keeps the card dumb.
+
+### 5. Frontend: Create `GenerateSpecCta` component
+**New file:** `web/components/GenerateSpecCta.tsx`
+
+Self-contained component that handles all spec generation UX:
+
+**Props:**
+```typescript
+interface GenerateSpecCtaProps {
+  ideaId: string;
+  ideaName: string;
+  isAuthenticated: boolean;
+  userTier?: string;
+  specUsage?: { used: number; limit: number };
+  onSpecGenerated?: (spec: AgentSpec, generationId: string) => void;
+}
+```
+
+**Rendering logic (3 states):**
+
+1. **Not authenticated** → "Sign up to generate specs" with link to `/signup`
+2. **Quota exhausted** (`specUsage.used >= specUsage.limit`) → Upgrade teaser:
+   - Left: "You've used all X generations this month" + description of what specs include (user stories, DB schemas, API routes, CLAUDE.md instructions)
+   - Right: "Upgrade to Pro" button linking to `/pricing`
+3. **Quota available** → Generate button + quota indicator:
+   - Button: "Generate Agent Spec" with code icon, spinner when loading
+   - Below button: "X of Y remaining this month" in muted text
+
+**Behavior on click:**
+- Calls `api.generateSpec(ideaId)`
+- On success: fires `toast.push()` with variant "success", title "Spec generated!", and a JSX description containing a `<Link>` to `/specs/{generationId}`. Duration 8s (longer since it has an actionable link). Calls `onSpecGenerated` callback.
+- On error: fires `toast.error()` with the error message
+- Loading state: button disabled, shows spinner + "Generating..."
+
+### 6. Frontend: Add API client method
+**File:** `web/lib/api.ts`
+
+Add `getSpecUsage()`:
+```typescript
+async getSpecUsage(): Promise<{ used: number; limit: number; tier: string }> {
+  return this.request('/specs/usage');
+}
+```
+
+### 7. Frontend: Refactor idea detail page
+**File:** `web/app/idea/[id]/page.tsx`
+
+- Import `GenerateSpecCta`, `useToast`
+- Add `specUsage` state, fetch via `api.getSpecUsage()` on mount (when authenticated)
+- Remove `specError` state entirely (errors go through toast now)
+- Pass `specCta` prop to `IdeaBriefCard`:
+  ```tsx
+  <IdeaBriefCard
+    brief={brief}
+    gated={!isAuthenticated}
+    specCta={
+      <GenerateSpecCta
+        ideaId={brief.id}
+        ideaName={brief.name}
+        isAuthenticated={isAuthenticated}
+        userTier={user?.tier}
+        specUsage={specUsage}
+        onSpecGenerated={(spec, id) => {
+          setSpec(spec);
+          setGenerationId(id);
+          setSpecUsage(prev => prev ? { ...prev, used: prev.used + 1 } : prev);
+        }}
+      />
+    }
+  />
+  ```
+- Keep the `AgentSpecDisplay` rendering below the card (when `spec` is set) — the CTA transforms into a "View in My Specs" link after generation
+- Remove the standalone spec section card (`<div className="mt-8">` block, lines 197-257)
+
+### 8. Frontend: Add spec CTA to archive modal
+**File:** `web/app/archive/page.tsx`
+
+- Import `GenerateSpecCta`
+- Add `specUsage` state + fetch (same pattern as idea page)
+- Pass `specCta` prop to the modal's `IdeaBriefCard` (line 930):
+  ```tsx
+  <IdeaBriefCard
+    brief={selectedIdea}
+    gated={!isAuthenticated}
+    gatedAction="signup"
+    defaultTab="problem"
+    specCta={
+      <GenerateSpecCta
+        ideaId={selectedIdea.id}
+        ideaName={selectedIdea.name}
+        isAuthenticated={isAuthenticated}
+        userTier={user?.tier}
+        specUsage={specUsage}
+        onSpecGenerated={(_, id) => {
+          setSpecUsage(prev => prev ? { ...prev, used: prev.used + 1 } : prev);
+        }}
+      />
+    }
+  />
+  ```
+- In the archive modal, the toast with link to `/specs/{id}` is the primary success feedback (no inline spec display needed)
+
+## File Summary
+
+| # | File | Action |
+|---|------|--------|
+| 1 | `src/api/routes/specs.ts` | Add `GET /specs/usage` route |
+| 2 | `src/api/services/ideas.ts` | Pass quota info to email call |
+| 3 | `src/delivery/spec-notification.ts` | Add quota info param + email line |
+| 4 | `web/components/ToastProvider.tsx` | Widen `description` to `ReactNode` |
+| 5 | `web/components/IdeaBriefCard.tsx` | Add `specCta` slot prop + footer |
+| 6 | `web/components/GenerateSpecCta.tsx` | **New** — self-contained CTA component |
+| 7 | `web/lib/api.ts` | Add `getSpecUsage()` method |
+| 8 | `web/app/idea/[id]/page.tsx` | Refactor to use `GenerateSpecCta` via slot |
+| 9 | `web/app/archive/page.tsx` | Add `specCta` to modal's IdeaBriefCard |
+
+## Verification
+```bash
+npm run build && npm test   # Backend types + all 1406 tests
+cd web && npx next build    # Frontend compilation
+```
+
+Manual verification:
+- Visit `/idea/{id}` — CTA should be inside the card, not below it
+- Open archive modal — CTA should appear at bottom of card
+- Click Generate — toast appears with link to `/specs/{id}`
+- Error case — error toast appears, no red inline text
+- Exhaust quota — upgrade teaser shows instead of button
+- Check email — should include quota info line
+
+
+If you need specific details from before exiting plan mode (like exact code snippets, error messages, or content you generated), read the full transcript at: /Users/brandonqueener/.claude/projects/-Users-brandonqueener-Desktop-github-Projects-IdeaForge/ce8b29a3-be76-45ce-812c-61fd6c647951.jsonl
+
+If this plan can be broken down into multiple independent tasks, consider using the TeamCreate tool to create a team and parallelize the work.
