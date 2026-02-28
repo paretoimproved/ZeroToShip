@@ -245,6 +245,7 @@ export async function requireAuth(
       code: 'UNAUTHORIZED',
       message: 'Authentication required',
     });
+    return;
   }
 }
 
@@ -264,6 +265,7 @@ export async function requireEnterprise(
       code: 'ENTERPRISE_REQUIRED',
       message: 'This endpoint requires an Enterprise subscription',
     });
+    return;
   }
 }
 
@@ -283,6 +285,7 @@ export async function requirePro(
       code: 'PRO_REQUIRED',
       message: 'This endpoint requires a Pro or Enterprise subscription',
     });
+    return;
   }
 }
 
@@ -333,6 +336,7 @@ export async function requireAdmin(
       code: 'ADMIN_REQUIRED',
       message: 'Admin access required',
     });
+    return;
   }
 }
 

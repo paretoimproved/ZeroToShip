@@ -10,5 +10,5 @@ vault
 data
 tests
 *.md
-web/.next
-web/node_modules
+web
+docs
