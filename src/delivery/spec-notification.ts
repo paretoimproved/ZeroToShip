@@ -47,7 +47,8 @@ export async function sendSpecNotificationEmail(
   userId: string,
   specId: string,
   spec: unknown,
-  ideaName: string
+  ideaName: string,
+  quotaInfo?: { used: number; limit: number }
 ): Promise<void> {
   // Fetch user email
   const userRows = await db
@@ -103,6 +104,7 @@ export async function sendSpecNotificationEmail(
       <a href="${escapeHtml(viewUrl)}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-weight: 600;">View Full Spec</a>
     </p>
     <p style="color: #666; font-size: 14px; text-align: center;">Copy the spec to your clipboard or download it as Markdown from the viewer.</p>
+    ${quotaInfo ? `<p style="color: #999; font-size: 13px; text-align: center; margin-top: 12px;">You've used ${quotaInfo.used} of ${quotaInfo.limit} spec generations this month.</p>` : ''}
   </div>
   <div style="padding: 16px 24px; text-align: center; background: #f5f5f5; color: #888; font-size: 12px;">
     <p>You're receiving this because you generated a spec on ZeroToShip.</p>
@@ -119,7 +121,7 @@ ${stack.length > 0 ? `Tech Stack: ${stack.join(', ')}` : ''}
 ${mvpCount > 0 ? `MVP Scope: ${mvpCount} must-have features` : ''}
 
 View your spec: ${viewUrl}
-
+${quotaInfo ? `\nYou've used ${quotaInfo.used} of ${quotaInfo.limit} spec generations this month.` : ''}
 -- The ZeroToShip Team`;
 
   const result = await sendEmail({ to: user.email, subject, html, text });

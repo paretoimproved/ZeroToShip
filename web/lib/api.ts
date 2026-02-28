@@ -291,6 +291,10 @@ class ApiClient {
   }
 
   // Specs endpoints
+  async getSpecUsage(): Promise<{ used: number; limit: number; tier: string }> {
+    return this.request('/specs/usage');
+  }
+
   async getSpecs(page = 1, limit = 20): Promise<{ specs: SpecListItem[]; total: number; page: number; limit: number }> {
     return this.request(`/specs?page=${page}&limit=${limit}`);
   }

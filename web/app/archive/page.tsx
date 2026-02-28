@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Link from "next/link";
 import IdeaBriefCard from "@/components/IdeaBriefCard";
+import GenerateSpecCta from "@/components/GenerateSpecCta";
 import BookmarkButton from "@/components/BookmarkButton";
 import { Spinner } from "@/components/icons";
 import { PlatformIcon } from "@/components/ui";
@@ -289,6 +290,7 @@ export default function ArchivePage() {
   const [preview, setPreview] = useState(false);
   const [savedIdeaIds, setSavedIdeaIds] = useState<Set<string>>(new Set());
   const [showSavedOnly, setShowSavedOnly] = useState(false);
+  const [specUsage, setSpecUsage] = useState<{ used: number; limit: number } | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const { isAuthenticated, user } = useAuth();
@@ -312,6 +314,12 @@ export default function ArchivePage() {
     }
     fetchSaved();
     return () => { cancelled = true; };
+  }, [isAuthenticated]);
+
+  // Fetch spec generation usage for the logged-in user
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    api.getSpecUsage().then(setSpecUsage).catch(() => {});
   }, [isAuthenticated]);
 
   // Callback for toggling a saved idea
@@ -932,6 +940,18 @@ export default function ArchivePage() {
               gated={!isAuthenticated}
               gatedAction="signup"
               defaultTab="problem"
+              specCta={
+                <GenerateSpecCta
+                  ideaId={selectedIdea.id}
+                  ideaName={selectedIdea.name}
+                  isAuthenticated={isAuthenticated}
+                  userTier={user?.tier}
+                  specUsage={specUsage ?? undefined}
+                  onSpecGenerated={() => {
+                    setSpecUsage((prev) => prev ? { ...prev, used: prev.used + 1 } : prev);
+                  }}
+                />
+              }
             />
           </div>
         </div>

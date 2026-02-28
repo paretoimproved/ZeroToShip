@@ -7,22 +7,22 @@ type ToastVariant = "success" | "info" | "error";
 export interface ToastInput {
   variant?: ToastVariant;
   title: string;
-  description?: string;
+  description?: React.ReactNode;
   durationMs?: number;
 }
 
 interface ToastItem extends Required<Pick<ToastInput, "title">> {
   id: string;
   variant: ToastVariant;
-  description?: string;
+  description?: React.ReactNode;
   durationMs: number;
 }
 
 interface ToastContextValue {
   push: (toast: ToastInput) => void;
-  success: (title: string, description?: string) => void;
-  info: (title: string, description?: string) => void;
-  error: (title: string, description?: string) => void;
+  success: (title: string, description?: React.ReactNode) => void;
+  info: (title: string, description?: React.ReactNode) => void;
+  error: (title: string, description?: React.ReactNode) => void;
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);

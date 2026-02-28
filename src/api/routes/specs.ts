@@ -2,6 +2,7 @@
  * Specs Routes for ZeroToShip API
  *
  * Endpoints:
+ * - GET /api/v1/specs/usage - Get current month spec generation usage
  * - GET /api/v1/specs - List user's generated specs
  * - GET /api/v1/specs/:id - Get a single spec with full detail
  */
@@ -13,9 +14,38 @@ import { requireAuth } from '../middleware/auth';
 import { db, specGenerations, ideas } from '../db/client';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { ApiErrorSchema } from '../schemas';
+import { getMonthlySpecCount } from '../services/ideas';
+import { getMonthlySpecLimit } from '../config/tiers';
 
 export const specsRoutes: FastifyPluginAsync = async (fastify) => {
   const app = fastify.withTypeProvider<ZodTypeProvider>();
+
+  /**
+   * GET /api/v1/specs/usage
+   * Get the authenticated user's spec generation usage for the current month
+   */
+  app.get(
+    '/usage',
+    {
+      preHandler: [requireAuth],
+      schema: {
+        response: {
+          200: z.object({
+            used: z.number(),
+            limit: z.number(),
+            tier: z.string(),
+          }),
+        },
+      },
+    },
+    async (request, reply) => {
+      const used = await getMonthlySpecCount(request.userId!);
+      const tier = request.userTier ?? 'free';
+      const limit = getMonthlySpecLimit(tier);
+
+      return reply.send({ used, limit, tier });
+    }
+  );
 
   /**
    * GET /api/v1/specs

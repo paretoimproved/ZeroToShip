@@ -611,7 +611,7 @@ export async function generateSpecForIdea(
     .returning({ id: specGenerations.id });
 
   // Fire-and-forget notification email
-  sendSpecNotificationEmail(userId, row.id, spec, idea.name).catch((err) =>
+  sendSpecNotificationEmail(userId, row.id, spec, idea.name, { used: used + 1, limit }).catch((err) =>
     logger.error({ err, userId, specId: row.id }, 'Failed to send spec notification email')
   );
 

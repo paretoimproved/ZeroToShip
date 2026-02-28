@@ -29,6 +29,8 @@ interface IdeaBriefCardProps {
   defaultTab?: TabId;
   /** Optional bookmark button to render in the card header */
   bookmarkSlot?: React.ReactNode;
+  /** Optional spec generation CTA to render as a card footer */
+  specCta?: React.ReactNode;
 }
 
 export default function IdeaBriefCard({
@@ -39,6 +41,7 @@ export default function IdeaBriefCard({
   gatedAction = "signup",
   defaultTab = "problem",
   bookmarkSlot,
+  specCta,
 }: IdeaBriefCardProps) {
   const hasSources = brief.sources && brief.sources.length > 0;
   const uniquePlatforms = hasSources
@@ -176,6 +179,12 @@ export default function IdeaBriefCard({
           </div>
         )}
       </div>
+
+      {specCta && (
+        <div className="px-6 pb-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+          {specCta}
+        </div>
+      )}
     </article>
   );
 }
