@@ -39,7 +39,7 @@ const plans = [
   },
   {
     id: "pro",
-    name: "Builder",
+    name: "Pro",
     price: "$19",
     period: "per month",
     priceKey: "pro_monthly" as PriceKey,
@@ -53,7 +53,7 @@ const plans = [
       "Export to PDF/Notion",
       "Priority support",
     ],
-    cta: "Upgrade to Builder",
+    cta: "Upgrade to Pro",
     highlighted: true,
   },
   {
@@ -65,7 +65,7 @@ const plans = [
     yearlyPriceKey: "enterprise_yearly" as PriceKey,
     yearlyPrice: "$990/year (save 2 months)",
     features: [
-      "Everything in Builder",
+      "Everything in Pro",
       "Custom idea categories",
       "API access",
       "Team sharing (up to 10)",
@@ -78,7 +78,7 @@ const plans = [
 
 const TIER_LABELS: Record<Subscription["plan"], string> = {
   free: "Free",
-  pro: "Builder",
+  pro: "Pro",
   enterprise: "Enterprise",
 };
 

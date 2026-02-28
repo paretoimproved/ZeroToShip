@@ -41,6 +41,9 @@ export default function IdeaBriefCard({
   bookmarkSlot,
 }: IdeaBriefCardProps) {
   const hasSources = brief.sources && brief.sources.length > 0;
+  const uniquePlatforms = hasSources
+    ? [...new Set(brief.sources!.map((s) => s.platform))]
+    : [];
   const tabs: readonly TabId[] = hasSources ? allTabs : allTabs.filter((t) => t !== "sources");
 
   const [activeTab, setActiveTab] = useState<TabId>(defaultTab);
@@ -98,6 +101,21 @@ export default function IdeaBriefCard({
           <div className="flex flex-wrap items-center gap-2 sm:flex-shrink-0 sm:max-w-[55%] min-w-0">
             <ScoreBadge score={brief.priorityScore} size="sm" />
             <EffortBadge effort={brief.effortEstimate} size="sm" />
+            {hasSources && (
+              <button
+                type="button"
+                onClick={() => setActiveTab("sources")}
+                className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 dark:bg-gray-800 px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                title={`${brief.sources!.length} source${brief.sources!.length === 1 ? "" : "s"}`}
+              >
+                <span className="inline-flex items-center gap-0.5">
+                  {uniquePlatforms.slice(0, 3).map((platform) => (
+                    <PlatformIcon key={platform} platform={platform} size="sm" />
+                  ))}
+                </span>
+                <span>{brief.sources!.length} source{brief.sources!.length === 1 ? "" : "s"}</span>
+              </button>
+            )}
             {bookmarkSlot}
           </div>
         </div>
@@ -348,14 +366,14 @@ function GatedPanel({ action = "signup" }: { action?: "signup" | "upgrade" }) {
       </h3>
       <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
         {isUpgrade
-          ? "Upgrade to Builder to unlock the complete idea breakdown including technical specs, business model, and go-to-market strategy."
+          ? "Upgrade to Pro to unlock the complete idea breakdown including technical specs, business model, and go-to-market strategy."
           : "Sign up to unlock the complete idea breakdown including technical specs, business model, and go-to-market strategy."}
       </p>
       <Link
         href={isUpgrade ? "/pricing" : "/signup"}
         className="inline-block rounded-lg bg-primary-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
       >
-        {isUpgrade ? "Upgrade to Builder" : "Sign Up"}
+        {isUpgrade ? "Upgrade to Pro" : "Sign Up"}
       </Link>
     </div>
   );

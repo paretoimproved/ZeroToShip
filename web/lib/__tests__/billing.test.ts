@@ -161,7 +161,7 @@ describe('Billing utilities', () => {
     it('should have correct pro monthly values', () => {
       expect(PRICE_DISPLAY.pro_monthly.amount).toBe(1900);
       expect(PRICE_DISPLAY.pro_monthly.interval).toBe('month');
-      expect(PRICE_DISPLAY.pro_monthly.name).toBe('Builder');
+      expect(PRICE_DISPLAY.pro_monthly.name).toBe('Pro');
     });
 
     it('should have correct pro yearly values', () => {

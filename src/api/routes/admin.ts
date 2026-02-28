@@ -6,18 +6,74 @@
  */
 
 import type { FastifyPluginAsync } from 'fastify';
+import { ZodTypeProvider } from 'fastify-type-provider-zod';
+import { z } from 'zod';
 import { requireAdmin } from '../middleware/auth';
 import { runPipeline, DEFAULT_PIPELINE_CONFIG, generateRunId } from '../../scheduler';
-import { db, ideas, subscriptions, users, pipelineRuns, emailLogs } from '../db/client';
+import { db, ideas, subscriptions, users, userPreferences, pipelineRuns, emailLogs } from '../db/client';
 import { and, eq, count, desc, sql, inArray } from 'drizzle-orm';
 import { runDeliverPhase } from '../../scheduler/phases/deliver';
 import { sendDailyBriefsBatch, type Subscriber } from '../../delivery/email';
+import type { PipelineConfig } from '../../scheduler/types';
+import type { IdeaBrief } from '../../generation/brief-generator';
 
-export const adminRoutes: FastifyPluginAsync = async (server) => {
+// ─── Shared param schemas ────────────────────────────────────────────────────
+
+const RunIdParamsSchema = z.object({
+  runId: z.string().min(1),
+});
+
+// ─── Request body schemas ────────────────────────────────────────────────────
+
+const PipelineRunBodySchema = z.object({
+  dryRun: z.boolean().optional(),
+  skipDelivery: z.boolean().optional(),
+  hoursBack: z.number().int().positive().optional(),
+  maxBriefs: z.number().int().positive().optional(),
+  generationMode: z.enum(['legacy', 'graph']).optional(),
+  scrapers: z.object({
+    reddit: z.boolean().optional(),
+    hn: z.boolean().optional(),
+    twitter: z.boolean().optional(),
+    github: z.boolean().optional(),
+  }).optional(),
+  clusteringThreshold: z.number().min(0).max(1).optional(),
+  minPriorityScore: z.number().min(0).max(100).optional(),
+  minFrequencyForGap: z.number().int().positive().optional(),
+  publishGateEnabled: z.boolean().optional(),
+  publishGateConfidenceThreshold: z.number().min(0).max(1).optional(),
+}).optional();
+
+const PublishApproveBodySchema = z.object({
+  briefIds: z.array(z.string()).optional(),
+}).optional();
+
+const PublishRejectBodySchema = z.object({
+  reason: z.string().optional(),
+}).optional();
+
+// ─── Query param schemas ─────────────────────────────────────────────────────
+
+const RunsQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  status: z.enum(['completed', 'failed', 'needs_review']).optional(),
+});
+
+const EmailLogsQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  status: z.string().optional(),
+  runId: z.string().optional(),
+});
+
+export const adminRoutes: FastifyPluginAsync = async (fastify) => {
+  const app = fastify.withTypeProvider<ZodTypeProvider>();
+
   /**
    * GET /api/v1/admin/pipeline-status
    */
-  server.get(
+  app.get(
     '/pipeline-status',
     { preHandler: [requireAdmin] },
     async (request, reply) => {
@@ -58,7 +114,7 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
   /**
    * GET /api/v1/admin/system-health
    */
-  server.get(
+  app.get(
     '/system-health',
     { preHandler: [requireAdmin] },
     async (request, reply) => {
@@ -97,23 +153,16 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
    * POST /api/v1/admin/pipeline/run
    * Trigger a pipeline run. Returns immediately; admin polls /pipeline-status.
    */
-  server.post(
+  app.post(
     '/pipeline/run',
-    { preHandler: [requireAdmin] },
+    {
+      preHandler: [requireAdmin],
+      schema: {
+        body: PipelineRunBodySchema,
+      },
+    },
     async (request, reply) => {
-      const body = request.body as {
-        dryRun?: boolean;
-        skipDelivery?: boolean;
-        hoursBack?: number;
-        maxBriefs?: number;
-        generationMode?: 'legacy' | 'graph';
-        scrapers?: { reddit?: boolean; hn?: boolean; twitter?: boolean; github?: boolean };
-        clusteringThreshold?: number;
-        minPriorityScore?: number;
-        minFrequencyForGap?: number;
-        publishGateEnabled?: boolean;
-        publishGateConfidenceThreshold?: number;
-      } | undefined;
+      const body = request.body;
 
       const pipelineConfig = {
         ...DEFAULT_PIPELINE_CONFIG,
@@ -167,7 +216,7 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
    * GET /api/v1/admin/users
    * List all users with tier info
    */
-  server.get(
+  app.get(
     '/users',
     { preHandler: [requireAdmin] },
     async (request, reply) => {
@@ -198,7 +247,7 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
    * GET /api/v1/admin/stats/overview
    * Overview stats for admin dashboard
    */
-  server.get(
+  app.get(
     '/stats/overview',
     { preHandler: [requireAdmin] },
     async (request, reply) => {
@@ -234,356 +283,415 @@ export const adminRoutes: FastifyPluginAsync = async (server) => {
    * GET /api/v1/admin/runs
    * Paginated run history
    */
-  server.get('/runs', { preHandler: [requireAdmin] }, async (request, reply) => {
-    const query = request.query as { page?: string; limit?: string; status?: string };
-    const page = Math.max(1, parseInt(query.page || '1'));
-    const limit = Math.min(100, Math.max(1, parseInt(query.limit || '20')));
-    const offset = (page - 1) * limit;
+  app.get(
+    '/runs',
+    {
+      preHandler: [requireAdmin],
+      schema: {
+        querystring: RunsQuerySchema,
+      },
+    },
+    async (request, reply) => {
+      const query = request.query;
+      const page = query.page;
+      const limit = query.limit;
+      const offset = (page - 1) * limit;
 
-    // Select all columns except phaseResults (large JSONB)
-    const runListColumns = {
-      id: pipelineRuns.id,
-      runId: pipelineRuns.runId,
-      status: pipelineRuns.status,
-      startedAt: pipelineRuns.startedAt,
-      completedAt: pipelineRuns.completedAt,
-      config: pipelineRuns.config,
-      phases: pipelineRuns.phases,
-      stats: pipelineRuns.stats,
-      phaseStats: pipelineRuns.phaseStats,
-      generationMode: pipelineRuns.generationMode,
-      generationDiagnostics: pipelineRuns.generationDiagnostics,
-      lastCompletedPhase: pipelineRuns.lastCompletedPhase,
-      success: pipelineRuns.success,
-      totalDuration: pipelineRuns.totalDuration,
-      errors: pipelineRuns.errors,
-      apiMetrics: pipelineRuns.apiMetrics,
-      briefSummaries: pipelineRuns.briefSummaries,
-      updatedAt: pipelineRuns.updatedAt,
-    };
+      // Select all columns except phaseResults (large JSONB)
+      const runListColumns = {
+        id: pipelineRuns.id,
+        runId: pipelineRuns.runId,
+        status: pipelineRuns.status,
+        startedAt: pipelineRuns.startedAt,
+        completedAt: pipelineRuns.completedAt,
+        config: pipelineRuns.config,
+        phases: pipelineRuns.phases,
+        stats: pipelineRuns.stats,
+        phaseStats: pipelineRuns.phaseStats,
+        generationMode: pipelineRuns.generationMode,
+        generationDiagnostics: pipelineRuns.generationDiagnostics,
+        lastCompletedPhase: pipelineRuns.lastCompletedPhase,
+        success: pipelineRuns.success,
+        totalDuration: pipelineRuns.totalDuration,
+        errors: pipelineRuns.errors,
+        apiMetrics: pipelineRuns.apiMetrics,
+        briefSummaries: pipelineRuns.briefSummaries,
+        updatedAt: pipelineRuns.updatedAt,
+      };
 
-    const statusFilter = query.status === 'completed'
-      ? eq(pipelineRuns.status, 'completed')
-      : query.status === 'failed'
-        ? eq(pipelineRuns.status, 'failed')
-        : query.status === 'needs_review'
-          ? eq(pipelineRuns.status, 'needs_review')
-          : undefined;
+      const statusFilter = query.status === 'completed'
+        ? eq(pipelineRuns.status, 'completed')
+        : query.status === 'failed'
+          ? eq(pipelineRuns.status, 'failed')
+          : query.status === 'needs_review'
+            ? eq(pipelineRuns.status, 'needs_review')
+            : undefined;
 
-    const baseQuery = statusFilter
-      ? db.select(runListColumns).from(pipelineRuns).where(statusFilter)
-      : db.select(runListColumns).from(pipelineRuns);
+      const baseQuery = statusFilter
+        ? db.select(runListColumns).from(pipelineRuns).where(statusFilter)
+        : db.select(runListColumns).from(pipelineRuns);
 
-    const countQuery = statusFilter
-      ? db.select({ count: count() }).from(pipelineRuns).where(statusFilter)
-      : db.select({ count: count() }).from(pipelineRuns);
+      const countQuery = statusFilter
+        ? db.select({ count: count() }).from(pipelineRuns).where(statusFilter)
+        : db.select({ count: count() }).from(pipelineRuns);
 
-    const [runs, totalResult] = await Promise.all([
-      baseQuery.orderBy(desc(pipelineRuns.startedAt)).limit(limit).offset(offset),
-      countQuery,
-    ]);
+      const [runs, totalResult] = await Promise.all([
+        baseQuery.orderBy(desc(pipelineRuns.startedAt)).limit(limit).offset(offset),
+        countQuery,
+      ]);
 
-    return reply.send({
-      runs,
-      total: totalResult[0]?.count || 0,
-      page,
-      limit,
-    });
-  });
+      return reply.send({
+        runs,
+        total: totalResult[0]?.count || 0,
+        page,
+        limit,
+      });
+    }
+  );
 
   /**
    * GET /api/v1/admin/runs/:runId
    * Single run detail
    */
-  server.get('/runs/:runId', { preHandler: [requireAdmin] }, async (request, reply) => {
-    const { runId } = request.params as { runId: string };
-    const result = await db.select().from(pipelineRuns).where(eq(pipelineRuns.runId, runId)).limit(1);
+  app.get(
+    '/runs/:runId',
+    {
+      preHandler: [requireAdmin],
+      schema: {
+        params: RunIdParamsSchema,
+      },
+    },
+    async (request, reply) => {
+      const { runId } = request.params;
+      const result = await db.select().from(pipelineRuns).where(eq(pipelineRuns.runId, runId)).limit(1);
 
-    if (result.length === 0) {
-      return reply.status(404).send({ code: 'NOT_FOUND', message: 'Run not found' });
+      if (result.length === 0) {
+        return reply.status(404).send({ code: 'NOT_FOUND', message: 'Run not found' });
+      }
+
+      return reply.send({ run: result[0] });
     }
-
-    return reply.send({ run: result[0] });
-  });
+  );
 
   /**
    * POST /api/v1/admin/runs/:runId/publish/approve
    * Approve a publish-gated run: publish selected ideas and execute delivery.
    */
-  server.post('/runs/:runId/publish/approve', { preHandler: [requireAdmin] }, async (request, reply) => {
-    const { runId } = request.params as { runId: string };
-    const body = request.body as { briefIds?: string[] } | undefined;
+  app.post(
+    '/runs/:runId/publish/approve',
+    {
+      preHandler: [requireAdmin],
+      schema: {
+        params: RunIdParamsSchema,
+        body: PublishApproveBodySchema,
+      },
+    },
+    async (request, reply) => {
+      const { runId } = request.params;
+      const body = request.body;
 
-    const result = await db.select().from(pipelineRuns).where(eq(pipelineRuns.runId, runId)).limit(1);
-    if (result.length === 0) {
-      return reply.status(404).send({ code: 'NOT_FOUND', message: 'Run not found' });
+      const result = await db.select().from(pipelineRuns).where(eq(pipelineRuns.runId, runId)).limit(1);
+      if (result.length === 0) {
+        return reply.status(404).send({ code: 'NOT_FOUND', message: 'Run not found' });
+      }
+
+      const run = result[0];
+      const phaseResults = (run.phaseResults ?? {}) as Record<string, unknown>;
+      const generateData = phaseResults.generate as { briefs?: unknown[] } | undefined;
+      const briefs = Array.isArray(generateData?.briefs) ? generateData.briefs as Array<Record<string, unknown>> : [];
+
+      if (briefs.length === 0) {
+        return reply.status(400).send({ code: 'NO_BRIEFS', message: 'No generated briefs found for this run' });
+      }
+
+      const requestedIds = Array.isArray(body?.briefIds) ? body.briefIds.filter(Boolean) : [];
+      const allowAll = requestedIds.length === 0;
+
+      const deliverBriefs = allowAll
+        ? briefs
+        : briefs.filter((b) => requestedIds.includes(String(b.id)));
+
+      const publishIds = Array.from(new Set(deliverBriefs.map((b) => String(b.id)).filter(Boolean)));
+
+      if (publishIds.length > 0) {
+        await db
+          .update(ideas)
+          .set({ isPublished: true, publishedAt: new Date() })
+          .where(inArray(ideas.id, publishIds));
+      }
+
+      const deliverConfig = (run.config ?? {}) as PipelineConfig;
+      const deliverResult = await runDeliverPhase(runId, deliverConfig, deliverBriefs as unknown as IdeaBrief[]);
+
+      const phases = { ...((run.phases ?? {}) as Record<string, string>) };
+      phases.deliver = deliverResult.success ? 'completed' : 'failed';
+
+      const phaseStats = { ...((run.phaseStats ?? {}) as Record<string, unknown>) };
+      if (deliverResult.data) {
+        phaseStats.deliver = {
+          sent: deliverResult.data.sent,
+          failed: deliverResult.data.failed,
+          subscriberCount: deliverResult.data.subscriberCount,
+        };
+      }
+
+      const stats = { ...((run.stats ?? {}) as Record<string, unknown>) };
+      if (deliverResult.data) {
+        stats.emailsSent = deliverResult.data.sent;
+      }
+
+      const historyArray = Array.isArray(phaseResults.publishGateHistory)
+        ? (phaseResults.publishGateHistory as unknown[]).slice(0, 200)
+        : [];
+      historyArray.push({
+        action: 'approve',
+        by: request.userEmail ?? null,
+        at: new Date().toISOString(),
+        briefIds: publishIds,
+        delivered: deliverResult.success,
+        deliveredSent: deliverResult.data?.sent ?? 0,
+      });
+
+      phaseResults.publishGateHistory = historyArray;
+      phaseResults.deliver = deliverResult.data ?? null;
+
+      const now = new Date();
+      const startedAt = run.startedAt ? new Date(run.startedAt) : now;
+
+      await db.update(pipelineRuns)
+        .set({
+          status: deliverResult.success ? 'completed' : 'failed',
+          completedAt: now,
+          updatedAt: now,
+          phases,
+          phaseStats,
+          stats,
+          success: deliverResult.success,
+          totalDuration: Math.max(0, Math.round(now.getTime() - startedAt.getTime())),
+          phaseResults,
+        })
+        .where(eq(pipelineRuns.runId, runId));
+
+      return reply.send({
+        status: 'ok',
+        publishedCount: publishIds.length,
+        delivered: deliverResult.data ?? null,
+      });
     }
-
-    const run = result[0] as any;
-    const phaseResults = (run.phaseResults ?? {}) as Record<string, any>;
-    const generateData = phaseResults.generate as { briefs?: any[] } | undefined;
-    const briefs = generateData?.briefs as any[] | undefined;
-
-    if (!Array.isArray(briefs) || briefs.length === 0) {
-      return reply.status(400).send({ code: 'NO_BRIEFS', message: 'No generated briefs found for this run' });
-    }
-
-    const requestedIds = Array.isArray(body?.briefIds) ? body!.briefIds.filter(Boolean) : [];
-    const allowAll = requestedIds.length === 0;
-
-    const deliverBriefs = allowAll
-      ? briefs
-      : briefs.filter((b) => requestedIds.includes(String(b.id)));
-
-    const publishIds = Array.from(new Set(deliverBriefs.map((b) => String(b.id)).filter(Boolean)));
-
-    if (publishIds.length > 0) {
-      await db
-        .update(ideas)
-        .set({ isPublished: true, publishedAt: new Date() })
-        .where(inArray(ideas.id, publishIds));
-    }
-
-    const deliverConfig = (run.config ?? {}) as any;
-    const deliverResult = await runDeliverPhase(runId, deliverConfig, deliverBriefs);
-
-    const phases = { ...(run.phases ?? {}) } as Record<string, string>;
-    phases.deliver = deliverResult.success ? 'completed' : 'failed';
-
-    const phaseStats = { ...(run.phaseStats ?? {}) } as Record<string, any>;
-    if (deliverResult.data) {
-      phaseStats.deliver = {
-        sent: deliverResult.data.sent,
-        failed: deliverResult.data.failed,
-        subscriberCount: deliverResult.data.subscriberCount,
-      };
-    }
-
-    const stats = { ...(run.stats ?? {}) } as Record<string, any>;
-    if (deliverResult.data) {
-      stats.emailsSent = deliverResult.data.sent;
-    }
-
-    const history = Array.isArray(phaseResults.publishGateHistory)
-      ? phaseResults.publishGateHistory.slice(0, 200)
-      : [];
-    history.push({
-      action: 'approve',
-      by: request.userEmail ?? null,
-      at: new Date().toISOString(),
-      briefIds: publishIds,
-      delivered: deliverResult.success,
-      deliveredSent: deliverResult.data?.sent ?? 0,
-    });
-
-    phaseResults.publishGateHistory = history;
-    phaseResults.deliver = deliverResult.data ?? null;
-
-    const now = new Date();
-    const startedAt = run.startedAt ? new Date(run.startedAt) : now;
-
-    await db.update(pipelineRuns)
-      .set({
-        status: deliverResult.success ? 'completed' : 'failed',
-        completedAt: now,
-        updatedAt: now,
-        phases,
-        phaseStats,
-        stats,
-        success: deliverResult.success,
-        totalDuration: Math.max(0, Math.round(now.getTime() - startedAt.getTime())),
-        phaseResults,
-      })
-      .where(eq(pipelineRuns.runId, runId));
-
-    return reply.send({
-      status: 'ok',
-      publishedCount: publishIds.length,
-      delivered: deliverResult.data ?? null,
-    });
-  });
+  );
 
   /**
    * POST /api/v1/admin/runs/:runId/publish/reject
    * Reject a publish-gated run: keep ideas unpublished and finalize run as rejected.
    */
-  server.post('/runs/:runId/publish/reject', { preHandler: [requireAdmin] }, async (request, reply) => {
-    const { runId } = request.params as { runId: string };
-    const body = request.body as { reason?: string } | undefined;
+  app.post(
+    '/runs/:runId/publish/reject',
+    {
+      preHandler: [requireAdmin],
+      schema: {
+        params: RunIdParamsSchema,
+        body: PublishRejectBodySchema,
+      },
+    },
+    async (request, reply) => {
+      const { runId } = request.params;
+      const body = request.body;
 
-    const result = await db.select().from(pipelineRuns).where(eq(pipelineRuns.runId, runId)).limit(1);
-    if (result.length === 0) {
-      return reply.status(404).send({ code: 'NOT_FOUND', message: 'Run not found' });
+      const result = await db.select().from(pipelineRuns).where(eq(pipelineRuns.runId, runId)).limit(1);
+      if (result.length === 0) {
+        return reply.status(404).send({ code: 'NOT_FOUND', message: 'Run not found' });
+      }
+
+      const run = result[0];
+      const phaseResults = (run.phaseResults ?? {}) as Record<string, unknown>;
+
+      const historyArray = Array.isArray(phaseResults.publishGateHistory)
+        ? (phaseResults.publishGateHistory as unknown[]).slice(0, 200)
+        : [];
+      historyArray.push({
+        action: 'reject',
+        by: request.userEmail ?? null,
+        at: new Date().toISOString(),
+        reason: body?.reason ?? null,
+      });
+      phaseResults.publishGateHistory = historyArray;
+
+      const now = new Date();
+      const startedAt = run.startedAt ? new Date(run.startedAt) : now;
+
+      await db.update(pipelineRuns)
+        .set({
+          status: 'rejected',
+          completedAt: now,
+          updatedAt: now,
+          success: false,
+          totalDuration: Math.max(0, Math.round(now.getTime() - startedAt.getTime())),
+          phaseResults,
+        })
+        .where(eq(pipelineRuns.runId, runId));
+
+      return reply.send({ status: 'ok' });
     }
-
-    const run = result[0] as any;
-    const phaseResults = (run.phaseResults ?? {}) as Record<string, any>;
-
-    const history = Array.isArray(phaseResults.publishGateHistory)
-      ? phaseResults.publishGateHistory.slice(0, 200)
-      : [];
-    history.push({
-      action: 'reject',
-      by: request.userEmail ?? null,
-      at: new Date().toISOString(),
-      reason: body?.reason ?? null,
-    });
-    phaseResults.publishGateHistory = history;
-
-    const now = new Date();
-    const startedAt = run.startedAt ? new Date(run.startedAt) : now;
-
-    await db.update(pipelineRuns)
-      .set({
-        status: 'rejected',
-        completedAt: now,
-        updatedAt: now,
-        success: false,
-        totalDuration: Math.max(0, Math.round(now.getTime() - startedAt.getTime())),
-        phaseResults,
-      })
-      .where(eq(pipelineRuns.runId, runId));
-
-    return reply.send({ status: 'ok' });
-  });
+  );
 
   /**
    * GET /api/v1/admin/email-logs
    * Paginated email delivery logs
    */
-  server.get('/email-logs', { preHandler: [requireAdmin] }, async (request, reply) => {
-    const query = request.query as { page?: string; limit?: string; status?: string; runId?: string };
-    const page = Math.max(1, parseInt(query.page || '1'));
-    const limit = Math.min(100, Math.max(1, parseInt(query.limit || '20')));
-    const offset = (page - 1) * limit;
+  app.get(
+    '/email-logs',
+    {
+      preHandler: [requireAdmin],
+      schema: {
+        querystring: EmailLogsQuerySchema,
+      },
+    },
+    async (request, reply) => {
+      const query = request.query;
+      const page = query.page;
+      const limit = query.limit;
+      const offset = (page - 1) * limit;
 
-    const filters = [];
-    if (query.status && query.status !== 'all') {
-      filters.push(eq(emailLogs.status, query.status));
+      const filters = [];
+      if (query.status && query.status !== 'all') {
+        filters.push(eq(emailLogs.status, query.status));
+      }
+      if (query.runId) {
+        filters.push(eq(emailLogs.runId, query.runId));
+      }
+
+      const whereClause = filters.length > 0 ? and(...filters) : undefined;
+
+      const baseQuery = whereClause
+        ? db.select().from(emailLogs).where(whereClause)
+        : db.select().from(emailLogs);
+
+      const countQuery = whereClause
+        ? db.select({ count: count() }).from(emailLogs).where(whereClause)
+        : db.select({ count: count() }).from(emailLogs);
+
+      const [logs, totalResult] = await Promise.all([
+        baseQuery.orderBy(desc(emailLogs.sentAt)).limit(limit).offset(offset),
+        countQuery,
+      ]);
+
+      return reply.send({
+        logs,
+        total: totalResult[0]?.count || 0,
+        page,
+        limit,
+      });
     }
-    if (query.runId) {
-      filters.push(eq(emailLogs.runId, query.runId));
-    }
-
-    const whereClause = filters.length > 0 ? and(...filters) : undefined;
-
-    const baseQuery = whereClause
-      ? db.select().from(emailLogs).where(whereClause)
-      : db.select().from(emailLogs);
-
-    const countQuery = whereClause
-      ? db.select({ count: count() }).from(emailLogs).where(whereClause)
-      : db.select({ count: count() }).from(emailLogs);
-
-    const [logs, totalResult] = await Promise.all([
-      baseQuery.orderBy(desc(emailLogs.sentAt)).limit(limit).offset(offset),
-      countQuery,
-    ]);
-
-    return reply.send({
-      logs,
-      total: totalResult[0]?.count || 0,
-      page,
-      limit,
-    });
-  });
+  );
 
   /**
    * POST /api/v1/admin/runs/:runId/delivery/resend
    * Resend emails that failed during a specific pipeline run.
    */
-  server.post('/runs/:runId/delivery/resend', { preHandler: [requireAdmin] }, async (request, reply) => {
-    const { runId } = request.params as { runId: string };
+  app.post(
+    '/runs/:runId/delivery/resend',
+    {
+      preHandler: [requireAdmin],
+      schema: {
+        params: RunIdParamsSchema,
+      },
+    },
+    async (request, reply) => {
+      const { runId } = request.params;
 
-    // 1. Load the pipeline run
-    const runResult = await db.select().from(pipelineRuns).where(eq(pipelineRuns.runId, runId)).limit(1);
-    if (runResult.length === 0) {
-      return reply.status(404).send({ code: 'NOT_FOUND', message: 'Run not found' });
-    }
+      // 1. Load the pipeline run
+      const runResult = await db.select().from(pipelineRuns).where(eq(pipelineRuns.runId, runId)).limit(1);
+      if (runResult.length === 0) {
+        return reply.status(404).send({ code: 'NOT_FOUND', message: 'Run not found' });
+      }
 
-    const run = runResult[0] as Record<string, unknown>;
-    const phaseResults = (run.phaseResults ?? {}) as Record<string, unknown>;
-    const generateData = phaseResults.generate as { briefs?: unknown[] } | undefined;
-    const briefs = generateData?.briefs as Array<Record<string, unknown>> | undefined;
+      const run = runResult[0];
+      const phaseResults = (run.phaseResults ?? {}) as Record<string, unknown>;
+      const generateData = phaseResults.generate as { briefs?: unknown[] } | undefined;
+      const briefs = Array.isArray(generateData?.briefs) ? generateData.briefs as Array<Record<string, unknown>> : [];
 
-    if (!Array.isArray(briefs) || briefs.length === 0) {
-      return reply.status(400).send({ code: 'NO_BRIEFS', message: 'No generated briefs found for this run' });
-    }
+      if (briefs.length === 0) {
+        return reply.status(400).send({ code: 'NO_BRIEFS', message: 'No generated briefs found for this run' });
+      }
 
-    // 2. Get failed email log entries for this run
-    const failedLogs = await db
-      .select({ recipientEmail: emailLogs.recipientEmail, userId: emailLogs.userId })
-      .from(emailLogs)
-      .where(and(eq(emailLogs.runId, runId), eq(emailLogs.status, 'failed')));
+      // 2. Get failed email log entries for this run
+      const failedLogs = await db
+        .select({ recipientEmail: emailLogs.recipientEmail, userId: emailLogs.userId })
+        .from(emailLogs)
+        .where(and(eq(emailLogs.runId, runId), eq(emailLogs.status, 'failed')));
 
-    if (failedLogs.length === 0) {
-      return reply.send({ resent: 0, failed: 0, total: 0 });
-    }
+      if (failedLogs.length === 0) {
+        return reply.send({ resent: 0, failed: 0, total: 0 });
+      }
 
-    // 3. Cross-reference with active subscribers to get tier info
-    const failedEmails = failedLogs.map((l) => l.recipientEmail);
-    const failedUserIds = failedLogs.map((l) => l.userId);
+      // 3. Cross-reference with active subscribers to get tier info
+      const failedEmails = failedLogs.map((l) => l.recipientEmail);
+      const failedUserIds = failedLogs.map((l) => l.userId);
 
-    const activeSubscribers = await db
-      .select({
-        id: users.id,
-        email: users.email,
-        tier: subscriptions.plan,
-      })
-      .from(users)
-      .innerJoin(subscriptions, eq(subscriptions.userId, users.id))
-      .where(
-        and(
-          eq(subscriptions.status, 'active'),
-          inArray(users.id, failedUserIds)
-        )
-      );
+      const activeSubscribers = await db
+        .select({
+          id: users.id,
+          email: users.email,
+          tier: subscriptions.plan,
+          unsubscribeToken: userPreferences.unsubscribeToken,
+        })
+        .from(users)
+        .innerJoin(subscriptions, eq(subscriptions.userId, users.id))
+        .leftJoin(userPreferences, eq(userPreferences.userId, users.id))
+        .where(
+          and(
+            eq(subscriptions.status, 'active'),
+            inArray(users.id, failedUserIds)
+          )
+        );
 
-    // Only resend to users whose emails were in the failed set
-    const subscribers: Subscriber[] = activeSubscribers
-      .filter((s) => failedEmails.includes(s.email))
-      .map((s) => ({
-        id: s.id,
-        email: s.email,
-        tier: s.tier as Subscriber['tier'],
-      }));
-
-    if (subscribers.length === 0) {
-      return reply.send({ resent: 0, failed: 0, total: 0 });
-    }
-
-    // 4. Send emails using safe defaults (concurrency 1, delay 1000ms)
-    const batchResult = await sendDailyBriefsBatch(subscribers, briefs as never[], {});
-
-    // 5. Persist new email_logs rows for retry attempts
-    try {
-      const retryLogRows = batchResult.deliveries
-        .filter((d) => d.status === 'sent' || d.status === 'failed')
-        .map((delivery) => ({
-          runId,
-          userId: delivery.subscriberId,
-          recipientEmail: delivery.email,
-          subject: `Your Daily Startup Ideas — ${new Date().toLocaleDateString()} (retry)`,
-          messageId: delivery.messageId,
-          status: delivery.status as string,
-          error: delivery.error || null,
-          sentAt: delivery.sentAt,
+      // Only resend to users whose emails were in the failed set
+      const subscribers: Subscriber[] = activeSubscribers
+        .filter((s) => failedEmails.includes(s.email))
+        .map((s) => ({
+          id: s.id,
+          email: s.email,
+          tier: s.tier as Subscriber['tier'],
+          unsubscribeToken: s.unsubscribeToken ?? undefined,
         }));
 
-      if (retryLogRows.length > 0) {
-        await db.insert(emailLogs).values(retryLogRows);
+      if (subscribers.length === 0) {
+        return reply.send({ resent: 0, failed: 0, total: 0 });
       }
-    } catch (logError) {
-      request.log.warn(
-        { error: logError instanceof Error ? logError.message : String(logError) },
-        'Failed to persist retry email logs (non-fatal)'
-      );
-    }
 
-    return reply.send({
-      resent: batchResult.sent,
-      failed: batchResult.failed,
-      total: batchResult.total,
-    });
-  });
+      // 4. Send emails using safe defaults (concurrency 1, delay 1000ms)
+      const batchResult = await sendDailyBriefsBatch(subscribers, briefs as never[], {});
+
+      // 5. Persist new email_logs rows for retry attempts
+      try {
+        const retryLogRows = batchResult.deliveries
+          .filter((d) => d.status === 'sent' || d.status === 'failed')
+          .map((delivery) => ({
+            runId,
+            userId: delivery.subscriberId,
+            recipientEmail: delivery.email,
+            subject: `Your Daily Startup Ideas — ${new Date().toLocaleDateString()} (retry)`,
+            messageId: delivery.messageId,
+            status: delivery.status as string,
+            error: delivery.error || null,
+            sentAt: delivery.sentAt,
+          }));
+
+        if (retryLogRows.length > 0) {
+          await db.insert(emailLogs).values(retryLogRows);
+        }
+      } catch (logError) {
+        request.log.warn(
+          { error: logError instanceof Error ? logError.message : String(logError) },
+          'Failed to persist retry email logs (non-fatal)'
+        );
+      }
+
+      return reply.send({
+        resent: batchResult.sent,
+        failed: batchResult.failed,
+        total: batchResult.total,
+      });
+    }
+  );
 };

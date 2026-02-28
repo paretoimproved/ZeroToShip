@@ -131,7 +131,8 @@ export default function IdeaPage() {
 
   return (
     <ProtectedLayout>
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8">
+      <main id="main-content" className="mx-auto max-w-5xl px-4 sm:px-6 py-8">
+        <h1 className="sr-only">{brief ? brief.name : "Idea Details"}</h1>
         {loading ? (
           <>
             {/* Back link skeleton */}
@@ -202,9 +203,9 @@ export default function IdeaPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
                     </svg>
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
                     Generate Agent-Ready Spec
-                  </h3>
+                  </h2>
                   <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
                     Transform this brief into a technical spec with user stories, database schema, API routes, and CLAUDE.md — ready to paste into your project.
                   </p>
@@ -256,7 +257,7 @@ export default function IdeaPage() {
             </div>
           </>
         )}
-      </div>
+      </main>
     </ProtectedLayout>
   );
 }

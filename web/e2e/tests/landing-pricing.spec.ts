@@ -12,7 +12,7 @@ test.describe('Landing Page — Pricing Section', () => {
   test('should display three plan cards', async ({ page }) => {
     const section = page.locator('#pricing');
     await expect(section.getByRole('heading', { name: 'Free' })).toBeVisible();
-    await expect(section.getByRole('heading', { name: 'Builder', exact: true })).toBeVisible();
+    await expect(section.getByRole('heading', { name: 'Pro', exact: true })).toBeVisible();
     await expect(section.getByRole('heading', { name: 'Enterprise' })).toBeVisible();
   });
 
@@ -27,7 +27,7 @@ test.describe('Landing Page — Pricing Section', () => {
     await expect(section.getByText('$0')).toBeVisible();
   });
 
-  test('should show $19 for Builder monthly', async ({ page }) => {
+  test('should show $19 for Pro monthly', async ({ page }) => {
     const section = page.locator('#pricing');
     await expect(section.getByText('$19')).toBeVisible();
   });
@@ -37,7 +37,7 @@ test.describe('Landing Page — Pricing Section', () => {
     await expect(section.getByText('$99')).toBeVisible();
   });
 
-  test('should highlight Builder as Most Popular', async ({ page }) => {
+  test('should highlight Pro as Most Popular', async ({ page }) => {
     await expect(page.getByText('Most Popular')).toBeVisible();
   });
 
@@ -72,11 +72,11 @@ test.describe('Landing Page — Pricing Section', () => {
     await expect(page.getByText('Full briefs for all ideas')).toBeVisible();
   });
 
-  test('Builder should list archive access as included', async ({ page }) => {
+  test('Pro should list archive access as included', async ({ page }) => {
     await expect(page.getByText('Full archive access')).toBeVisible();
   });
 
-  test('Builder should list CSV export', async ({ page }) => {
+  test('Pro should list CSV export', async ({ page }) => {
     await expect(page.getByText('CSV export', { exact: true })).toBeVisible();
   });
 

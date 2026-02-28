@@ -40,7 +40,7 @@ Get Started Free
 $19/month
 
 ### Name
-Builder
+Pro
 
 ### Badge
 Most Popular
@@ -74,7 +74,7 @@ Team
 For agencies and serial builders
 
 ### Features
-- Everything in Builder
+- Everything in Pro
 - Unlimited ideas
 - API access & keys
 - JSON & CSV export

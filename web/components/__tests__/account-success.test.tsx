@@ -134,7 +134,7 @@ describe('Account Page - Checkout Success', () => {
     vi.useRealTimers();
   });
 
-  it('shows Builder label for pro current plan', async () => {
+  it('shows Pro label for pro current plan', async () => {
     vi.mocked(api.getSubscription).mockResolvedValueOnce({
       id: 'sub_pro',
       userId: 'user_1',
@@ -157,8 +157,7 @@ describe('Account Page - Checkout Success', () => {
       .closest('section');
 
     expect(currentPlanSection).not.toBeNull();
-    expect(within(currentPlanSection as HTMLElement).getByText('Builder')).toBeInTheDocument();
-    expect(within(currentPlanSection as HTMLElement).queryByText(/^pro$/i)).not.toBeInTheDocument();
+    expect(within(currentPlanSection as HTMLElement).getByText('Pro')).toBeInTheDocument();
   });
 
   it('updates email preference when unsubscribe button is clicked', async () => {

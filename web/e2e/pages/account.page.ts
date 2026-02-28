@@ -66,7 +66,7 @@ export class AccountPage extends BasePage {
       has: page.getByRole('heading', { level: 3, name: 'Free' }),
     }).first();
     this.proPlanCard = this.planCards.filter({
-      has: page.getByRole('heading', { level: 3, name: 'Builder' }),
+      has: page.getByRole('heading', { level: 3, name: 'Pro' }),
     }).first();
     this.enterprisePlanCard = this.planCards.filter({
       has: page.getByRole('heading', { level: 3, name: 'Enterprise' }),
@@ -252,7 +252,7 @@ export class AccountPage extends BasePage {
   }
 
   /**
-   * Check if Builder plan is highlighted
+   * Check if Pro plan is highlighted
    */
   async isProPlanHighlighted(): Promise<boolean> {
     const className = await this.proPlanCard.getAttribute('class');

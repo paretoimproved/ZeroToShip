@@ -195,7 +195,16 @@ function CompactCard({
   return (
     <article
       onClick={onClick}
-      className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:border-primary-400 dark:hover:border-primary-500 transition-all duration-200 animate-fade-in-up opacity-0"
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      tabIndex={0}
+      role="button"
+      aria-label={`View idea: ${idea.name}`}
+      className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:border-primary-400 dark:hover:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition-all duration-200 animate-fade-in-up opacity-0"
       style={{ animationDelay: `${delay}ms`, animationFillMode: "forwards" }}
     >
       {/* Top: score circle + name + bookmark */}
@@ -280,6 +289,8 @@ export default function ArchivePage() {
   const [preview, setPreview] = useState(false);
   const [savedIdeaIds, setSavedIdeaIds] = useState<Set<string>>(new Set());
   const [showSavedOnly, setShowSavedOnly] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
   const { isAuthenticated, user } = useAuth();
 
   // Fetch saved idea IDs for the logged-in user
@@ -393,7 +404,46 @@ export default function ArchivePage() {
     };
   }, [selectedIdea]);
 
-  const closeModal = useCallback(() => setSelectedIdea(null), []);
+  const closeModal = useCallback(() => {
+    setSelectedIdea(null);
+    triggerRef.current?.focus();
+  }, []);
+
+  // Focus trap for archive modal
+  useEffect(() => {
+    if (!selectedIdea || !modalRef.current) return;
+    const modalElement = modalRef.current;
+    const focusableSelectors =
+      'a[href], button, input, textarea, select, [tabindex]:not([tabindex="-1"])';
+    const getFocusable = () =>
+      modalElement.querySelectorAll<HTMLElement>(focusableSelectors);
+
+    // Focus first focusable element in modal
+    const focusable = getFocusable();
+    if (focusable.length > 0) focusable[0].focus();
+
+    const handleTabTrap = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+      const currentFocusable = getFocusable();
+      if (currentFocusable.length === 0) return;
+      const first = currentFocusable[0];
+      const last = currentFocusable[currentFocusable.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleTabTrap);
+    return () => document.removeEventListener("keydown", handleTabTrap);
+  }, [selectedIdea]);
 
   // Toggle source platform
   const toggleSource = useCallback((platform: Platform) => {
@@ -496,7 +546,7 @@ export default function ArchivePage() {
   }, [loading, loadingMore, preview]);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
+    <main id="main-content" className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
       <header className="mb-8">
         <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-4xl mb-2">
           Idea Archive
@@ -751,6 +801,7 @@ export default function ArchivePage() {
                 idea={idea}
                 index={i}
                 onClick={() => {
+                  triggerRef.current = document.activeElement as HTMLElement;
                   setSelectedIdea(idea);
                   trackIdeaViewed({
                     ideaId: idea.id,
@@ -828,7 +879,11 @@ export default function ArchivePage() {
       {/* Modal Overlay */}
       {selectedIdea && (
         <div
+          ref={modalRef}
           data-testid="idea-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="archive-modal-title"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
         >
           {/* Backdrop */}
@@ -839,6 +894,7 @@ export default function ArchivePage() {
 
           {/* Card wrapper */}
           <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl animate-modal-card">
+            <h2 id="archive-modal-title" className="sr-only">{selectedIdea.name}</h2>
             {/* Modal action buttons */}
             <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
               {isAuthenticated && (
@@ -880,7 +936,7 @@ export default function ArchivePage() {
           </div>
         </div>
       )}
-    </div>
+    </main>
   );
 }
 
@@ -907,7 +963,7 @@ function ArchiveUpgradeWall({ total }: { total: number }) {
         Unlock the Full Archive
       </h3>
       <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-lg mx-auto">
-        You&apos;re previewing a small sample. Upgrade to Builder to browse all{" "}
+        You&apos;re previewing a small sample. Upgrade to Pro to browse all{" "}
         <span className="font-semibold text-gray-900 dark:text-white">
           {total.toLocaleString()}
         </span>{" "}
@@ -918,7 +974,7 @@ function ArchiveUpgradeWall({ total }: { total: number }) {
         onClick={() => trackUpgradeClicked({ from_tier: "free", to_tier: "pro", location: "archive_wall" })}
         className="inline-block rounded-lg bg-primary-600 px-8 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
       >
-        Upgrade to Builder
+        Upgrade to Pro
       </Link>
     </div>
   );

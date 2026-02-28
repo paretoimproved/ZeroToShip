@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import IdeaBriefCard from "@/components/IdeaBriefCard";
 import BookmarkButton from "@/components/BookmarkButton";
@@ -54,6 +54,29 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [savedIdeaIds, setSavedIdeaIds] = useState<Set<string>>(new Set());
   const { isAuthenticated } = useAuth();
+
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingDismissing, setOnboardingDismissing] = useState(false);
+  const onboardingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const dismissed = localStorage.getItem("z2s_onboarding_dismissed");
+    if (!dismissed) {
+      setShowOnboarding(true);
+    }
+    return () => {
+      if (onboardingTimerRef.current) clearTimeout(onboardingTimerRef.current);
+    };
+  }, []);
+
+  const dismissOnboarding = useCallback(() => {
+    setOnboardingDismissing(true);
+    localStorage.setItem("z2s_onboarding_dismissed", "true");
+    onboardingTimerRef.current = setTimeout(() => {
+      setShowOnboarding(false);
+      setOnboardingDismissing(false);
+    }, 300);
+  }, []);
 
   useEffect(() => {
     async function fetchIdeas() {
@@ -110,7 +133,62 @@ export default function HomePage() {
 
   return (
     <ProtectedLayout>
-    <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8">
+    <main id="main-content" className="mx-auto max-w-5xl px-4 sm:px-6 py-8">
+      {showOnboarding && (
+        <div
+          className={`mb-8 relative rounded-2xl border border-primary-200 dark:border-primary-800 bg-gradient-to-r from-primary-50 via-white to-white dark:from-primary-950/40 dark:via-gray-900 dark:to-gray-900 shadow-lg overflow-hidden transition-all duration-300 ${
+            onboardingDismissing ? "opacity-0 translate-y-[-8px]" : "opacity-100 translate-y-0"
+          }`}
+        >
+          <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-primary-500 to-primary-600" />
+          <div className="p-6 sm:p-8 pl-5 sm:pl-7">
+            <button
+              onClick={dismissOnboarding}
+              className="absolute top-4 right-4 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Dismiss welcome banner"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white sm:text-2xl">
+              Welcome to ZeroToShip
+            </h2>
+            <p className="mt-2 text-gray-600 dark:text-gray-400 max-w-2xl leading-relaxed">
+              Every day we scan 300+ posts across Reddit, Hacker News, and GitHub to find real
+              problems worth solving. Here are today&apos;s top ideas.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Link
+                href="/archive"
+                className="inline-flex items-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+              >
+                Browse the Archive
+              </Link>
+              <Link
+                href="/settings"
+                className="inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+              >
+                Set Email Preferences
+              </Link>
+              <a
+                href="#main-content"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const ideasSection = document.getElementById("ideas-list");
+                  if (ideasSection?.firstElementChild) {
+                    ideasSection.firstElementChild.scrollIntoView({ behavior: "smooth", block: "center" });
+                  }
+                }}
+                className="inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+              >
+                Explore an Idea
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="mb-8">
         <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-4xl mb-2">
           Today&apos;s Top Ideas
@@ -176,7 +254,7 @@ export default function HomePage() {
         </div>
       ) : (
         <>
-          <div className="space-y-6">
+          <div id="ideas-list" className="space-y-6">
             {ideas.map((idea, index) => (
               <IdeaBriefCard
                 key={idea.id}
@@ -232,7 +310,7 @@ export default function HomePage() {
           )}
         </>
       )}
-    </div>
+    </main>
     </ProtectedLayout>
   );
 }

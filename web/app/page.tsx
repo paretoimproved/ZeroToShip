@@ -3,6 +3,7 @@
 import LandingNav from "@/components/landing/LandingNav";
 import HeroSection from "@/components/landing/HeroSection";
 import SourceStrip from "@/components/landing/SourceStrip";
+import SocialProof from "@/components/landing/SocialProof";
 import HowItWorks from "@/components/landing/HowItWorks";
 import SampleBriefPreview from "@/components/landing/SampleBriefPreview";
 import FeatureTabs from "@/components/landing/FeatureTabs";
@@ -115,6 +116,7 @@ export default function LandingPage() {
       <main id="main-content" tabIndex={-1}>
         <HeroSection />
         <SourceStrip />
+        <SocialProof />
         <HowItWorks />
         <SampleBriefPreview />
         <FeatureTabs />

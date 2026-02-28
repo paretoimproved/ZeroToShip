@@ -7,7 +7,7 @@ const TIER_OPTIONS = [
   { value: null, label: "Real (Admin)" },
   { value: "anonymous", label: "Anonymous" },
   { value: "free", label: "Free" },
-  { value: "pro", label: "Builder" },
+  { value: "pro", label: "Pro" },
   { value: "enterprise", label: "Enterprise" },
 ] as const;
 

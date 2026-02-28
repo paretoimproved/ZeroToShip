@@ -27,7 +27,7 @@ test.describe('Pricing Page (/pricing)', () => {
 
   test('should display three plan cards', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Free' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Builder' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Pro' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Enterprise' })).toBeVisible();
   });
 
@@ -37,7 +37,7 @@ test.describe('Pricing Page (/pricing)', () => {
     await expect(page.getByText('$99')).toBeVisible();
   });
 
-  test('should highlight Builder as Most Popular', async ({ page }) => {
+  test('should highlight Pro as Most Popular', async ({ page }) => {
     await expect(page.getByText('Most Popular')).toBeVisible();
   });
 
@@ -94,7 +94,7 @@ test.describe('Pricing Page (/pricing)', () => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/pricing');
     await expect(page.getByRole('heading', { name: 'Free' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Builder' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Pro' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Enterprise' })).toBeVisible();
     await expect(
       page.getByRole('button', { name: 'Toggle navigation' }),

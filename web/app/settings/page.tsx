@@ -46,7 +46,7 @@ export default function SettingsPage() {
 
   return (
     <ProtectedLayout>
-    <div className="mx-auto max-w-2xl px-4 sm:px-6 py-8">
+    <main id="main-content" className="mx-auto max-w-2xl px-4 sm:px-6 py-8">
       <header className="mb-8">
         <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-4xl mb-2">
           Settings
@@ -61,7 +61,7 @@ export default function SettingsPage() {
         <section className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-8 h-8 rounded-lg bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center flex-shrink-0">
-              <svg className="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
             </div>
@@ -70,13 +70,15 @@ export default function SettingsPage() {
             </h2>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-3" role="radiogroup" aria-label="Email frequency">
             {(["daily", "weekly", "never"] as const).map((frequency) => {
               const isSelected = emailFrequency === frequency;
               const label = emailFrequencyLabels[frequency];
               return (
                 <button
                   key={frequency}
+                  role="radio"
+                  aria-checked={isSelected}
                   onClick={() => {
                     setEmailFrequency(frequency);
                     setSaved(false);
@@ -88,6 +90,7 @@ export default function SettingsPage() {
                   }`}
                 >
                   <div
+                    aria-hidden="true"
                     className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
                       isSelected
                         ? "border-primary-500"
@@ -116,7 +119,7 @@ export default function SettingsPage() {
         <section className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-8 h-8 rounded-lg bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center flex-shrink-0">
-              <svg className="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
             </div>
@@ -132,7 +135,7 @@ export default function SettingsPage() {
                   mode: "system" as const,
                   label: "System",
                   icon: (
-                    <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                   ),
@@ -141,7 +144,7 @@ export default function SettingsPage() {
                   mode: "light" as const,
                   label: "Light",
                   icon: (
-                    <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
                   ),
@@ -150,7 +153,7 @@ export default function SettingsPage() {
                   mode: "dark" as const,
                   label: "Dark",
                   icon: (
-                    <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                     </svg>
                   ),
@@ -188,7 +191,7 @@ export default function SettingsPage() {
         <div className="flex items-center justify-end gap-4">
           {saved && (
             <span className="inline-flex items-center gap-1.5 text-green-600 dark:text-green-400 text-sm animate-fade-in">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               Settings saved!
@@ -202,7 +205,7 @@ export default function SettingsPage() {
           </button>
         </div>
       </div>
-    </div>
+    </main>
     </ProtectedLayout>
   );
 }

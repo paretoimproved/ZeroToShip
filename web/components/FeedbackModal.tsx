@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface FeedbackModalProps {
   isOpen: boolean;
@@ -43,6 +43,7 @@ export default function FeedbackModal({
     categories: [],
     featureRequest: "",
   });
+  const modalRef = useRef<HTMLDivElement>(null);
 
   // Reset state when modal opens
   useEffect(() => {
@@ -57,6 +58,46 @@ export default function FeedbackModal({
       });
     }
   }, [isOpen]);
+
+  // Focus trap and Escape key for modal
+  useEffect(() => {
+    if (!isOpen || !modalRef.current) return;
+    const modalElement = modalRef.current;
+    const focusableSelectors =
+      'a[href], button, input, textarea, select, [tabindex]:not([tabindex="-1"])';
+    const getFocusable = () =>
+      modalElement.querySelectorAll<HTMLElement>(focusableSelectors);
+
+    // Focus first focusable element
+    const focusable = getFocusable();
+    if (focusable.length > 0) focusable[0].focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const currentFocusable = getFocusable();
+      if (currentFocusable.length === 0) return;
+      const first = currentFocusable[0];
+      const last = currentFocusable[currentFocusable.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, step, onClose]);
 
   const handleNpsClick = (score: number) => {
     setFeedback((prev) => ({ ...prev, npsScore: score }));
@@ -93,7 +134,13 @@ export default function FeedbackModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div
+      ref={modalRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="feedback-modal-title"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+    >
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50"
@@ -104,11 +151,12 @@ export default function FeedbackModal({
       <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+          <h2 id="feedback-modal-title" className="text-xl font-bold text-gray-900 dark:text-white">
             Help Us Improve
           </h2>
           <button
             onClick={onClose}
+            aria-label="Close feedback dialog"
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -138,11 +186,13 @@ export default function FeedbackModal({
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
                   How likely are you to recommend ZeroToShip to a friend or colleague?
                 </label>
-                <div className="flex items-center justify-between gap-1">
+                <div className="flex items-center justify-between gap-1" role="group" aria-label="NPS score selection">
                   {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => (
                     <button
                       key={score}
                       onClick={() => handleNpsClick(score)}
+                      aria-label={`Score ${score} out of 10`}
+                      aria-pressed={feedback.npsScore === score}
                       className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
                         feedback.npsScore === score
                           ? "bg-primary-500 text-white"
@@ -296,7 +346,7 @@ export default function FeedbackModal({
               <p className="text-sm text-primary-700 dark:text-primary-300">
                 Want to help even more?{" "}
                 <a href="/signup?plan=pro" className="font-medium underline">
-                  Upgrade to Builder
+                  Upgrade to Pro
                 </a>{" "}
                 and get 10 full briefs daily.
               </p>
