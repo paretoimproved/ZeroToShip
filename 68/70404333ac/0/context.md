@@ -1,0 +1,173 @@
+# Session Context
+
+Session ID: fc72c4d5-412b-4094-89aa-7a478b3fe780
+Commit Message: Implement the following plan:
+
+# Gate Spec Generation Behind Pro + Landi
+
+## Prompts
+
+### Prompt 1
+
+Implement the following plan:
+
+# Gate Spec Generation Behind Pro + Landing Page Demo Showcase
+
+## Context
+
+Spec generation is ZeroToShip's only revenue driver, but free users currently get 3 specs/month and there's no demo showing what specs contain. The founder wants to:
+1. Gate spec generation entirely behind the Pro paywall (free = 0 specs)
+2. Add a compelling demo spec showcase on the landing page to drive conversions
+3. Update all copy that references "3 specs/month" for free users
+4. Make the free-tier CTA sell the feature instead of showing a broken "0/0" message
+
+The user's StickFactor spec (stored in production DB) is inaccessible due to a 503 error, so we'll create a sample AgentSpec based on the existing "ShipWatch" sample brief for narrative continuity.
+
+---
+
+## Part A: Gate Free Tier (Backend + Frontend)
+
+### 1. Change tier limits and access
+**File:** `src/api/config/tiers.ts`
+
+- Line 40: `free: 3` → `free: 0`
+- Line 86: `'ideas.generateSpec': { minTier: 'free' ...}` → `minTier: 'pro'`
+
+### 2. Fix backend error message for limit=0
+**File:** `src/api/services/ideas.ts` (~line 596)
+
+Add special case before the existing `limitReached` return:
+```typescript
+if (limit === 0) {
+  return {
+    limitReached: true,
+    message: 'Agent-ready specs are a Pro feature. Upgrade to Pro for 30 specs/month.',
+  };
+}
+```
+
+### 3. Redesign GenerateSpecCta for free users
+**File:** `web/components/GenerateSpecCta.tsx`
+
+Split the "quota exhausted" state (lines 46-64) into two sub-states:
+- **`limit === 0` (free user):** Gradient-highlighted teaser card with "Agent Specs are a Pro Feature" heading, mini checklist (User stories, DB schema, API routes, CLAUDE.md), and "Upgrade to Pro" button
+- **`limit > 0` but exhausted (Pro user):** Keep current "You've used all X" message, remove "Upgrade" link since they're already Pro, add "Resets next month" note
+
+### 4. Update test assertions
+**File:** `tests/api/tiers.test.ts`
+
+- Line 112: `expect(hasAccess('free', 'ideas.generateSpec')).toBe(true)` → `.toBe(false)`
+- Add test: `expect(getMonthlySpecLimit('free')).toBe(0)`
+
+---
+
+## Part B: Landing Page Spec Demo
+
+### 5. Create sample AgentSpec data
+**New file:** `web/lib/sampleSpec.ts`
+
+Export `sampleAgentSpec: AgentSpec` — a full ShipWatch spec with:
+- 3 user stories with acceptance criteria
+- 4 database tables with columns and relations
+- 6 API endpoints with methods, routes, purposes
+- CLAUDE.md instructions block
+- 3 sources with platforms and scores
+- MVP scope (must-have vs skip-for-now)
+
+This extends the existing "ShipWatch" sample brief from `web/lib/sampleData.ts` — visitors see the brief (free), then the spec (Pro) as they scroll.
+
+### 6. Create SampleSpecShowcase component
+**New file:** `web/components/landing/SampleSpecShowcase.tsx`
+
+Static, read-only spec preview with 4 tabs matching the most impressive spec sections:
+- **User Stories** — persona/capability/outcome + acceptance criteria
+- **Database** — schema table (table, columns, relations)
+- **API Routes** — table with color-coded HTTP methods
+- **CLAUDE.md** — monospace code block
+
+Uses the same tab accessibility pattern as `SampleBriefPreview` (role="tablist", arrow keys, ARIA). Same card styling (rounded-2xl, border, shadow-lg). Includes a "Pro" badge and CTA below: "Start Generating Specs — $19/mo" → `/signup?plan=pro`.
+
+Section heading: **"What a Pro Spec Includes"** with subtext: "Generate complete, agent-ready specs for any problem in the library."
+
+### 7. Add showcase to landing page
+**File:** `web/app/page.tsx`
+
+Insert `<SampleSpecShowcase />` after `<SampleBriefPreview />` (after line 121). The page flow becomes:
+
+```
+HeroSection → SourceStrip → SocialProof → HowItWorks
+→ SampleBriefPreview (free: "here's a problem")
+→ SampleSpecShowcase (Pro: "here's what you get")  ← NEW
+→ FeatureTabs → ComparisonTable → PricingSection → FAQ → FinalCTA
+```
+
+---
+
+## Part C: Copy Updates (all "3 specs" references)
+
+### 8. Pricing sections
+**File:** `web/components/landing/PricingSection.tsx`
+- Line 33: `"Full archive access + 3 agent specs/month"` → `"Full archive access — browse every problem"`
+- Line 39: `{ text: "3 agent-spec generations per month", included: true }` → `{ text: "Agent-spec generation", included: false }`
+
+**File:** `web/app/pricing/PricingPageContent.tsx`
+- Line 41: Same description change
+- Line 47: Same feature change
+- Line 618 (JSON-LD): Same description change
+
+### 9. Final CTA
+**File:** `web/components/landing/FinalCTA.tsx`
+- Line 71: `"Full library access free. 3 specs/month included. Upgrade anytime."` → `"Full library access free. Upgrade to Pro for agent-ready specs."`
+
+### 10. Onboarding emails
+**File:** `src/delivery/onboarding.ts`
+- Line 153: `"Free users get 3 spec generations per month."` → `"You'll keep getting daily problems on the free plan."`
+- Line 161: Same change in text version
+
+**File:** `web/content/emails/day-3.md`
+- Line 62: `"Generate up to 3 specs/month."` → remove that sentence
+
+---
+
+## File Summary
+
+| # | File | Action |
+|---|------|--------|
+| 1 | `src/api/config/tiers.ts` | free limit 3→0, minTier free→pro |
+| 2 | `src/api/services/ideas.ts` | Special error message for limit=0 |
+| 3 | `web/components/GenerateSpecCta.tsx` | Redesign free-user state |
+| 4 | `tests/api/tiers.test.ts` | Update assertions |
+| 5 | `web/lib/sampleSpec.ts` | **New** — sample AgentSpec data |
+| 6 | `web/components/landing/SampleSpecShowcase.tsx` | **New** — demo spec section |
+| 7 | `web/app/page.tsx` | Add SampleSpecShowcase import + render |
+| 8 | `web/components/landing/PricingSection.tsx` | Remove "3 specs" from free tier |
+| 9 | `web/app/pricing/PricingPageContent.tsx` | Remove "3 specs" from free tier + JSON-LD |
+| 10 | `web/components/landing/FinalCTA.tsx` | Update subtext |
+| 11 | `src/delivery/onboarding.ts` | Remove "3 specs" from emails |
+| 12 | `web/content/emails/day-3.md` | Remove "3 specs" from email |
+
+---
+
+## Verification
+
+```bash
+npm run build && npm test          # Backend types + tests
+cd web && npx next build           # Frontend build
+grep -r "3 spec\|3 agent" web/ src/  # Confirm zero remaining references
+```
+
+Manual:
+- Landing page: SampleSpecShowcase renders between SampleBriefPreview and FeatureTabs
+- Free user on `/idea/{id}`: sees "Agent Specs are a Pro Feature" teaser, not generate button
+- Pro user on `/idea/{id}`: sees generate button as before
+- `/pricing`: Free tier shows spec generation as excluded (X icon)
+- FinalCTA subtext updated
+
+
+If you need specific details from before exiting plan mode (like exact code snippets, error messages, or content you generated), read the full transcript at: /Users/brandonqueener/.claude/projects/-Users-brandonqueener-Desktop-github-Projects-IdeaForge/d2ca0992-246c-410b-b221-47e739652b9c.jsonl
+
+If this plan can be broken down into multiple independent tasks, consider using the TeamCreate tool to create a team and parallelize the work.
+
+## Summary
+
+Request timed out

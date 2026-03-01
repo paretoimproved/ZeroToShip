@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.7",
+  "checkpoint_id": "6870404333ac",
+  "strategy": "auto-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "web/components/landing/SampleSpecShowcase.tsx",
+    "web/lib/sampleSpec.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/68/70404333ac/0/metadata.json",
+      "transcript": "/68/70404333ac/0/full.jsonl",
+      "context": "",
+      "content_hash": "/68/70404333ac/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 14,
+    "cache_creation_tokens": 67473,
+    "cache_read_tokens": 726372,
+    "output_tokens": 9828,
+    "api_call_count": 13
+  }
+}
