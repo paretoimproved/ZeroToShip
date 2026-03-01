@@ -1,0 +1,13 @@
+All 1406 tests pass across 55 test files. Build clean on both backend and frontend.
+
+**Summary of the fix:**
+
+The root cause was the CSP `connect-src` directive in `web/next.config.ts` (added in commit `367ad4a`). It included the full `NEXT_PUBLIC_API_URL` value (e.g., `https://api.example.com/api/v1`). Per the CSP Level 3 spec, a URL with a path that does **not** end with `/` requires an **exact** path match. So `https://api.example.com/api/v1` would only match requests to that exact path — all subpath requests like `/api/v1/auth/me` and `/api/v1/auth/google` were blocked.
+
+This broke the auth flow: after Google OAuth redirect, `fetchUserProfile()` (which calls `GET /auth/me`) was blocked by CSP, so `AuthProvider` saw the user as unauthenticated, and `ProtectedLayout` redirected back to `/login`.
+
+**Changes to `web/next.config.ts`:**
+1. Extract just the **origin** (scheme + host + port) from `NEXT_PUBLIC_API_URL` using `new URL().origin` — this strips the path so CSP allows all subpaths on that origin
+2. Added `NEXT_PUBLIC_POSTHOG_HOST` to `connect-src` so PostHog analytics requests aren't blocked
+
+Deploy this to Vercel and Google auth should work again.

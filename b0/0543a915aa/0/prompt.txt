@@ -1,0 +1,277 @@
+Okay, now my google auth login has broken again. After logging in, I'm redirected back to the login page, stuck in a loop.
+
+---
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Analysis:
+Let me chronologically analyze the conversation:
+
+1. **First user request**: "Implement the following plan: Fix Generate Spec — Visibility, Incentive, UX, Notifications" - A detailed 9-file plan to fix the Generate Spec feature.
+
+2. **My implementation approach**: I read all files first, then implemented changes across 9 files:
+   - Backend: Added `GET /specs/usage` endpoint, added quota info to notification emails
+   - Frontend: Widened toast description type, added specCta slot to IdeaBriefCard, created GenerateSpecCta component, added getSpecUsage API method, refactored idea detail page and archive modal
+
+3. **Build and test verification**: All passed - 55 test files, 1406 tests, backend build clean, Next.js build clean.
+
+4. **Second user request**: "commit this and push" - The changes were already auto-committed by a tool (commit 397eddc). I pushed to origin/main.
+
+5. **Third user request**: "update Context.md and documentation" - I updated Context.md (Last Updated date, Current Focus, What's Done section, Recent Changes table, Key Files table) and MEMORY.md (replaced stale Active Plan with Current State).
+
+6. **Fourth user request**: "Okay, now my google auth login has broken again. After logging in, I'm redirected back to the login page, stuck in a loop." - I began investigating the Google OAuth redirect loop.
+
+7. **Investigation**: I launched an Explore agent that identified CSP headers added in commit 367ad4a as the root cause. I then did my own deep investigation reading:
+   - `web/next.config.ts` - CSP headers
+   - `web/lib/auth.ts` - OAuth callback handling
+   - `web/app/login/page.tsx` - Login page
+   - `web/components/AuthProvider.tsx` - Auth state management
+   - `web/components/GoogleAuthButton.tsx` - Google OAuth button
+   - `web/components/ProtectedLayout.tsx` - Protected route wrapper
+   - `src/api/routes/auth.ts` - Backend auth routes including Google code exchange
+   - `src/api/middleware/auth.ts` - Auth middleware
+   - `web/components/PostHogProvider.tsx` - PostHog analytics
+   - `web/lib/posthog.ts` - PostHog config
+   - `web/components/ClientProviders.tsx` - Provider hierarchy
+   - `web/lib/supabase.ts` - Supabase client
+
+8. **Key findings from investigation**:
+   - CSP headers were added in commit `367ad4a` - `web/next.config.ts` was a NEW file
+   - The CSP `connect-src` is: `'self' https://*.supabase.co https://accounts.google.com <NEXT_PUBLIC_API_URL || http://localhost:3001>`
+   - PostHog host (`https://us.i.posthog.com`) is MISSING from `connect-src` but PostHog IS active (key set in .env.local)
+   - Critical CSP path matching issue: If `NEXT_PUBLIC_API_URL` is set to something like `https://api.example.com/api/v1` (with path, no trailing slash), CSP does EXACT path matching, blocking ALL sub-path API requests like `/api/v1/auth/me`
+   - Locally, `NEXT_PUBLIC_API_URL` is NOT set in `.env.local`, so the fallback `http://localhost:3001` (no path) is used, which allows all paths
+   - In production on Vercel, `NEXT_PUBLIC_API_URL` likely includes `/api/v1` path, which would break ALL API requests
+
+9. **The investigation was still in progress** when the summary was requested. I was checking env files and about to fix the CSP.
+
+The most likely root cause is the CSP `connect-src` directive blocking API requests because:
+- The API URL includes a path without a trailing slash, causing CSP exact path matching
+- PostHog host is missing (secondary issue)
+- Potentially other origins are missing
+
+The fix needed in `web/next.config.ts`:
+- Extract just the origin from `NEXT_PUBLIC_API_URL` (strip the path), OR add a trailing slash
+- Add PostHog host to `connect-src`
+
+Summary:
+1. Primary Request and Intent:
+   - **Request 1**: Implement a detailed 9-file plan to fix the "Generate Spec" feature — addressing 4 problems: button hidden below fold/missing from archive modal, no preview/demo for free users, errors causing page refresh with no feedback, no notification/link when spec completes.
+   - **Request 2**: Commit and push the changes.
+   - **Request 3**: Update Context.md and documentation (MEMORY.md).
+   - **Request 4**: Fix Google OAuth login redirect loop — "After logging in, I'm redirected back to the login page, stuck in a loop." User noted it "has broken **again**" implying this is a recurring issue.
+
+2. Key Technical Concepts:
+   - CSP (Content-Security-Policy) headers — `connect-src` path matching rules (exact match without trailing slash vs prefix match with trailing slash)
+   - Google OAuth redirect flow (`ux_mode: "redirect"`, `flow: "auth-code"`) via `@react-oauth/google`
+   - Supabase Auth JWT verification flow
+   - React context-based auth state management (AuthProvider → ProtectedLayout redirect loop)
+   - Toast notification system with ReactNode descriptions
+   - Slot pattern for composable React components (specCta, bookmarkSlot)
+   - Fastify route ordering (static routes before parameterized routes)
+   - PostHog analytics integration and CSP implications
+
+3. Files and Code Sections:
+
+   **BACKEND CHANGES (completed):**
+
+   - `src/api/routes/specs.ts` — Added `GET /specs/usage` endpoint BEFORE the `/:id` route to avoid Fastify parsing "usage" as a UUID. Imports `getMonthlySpecCount` from services and `getMonthlySpecLimit` from config.
+     ```typescript
+     app.get(
+       '/usage',
+       {
+         preHandler: [requireAuth],
+         schema: {
+           response: {
+             200: z.object({
+               used: z.number(),
+               limit: z.number(),
+               tier: z.string(),
+             }),
+           },
+         },
+       },
+       async (request, reply) => {
+         const used = await getMonthlySpecCount(request.userId!);
+         const tier = request.userTier ?? 'free';
+         const limit = getMonthlySpecLimit(tier);
+         return reply.send({ used, limit, tier });
+       }
+     );
+     ```
+
+   - `src/api/services/ideas.ts` (line ~614) — Changed the `sendSpecNotificationEmail` call to pass quota info:
+     ```typescript
+     sendSpecNotificationEmail(userId, row.id, spec, idea.name, { used: used + 1, limit }).catch(...)
+     ```
+
+   - `src/delivery/spec-notification.ts` — Added optional `quotaInfo?: { used: number; limit: number }` param to `sendSpecNotificationEmail`. Added quota line to both HTML and text email templates:
+     ```typescript
+     export async function sendSpecNotificationEmail(
+       userId: string,
+       specId: string,
+       spec: unknown,
+       ideaName: string,
+       quotaInfo?: { used: number; limit: number }
+     ): Promise<void> {
+     ```
+     HTML: `${quotaInfo ? \`<p style="...">You've used ${quotaInfo.used} of ${quotaInfo.limit} spec generations this month.</p>\` : ''}`
+
+   **FRONTEND CHANGES (completed):**
+
+   - `web/components/ToastProvider.tsx` — Widened `description` type from `string` to `React.ReactNode` in `ToastInput`, `ToastItem`, and `ToastContextValue` interfaces. Backward-compatible change.
+
+   - `web/components/IdeaBriefCard.tsx` — Added `specCta?: React.ReactNode` prop to `IdeaBriefCardProps`. Renders as footer section inside `<article>` after the tab panel:
+     ```tsx
+     {specCta && (
+       <div className="px-6 pb-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+         {specCta}
+       </div>
+     )}
+     ```
+
+   - `web/components/GenerateSpecCta.tsx` — **NEW FILE**. Self-contained component with 3 states:
+     1. Not authenticated → signup link
+     2. Quota exhausted → upgrade teaser with spec contents description
+     3. Quota available → generate button with spinner + remaining count
+     On success: toast with clickable Link to `/specs/{generationId}`, 8s duration.
+     On error: error toast (no page refresh).
+     Props: `ideaId, ideaName, isAuthenticated, userTier?, specUsage?, onSpecGenerated?`
+
+   - `web/lib/api.ts` — Added `getSpecUsage()` method:
+     ```typescript
+     async getSpecUsage(): Promise<{ used: number; limit: number; tier: string }> {
+       return this.request('/specs/usage');
+     }
+     ```
+
+   - `web/app/idea/[id]/page.tsx` — Major refactor:
+     - Removed `specLoading`, `specError` state; added `specUsage` state
+     - Added `useEffect` to fetch `api.getSpecUsage()` on mount when authenticated
+     - Replaced standalone spec section card (the `<div className="mt-8">` block with inline generate button/error) with `GenerateSpecCta` passed via `specCta` prop to `IdeaBriefCard`
+     - Kept `AgentSpecDisplay` rendering below the card when spec is set
+
+   - `web/app/archive/page.tsx` — Added `GenerateSpecCta` import, `specUsage` state, useEffect to fetch usage, and passed `specCta` prop to the modal's `IdeaBriefCard`:
+     ```tsx
+     <IdeaBriefCard
+       brief={selectedIdea}
+       gated={!isAuthenticated}
+       gatedAction="signup"
+       defaultTab="problem"
+       specCta={
+         <GenerateSpecCta
+           ideaId={selectedIdea.id}
+           ideaName={selectedIdea.name}
+           isAuthenticated={isAuthenticated}
+           userTier={user?.tier}
+           specUsage={specUsage ?? undefined}
+           onSpecGenerated={() => {
+             setSpecUsage((prev) => prev ? { ...prev, used: prev.used + 1 } : prev);
+           }}
+         />
+       }
+     />
+     ```
+
+   **DOCUMENTATION CHANGES (completed):**
+
+   - `vault/01-Projects/ideaforge/Context.md` (actually at `~/Desktop/github/DevVault/01-Projects/ideaforge/Context.md`) — Updated Last Updated to 2026-03-01, rewrote Current Focus section, added spec CTA UX overhaul to "What's Done" checklist, added Mar 1 entry to Recent Changes table, added GenerateSpecCta.tsx to Key Files table.
+
+   - `~/.claude/projects/.../memory/MEMORY.md` — Replaced stale "Active Plan" (Feb 7 plan review details) with "Current State" reflecting Phase 1 complete + spec UX overhaul.
+
+   **FILES READ DURING OAUTH INVESTIGATION (not yet modified):**
+
+   - `web/next.config.ts` — **THE ROOT CAUSE FILE**. CSP headers added in commit `367ad4a`. Critical issue: `connect-src` uses `process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"` which, when the env var includes a path like `/api/v1` without trailing slash, causes CSP exact path matching that blocks all API sub-path requests:
+     ```typescript
+     const nextConfig: NextConfig = {
+       reactStrictMode: true,
+       async headers() {
+         return [{
+           source: "/(.*)",
+           headers: [{
+             key: "Content-Security-Policy",
+             value: [
+               "default-src 'self'",
+               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com",
+               "style-src 'self' 'unsafe-inline' https://accounts.google.com https://fonts.googleapis.com",
+               "img-src 'self' data: https: blob:",
+               "font-src 'self' https://fonts.gstatic.com",
+               "connect-src 'self' https://*.supabase.co https://accounts.google.com " +
+                 (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"),
+               "frame-src 'self' https://accounts.google.com https://js.stripe.com",
+               "frame-ancestors 'none'",
+               "base-uri 'self'",
+               "form-action 'self'",
+             ].join("; "),
+           },
+           // ... other security headers
+           ],
+         }];
+       },
+     };
+     ```
+     Missing from `connect-src`: PostHog host. Also, the API URL path matching issue.
+
+   - `web/lib/auth.ts` — OAuth callback handling. `handleOAuthCallback()` detects `code=` + `scope` params for Google redirect flow, calls `loginWithGoogleCode(code, "code")` which POSTs to backend `/api/v1/auth/google`.
+
+   - `web/app/login/page.tsx` — Login page with OAuth callback detection, redirect logic.
+
+   - `web/components/AuthProvider.tsx` — `restoreAuth()` calls `handleOAuthCallback()`, then on normal loads calls `initAuth()` → `fetchUserProfile(token)` via `/auth/me`. If this fails, user stays null → `isAuthenticated = false`.
+
+   - `web/components/ProtectedLayout.tsx` — Redirects to `/login?next=...` when `!isLoading && !isAuthenticated`.
+
+   - `web/components/GoogleAuthButton.tsx` — Uses `useGoogleLogin` with `flow: "auth-code"`, `ux_mode: "redirect"`, `redirect_uri: window.location.origin + "/login"`.
+
+   - `src/api/routes/auth.ts` — Backend Google auth endpoint (POST `/auth/google`). Exchanges Google auth code server-side via `fetch('https://oauth2.googleapis.com/token', ...)`, then signs into Supabase with the ID token.
+
+   - `src/api/middleware/auth.ts` — `requireAuth` calls `optionalAuth` which verifies JWT via `supabase.auth.getUser(token)`.
+
+   - `web/components/ClientProviders.tsx` — Provider hierarchy: `GoogleOAuthProvider` → `ThemeProvider` → `AuthProvider` → `PostHogProvider` → `ToastProvider` → `AdminProvider`.
+
+   - `web/lib/supabase.ts` — Client-side Supabase client with default options (autoRefreshToken: true, persistSession: true).
+
+   - `web/lib/posthog.ts` — PostHog client config. Host defaults to `https://us.i.posthog.com`.
+
+   - `web/.env.local` — Only has `NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_POSTHOG_HOST` set. `NEXT_PUBLIC_API_URL` is NOT set locally.
+
+   - `web/.env.example` — Shows `NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1` format (with `/api/v1` path).
+
+4. Errors and fixes:
+   - **No build/test errors**: All 1406 tests passed, backend build clean, Next.js build clean for the spec CTA implementation.
+   - **Google OAuth redirect loop (investigating)**: CSP headers added in commit `367ad4a` are blocking browser requests. Two issues identified:
+     1. **Critical**: `connect-src` includes `NEXT_PUBLIC_API_URL` which contains a path (e.g., `https://api.example.com/api/v1`) without a trailing slash. Per CSP spec, this causes EXACT path matching, blocking ALL API sub-path requests (like `/api/v1/auth/me`, `/api/v1/auth/google`). This breaks the `fetchUserProfile()` call on dashboard load, causing ProtectedLayout to redirect back to login.
+     2. **Secondary**: PostHog host (`https://us.i.posthog.com`) is missing from `connect-src` but PostHog is active in production.
+   - The commit `367ad4a` also added rate limiting to `/login` POST (10 per 15 min) and changed password minimum from 6 to 8 chars — neither affects Google OAuth.
+
+5. Problem Solving:
+   - **Spec CTA implementation (SOLVED)**: Successfully implemented all 9 files from the plan. Moved spec generation CTA inside IdeaBriefCard via slot pattern, added toast-based error/success feedback, created new backend endpoint for usage tracking, added quota info to notification emails.
+   - **Google OAuth redirect loop (IN PROGRESS)**: Deep investigation traced the issue to CSP headers in `web/next.config.ts`. The `connect-src` directive's path matching behavior blocks API requests when the URL includes a path without trailing slash. The fix needs to extract the origin from the API URL for CSP, or use a different approach. PostHog host also needs to be added.
+
+6. All user messages:
+   - "Implement the following plan: [detailed 9-file plan for Fix Generate Spec — Visibility, Incentive, UX, Notifications]"
+   - "continuecontinue" (after test output timeout)
+   - "commit this and push"
+   - "update Context.md and documentation"
+   - "Okay, now my google auth login has broken again. After logging in, I'm redirected back to the login page, stuck in a loop."
+
+7. Pending Tasks:
+   - Fix the Google OAuth redirect loop by fixing CSP headers in `web/next.config.ts`
+   - After fixing, run `npm run build && npm test` and `cd web && npx next build` to verify
+   - Update Context.md if the fix is significant
+
+8. Current Work:
+   Actively investigating and diagnosing the Google OAuth redirect loop. The investigation has identified the root cause as CSP headers in `web/next.config.ts` (added in commit `367ad4a`). The `connect-src` directive includes the full `NEXT_PUBLIC_API_URL` (which contains a path like `/api/v1` without trailing slash), causing CSP exact path matching that blocks all API sub-path requests. This means `fetchUserProfile()` calling `/auth/me` fails on dashboard load, the user appears unauthenticated, and `ProtectedLayout` redirects back to `/login`.
+
+   I was in the middle of verifying the env file configuration when the summary was requested. I had just confirmed that `.env.local` does NOT have `NEXT_PUBLIC_API_URL` set (only PostHog vars), and was about to implement the fix.
+
+9. Optional Next Step:
+   Fix the CSP `connect-src` in `web/next.config.ts` to:
+   1. Extract just the origin (scheme + host + port) from `NEXT_PUBLIC_API_URL` instead of including the full path, so CSP allows all sub-paths
+   2. Add the PostHog host to `connect-src` (read from `NEXT_PUBLIC_POSTHOG_HOST` env var)
+   
+   The user's exact request was: "Okay, now my google auth login has broken again. After logging in, I'm redirected back to the login page, stuck in a loop."
+   
+   I was investigating at the point of checking env files: `ls -la /Users/brandonqueener/Desktop/github/Projects/IdeaForge/web/.env*` and confirmed only `.env.example` and `.env.local` exist, with `.env.local` missing `NEXT_PUBLIC_API_URL`.
+
+If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: /Users/brandonqueener/.claude/projects/-Users-brandonqueener-Desktop-github-Projects-IdeaForge/d2ca0992-246c-410b-b221-47e739652b9c.jsonl
+Please continue the conversation from where we left off without asking the user any further questions. Continue with the last task that you were asked to work on.
