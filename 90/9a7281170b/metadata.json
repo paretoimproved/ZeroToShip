@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.4.7",
+  "checkpoint_id": "909a7281170b",
+  "strategy": "auto-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "web/app/archive/page.tsx",
+    "web/app/explore/page.tsx",
+    "web/components/BookmarkButton.tsx",
+    "web/components/IdeaCard.tsx"
+  ],
+  "sessions": [
+    {
+      "metadata": "/90/9a7281170b/0/metadata.json",
+      "transcript": "/90/9a7281170b/0/full.jsonl",
+      "context": "",
+      "content_hash": "/90/9a7281170b/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 20,
+    "cache_creation_tokens": 94517,
+    "cache_read_tokens": 779342,
+    "output_tokens": 3992,
+    "api_call_count": 16
+  }
+}

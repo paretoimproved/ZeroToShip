@@ -1,0 +1,23 @@
+Type-check passes. Here's a summary of all changes:
+
+**Done — 4 files changed:**
+
+| File | Change |
+|------|--------|
+| `web/app/archive/page.tsx` | Removed revenue estimate `<span>` + unused `humanizeText` import |
+| `web/app/explore/page.tsx` | Removed revenue estimate `<span>` + unused `humanizeText` import |
+| `web/components/IdeaCard.tsx` | Removed Revenue + Market spans, kept EffortBadge only |
+| `web/components/BookmarkButton.tsx` | Removed `cursor-not-allowed` from pending state |
+
+Frontend build and type-check both pass.
+
+---
+
+Regarding your question about test speed — the tests appear to hang when run via `npm test` in this session. To diagnose properly, I'd need to look at the test config and suite size. Want me to investigate the test performance issue as a separate task? Common quick wins for a 1400+ test suite:
+
+- **Run only affected tests**: `vitest --changed` to run tests related to changed files
+- **Parallel workers**: Ensure Vitest `pool` is set to `threads` or `forks` with enough workers
+- **Sharding in CI**: Split the suite across multiple CI jobs
+- **Mock-heavy tests**: Ensure expensive setup (DB connections, module mocking) isn't repeated unnecessarily
+
+Let me know if you'd like me to dig into the test config and propose concrete optimizations.
