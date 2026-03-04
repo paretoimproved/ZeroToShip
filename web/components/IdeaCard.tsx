@@ -46,12 +46,6 @@ export default function IdeaCard({ idea, rank, index }: IdeaCardProps) {
 
             <div className="flex items-center gap-3 flex-wrap">
               <EffortBadge effort={idea.effortEstimate} size="sm" />
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                Revenue: {idea.revenueEstimate}
-              </span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                Market: {idea.marketSize}
-              </span>
             </div>
           </div>
 

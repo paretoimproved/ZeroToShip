@@ -10,7 +10,6 @@ import { PlatformIcon } from "@/components/ui";
 import { useAuth } from "@/components/AuthProvider";
 import { api } from "@/lib/api";
 import { normalizeIdeas } from "@/lib/normalize";
-import { humanizeText } from "@/lib/humanize";
 import {
   trackIdeaViewed,
   trackArchiveFiltered,
@@ -249,18 +248,12 @@ function CompactCard({
         </div>
       )}
 
-      {/* Bottom: effort badge + revenue */}
-      <div className="flex items-center justify-between gap-2 min-w-0">
+      {/* Bottom: effort badge */}
+      <div className="flex items-center gap-2 min-w-0">
         <span
           className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${getEffortBadgeColor(idea.effortEstimate)}`}
         >
           {getEffortLabel(idea.effortEstimate)}
-        </span>
-        <span
-          title={humanizeText(idea.revenueEstimate)}
-          className="text-xs font-medium text-emerald-700 dark:text-emerald-300 truncate min-w-0"
-        >
-          {humanizeText(idea.revenueEstimate)}
         </span>
       </div>
     </article>

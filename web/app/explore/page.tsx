@@ -3,7 +3,6 @@ import Link from "next/link";
 import LandingNav from "@/components/landing/LandingNav";
 import Footer from "@/components/landing/Footer";
 import type { EffortLevel } from "@/lib/types";
-import { humanizeText } from "@/lib/humanize";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
@@ -122,18 +121,12 @@ export default async function ExplorePage() {
                       {idea.tagline}
                     </p>
 
-                    {/* Effort + Revenue */}
-                    <div className="flex items-center justify-between gap-2 min-w-0">
+                    {/* Effort */}
+                    <div className="flex items-center gap-2 min-w-0">
                       <span
                         className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${getEffortBadgeColor(idea.effortEstimate)}`}
                       >
                         {getEffortLabel(idea.effortEstimate)}
-                      </span>
-                      <span
-                        className="text-xs font-medium text-emerald-700 dark:text-emerald-300 line-clamp-1 min-w-0"
-                        title={humanizeText(idea.revenueEstimate)}
-                      >
-                        {humanizeText(idea.revenueEstimate)}
                       </span>
                     </div>
                   </Link>
