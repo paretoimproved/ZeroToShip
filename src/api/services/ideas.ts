@@ -590,6 +590,13 @@ export async function generateSpecForIdea(
   const limit = getMonthlySpecLimit(tier);
   const used = await getMonthlySpecCount(userId);
 
+  if (limit === 0) {
+    return {
+      limitReached: true,
+      message: 'Agent-ready specs are a Pro feature. Upgrade to Pro for 30 specs/month.',
+    };
+  }
+
   if (used >= limit) {
     return {
       limitReached: true,

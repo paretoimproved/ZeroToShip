@@ -68,7 +68,7 @@ export default function FinalCTA() {
             </form>
 
             <p className="text-primary-200 text-sm mt-6">
-              Full library access free. 3 specs/month included. Upgrade anytime.
+              Full library access free. Upgrade to Pro for agent-ready specs.
             </p>
           </>
         )}

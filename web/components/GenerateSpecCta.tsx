@@ -42,7 +42,42 @@ export default function GenerateSpecCta({
     );
   }
 
-  // State 2: Quota exhausted
+  // State 2a: Free user (limit is 0) — Pro feature teaser
+  if (specUsage && specUsage.limit === 0) {
+    return (
+      <div className="rounded-xl bg-gradient-to-br from-primary-50 to-violet-50 dark:from-primary-950/40 dark:to-violet-950/40 border border-primary-200 dark:border-primary-800 p-5">
+        <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-2">
+          Agent Specs are a Pro Feature
+        </h4>
+        <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1.5 mb-4">
+          <li className="flex items-center gap-2">
+            <svg className="w-3.5 h-3.5 text-primary-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+            User stories with acceptance criteria
+          </li>
+          <li className="flex items-center gap-2">
+            <svg className="w-3.5 h-3.5 text-primary-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+            Database schema with relations
+          </li>
+          <li className="flex items-center gap-2">
+            <svg className="w-3.5 h-3.5 text-primary-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+            API routes and endpoints
+          </li>
+          <li className="flex items-center gap-2">
+            <svg className="w-3.5 h-3.5 text-primary-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+            CLAUDE.md agent instructions
+          </li>
+        </ul>
+        <Link
+          href="/signup?plan=pro"
+          className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+        >
+          Upgrade to Pro
+        </Link>
+      </div>
+    );
+  }
+
+  // State 2b: Pro user with quota exhausted
   if (specUsage && specUsage.used >= specUsage.limit) {
     return (
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -51,15 +86,9 @@ export default function GenerateSpecCta({
             You&apos;ve used all {specUsage.limit} spec generations this month
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Specs include user stories, DB schemas, API routes, and CLAUDE.md instructions — everything you need to start building.
+            Resets next month. Specs include user stories, DB schemas, API routes, and CLAUDE.md instructions.
           </p>
         </div>
-        <Link
-          href="/pricing"
-          className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
-        >
-          Upgrade to Pro
-        </Link>
       </div>
     );
   }

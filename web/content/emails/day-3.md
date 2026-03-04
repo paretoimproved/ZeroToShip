@@ -59,7 +59,7 @@ For $19/mo, you get full specs for every problem, every day. That's research tha
 
 [Upgrade to Pro →]({{upgradeUrl}})
 
-Not ready? No problem. You'll keep getting daily problems on the free plan. Generate up to 3 specs/month.
+Not ready? No problem. You'll keep getting daily problems on the free plan.
 
 — The ZeroToShip Team
 

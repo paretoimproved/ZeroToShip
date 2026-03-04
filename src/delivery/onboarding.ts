@@ -150,7 +150,7 @@ function buildOnboardingHtml(
     <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
     <p>For $19/mo, you get 30 agent-ready specs per month. Transform any brief into a full technical spec with user stories, database schema, API routes, and CLAUDE.md -- ready to paste into your project.</p>
     <p><a href="${escapeHtml(upgradeUrl)}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Upgrade to Pro &rarr;</a></p>
-    <p style="color: #666; font-size: 14px;">Not ready? No problem. Free users get 3 spec generations per month.</p>
+    <p style="color: #666; font-size: 14px;">Not ready? No problem. You'll keep getting daily problems on the free plan.</p>
     <p>-- The ZeroToShip Team</p>
   </div>
   <div style="padding: 16px 24px; text-align: center; background: #f5f5f5; color: #888; font-size: 12px;">
@@ -158,7 +158,7 @@ function buildOnboardingHtml(
     <p><a href="${escapeHtml(preferencesUrl)}" style="color: #888;">Manage preferences</a></p>
   </div>
 </div>`,
-      text: `Hey ${name},\n\nYou've seen 3 days of ideas. Here's what you're missing in the full briefs:\n\n- Technical Spec: Recommended tech stack, architecture, MVP scope\n- Competitor Analysis: Top solutions, strengths/weaknesses, market gaps\n- Business Model: Monetization, pricing, revenue projections\n- Go-to-Market: Launch channels, first 100 customers\n\nFor $19/mo, you get 30 agent-ready specs per month -- transform any brief into a full technical spec ready for your AI agent.\n\nUpgrade to Pro: ${upgradeUrl}\n\nNot ready? No problem. Free users get 3 spec generations per month.\n\n-- The ZeroToShip Team`,
+      text: `Hey ${name},\n\nYou've seen 3 days of ideas. Here's what you're missing in the full briefs:\n\n- Technical Spec: Recommended tech stack, architecture, MVP scope\n- Competitor Analysis: Top solutions, strengths/weaknesses, market gaps\n- Business Model: Monetization, pricing, revenue projections\n- Go-to-Market: Launch channels, first 100 customers\n\nFor $19/mo, you get 30 agent-ready specs per month -- transform any brief into a full technical spec ready for your AI agent.\n\nUpgrade to Pro: ${upgradeUrl}\n\nNot ready? No problem. You'll keep getting daily problems on the free plan.\n\n-- The ZeroToShip Team`,
     },
     day7: {
       html: `
@@ -192,7 +192,7 @@ function buildOnboardingHtml(
     <p><strong>What's Next?</strong></p>
     <p>You're on the free plan. Here's what Pro unlocks:</p>
     <ul>
-      <li>30 agent-ready spec generations/month (vs 3)</li>
+      <li>30 agent-ready spec generations/month</li>
       <li>Custom problem submission</li>
       <li>Problem watching with weekly re-analysis</li>
       <li>Bulk export (Markdown/JSON)</li>

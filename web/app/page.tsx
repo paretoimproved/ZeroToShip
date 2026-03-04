@@ -6,6 +6,7 @@ import SourceStrip from "@/components/landing/SourceStrip";
 import SocialProof from "@/components/landing/SocialProof";
 import HowItWorks from "@/components/landing/HowItWorks";
 import SampleBriefPreview from "@/components/landing/SampleBriefPreview";
+import SampleSpecShowcase from "@/components/landing/SampleSpecShowcase";
 import FeatureTabs from "@/components/landing/FeatureTabs";
 import ComparisonTable from "@/components/landing/ComparisonTable";
 import PricingSection from "@/components/landing/PricingSection";
@@ -119,6 +120,7 @@ export default function LandingPage() {
         <SocialProof />
         <HowItWorks />
         <SampleBriefPreview />
+        <SampleSpecShowcase />
         <FeatureTabs />
         <ComparisonTable />
         <PricingSection />
