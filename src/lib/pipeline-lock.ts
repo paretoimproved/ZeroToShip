@@ -4,11 +4,16 @@
  * Uses Redis SET NX EX to prevent concurrent pipeline runs.
  * When Redis is unavailable, falls back to a PostgreSQL advisory lock
  * so concurrent runs are still prevented.
+ *
+ * IMPORTANT: The PG advisory lock fallback uses a dedicated single-connection
+ * client. Advisory locks are session-level — acquire and release MUST happen
+ * on the same connection. Using the main connection pool would cause the lock
+ * to stick permanently when release lands on a different pooled connection.
  */
 
-import { sql } from 'drizzle-orm';
+import postgres from 'postgres';
 import { getRedisClient } from './redis';
-import { db } from '../api/db/client';
+import { config } from '../config/env';
 
 const LOCK_KEY = 'pipeline:lock';
 const DEFAULT_TTL_SECONDS = 600; // 10 minutes
@@ -41,17 +46,33 @@ end
 `;
 
 /**
+ * Dedicated single-connection client for advisory lock operations.
+ * Guarantees acquire + release always hit the same PG session.
+ */
+let lockClient: ReturnType<typeof postgres> | null = null;
+
+function getLockClient(): ReturnType<typeof postgres> {
+  if (!lockClient) {
+    lockClient = postgres(config.databaseUrl, {
+      max: 1,
+      idle_timeout: 0,
+      connect_timeout: 10,
+      ssl: config.isProduction ? { rejectUnauthorized: false } : false,
+      prepare: false,
+    });
+  }
+  return lockClient;
+}
+
+/**
  * Acquire a PostgreSQL session-level advisory lock.
- * Advisory locks are automatically released when the DB connection closes
- * (e.g. process crash), which makes them ideal for pipeline mutual exclusion.
+ * Uses a dedicated connection so release always targets the same session.
  */
 async function acquireDbAdvisoryLock(): Promise<boolean> {
   try {
-    const rows = await db.execute(
-      sql`SELECT pg_try_advisory_lock(${ADVISORY_LOCK_KEY}) AS locked`
-    );
-    const result = rows as unknown as { locked: boolean }[];
-    return result[0]?.locked === true;
+    const client = getLockClient();
+    const rows = await client`SELECT pg_try_advisory_lock(${ADVISORY_LOCK_KEY}) AS locked`;
+    return rows[0]?.locked === true;
   } catch {
     // DB unreachable — cannot lock, allow run (same as old Redis-absent behavior)
     return true;
@@ -60,12 +81,12 @@ async function acquireDbAdvisoryLock(): Promise<boolean> {
 
 /**
  * Release a PostgreSQL session-level advisory lock.
+ * Uses the same dedicated connection that acquired it.
  */
 async function releaseDbAdvisoryLock(): Promise<void> {
   try {
-    await db.execute(
-      sql`SELECT pg_advisory_unlock(${ADVISORY_LOCK_KEY})`
-    );
+    const client = getLockClient();
+    await client`SELECT pg_advisory_unlock(${ADVISORY_LOCK_KEY})`;
   } catch {
     // Best-effort — lock releases automatically when the session ends
   }
@@ -137,6 +158,16 @@ export async function extendPipelineLock(
   } catch {
     // Redis unreachable — degrade gracefully
     return true;
+  }
+}
+
+/**
+ * Close the dedicated lock client. Call during graceful shutdown.
+ */
+export async function closeLockClient(): Promise<void> {
+  if (lockClient) {
+    await lockClient.end().catch(() => {});
+    lockClient = null;
   }
 }
 

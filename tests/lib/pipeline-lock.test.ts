@@ -2,6 +2,8 @@
  * Tests for pipeline distributed lock
  *
  * All Redis interactions are mocked — no real connection is made.
+ * The postgres module is mocked so the DB advisory lock fallback
+ * doesn't attempt real connections.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -11,10 +13,20 @@ vi.mock('../../src/lib/redis', () => ({
   getRedisClient: vi.fn(),
 }));
 
-// Mock the db module so DB fallback doesn't hit a real connection
-vi.mock('../../src/api/db/client', () => ({
-  db: {
-    execute: vi.fn().mockRejectedValue(new Error('No DB in test')),
+// Mock postgres so DB fallback doesn't hit a real connection.
+// Returns a tagged-template function that can be called like client`SQL`.
+const mockPostgresQuery = vi.fn();
+vi.mock('postgres', () => ({
+  default: vi.fn(() => Object.assign(mockPostgresQuery, {
+    end: vi.fn().mockResolvedValue(undefined),
+  })),
+}));
+
+// Mock env config for databaseUrl
+vi.mock('../../src/config/env', () => ({
+  config: {
+    databaseUrl: 'postgres://test:test@localhost:5432/test',
+    isProduction: false,
   },
 }));
 
@@ -24,6 +36,7 @@ import {
   extendPipelineLock,
   releasePipelineLock,
   getPipelineLockInfo,
+  closeLockClient,
 } from '../../src/lib/pipeline-lock';
 
 const mockGetRedisClient = vi.mocked(getRedisClient);
@@ -85,22 +98,33 @@ describe('acquirePipelineLock', () => {
     );
   });
 
-  it('returns true (graceful degradation) when Redis client is null', async () => {
+  it('falls back to PG advisory lock when Redis client is null', async () => {
     mockGetRedisClient.mockReturnValue(null);
+    mockPostgresQuery.mockResolvedValue([{ locked: true }]);
 
     const result = await acquirePipelineLock('run_abc');
 
     expect(result).toBe(true);
   });
 
-  it('returns true (graceful degradation) when Redis throws', async () => {
+  it('returns true (graceful degradation) when Redis throws and DB also fails', async () => {
     const redis = createMockRedis();
     redis.set.mockRejectedValue(new Error('Connection refused'));
     mockGetRedisClient.mockReturnValue(redis as never);
+    mockPostgresQuery.mockRejectedValue(new Error('DB unreachable'));
 
     const result = await acquirePipelineLock('run_err');
 
     expect(result).toBe(true);
+  });
+
+  it('returns false when PG advisory lock is already held', async () => {
+    mockGetRedisClient.mockReturnValue(null);
+    mockPostgresQuery.mockResolvedValue([{ locked: false }]);
+
+    const result = await acquirePipelineLock('run_held');
+
+    expect(result).toBe(false);
   });
 });
 
@@ -120,11 +144,13 @@ describe('releasePipelineLock', () => {
     );
   });
 
-  it('does nothing when Redis client is null', async () => {
+  it('releases PG advisory lock when Redis client is null', async () => {
     mockGetRedisClient.mockReturnValue(null);
+    mockPostgresQuery.mockResolvedValue([{ pg_advisory_unlock: true }]);
 
-    // Should not throw
     await releasePipelineLock('run_abc');
+
+    expect(mockPostgresQuery).toHaveBeenCalled();
   });
 
   it('silently swallows Redis errors', async () => {
@@ -239,5 +265,11 @@ describe('getPipelineLockInfo', () => {
     const info = await getPipelineLockInfo();
 
     expect(info).toEqual({ locked: false });
+  });
+});
+
+describe('closeLockClient', () => {
+  it('does not throw when called without prior lock usage', async () => {
+    await expect(closeLockClient()).resolves.toBeUndefined();
   });
 });

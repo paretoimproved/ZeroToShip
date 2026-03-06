@@ -11,6 +11,7 @@ import { runPipeline } from './orchestrator';
 import { startScheduler, stopScheduler } from './index';
 import { checkPipelineFreshness } from './watchdog';
 import { closeDatabase } from '../api/db/client';
+import { closeLockClient } from '../lib/pipeline-lock';
 import { processOnboardingDrip } from '../delivery/onboarding';
 import { logger } from './utils/logger';
 import type { PipelineConfig } from './types';
@@ -253,17 +254,21 @@ async function main(): Promise<void> {
       });
 
       // Handle graceful shutdown
-      process.on('SIGINT', () => {
+      process.on('SIGINT', async () => {
         console.log('\nShutting down scheduler...');
         stopScheduler();
         server.close();
+        await closeLockClient();
+        await closeDatabase();
         process.exit(0);
       });
 
-      process.on('SIGTERM', () => {
+      process.on('SIGTERM', async () => {
         console.log('\nShutting down scheduler...');
         stopScheduler();
         server.close();
+        await closeLockClient();
+        await closeDatabase();
         process.exit(0);
       });
 
