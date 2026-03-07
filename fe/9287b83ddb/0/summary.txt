@@ -1,0 +1,29 @@
+All 8 deliver phase tests pass. Here's the results summary:
+
+## QA Test Results
+
+| Test Case | Status | Notes |
+|-----------|--------|-------|
+| **TC-001**: Column exists in production | PASS | `unsubscribe_token`, `varchar`, nullable confirmed |
+| **TC-001**: Backfill complete | PASS | 0 rows with NULL token (all 5 backfilled) |
+| **TC-002**: Dry-run pipeline | **NOT RUN** | Requires `npm run scheduler run --dry-run` against production |
+| **TC-005**: Full pipeline delivery | **NOT RUN** | Wait for next 5:00 AM cron or trigger manually |
+| **TC-006/007**: Deliver phase regression | PASS | 8/8 tests pass (219ms) |
+
+## Remaining Manual Steps
+
+1. **Run dry-run** to validate the query works end-to-end against production:
+   ```bash
+   npm run scheduler run --dry-run
+   ```
+2. **Monitor the next scheduled run** (5:00 AM) — confirm the dashboard shows a green deliver dot and `status: completed`
+
+## Test Gaps Identified
+
+The test plan is saved at `tests/qa/email-delivery-fix-2026-03-07.md`. Three key gaps flagged:
+
+1. **DB mocks hide schema mismatches** — `deliver.test.ts` mocks the entire Drizzle chain, so missing columns are invisible to tests. The `mockSubscribers` helper doesn't even include `unsubscribeToken`.
+2. **No migration check in CI** — nothing verifies that pending migrations have been applied before deploy.
+3. **Mock shape drift** — mock return values don't match the real query output shape.
+
+Want me to address any of these gaps (e.g., update the mock to include `unsubscribeToken`, or add a CI migration check)?
