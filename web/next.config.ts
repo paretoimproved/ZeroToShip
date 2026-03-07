@@ -1,3 +1,4 @@
+import path from "path";
 import type { NextConfig } from "next";
 
 // Extract just the origin (scheme + host + port) from the API URL for CSP.
@@ -15,6 +16,7 @@ const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || "";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  outputFileTracingRoot: path.join(__dirname, ".."),
   async headers() {
     return [
       {
