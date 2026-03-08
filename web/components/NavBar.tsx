@@ -117,12 +117,6 @@ export default function NavBar() {
 
   return (
     <>
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-white focus:text-black"
-      >
-        Skip to content
-      </a>
       <nav
         className={`fixed top-0 left-0 right-0 z-40 h-16 transition-colors duration-200 ${
           isScrolled
