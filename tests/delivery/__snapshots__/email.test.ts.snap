@@ -10,7 +10,7 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for multiple
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="supported-color-schemes" content="light dark">
-<title>Today&#39;s #1: Idea 1 (weekend build)</title>
+<title>Idea 1 tops today&#39;s 5 problems</title>
 <!--[if mso]>
 <style type="text/css">
 table { border-collapse: collapse; }
@@ -225,7 +225,7 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for multiple
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="supported-color-schemes" content="light dark">
-<title>Today&#39;s #1: Idea 1 (weekend build)</title>
+<title>Idea 1 tops today&#39;s 5 problems</title>
 <!--[if mso]>
 <style type="text/css">
 table { border-collapse: collapse; }
@@ -551,7 +551,7 @@ exports[`Email Builder > HTML template snapshots > matches snapshot for single b
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="supported-color-schemes" content="light dark">
-<title>Today&#39;s #1: SnapshotApp (weekend build)</title>
+<title>SnapshotApp tops today&#39;s 1 problems</title>
 <!--[if mso]>
 <style type="text/css">
 table { border-collapse: collapse; }

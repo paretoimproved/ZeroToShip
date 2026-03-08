@@ -481,8 +481,24 @@ describe('Email Builder', () => {
 // ============================================================================
 
 describe('Email Service', () => {
+  const origResendKey = process.env.RESEND_API_KEY;
+
   beforeEach(() => {
     vi.resetAllMocks();
+    // Ensure sendEmail() in src/lib/resend.ts sees a key so it doesn't
+    // short-circuit with "No Resend API key configured".
+    process.env.RESEND_API_KEY = 'test_key_for_ci';
+    _resetConfigForTesting();
+  });
+
+  afterEach(() => {
+    // Restore original env state
+    if (origResendKey !== undefined) {
+      process.env.RESEND_API_KEY = origResendKey;
+    } else {
+      delete process.env.RESEND_API_KEY;
+    }
+    _resetConfigForTesting();
   });
 
   // --------------------------------------------------------------------------
