@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.4.7",
+  "checkpoint_id": "3678c4398460",
+  "strategy": "auto-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "web/app/debug/[id]/page.tsx",
+    "web/app/explore/page.tsx",
+    "web/components/explore/ExploreGrid.tsx"
+  ],
+  "sessions": [
+    {
+      "metadata": "/36/78c4398460/0/metadata.json",
+      "transcript": "/36/78c4398460/0/full.jsonl",
+      "context": "",
+      "content_hash": "/36/78c4398460/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 29,
+    "cache_creation_tokens": 37921,
+    "cache_read_tokens": 2346263,
+    "output_tokens": 8220,
+    "api_call_count": 25
+  }
+}

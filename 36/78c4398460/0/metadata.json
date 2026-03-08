@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.4.7",
+  "checkpoint_id": "3678c4398460",
+  "session_id": "ac7ff410-8aa6-46b4-a2cb-aed44954d1ec",
+  "strategy": "auto-commit",
+  "created_at": "2026-03-08T14:50:26.902743Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "web/app/debug/[id]/page.tsx",
+    "web/app/explore/page.tsx",
+    "web/components/explore/ExploreGrid.tsx"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "b98cbe0f6c36",
+  "checkpoint_transcript_start": 1246,
+  "transcript_lines_at_start": 1246,
+  "token_usage": {
+    "input_tokens": 29,
+    "cache_creation_tokens": 37921,
+    "cache_read_tokens": 2346263,
+    "output_tokens": 8220,
+    "api_call_count": 25,
+    "subagent_tokens": {
+      "input_tokens": 32,
+      "cache_creation_tokens": 50695,
+      "cache_read_tokens": 239093,
+      "output_tokens": 3159,
+      "api_call_count": 10
+    }
+  }
+}
