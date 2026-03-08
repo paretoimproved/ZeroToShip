@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.4.7",
+  "checkpoint_id": "69d8d0b92276",
+  "strategy": "auto-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".claude/settings.json",
+    ".github/workflows/ci.yml",
+    "scripts/verify-deploy.sh"
+  ],
+  "sessions": [
+    {
+      "metadata": "/69/d8d0b92276/0/metadata.json",
+      "transcript": "/69/d8d0b92276/0/full.jsonl",
+      "context": "",
+      "content_hash": "/69/d8d0b92276/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 18,
+    "cache_creation_tokens": 8783,
+    "cache_read_tokens": 1229970,
+    "output_tokens": 4825,
+    "api_call_count": 16
+  }
+}

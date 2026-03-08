@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.4.7",
+  "checkpoint_id": "69d8d0b92276",
+  "session_id": "ac7ff410-8aa6-46b4-a2cb-aed44954d1ec",
+  "strategy": "auto-commit",
+  "created_at": "2026-03-08T15:42:27.738474Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".claude/settings.json",
+    ".github/workflows/ci.yml",
+    "scripts/verify-deploy.sh"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "41d8409b9ab4",
+  "checkpoint_transcript_start": 1909,
+  "transcript_lines_at_start": 1909,
+  "token_usage": {
+    "input_tokens": 18,
+    "cache_creation_tokens": 8783,
+    "cache_read_tokens": 1229970,
+    "output_tokens": 4825,
+    "api_call_count": 16,
+    "subagent_tokens": {
+      "input_tokens": 28,
+      "cache_creation_tokens": 28571,
+      "cache_read_tokens": 98851,
+      "output_tokens": 1098,
+      "api_call_count": 5
+    }
+  }
+}
