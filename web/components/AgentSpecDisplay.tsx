@@ -11,6 +11,13 @@ interface AgentSpecDisplayProps {
 export default function AgentSpecDisplay({ spec, onCopy }: AgentSpecDisplayProps) {
   const [copied, setCopied] = useState(false);
 
+  // Defensive defaults for AI-generated JSON that may have missing fields
+  const evidence = spec.evidence ?? { sourceCount: 0, platforms: [], signalScore: 0, trend: 'stable' as const };
+  const userStories = spec.userStories ?? [];
+  const techArch = spec.technicalArchitecture ?? { stack: [], stackRationale: '', databaseSchema: [], apiEndpoints: [], keyComponents: '' };
+  const mvpScope = spec.mvpScope ?? { mustHave: [], skipForNow: [] };
+  const sources = spec.sources ?? [];
+
   function handleCopy() {
     onCopy();
     setCopied(true);
@@ -82,13 +89,13 @@ export default function AgentSpecDisplay({ spec, onCopy }: AgentSpecDisplayProps
           <p className="text-gray-900 dark:text-white">{spec.problem}</p>
           <div className="mt-3 flex flex-wrap gap-3">
             <span className="inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-              {spec.evidence.sourceCount} sources
+              {evidence.sourceCount} sources
             </span>
             <span className="inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-              Signal: {spec.evidence.signalScore}/100
+              Signal: {evidence.signalScore}/100
             </span>
             <span className="inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-              Trend: {spec.evidence.trend}
+              Trend: {evidence.trend}
             </span>
           </div>
         </section>
@@ -97,7 +104,7 @@ export default function AgentSpecDisplay({ spec, onCopy }: AgentSpecDisplayProps
         <section>
           <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">User Stories</h4>
           <div className="space-y-3">
-            {spec.userStories.map((story, i) => (
+            {userStories.map((story, i) => (
               <div key={i} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
                 <p className="text-sm text-gray-900 dark:text-white font-medium">
                   As <span className="text-primary-600 dark:text-primary-400">{story.persona}</span>, I want{" "}
@@ -105,7 +112,7 @@ export default function AgentSpecDisplay({ spec, onCopy }: AgentSpecDisplayProps
                   <span className="text-primary-600 dark:text-primary-400">{story.outcome}</span>
                 </p>
                 <ul className="mt-2 space-y-1">
-                  {story.acceptanceCriteria.map((criteria, j) => (
+                  {(story.acceptanceCriteria ?? []).map((criteria, j) => (
                     <li key={j} className="flex items-start gap-2 text-xs text-gray-600 dark:text-gray-400">
                       <span className="text-gray-400 mt-0.5">&#9744;</span>
                       {criteria}
@@ -125,13 +132,13 @@ export default function AgentSpecDisplay({ spec, onCopy }: AgentSpecDisplayProps
           <div className="mb-4">
             <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Stack</p>
             <div className="flex flex-wrap gap-2">
-              {spec.technicalArchitecture.stack.map((tech) => (
+              {techArch.stack.map((tech) => (
                 <span key={tech} className="inline-flex items-center text-xs font-mono px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
                   {tech}
                 </span>
               ))}
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{spec.technicalArchitecture.stackRationale}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{techArch.stackRationale}</p>
           </div>
 
           {/* Database Schema */}
@@ -147,10 +154,10 @@ export default function AgentSpecDisplay({ spec, onCopy }: AgentSpecDisplayProps
                   </tr>
                 </thead>
                 <tbody>
-                  {spec.technicalArchitecture.databaseSchema.map((table) => (
+                  {(techArch.databaseSchema ?? []).map((table) => (
                     <tr key={table.table} className="border-b border-gray-100 dark:border-gray-800">
                       <td className="py-2 pr-4 font-mono text-xs text-gray-900 dark:text-white">{table.table}</td>
-                      <td className="py-2 pr-4 font-mono text-xs text-gray-600 dark:text-gray-400">{table.keyColumns.join(", ")}</td>
+                      <td className="py-2 pr-4 font-mono text-xs text-gray-600 dark:text-gray-400">{(table.keyColumns ?? []).join(", ")}</td>
                       <td className="py-2 text-xs text-gray-600 dark:text-gray-400">{table.relations}</td>
                     </tr>
                   ))}
@@ -172,7 +179,7 @@ export default function AgentSpecDisplay({ spec, onCopy }: AgentSpecDisplayProps
                   </tr>
                 </thead>
                 <tbody>
-                  {spec.technicalArchitecture.apiEndpoints.map((endpoint, i) => (
+                  {(techArch.apiEndpoints ?? []).map((endpoint, i) => (
                     <tr key={i} className="border-b border-gray-100 dark:border-gray-800">
                       <td className="py-2 pr-4">
                         <span className={`inline-flex text-xs font-mono font-bold px-1.5 py-0.5 rounded ${
@@ -197,7 +204,7 @@ export default function AgentSpecDisplay({ spec, onCopy }: AgentSpecDisplayProps
           <div>
             <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Key Components</p>
             <pre className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 text-xs font-mono text-gray-700 dark:text-gray-300 overflow-x-auto whitespace-pre">
-              {spec.technicalArchitecture.keyComponents}
+              {techArch.keyComponents}
             </pre>
           </div>
         </section>
@@ -209,7 +216,7 @@ export default function AgentSpecDisplay({ spec, onCopy }: AgentSpecDisplayProps
             <div>
               <p className="text-xs font-medium text-green-600 dark:text-green-400 mb-2">Must Have</p>
               <ul className="space-y-1.5">
-                {spec.mvpScope.mustHave.map((item, i) => (
+                {(mvpScope.mustHave ?? []).map((item, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
                     <span className="text-gray-400 mt-0.5">&#9744;</span>
                     {item}
@@ -220,7 +227,7 @@ export default function AgentSpecDisplay({ spec, onCopy }: AgentSpecDisplayProps
             <div>
               <p className="text-xs font-medium text-gray-400 dark:text-gray-500 mb-2">Skip for Now</p>
               <ul className="space-y-1.5">
-                {spec.mvpScope.skipForNow.map((item, i) => (
+                {(mvpScope.skipForNow ?? []).map((item, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-gray-400 dark:text-gray-500 line-through">
                     <span className="mt-0.5">&#9744;</span>
                     {item}
@@ -240,11 +247,11 @@ export default function AgentSpecDisplay({ spec, onCopy }: AgentSpecDisplayProps
         </section>
 
         {/* Sources */}
-        {spec.sources.length > 0 && (
+        {sources.length > 0 && (
           <section>
             <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Sources</h4>
             <div className="space-y-2">
-              {spec.sources.map((source, i) => (
+              {sources.map((source, i) => (
                 <a
                   key={i}
                   href={source.url}
@@ -276,54 +283,59 @@ export function formatSpecAsMarkdown(spec: AgentSpec): string {
   lines.push('## Problem');
   lines.push(spec.problem);
   lines.push('');
-  lines.push(`**Evidence**: ${spec.evidence.sourceCount} sources across ${spec.evidence.platforms.join(', ')}`);
-  lines.push(`**Signal strength**: ${spec.evidence.signalScore}/100 | **Trend**: ${spec.evidence.trend}`);
+  const ev = spec.evidence ?? { sourceCount: 0, platforms: [], signalScore: 0, trend: 'stable' };
+  const ta = spec.technicalArchitecture ?? { stack: [], stackRationale: '', databaseSchema: [], apiEndpoints: [], keyComponents: '' };
+  const mv = spec.mvpScope ?? { mustHave: [], skipForNow: [] };
+  const sr = spec.sources ?? [];
+
+  lines.push(`**Evidence**: ${ev.sourceCount} sources across ${(ev.platforms ?? []).join(', ')}`);
+  lines.push(`**Signal strength**: ${ev.signalScore}/100 | **Trend**: ${ev.trend}`);
   lines.push('');
 
   lines.push('## User Stories');
-  for (const story of spec.userStories) {
+  for (const story of spec.userStories ?? []) {
     lines.push(`- As ${story.persona}, I want ${story.capability} so that ${story.outcome}`);
-    for (const criteria of story.acceptanceCriteria) {
+    for (const criteria of story.acceptanceCriteria ?? []) {
       lines.push(`  - [ ] ${criteria}`);
     }
   }
   lines.push('');
 
   lines.push('## Technical Architecture');
-  lines.push(`- **Stack**: ${spec.technicalArchitecture.stack.join(', ')}`);
-  lines.push(`- **Why this stack**: ${spec.technicalArchitecture.stackRationale}`);
+  lines.push(`- **Stack**: ${(ta.stack ?? []).join(', ')}`);
+  lines.push(`- **Why this stack**: ${ta.stackRationale}`);
   lines.push('');
 
   lines.push('### Database Schema');
   lines.push('| Table | Key Columns | Relations |');
   lines.push('|-------|------------|-----------|');
-  for (const table of spec.technicalArchitecture.databaseSchema) {
-    lines.push(`| ${table.table} | ${table.keyColumns.join(', ')} | ${table.relations} |`);
+  for (const table of (ta.databaseSchema ?? [])) {
+    lines.push(`| ${table.table} | ${(table.keyColumns ?? []).join(', ')} | ${table.relations} |`);
   }
   lines.push('');
 
   lines.push('### API Endpoints');
   lines.push('| Method | Route | Purpose |');
   lines.push('|--------|-------|---------|');
-  for (const endpoint of spec.technicalArchitecture.apiEndpoints) {
+  for (const endpoint of (ta.apiEndpoints ?? [])) {
     lines.push(`| ${endpoint.method} | ${endpoint.route} | ${endpoint.purpose} |`);
   }
   lines.push('');
 
   lines.push('### Key Components');
   lines.push('```');
-  lines.push(spec.technicalArchitecture.keyComponents);
+  lines.push(ta.keyComponents);
   lines.push('```');
   lines.push('');
 
   lines.push('## MVP Scope (48 hours)');
   lines.push('### Must Have');
-  for (const item of spec.mvpScope.mustHave) {
+  for (const item of (mv.mustHave ?? [])) {
     lines.push(`- [ ] ${item}`);
   }
   lines.push('');
   lines.push('### Skip for Now');
-  for (const item of spec.mvpScope.skipForNow) {
+  for (const item of (mv.skipForNow ?? [])) {
     lines.push(`- [ ] ${item}`);
   }
   lines.push('');
@@ -331,12 +343,12 @@ export function formatSpecAsMarkdown(spec: AgentSpec): string {
   lines.push('## Agent Instructions');
   lines.push('> Paste this into your project\'s CLAUDE.md or .cursorrules');
   lines.push('');
-  lines.push(spec.agentInstructions);
+  lines.push(spec.agentInstructions ?? '');
   lines.push('');
 
-  if (spec.sources.length > 0) {
+  if (sr.length > 0) {
     lines.push('## Sources');
-    for (const source of spec.sources) {
+    for (const source of sr) {
       lines.push(`- [${source.title}](${source.url}) — ${source.platform}, ${source.score} points, ${source.comments} comments`);
     }
   }
