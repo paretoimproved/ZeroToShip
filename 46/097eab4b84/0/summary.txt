@@ -1,0 +1,14 @@
+Removed the `deploy-railway` job. The new flow:
+
+```
+push to main
+    │
+    └─→ CI: test job (build + tests)
+          ├─ PASS → deploy-vercel job (from CI)
+          │       → Railway auto-deploys (Wait for CI)
+          └─ FAIL → nothing deploys
+```
+
+No Railway token needed as a GitHub secret anymore — Railway handles its own deploys. You just needed that "Wait for CI" toggle, which you've already enabled.
+
+Ready to commit and test when you've clicked "Apply 1 change" on Railway.
