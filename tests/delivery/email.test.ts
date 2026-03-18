@@ -99,6 +99,15 @@ describe('Email Builder', () => {
   // --------------------------------------------------------------------------
 
   describe('HTML template snapshots', () => {
+    // Pin date so the deterministic subject-line rotation is stable across CI runs
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-01-15T12:00:00Z'));
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     it('matches snapshot for single brief (free tier)', () => {
       const brief = createMockBrief({ name: 'SnapshotApp' });
       const result = buildDailyEmail([brief], 'free', {
