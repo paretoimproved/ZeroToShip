@@ -1,0 +1,1 @@
+Can I just have you SSH into this terminal to complete the setup for me?
