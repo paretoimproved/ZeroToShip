@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.7",
+  "checkpoint_id": "a87dbacbb427",
+  "strategy": "auto-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".superpowers/brainstorm/58343-1774105106/.server.pid"
+  ],
+  "sessions": [
+    {
+      "metadata": "/a8/7dbacbb427/0/metadata.json",
+      "transcript": "/a8/7dbacbb427/0/full.jsonl",
+      "context": "",
+      "content_hash": "/a8/7dbacbb427/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 5,
+    "cache_creation_tokens": 936,
+    "cache_read_tokens": 663772,
+    "output_tokens": 768,
+    "api_call_count": 3
+  }
+}

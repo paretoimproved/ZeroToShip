@@ -1,0 +1,23 @@
+{
+  "cli_version": "0.4.7",
+  "checkpoint_id": "a87dbacbb427",
+  "session_id": "3dd1e456-ad05-43b0-8de8-34a91f97d386",
+  "strategy": "auto-commit",
+  "created_at": "2026-03-21T15:38:03.558124Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".superpowers/brainstorm/58343-1774105106/.server.pid"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "01e9ceddc5d2",
+  "checkpoint_transcript_start": 515,
+  "transcript_lines_at_start": 515,
+  "token_usage": {
+    "input_tokens": 5,
+    "cache_creation_tokens": 936,
+    "cache_read_tokens": 663772,
+    "output_tokens": 768,
+    "api_call_count": 3
+  }
+}
