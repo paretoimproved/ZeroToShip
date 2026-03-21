@@ -1,0 +1,10 @@
+Yes — Hetzner requires identity verification for new accounts. They typically ask for:
+
+- **Government-issued ID** (passport or national ID card)
+- **Credit card or PayPal** for billing
+
+Some accounts get auto-verified with just a credit card, but many new signups get prompted to upload an ID photo. It's a one-time thing for fraud prevention.
+
+If you'd prefer to skip that, **DigitalOcean** and **Vultr** usually only need a credit card — no ID upload. Similar specs would be around $48/mo (DO) or $24/mo (Vultr for 4 vCPU/8GB).
+
+Want to switch to one of those instead?
