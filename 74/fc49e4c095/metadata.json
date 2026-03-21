@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.7",
+  "checkpoint_id": "74fc49e4c095",
+  "strategy": "auto-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".context/retros/2026-03-21-1.json"
+  ],
+  "sessions": [
+    {
+      "metadata": "/74/fc49e4c095/0/metadata.json",
+      "transcript": "/74/fc49e4c095/0/full.jsonl",
+      "context": "",
+      "content_hash": "/74/fc49e4c095/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 187,
+    "cache_creation_tokens": 35544,
+    "cache_read_tokens": 181605,
+    "output_tokens": 1586,
+    "api_call_count": 6
+  }
+}

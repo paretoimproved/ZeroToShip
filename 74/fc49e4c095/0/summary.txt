@@ -1,0 +1,61 @@
+You're all set on prerequisites -- Bun 1.2.5 and Claude Code 2.1.81 (needs 2.1.80+).
+
+Here's the full setup, 5 steps:
+
+## Step 1: Create a Telegram Bot
+
+1. Open Telegram on your phone and chat with [@BotFather](https://t.me/BotFather)
+2. Send `/newbot`
+3. Give it a display name and a unique username ending in `bot`
+4. Copy the token BotFather gives you (format: `123456789:AAHfiqksKZ8...`)
+
+## Step 2: Install the Plugin
+
+Run this inside Claude Code (you can type it right here):
+
+```
+/plugin install telegram@claude-plugins-official
+```
+
+If it says "plugin not found", run this first:
+```
+/plugin marketplace add anthropics/claude-plugins-official
+```
+
+## Step 3: Configure Your Bot Token
+
+```
+/telegram:configure <your-bot-token>
+```
+
+This saves the token to `~/.claude/channels/telegram/.env`.
+
+## Step 4: Restart with Channels Enabled
+
+Exit this session and restart Claude Code with:
+
+```bash
+claude --channels plugin:telegram@claude-plugins-official
+```
+
+## Step 5: Pair Your Phone
+
+1. DM your bot on Telegram from your phone
+2. The bot replies with a 6-character pairing code
+3. Back in Claude Code, run:
+   ```
+   /telegram:access pair <code>
+   ```
+4. Lock it down so only you can message the bot:
+   ```
+   /telegram:access policy allowlist
+   ```
+
+After that, any message you send to your Telegram bot from your phone will arrive in your running Claude Code session, and Claude's replies will appear back in Telegram.
+
+**Important notes:**
+- The bot only works while Claude Code is running with `--channels`
+- If Claude hits a permission prompt while you're away, the session pauses until you approve locally
+- Photos you send are downloaded to `~/.claude/channels/telegram/inbox/`
+
+Want to start with Step 1, or have you already created the bot?

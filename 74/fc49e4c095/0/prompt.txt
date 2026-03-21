@@ -1,0 +1,1 @@
+I need help installing the claude connections MCP so I can utilize my telegram bot to send messages to claude code on my macbook from my phone
