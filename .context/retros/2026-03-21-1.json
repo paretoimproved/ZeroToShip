@@ -1,0 +1,40 @@
+{
+  "date": "2026-03-21",
+  "window": "7d",
+  "metrics": {
+    "commits": 3,
+    "contributors": 1,
+    "prs_merged": 0,
+    "insertions": 173,
+    "deletions": 55,
+    "net_loc": 118,
+    "test_loc": 9,
+    "test_ratio": 0.05,
+    "active_days": 1,
+    "sessions": 1,
+    "deep_sessions": 0,
+    "avg_session_minutes": 31,
+    "loc_per_session_hour": 350,
+    "feat_pct": 0.0,
+    "fix_pct": 0.67,
+    "peak_hour": 6,
+    "ai_assisted_commits": 3
+  },
+  "authors": {
+    "Brandon Queener": {
+      "commits": 3,
+      "insertions": 173,
+      "deletions": 55,
+      "test_ratio": 0.05,
+      "top_area": "scripts/"
+    }
+  },
+  "streak_days": 1,
+  "tweetable": "Week of Mar 11: 3 commits, 173 LOC, 5% tests, 0 PRs, peak: 6am PT | Streak: 1d",
+  "test_health": {
+    "total_test_files": 278,
+    "tests_added_this_period": 1,
+    "regression_test_commits": 0,
+    "test_files_changed": 1
+  }
+}
