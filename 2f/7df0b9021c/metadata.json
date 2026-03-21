@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.7",
+  "checkpoint_id": "2f7df0b9021c",
+  "strategy": "auto-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "scripts/vps-setup.sh"
+  ],
+  "sessions": [
+    {
+      "metadata": "/2f/7df0b9021c/0/metadata.json",
+      "transcript": "/2f/7df0b9021c/0/full.jsonl",
+      "context": "",
+      "content_hash": "/2f/7df0b9021c/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 10,
+    "cache_creation_tokens": 2449,
+    "cache_read_tokens": 254717,
+    "output_tokens": 1989,
+    "api_call_count": 6
+  }
+}

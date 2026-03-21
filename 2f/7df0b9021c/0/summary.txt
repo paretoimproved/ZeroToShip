@@ -1,0 +1,1 @@
+Script saved at `scripts/vps-setup.sh` in your IdeaForge repo. Sent the full walkthrough to Telegram in chunks. Ready to help troubleshoot once they SSH into the Beelink.
