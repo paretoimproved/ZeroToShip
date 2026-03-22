@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.4.7",
+  "checkpoint_id": "135d1ee6debe",
+  "session_id": "4f9952f7-1572-4e88-8088-3915d1c75e4f",
+  "strategy": "auto-commit",
+  "created_at": "2026-03-22T20:01:10.522315Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "TODOS.md"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "1ebc3566560e",
+  "token_usage": {
+    "input_tokens": 340,
+    "cache_creation_tokens": 248289,
+    "cache_read_tokens": 5830436,
+    "output_tokens": 45023,
+    "api_call_count": 58,
+    "subagent_tokens": {
+      "input_tokens": 2563,
+      "cache_creation_tokens": 177594,
+      "cache_read_tokens": 1737909,
+      "output_tokens": 12918,
+      "api_call_count": 29
+    }
+  }
+}

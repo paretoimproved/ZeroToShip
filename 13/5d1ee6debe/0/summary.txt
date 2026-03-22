@@ -1,0 +1,32 @@
+**STATUS: DONE**
+
+---
+
+## Full Review Summary — All Amendments to Plan
+
+Here's everything that should be added to `~/.claude/plans/adaptive-questing-reddy.md` before implementation:
+
+### From Eng Review (4 decisions):
+1. **1A:** `GenerateSpecCta` State 2b becomes tier-aware — free users see upgrade CTA when exhausted
+2. **2A:** Update `FEATURE_ACCESS.ideas.generateSpec.minTier` from `'pro'` to `'free'`
+3. **3A:** Full ~15 test coverage (config + CTA + pages)
+4. **C:** Extract shared pricing plan data into `web/lib/plans.ts`
+
+### From Eng Review (corrections, no decisions):
+- **Remove** `generateMetadata` and JSON-LD from Step 2 — already in `layout.tsx`
+- **Add** `IdeaSpecSection` client wrapper to Step 2 file list
+- **Add** conditional back link to Step 2
+- **Remove** mock data from Step 2
+
+### From Design Review (2 decisions):
+5. **1A:** Spec showcase CTA: free-first ("Sign up free to generate your first spec")
+6. **A:** Added DESIGN.md TODO to TODOS.md
+
+### From Design Review (additions, no decisions):
+- Wrap `/idea/[id]` in `LandingNav` + `Footer` for public access
+- Showcase page hierarchy: context header → source idea link → spec → free-first CTA
+- Use `max-w-4xl` for showcase page
+- Extract skeleton to `loading.tsx`
+- Add trust-building provenance header to showcase (signal score, source count from spec data)
+
+All reviews CLEARED. Run `/ship` when implementation is done.
