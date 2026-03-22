@@ -1,0 +1,17 @@
+{
+  "cli_version": "0.4.7",
+  "checkpoint_id": "ff3d0518b211",
+  "strategy": "auto-commit",
+  "branch": "feature/demo-ready-launch",
+  "checkpoints_count": 0,
+  "files_touched": null,
+  "sessions": [
+    {
+      "metadata": "/ff/3d0518b211/0/metadata.json",
+      "transcript": "/ff/3d0518b211/0/full.jsonl",
+      "context": "",
+      "content_hash": "/ff/3d0518b211/0/content_hash.txt",
+      "prompt": ""
+    }
+  ]
+}
