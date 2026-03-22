@@ -2,15 +2,12 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { BASE_PLANS } from "@/lib/plans";
+import type { PlanFeature } from "@/lib/plans";
 
 type BillingCycle = "monthly" | "annual";
 
-interface PlanFeature {
-  text: string;
-  included: boolean;
-}
-
-interface Plan {
+interface LandingPlan {
   name: string;
   monthlyPrice: number;
   annualPrice: number;
@@ -23,47 +20,10 @@ interface Plan {
   highlighted: boolean;
 }
 
-const plans: Plan[] = [
-  {
-    name: "Free",
-    monthlyPrice: 0,
-    annualPrice: 0,
-    annualTotal: 0,
-    annualSavingsPercent: 0,
-    description: "Full archive access — browse every problem",
-    features: [
-      { text: "Full archive access — every brief, every section", included: true },
-      { text: "Daily email with complete briefs", included: true },
-      { text: "Search & filter all ideas", included: true },
-      { text: "Save & bookmark ideas", included: true },
-      { text: "Agent-spec generation", included: false },
-      { text: "Custom problem submission", included: false },
-      { text: "Problem watching & re-analysis", included: false },
-    ],
-    cta: "Get Started Free",
-    ctaRoute: "/signup",
-    highlighted: false,
-  },
-  {
-    name: "Pro",
-    monthlyPrice: 19,
-    annualPrice: 15.83,
-    annualTotal: 190,
-    annualSavingsPercent: 17,
-    description: "30 agent specs/month + custom problems",
-    features: [
-      { text: "Everything in Free", included: true },
-      { text: "30 agent-spec generations per month", included: true },
-      { text: "Custom problem submission", included: true },
-      { text: "Problem watching with weekly re-analysis", included: true },
-      { text: "Bulk export (Markdown & JSON)", included: true },
-      { text: "Priority support", included: true },
-    ],
-    cta: "Start 7-Day Free Trial",
-    ctaRoute: "/signup?plan=pro",
-    highlighted: true,
-  },
-];
+const plans: LandingPlan[] = BASE_PLANS.map((p) => ({
+  ...p,
+  ctaRoute: p.name === "Free" ? "/signup" : "/signup?plan=pro",
+}));
 
 function CheckIcon() {
   return (
