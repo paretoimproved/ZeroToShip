@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.4.7",
+  "checkpoint_id": "7795fd837dc2",
+  "session_id": "4f9952f7-1572-4e88-8088-3915d1c75e4f",
+  "strategy": "auto-commit",
+  "created_at": "2026-03-22T20:53:25.339527Z",
+  "branch": "feature/demo-ready-launch",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "web/app/idea/[id]/page.tsx",
+    "web/app/sitemap.ts"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "7ae6bf384884",
+  "checkpoint_transcript_start": 402,
+  "transcript_lines_at_start": 402,
+  "token_usage": {
+    "input_tokens": 40,
+    "cache_creation_tokens": 168361,
+    "cache_read_tokens": 5502680,
+    "output_tokens": 12830,
+    "api_call_count": 33,
+    "subagent_tokens": {
+      "input_tokens": 2950,
+      "cache_creation_tokens": 83798,
+      "cache_read_tokens": 688303,
+      "output_tokens": 10327,
+      "api_call_count": 23
+    }
+  }
+}

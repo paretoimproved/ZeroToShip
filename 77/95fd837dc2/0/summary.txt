@@ -1,0 +1,23 @@
+All 4 tasks complete. Here's the summary:
+
+**Step 1: Free tier spec + pricing DRY** (5 files changed, 1 new)
+- `src/api/config/tiers.ts` — `SPEC_GENERATION_LIMITS.free: 0 → 1`, `FEATURE_ACCESS.ideas.generateSpec.minTier: 'pro' → 'free'`
+- `web/components/GenerateSpecCta.tsx` — tier-aware State 2b (free users see upgrade CTA)
+- `web/lib/plans.ts` — new shared pricing data (DRY extraction)
+- `web/components/landing/PricingSection.tsx` — uses shared plans data
+- `web/app/pricing/PricingPageContent.tsx` — uses shared plans data
+- `tests/api/tiers.test.ts` — updated assertions
+
+**Step 2: Public idea pages** (3 files changed/new)
+- `web/app/idea/[id]/page.tsx` — server component, LandingNav + Footer, public
+- `web/components/IdeaSpecSection.tsx` — client wrapper for auth + spec logic
+- `web/app/idea/[id]/loading.tsx` — skeleton loading state
+
+**Step 3: Spec showcase** (3 files changed/new)
+- `web/app/explore/specs/[slug]/page.tsx` — showcase with provenance, CTA, SEO
+- `web/app/explore/specs/[slug]/SpecShowcaseClient.tsx` — clipboard wrapper
+- `web/app/sitemap.ts` — added `/explore/specs/shipwatch`
+
+**Verification:** Build clean, type check clean, 1,410 tests pass (55 files).
+
+Ready when you are — run `/ship` to create the PR, or let me know if you want to review any of the changes first.
