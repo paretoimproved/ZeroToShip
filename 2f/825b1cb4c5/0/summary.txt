@@ -1,0 +1,15 @@
+**Handoff complete.** Everything is captured for the next session:
+
+- **Handoff doc:** `.claude/handoffs/2026-03-23-221500-evidence-first-briefs.md`
+- **Plan file:** `~/.claude/plans/greedy-churning-rabbit.md`
+- **Memory updated:** MEMORY.md reflects current state
+- **Quality report:** `reviews/quality-report-2026-03-23.md`
+
+### To resume in a fresh session:
+
+1. Say: **"Resume from handoff — evidence-first briefs"**
+2. The agent reads the handoff doc and plan file
+3. First action: **`/plan-eng-review`** on the plan (required gate before implementation)
+4. Then: create feature branch and start Phase 1 (schema migration)
+
+This session covered a lot — eng review, design review, implementation of demo-ready launch, QA, Railway fix, quality analysis, and CEO review of the data quality fix. Good stopping point before the next big implementation sprint.
