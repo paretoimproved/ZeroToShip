@@ -5,17 +5,14 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { trackUpgradeClicked } from "@/lib/analytics";
 import { JsonLd } from "@/components/JsonLd";
+import { BASE_PLANS } from "@/lib/plans";
+import type { PlanFeature } from "@/lib/plans";
 
 /* ------------------------------------------------------------------ */
 /*  Types & data                                                      */
 /* ------------------------------------------------------------------ */
 
 type BillingCycle = "monthly" | "annual";
-
-interface PlanFeature {
-  text: string;
-  included: boolean;
-}
 
 interface Plan {
   name: string;
@@ -31,49 +28,12 @@ interface Plan {
   ctaAction: "signup" | "checkout";
 }
 
-const plans: Plan[] = [
-  {
-    name: "Free",
-    monthlyPrice: 0,
-    annualPrice: 0,
-    annualTotal: 0,
-    annualSavingsPercent: 0,
-    description: "Full archive access — browse every problem",
-    features: [
-      { text: "Full archive access — every brief, every section", included: true },
-      { text: "Daily email with complete briefs", included: true },
-      { text: "Search & filter all ideas", included: true },
-      { text: "Save & bookmark ideas", included: true },
-      { text: "Agent-spec generation", included: false },
-      { text: "Custom problem submission", included: false },
-      { text: "Problem watching & re-analysis", included: false },
-    ],
-    cta: "Get Started Free",
-    highlighted: false,
-    priceKey: null,
-    ctaAction: "signup",
-  },
-  {
-    name: "Pro",
-    monthlyPrice: 19,
-    annualPrice: 15.83,
-    annualTotal: 190,
-    annualSavingsPercent: 17,
-    description: "30 agent specs/month + custom problems",
-    features: [
-      { text: "Everything in Free", included: true },
-      { text: "30 agent-spec generations per month", included: true },
-      { text: "Custom problem submission", included: true },
-      { text: "Problem watching with weekly re-analysis", included: true },
-      { text: "Bulk export (Markdown & JSON)", included: true },
-      { text: "Priority support", included: true },
-    ],
-    cta: "Go Pro",
-    highlighted: true,
-    priceKey: { monthly: "pro_monthly", annual: "pro_yearly" },
-    ctaAction: "checkout",
-  },
-];
+const plans: Plan[] = BASE_PLANS.map((p) => ({
+  ...p,
+  cta: p.name === "Free" ? "Get Started Free" : "Go Pro",
+  priceKey: p.name === "Pro" ? { monthly: "pro_monthly", annual: "pro_yearly" } : null,
+  ctaAction: (p.name === "Free" ? "signup" : "checkout") as "signup" | "checkout",
+}));
 
 /* ------------------------------------------------------------------ */
 /*  Icons                                                             */

@@ -77,17 +77,29 @@ export default function GenerateSpecCta({
     );
   }
 
-  // State 2b: Pro user with quota exhausted
+  // State 2b: Quota exhausted — tier-aware messaging
   if (specUsage && specUsage.used >= specUsage.limit) {
+    const isFree = specUsage.limit < 30;
     return (
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-gray-900 dark:text-white">
-            You&apos;ve used all {specUsage.limit} spec generations this month
+            You&apos;ve used {isFree ? "your free" : `all ${specUsage.limit}`} spec generation{specUsage.limit > 1 ? "s" : ""} this month
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Resets next month. Specs include user stories, DB schemas, API routes, and CLAUDE.md instructions.
-          </p>
+          {isFree ? (
+            <div className="mt-3">
+              <Link
+                href="/signup?plan=pro"
+                className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+              >
+                Get 30 specs/month with Pro
+              </Link>
+            </div>
+          ) : (
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Resets next month. Specs include user stories, DB schemas, API routes, and CLAUDE.md instructions.
+            </p>
+          )}
         </div>
       </div>
     );

@@ -37,7 +37,7 @@ export const IDEAS_LIMIT: Record<UserTier, number> = {
  */
 export const SPEC_GENERATION_LIMITS: Record<UserTier, number> = {
   anonymous: 0,
-  free: 0,
+  free: 1,
   pro: 30,
   enterprise: Infinity,
 };
@@ -83,7 +83,7 @@ export const FEATURE_ACCESS: Record<string, { minTier: UserTier; description: st
   'ideas.archive': { minTier: 'anonymous', description: 'Access idea archive' },
   'ideas.fullBrief': { minTier: 'anonymous', description: 'View full business briefs' },
   'ideas.search': { minTier: 'free', description: 'Full-text search' },
-  'ideas.generateSpec': { minTier: 'pro', description: 'Generate agent-ready spec' },
+  'ideas.generateSpec': { minTier: 'free', description: 'Generate agent-ready spec' },
   'ideas.export': { minTier: 'enterprise', description: 'Export ideas' },
   'validate': { minTier: 'pro', description: 'Request idea validation' },
   'user.preferences': { minTier: 'free', description: 'Manage preferences' },

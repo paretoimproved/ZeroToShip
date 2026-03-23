@@ -1,0 +1,91 @@
+<h2>Unbuilt.dev — System Architecture</h2>
+<p class="subtitle">What stays, what changes, what's new</p>
+
+<div class="section">
+  <h3>The Pipeline (what exists → repointed)</h3>
+  <div class="mockup">
+    <div class="mockup-header">Existing IdeaForge Pipeline → Unbuilt.dev Pipeline</div>
+    <div class="mockup-body" style="font-family: monospace; font-size: 13px; line-height: 1.6; padding: 24px;">
+      <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+        <div style="background: #1a1a2e; color: #7fdbca; padding: 12px 16px; border-radius: 8px; text-align: center; min-width: 120px;">
+          <div style="font-size: 11px; opacity: 0.6; margin-bottom: 4px;">SCRAPE</div>
+          <div>Reddit</div>
+          <div>HN</div>
+          <div>GitHub Issues</div>
+          <div>Stack Overflow</div>
+          <div style="font-size: 11px; color: #ff9f43; margin-top: 6px;">+ SO is new</div>
+        </div>
+        <div style="font-size: 20px; color: #666;">→</div>
+        <div style="background: #1a1a2e; color: #7fdbca; padding: 12px 16px; border-radius: 8px; text-align: center; min-width: 120px;">
+          <div style="font-size: 11px; opacity: 0.6; margin-bottom: 4px;">ANALYZE</div>
+          <div>Deduplicate</div>
+          <div>Embed</div>
+          <div>Score signals</div>
+          <div style="font-size: 11px; color: #48dbfb; margin-top: 6px;">✓ reuse as-is</div>
+        </div>
+        <div style="font-size: 20px; color: #666;">→</div>
+        <div style="background: #1a1a2e; color: #ff6b6b; padding: 12px 16px; border-radius: 8px; text-align: center; min-width: 120px;">
+          <div style="font-size: 11px; opacity: 0.6; margin-bottom: 4px;">GAP ANALYSIS</div>
+          <div>Find what's</div>
+          <div><strong>MISSING</strong></div>
+          <div>not what exists</div>
+          <div style="font-size: 11px; color: #ff6b6b; margin-top: 6px;">★ the moat</div>
+        </div>
+        <div style="font-size: 20px; color: #666;">→</div>
+        <div style="background: #1a1a2e; color: #feca57; padding: 12px 16px; border-radius: 8px; text-align: center; min-width: 120px;">
+          <div style="font-size: 11px; opacity: 0.6; margin-bottom: 4px;">GENERATE</div>
+          <div>Gap reports</div>
+          <div>Evidence links</div>
+          <div>Signal scores</div>
+          <div style="font-size: 11px; color: #ff9f43; margin-top: 6px;">new prompts</div>
+        </div>
+        <div style="font-size: 20px; color: #666;">→</div>
+        <div style="background: #1a1a2e; color: #a29bfe; padding: 12px 16px; border-radius: 8px; text-align: center; min-width: 120px;">
+          <div style="font-size: 11px; opacity: 0.6; margin-bottom: 4px;">DELIVER</div>
+          <div>Substack</div>
+          <div>(manual paste</div>
+          <div>or API later)</div>
+          <div style="font-size: 11px; color: #ff9f43; margin-top: 6px;">replaces Resend</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>What Changes</h3>
+  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+    <div style="background: #1a2332; border: 1px solid #2d4a3e; border-radius: 8px; padding: 16px;">
+      <div style="color: #48dbfb; font-weight: bold; margin-bottom: 8px;">✓ KEEP AS-IS</div>
+      <ul style="margin: 0; padding-left: 16px; color: #ccc; font-size: 13px; line-height: 1.8;">
+        <li>Scrapers (Reddit, HN, GitHub)</li>
+        <li>Embedding engine</li>
+        <li>Deduplication</li>
+        <li>Signal scoring + cache</li>
+        <li>Orchestrator + phases</li>
+        <li>Scheduler + watchdog</li>
+      </ul>
+    </div>
+    <div style="background: #1a2332; border: 1px solid #4a3d2d; border-radius: 8px; padding: 16px;">
+      <div style="color: #ff9f43; font-weight: bold; margin-bottom: 8px;">⟳ MODIFY</div>
+      <ul style="margin: 0; padding-left: 16px; color: #ccc; font-size: 13px; line-height: 1.8;">
+        <li>Scraper search queries</li>
+        <li>Gap analyzer prompts</li>
+        <li>Scoring criteria</li>
+        <li>Output format (gap report vs spec)</li>
+        <li>Generation templates</li>
+      </ul>
+    </div>
+    <div style="background: #1a2332; border: 1px solid #4a2d2d; border-radius: 8px; padding: 16px;">
+      <div style="color: #ff6b6b; font-weight: bold; margin-bottom: 8px;">✕ DROP</div>
+      <ul style="margin: 0; padding-left: 16px; color: #ccc; font-size: 13px; line-height: 1.8;">
+        <li>Next.js frontend</li>
+        <li>Fastify API</li>
+        <li>Stripe billing</li>
+        <li>Resend email delivery</li>
+        <li>Drizzle DB (maybe)</li>
+        <li>Full spec generation</li>
+      </ul>
+    </div>
+  </div>
+</div>

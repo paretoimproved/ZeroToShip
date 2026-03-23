@@ -108,9 +108,9 @@ describe('hasAccess', () => {
       expect(hasAccess('enterprise', 'ideas.search')).toBe(true);
     });
 
-    it('should gate spec generation at pro tier', () => {
+    it('should gate spec generation at free tier', () => {
       expect(hasAccess('anonymous', 'ideas.generateSpec')).toBe(false);
-      expect(hasAccess('free', 'ideas.generateSpec')).toBe(false);
+      expect(hasAccess('free', 'ideas.generateSpec')).toBe(true);
       expect(hasAccess('pro', 'ideas.generateSpec')).toBe(true);
       expect(hasAccess('enterprise', 'ideas.generateSpec')).toBe(true);
     });
@@ -187,8 +187,8 @@ describe('Helper functions', () => {
   });
 
   describe('getMonthlySpecLimit', () => {
-    it('should return 0 for free tier', () => {
-      expect(getMonthlySpecLimit('free')).toBe(0);
+    it('should return 1 for free tier', () => {
+      expect(getMonthlySpecLimit('free')).toBe(1);
     });
 
     it('should return 30 for pro tier', () => {
