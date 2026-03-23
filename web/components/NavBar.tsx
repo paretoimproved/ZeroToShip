@@ -105,8 +105,8 @@ export default function NavBar() {
     hamburgerRef.current?.focus();
   }, []);
 
-  // Hide NavBar on pages with their own nav
-  if (pathname === "/" || pathname === "/pricing" || pathname === "/explore") return null;
+  // Hide NavBar on pages with their own nav (LandingNav)
+  if (pathname === "/" || pathname === "/pricing" || pathname === "/explore" || pathname.startsWith("/idea/") || pathname.startsWith("/explore/specs/")) return null;
 
   const focusRingClasses =
     "focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900";
