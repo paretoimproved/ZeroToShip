@@ -1,0 +1,38 @@
+{
+  "cli_version": "0.4.7",
+  "checkpoint_id": "383d492da2bf",
+  "session_id": "a25b6d83-e8dd-4af6-b8f6-c7cb32e3ea3a",
+  "strategy": "auto-commit",
+  "created_at": "2026-03-24T01:06:12.416987Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "packages/shared/src/index.ts",
+    "src/generation/brief-generator.ts",
+    "src/generation/index.ts",
+    "src/generation/templates.ts",
+    "tests/generation/brief-generator.test.ts",
+    "tests/generation/templates.test.ts",
+    "web/components/IdeaBriefCard.tsx",
+    "web/components/ScoreBadge.tsx",
+    "web/lib/types.ts"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "9e0c58c2ef07",
+  "checkpoint_transcript_start": 58,
+  "transcript_lines_at_start": 58,
+  "token_usage": {
+    "input_tokens": 769,
+    "cache_creation_tokens": 275907,
+    "cache_read_tokens": 9093769,
+    "output_tokens": 34138,
+    "api_call_count": 65,
+    "subagent_tokens": {
+      "input_tokens": 11338,
+      "cache_creation_tokens": 249813,
+      "cache_read_tokens": 6907655,
+      "output_tokens": 41767,
+      "api_call_count": 102
+    }
+  }
+}

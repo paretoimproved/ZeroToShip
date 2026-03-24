@@ -1,0 +1,35 @@
+**Wave 1 complete.** Here's the summary:
+
+## Wave 1 Results
+
+| Check | Result |
+|-------|--------|
+| `npm run build` | Pass |
+| `npx tsc --noEmit` | Pass (0 errors) |
+| `npm test` | 1442 pass, 10 fail (all pre-existing) |
+| New tests | 158 pass (19 evidence + 70 templates + 69 brief-gen) |
+| Regressions | 0 |
+
+### Files changed (12):
+
+**Backend (6):**
+- `src/analysis/scorer.ts` — EvidenceMetadata type + computeEvidenceStrength()
+- `src/scheduler/phases/generate.ts` — Evidence computation before provider.generate()
+- `src/generation/templates.ts` — Prompt rewrite, signal card prompt, tiered schemas
+- `src/generation/brief-generator.ts` — Signal card routing, briefType, relaxed validation
+- `src/generation/index.ts` — New exports
+
+**Frontend (4):**
+- `web/lib/types.ts` — 5 optional evidence fields on IdeaBrief
+- `packages/shared/src/index.ts` — Matching Zod schema fields
+- `web/components/ScoreBadge.tsx` — EvidenceStrengthBadge component
+- `web/components/IdeaBriefCard.tsx` — Badge, banner, tab filtering, evidence summary
+
+**Tests (2):**
+- `tests/analysis/evidence-strength.test.ts` — 19 new tests
+- Updated templates + brief-generator tests — 28 new tests
+
+**Other (1):**
+- `TODOS.md` — 2 new items (backfill accuracy, Reddit rate limiting)
+
+Wave 2 (schema migration, cross-run dedup, backfill) and Wave 3 (Reddit scraper, email) are ready to implement when you want to proceed. Want me to continue with Wave 2 now, or do you want to run the pipeline first to measure quality improvement from the prompt fix?

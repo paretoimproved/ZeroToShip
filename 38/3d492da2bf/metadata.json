@@ -1,0 +1,34 @@
+{
+  "cli_version": "0.4.7",
+  "checkpoint_id": "383d492da2bf",
+  "strategy": "auto-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "packages/shared/src/index.ts",
+    "src/generation/brief-generator.ts",
+    "src/generation/index.ts",
+    "src/generation/templates.ts",
+    "tests/generation/brief-generator.test.ts",
+    "tests/generation/templates.test.ts",
+    "web/components/IdeaBriefCard.tsx",
+    "web/components/ScoreBadge.tsx",
+    "web/lib/types.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/38/3d492da2bf/0/metadata.json",
+      "transcript": "/38/3d492da2bf/0/full.jsonl",
+      "context": "",
+      "content_hash": "/38/3d492da2bf/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 769,
+    "cache_creation_tokens": 275907,
+    "cache_read_tokens": 9093769,
+    "output_tokens": 34138,
+    "api_call_count": 65
+  }
+}
