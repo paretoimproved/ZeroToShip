@@ -80,6 +80,13 @@ export interface IdeaBrief {
   risks: string[];
   sources?: IdeaSource[];
   generatedAt: string;
+
+  // Evidence-first fields (optional for backward compat with older briefs)
+  evidenceStrength?: 'strong' | 'moderate' | 'weak';
+  briefType?: 'full' | 'signal_card';
+  sourceCount?: number;
+  totalEngagement?: number;
+  platformCount?: number;
 }
 
 export interface AgentSpec {

@@ -5,7 +5,7 @@
  * from scored problems and gap analyses.
  */
 
-import type { ScoredProblem } from '../analysis/scorer';
+import type { ScoredProblem, EvidenceMetadata } from '../analysis/scorer';
 import type { GapAnalysis } from '../analysis/gap-analyzer';
 import type { TechStackRecommendation, EffortLevel } from './tech-stacks';
 import { extractJson } from '../lib/json-parser';
@@ -13,12 +13,9 @@ import { extractJson } from '../lib/json-parser';
 /**
  * System prompt for brief generation
  */
-export const BRIEF_SYSTEM_PROMPT = `You are a startup strategist and technical architect who writes specs that double as build instructions. Your briefs are detailed enough that an AI coding agent could scaffold a working MVP from the spec alone, and exciting enough to pull a founder off the sidelines.
-
-Your role is to analyze real pain signals (gathered from Reddit, Hacker News, Twitter, and GitHub issues) and produce agent-ready business briefs for indie hackers and startup founders.
+export const BRIEF_SYSTEM_PROMPT = `You are a developer who scours community forums to find real problems worth building solutions for. You analyze real pain signals gathered from Reddit, Hacker News, and GitHub issues, then produce honest, evidence-calibrated assessments that developers can act on.
 
 Guidelines:
-- Write with energy — these are pitches, not academic papers. Make founders feel the opportunity.
 - Be ruthlessly specific: name exact tools, APIs, frameworks, communities, and dollar amounts
 - Ground every recommendation in the actual problem data provided — no hand-waving
 - Provide realistic revenue projections with explicit subscriber/customer assumptions
@@ -32,14 +29,31 @@ Format all text fields using markdown: use **bold** for key terms, bullet points
 
 Output format: Return valid JSON matching the requested schema. Do not wrap the JSON in markdown code blocks.`;
 
+export const SIGNAL_CARD_SYSTEM_PROMPT = `You spot early signals of developer pain points. Your job is to describe what you've found honestly — not to pitch, project revenue, or make promises. If the evidence is thin, say so.
+
+Guidelines:
+- Lead with what you observed in the data, not what you imagine could be
+- Be specific about the problem, vague about the solution (the evidence doesn't support more)
+- CRITICAL: Every field must contain specific, substantive content. Do not leave any field empty or with placeholder text like "TBD" or "To be determined".
+
+Format all text fields using markdown where appropriate. Output format: Return valid JSON matching the requested schema. Do not wrap the JSON in markdown code blocks.`;
+
 /**
  * Build the main brief generation prompt
  */
+function buildEvidenceContext(meta: EvidenceMetadata): string {
+  if (meta.tier === 'strong') {
+    return `\n## Evidence Context\n\nEvidence is strong (${meta.sourceCount} sources across ${meta.platformCount} platforms, ${meta.totalEngagement} total engagement). Ground analysis in the specific data provided.`;
+  }
+  return `\n## Evidence Context\n\nEvidence is moderate (${meta.sourceCount} sources, ${meta.totalEngagement} engagement). Be measured in projections. Flag assumptions explicitly with 'ASSUMPTION:' prefix. If based on fewer than 5 signals, say 'Insufficient data for market sizing' for the estimatedOpportunity field.`;
+}
+
 export function buildBriefPrompt(
   problem: ScoredProblem,
   gaps: GapAnalysis,
   stackRecommendation: TechStackRecommendation,
-  effortLevel: EffortLevel
+  effortLevel: EffortLevel,
+  evidenceMetadata?: EvidenceMetadata
 ): string {
   const competitorList = gaps.existingSolutions
     .slice(0, 5)
@@ -58,7 +72,18 @@ export function buildBriefPrompt(
 
   const sourcesList = problem.sources.join(', ');
 
+  const evidenceSection = evidenceMetadata ? buildEvidenceContext(evidenceMetadata) : '';
+
+  const isModerate = evidenceMetadata?.tier === 'moderate';
+  const marketSizeField = isModerate
+    ? `"estimatedOpportunity": "Estimated market opportunity. If fewer than 5 signals, write 'Insufficient data for market sizing'. Otherwise provide conservative estimates with explicit assumptions."`
+    : `"marketSize": "TAM/SAM/SOM estimates. Use a markdown list or table with reasoning."`;
+  const revenueField = isModerate
+    ? `"revenueProjection": "Month 1/6/12/24 projections using a markdown table. Include 'ASSUMPTION:' prefix for each projection."`
+    : `"revenueProjection": "Month 1/6/12/24 projections using a markdown table. Show subscriber counts and revenue. Include assumptions as bullet points."`;
+
   return `Generate a comprehensive business brief for the following startup opportunity.
+${evidenceSection}
 
 ## Problem Data
 
@@ -109,7 +134,7 @@ Generate a JSON object with these exact fields:
   "tagline": "One-line value proposition (under 10 words)",
   "problemStatement": "Refined problem statement using markdown. Use **bold** for key pain points.",
   "targetAudience": "Target persona with demographics. Use bullet points for distinct segments.",
-  "marketSize": "TAM/SAM/SOM estimates. Use a markdown list or table with reasoning.",
+  ${marketSizeField},
   "existingSolutions": "Summary of current alternatives. Use bullet points with **competitor name**: limitation format.",
   "gaps": "Key unmet needs. Use bullet points for each gap.",
   "proposedSolution": "Concrete solution with specific implementation approach. Use **bold** for key terms, bullet points for components. Name exact tools, APIs, or data sources.",
@@ -117,7 +142,7 @@ Generate a JSON object with these exact fields:
   "mvpScope": "Numbered list of exact screens/endpoints using markdown. Include ### Data Model subsection with key entities and ### API Routes subsection.",
   "architecture": "System design using markdown. Use ### subsections for Frontend, Backend, Database, External Services, Deployment. Include key tables and API routes.",
   "pricing": "Pricing tiers using a markdown table. Columns: Tier, Price, Features. Example: Free | $0 | 5 projects.",
-  "revenueProjection": "Month 1/6/12/24 projections using a markdown table. Show subscriber counts and revenue. Include assumptions as bullet points.",
+  ${revenueField},
   "monetizationPath": "Primary revenue model and upsell paths using markdown. Use **bold** for key strategies.",
   "launchStrategy": "Week-by-week launch playbook using markdown. Use ### headers for Pre-Launch, Launch Day, Post-Launch phases.",
   "channels": ["Channel 1", "Channel 2", "Channel 3"],
@@ -253,6 +278,49 @@ For each risk:
 Return JSON array: [{"category": "...", "risk": "...", "likelihood": "...", "impact": "...", "mitigation": "..."}]`;
 }
 
+export function buildSignalCardPrompt(
+  problem: ScoredProblem,
+  evidenceMetadata: EvidenceMetadata
+): string {
+  const sourcesList = problem.sources.join(', ');
+
+  return `Describe an early signal of developer pain detected from community forums.
+
+## Signal Data
+
+**Problem Statement:** ${problem.problemStatement}
+
+**Evidence:**
+- ${evidenceMetadata.sourceCount} source(s) across ${evidenceMetadata.platformCount} platform(s)
+- ${evidenceMetadata.totalEngagement} total engagement
+- Evidence tier: ${evidenceMetadata.tier}
+
+**Signal Strength:**
+- Frequency: ${problem.frequency} mentions (${sourcesList})
+- Community Validation: ${problem.scores.engagement.toFixed(1)}/10
+
+**Representative Post:**
+- Source: ${problem.representativePost.source}
+- Title: ${problem.representativePost.title}
+- URL: ${problem.representativePost.url}
+- Score: ${problem.representativePost.score} upvotes, ${problem.representativePost.commentCount} comments
+
+## Output Requirements
+
+Generate a JSON object with these exact fields:
+
+{
+  "name": "Product name (1-2 words)",
+  "tagline": "One-line description (under 10 words)",
+  "problemStatement": "What pain point was detected. Lead with the evidence.",
+  "targetAudience": "Who might experience this problem",
+  "proposedSolution": "A possible approach — framed as an idea to explore, not a proven solution",
+  "keyFeatures": ["2-3 possible features, each prefixed with 'Possible:' to signal these are ideas, not validated"]
+}
+
+Important: Return ONLY the JSON object. Do not wrap it in markdown code blocks.`;
+}
+
 /**
  * Parse GPT response as JSON.
  * Delegates to the shared extractJson utility.
@@ -296,8 +364,19 @@ export function buildBatchBriefPrompt(
     gaps: GapAnalysis;
     stackRecommendation: { stack: string[]; architecture: string; estimatedCost: string };
     effortLevel: EffortLevel;
+    evidenceMetadata?: EvidenceMetadata;
   }>
 ): string {
+  const signalCardSchema = `{
+    "id": "problem_id",
+    "name": "Product name (1-2 words)",
+    "tagline": "One-line description (under 10 words)",
+    "problemStatement": "What pain point was detected. Lead with the evidence.",
+    "targetAudience": "Who might experience this problem",
+    "proposedSolution": "A possible approach — framed as an idea to explore, not a proven solution",
+    "keyFeatures": ["2-3 possible features, each prefixed with 'Possible:'"]
+  }`;
+
   const problemsData = problems.map((p, index) => {
     const competitorList = p.gaps.existingSolutions
       .slice(0, 5)
@@ -305,6 +384,19 @@ export function buildBatchBriefPrompt(
       .join('; ');
 
     const gapsList = p.gaps.gaps.slice(0, 5).join('; ');
+
+    const isWeak = p.evidenceMetadata?.tier === 'weak';
+    const isModerate = p.evidenceMetadata?.tier === 'moderate';
+    const isStrong = p.evidenceMetadata?.tier === 'strong';
+
+    let evidenceLine = '';
+    if (isWeak && p.evidenceMetadata) {
+      evidenceLine = `\n**SIGNAL CARD — reduced output** (${p.evidenceMetadata.sourceCount} sources, ${p.evidenceMetadata.totalEngagement} engagement). Use signal card schema below.`;
+    } else if (isModerate && p.evidenceMetadata) {
+      evidenceLine = `\n**Evidence: moderate** (${p.evidenceMetadata.sourceCount} sources, ${p.evidenceMetadata.totalEngagement} engagement). Be measured in projections. Flag assumptions with 'ASSUMPTION:' prefix.`;
+    } else if (isStrong && p.evidenceMetadata) {
+      evidenceLine = `\n**Evidence: strong** (${p.evidenceMetadata.sourceCount} sources across ${p.evidenceMetadata.platformCount} platforms, ${p.evidenceMetadata.totalEngagement} engagement). Ground analysis in the specific data provided.`;
+    }
 
     return `
 ### Problem ${index + 1} (ID: ${p.id})
@@ -319,8 +411,14 @@ export function buildBatchBriefPrompt(
 **Architecture:** ${p.stackRecommendation.architecture}
 **Estimated Cost:** ${p.stackRecommendation.estimatedCost}
 **Effort Level:** ${p.effortLevel}
-**Suggested Stack:** ${p.stackRecommendation.stack.join(', ')}`;
+**Suggested Stack:** ${p.stackRecommendation.stack.join(', ')}${evidenceLine}`;
   }).join('\n');
+
+  const hasWeakProblems = problems.some(p => p.evidenceMetadata?.tier === 'weak');
+
+  const signalCardNote = hasWeakProblems
+    ? `\n\nFor problems marked **SIGNAL CARD — reduced output**, use this reduced schema instead:\n${signalCardSchema}`
+    : '';
 
   return `Generate business briefs for the following ${problems.length} startup opportunities.
 
@@ -328,7 +426,7 @@ ${problemsData}
 
 ## Output Requirements
 
-Return a JSON array with ${problems.length} briefs, one for each problem above. Each brief should have these fields:
+Return a JSON array with ${problems.length} briefs, one for each problem above. Each full brief should have these fields:
 
 [
   {
@@ -352,7 +450,7 @@ Return a JSON array with ${problems.length} briefs, one for each problem above. 
     "firstCustomers": "Step-by-step playbook: where to find them (specific subreddits/communities/companies), what to say (outreach template), how to convert (offer structure).",
     "risks": ["Risk 1", "Risk 2", "Risk 3"]
   }
-]
+]${signalCardNote}
 
 CRITICAL: Every field in every brief must contain specific, substantive content. Do not use placeholder text like "TBD", "To be determined", or "Research required". Base all content on the problem data provided above.
 

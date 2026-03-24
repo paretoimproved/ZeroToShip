@@ -77,4 +77,46 @@ export function EffortBadge({ effort, size = "md" }: EffortBadgeProps) {
   );
 }
 
+interface EvidenceStrengthBadgeProps {
+  evidenceStrength?: 'strong' | 'moderate' | 'weak';
+  size?: "sm" | "md" | "lg";
+}
+
+export function EvidenceStrengthBadge({ evidenceStrength, size = "md" }: EvidenceStrengthBadgeProps) {
+  if (!evidenceStrength) return null;
+
+  const config: Record<string, { label: string; color: string }> = {
+    strong: {
+      label: "Strong Signal",
+      color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+    },
+    moderate: {
+      label: "Moderate Signal",
+      color: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+    },
+    weak: {
+      label: "Needs Validation",
+      color: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200",
+    },
+  };
+
+  const sizeClasses = {
+    sm: "text-[11px] px-2 py-0.5",
+    md: "text-sm px-2.5 py-1",
+    lg: "text-base px-3 py-1.5",
+  };
+
+  const { label, color } = config[evidenceStrength];
+
+  return (
+    <span
+      title="Evidence strength based on source count, engagement, and platform diversity."
+      aria-label={`Evidence strength: ${label}`}
+      className={`inline-flex items-center font-medium rounded-full shadow-sm transition-colors duration-200 ${color} ${sizeClasses[size]}`}
+    >
+      {label}
+    </span>
+  );
+}
+
 export default ScoreBadge;

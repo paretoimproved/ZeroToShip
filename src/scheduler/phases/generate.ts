@@ -5,7 +5,7 @@
  */
 
 import { validateBriefQuality } from '../../generation/brief-generator';
-import type { ScoredProblem } from '../../analysis/scorer';
+import { computeEvidenceStrength, type ScoredProblem } from '../../analysis/scorer';
 import type { GapAnalysis } from '../../analysis/gap-analyzer';
 import { cosineSimilarity } from '../../analysis/similarity';
 import { selectGenerationProvider } from '../../generation/providers';
@@ -24,6 +24,7 @@ import type {
 import { getPipelineBriefModel } from '../../config/models';
 import { config as envConfig } from '../../config/env';
 import { db, ideas } from '../../api/db/client';
+import { eq, isNotNull, and } from 'drizzle-orm';
 
 /** Similarity threshold for post-filter deduplication of scored problems */
 const BRIEF_DEDUP_THRESHOLD = 0.85;
@@ -201,6 +202,71 @@ function deduplicateByEmbedding(
 }
 
 /**
+ * Deduplicate new problems against previously published briefs in the database.
+ * Compares each new problem's cluster centroid embedding against existing brief
+ * embeddings. Skips problems that are too similar to an already-published brief.
+ */
+export async function deduplicateAgainstExisting(
+  problems: ScoredProblem[],
+  threshold: number = BRIEF_DEDUP_THRESHOLD,
+  logger?: ReturnType<typeof createPhaseLogger>,
+): Promise<ScoredProblem[]> {
+  try {
+    const rows = await db
+      .select({ embedding: ideas.embedding })
+      .from(ideas)
+      .where(and(eq(ideas.isPublished, true), isNotNull(ideas.embedding)));
+
+    const existingEmbeddings = rows
+      .map((row) => row.embedding)
+      .filter((emb): emb is number[] => Array.isArray(emb) && emb.length > 0);
+
+    if (existingEmbeddings.length === 0) {
+      return problems;
+    }
+
+    const filtered: ScoredProblem[] = [];
+    let removed = 0;
+
+    for (const problem of problems) {
+      if (!problem.embedding || problem.embedding.length === 0) {
+        filtered.push(problem);
+        continue;
+      }
+
+      const isDuplicate = existingEmbeddings.some(
+        (existing) => cosineSimilarity(problem.embedding, existing) >= threshold,
+      );
+
+      if (isDuplicate) {
+        removed++;
+        logger?.info(
+          { problemId: problem.id, problemStatement: problem.problemStatement },
+          'Skipped problem — cross-run duplicate of existing published brief',
+        );
+      } else {
+        filtered.push(problem);
+      }
+    }
+
+    if (removed > 0) {
+      logger?.info(
+        { removed, threshold, existingBriefCount: existingEmbeddings.length },
+        'Cross-run deduplication removed problems matching existing briefs',
+      );
+    }
+
+    return filtered;
+  } catch (error) {
+    logger?.warn(
+      { error: error instanceof Error ? error.message : String(error) },
+      'Cross-run deduplication failed — proceeding with all problems (graceful fallback)',
+    );
+    return problems;
+  }
+}
+
+/**
  * Run the generate phase
  */
 export async function runGeneratePhase(
@@ -229,7 +295,7 @@ export async function runGeneratePhase(
     const eligibleProblems = scoredProblems
       .filter((p) => p.scores.priority >= config.minPriorityScore);
 
-    const { selected: filteredProblems, removed: dedupRemoved } =
+    const { selected: withinRunDeduped, removed: dedupRemoved } =
       deduplicateByEmbedding(eligibleProblems, config.maxBriefs);
 
     if (dedupRemoved > 0) {
@@ -238,6 +304,13 @@ export async function runGeneratePhase(
         'Removed similar problems via embedding deduplication'
       );
     }
+
+    // Cross-run dedup: remove problems that match existing published briefs
+    const filteredProblems = await deduplicateAgainstExisting(
+      withinRunDeduped,
+      BRIEF_DEDUP_THRESHOLD,
+      logger,
+    );
 
     logger.debug(
       { filteredCount: filteredProblems.length },
@@ -256,6 +329,19 @@ export async function runGeneratePhase(
       };
     }
 
+    // Compute evidence strength for each problem before generation.
+    // Both legacy and graph providers receive this metadata on the problem object
+    // so prompt builders can calibrate confidence levels.
+    for (const problem of filteredProblems) {
+      problem.evidenceMetadata = computeEvidenceStrength(problem);
+    }
+
+    const evidenceCounts = { strong: 0, moderate: 0, weak: 0 };
+    for (const p of filteredProblems) {
+      evidenceCounts[p.evidenceMetadata!.tier]++;
+    }
+    logger.info(evidenceCounts, 'Evidence strength distribution');
+
     const hasGraphBudgetCaps =
       selection.effectiveMode === 'graph' &&
       (typeof envConfig.GRAPH_RUN_BUDGET_USD === 'number' ||
@@ -266,6 +352,14 @@ export async function runGeneratePhase(
         runBudgetTokens: envConfig.GRAPH_RUN_BUDGET_TOKENS,
       })
       : null;
+
+    // Build evidence lookup keyed by problemStatement for DB persistence after generation
+    const problemEvidenceMap = new Map(
+      filteredProblems.map((p) => [
+        p.problemStatement,
+        { evidenceMetadata: p.evidenceMetadata, embedding: p.embedding },
+      ]),
+    );
 
     // Generate briefs with tier-appropriate model
     const briefs = await selection.provider.generate({
@@ -374,32 +468,40 @@ export async function runGeneratePhase(
         await db
           .insert(ideas)
           .values(
-            validatedBriefs.map(({ brief, quality }) => ({
-              id: brief.id,
-              name: brief.name,
-              tagline: brief.tagline,
-              priorityScore: String(brief.priorityScore),
-              effortEstimate: brief.effortEstimate,
-              revenueEstimate: brief.revenueEstimate,
-              category: truncateVarchar(brief.keyFeatures?.[0], IDEA_CATEGORY_MAX_LENGTH),
-              problemStatement: brief.problemStatement,
-              targetAudience: brief.targetAudience,
-              marketSize: brief.marketSize,
-              existingSolutions: brief.existingSolutions,
-              gaps: brief.gaps,
-              proposedSolution: brief.proposedSolution,
-              keyFeatures: brief.keyFeatures,
-              mvpScope: brief.mvpScope,
-              technicalSpec: brief.technicalSpec,
-              businessModel: brief.businessModel,
-              goToMarket: brief.goToMarket,
-              risks: brief.risks,
-              sources: brief.sources,
-              generatedAt: brief.generatedAt,
-              isPublished: brief.generationMeta?.publishDecision === 'auto',
-              publishedAt: brief.generationMeta?.publishDecision === 'auto' ? new Date() : null,
+            validatedBriefs.map(({ brief }) => {
+              const evidence = problemEvidenceMap.get(brief.problemStatement);
+              return {
+                id: brief.id,
+                name: brief.name,
+                tagline: brief.tagline,
+                priorityScore: String(brief.priorityScore),
+                effortEstimate: brief.effortEstimate,
+                revenueEstimate: brief.revenueEstimate,
+                category: truncateVarchar(brief.keyFeatures?.[0], IDEA_CATEGORY_MAX_LENGTH),
+                problemStatement: brief.problemStatement,
+                targetAudience: brief.targetAudience,
+                marketSize: brief.marketSize,
+                existingSolutions: brief.existingSolutions,
+                gaps: brief.gaps,
+                proposedSolution: brief.proposedSolution,
+                keyFeatures: brief.keyFeatures,
+                mvpScope: brief.mvpScope,
+                technicalSpec: brief.technicalSpec,
+                businessModel: brief.businessModel,
+                goToMarket: brief.goToMarket,
+                risks: brief.risks,
+                sources: brief.sources,
+                generatedAt: brief.generatedAt,
+                isPublished: brief.generationMeta?.publishDecision === 'auto',
+                publishedAt: brief.generationMeta?.publishDecision === 'auto' ? new Date() : null,
+                evidenceStrength: evidence?.evidenceMetadata?.tier ?? null,
+                briefType: brief.briefType ?? 'full',
+                sourceCount: evidence?.evidenceMetadata?.sourceCount ?? null,
+                totalEngagement: evidence?.evidenceMetadata?.totalEngagement ?? null,
+                platformCount: evidence?.evidenceMetadata?.platformCount ?? null,
+                embedding: evidence?.embedding?.length ? evidence.embedding : null,
+              };
             }))
-          )
           .onConflictDoNothing();
 
         logger.info({ count: briefs.length }, 'Persisted briefs to database');

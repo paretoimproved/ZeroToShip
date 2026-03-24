@@ -5,7 +5,10 @@
 import { describe, it, expect } from 'vitest';
 import {
   BRIEF_SYSTEM_PROMPT,
+  SIGNAL_CARD_SYSTEM_PROMPT,
   buildBriefPrompt,
+  buildSignalCardPrompt,
+  buildBatchBriefPrompt,
   buildNamePrompt,
   buildBusinessModelPrompt,
   buildGTMPrompt,
@@ -14,7 +17,7 @@ import {
   effortToString,
   scoreToEffortLevel,
 } from '../../src/generation/templates';
-import type { ScoredProblem } from '../../src/analysis/scorer';
+import type { ScoredProblem, EvidenceMetadata } from '../../src/analysis/scorer';
 import type { GapAnalysis } from '../../src/analysis/gap-analyzer';
 import type { TechStackRecommendation, EffortLevel } from '../../src/generation/tech-stacks';
 
@@ -107,7 +110,7 @@ describe('BRIEF_SYSTEM_PROMPT', () => {
   });
 
   it('includes role description', () => {
-    expect(BRIEF_SYSTEM_PROMPT).toContain('startup strategist');
+    expect(BRIEF_SYSTEM_PROMPT).toContain('developer who scours community forums');
   });
 
   it('mentions JSON output format', () => {
@@ -116,7 +119,7 @@ describe('BRIEF_SYSTEM_PROMPT', () => {
 
   it('includes guidelines for recommendations', () => {
     expect(BRIEF_SYSTEM_PROMPT).toContain('specific');
-    expect(BRIEF_SYSTEM_PROMPT).toContain('agent-ready');
+    expect(BRIEF_SYSTEM_PROMPT).toContain('evidence-calibrated');
   });
 });
 
@@ -616,5 +619,223 @@ describe('scoreToEffortLevel', () => {
   it('handles zero values', () => {
     expect(scoreToEffortLevel({ timeToMvp: 0, technicalComplexity: 5 })).toBe('weekend'); // 0
     expect(scoreToEffortLevel({ timeToMvp: 5, technicalComplexity: 0 })).toBe('weekend'); // 0
+  });
+});
+
+// Evidence metadata helpers
+function createStrongEvidence(): EvidenceMetadata {
+  return { tier: 'strong', sourceCount: 12, totalEngagement: 450, platformCount: 3 };
+}
+
+function createModerateEvidence(): EvidenceMetadata {
+  return { tier: 'moderate', sourceCount: 3, totalEngagement: 80, platformCount: 1 };
+}
+
+function createWeakEvidence(): EvidenceMetadata {
+  return { tier: 'weak', sourceCount: 1, totalEngagement: 5, platformCount: 1 };
+}
+
+describe('buildBriefPrompt with evidence context', () => {
+  it('includes strong evidence context with source and platform count', () => {
+    const problem = createMockScoredProblem();
+    const gaps = createMockGapAnalysis();
+    const stack = createMockStackRecommendation();
+    const evidence = createStrongEvidence();
+
+    const prompt = buildBriefPrompt(problem, gaps, stack, 'week', evidence);
+
+    expect(prompt).toContain('Evidence is strong');
+    expect(prompt).toContain('12 sources across 3 platforms');
+    expect(prompt).toContain('450 total engagement');
+  });
+
+  it('includes moderate evidence context with ASSUMPTION instruction', () => {
+    const problem = createMockScoredProblem();
+    const gaps = createMockGapAnalysis();
+    const stack = createMockStackRecommendation();
+    const evidence = createModerateEvidence();
+
+    const prompt = buildBriefPrompt(problem, gaps, stack, 'week', evidence);
+
+    expect(prompt).toContain('Evidence is moderate');
+    expect(prompt).toContain("'ASSUMPTION:' prefix");
+    expect(prompt).toContain('3 sources');
+  });
+
+  it('uses estimatedOpportunity field for moderate evidence', () => {
+    const problem = createMockScoredProblem();
+    const gaps = createMockGapAnalysis();
+    const stack = createMockStackRecommendation();
+    const evidence = createModerateEvidence();
+
+    const prompt = buildBriefPrompt(problem, gaps, stack, 'week', evidence);
+
+    expect(prompt).toContain('estimatedOpportunity');
+    expect(prompt).not.toContain('"marketSize"');
+  });
+
+  it('uses marketSize field for strong evidence', () => {
+    const problem = createMockScoredProblem();
+    const gaps = createMockGapAnalysis();
+    const stack = createMockStackRecommendation();
+    const evidence = createStrongEvidence();
+
+    const prompt = buildBriefPrompt(problem, gaps, stack, 'week', evidence);
+
+    expect(prompt).toContain('"marketSize"');
+  });
+
+  it('works without evidence metadata (backward-compatible)', () => {
+    const problem = createMockScoredProblem();
+    const gaps = createMockGapAnalysis();
+    const stack = createMockStackRecommendation();
+
+    const prompt = buildBriefPrompt(problem, gaps, stack, 'week');
+
+    expect(prompt).not.toContain('Evidence Context');
+    expect(prompt).toContain('"marketSize"');
+  });
+});
+
+describe('SIGNAL_CARD_SYSTEM_PROMPT', () => {
+  it('is a non-empty string different from BRIEF_SYSTEM_PROMPT', () => {
+    expect(typeof SIGNAL_CARD_SYSTEM_PROMPT).toBe('string');
+    expect(SIGNAL_CARD_SYSTEM_PROMPT.length).toBeGreaterThan(50);
+    expect(SIGNAL_CARD_SYSTEM_PROMPT).not.toBe(BRIEF_SYSTEM_PROMPT);
+  });
+
+  it('focuses on signals not pitches', () => {
+    expect(SIGNAL_CARD_SYSTEM_PROMPT).toContain('early signals');
+    expect(SIGNAL_CARD_SYSTEM_PROMPT).toContain('not to pitch');
+  });
+});
+
+describe('buildSignalCardPrompt', () => {
+  it('does not contain marketSize or revenueProjection in output schema', () => {
+    const problem = createMockScoredProblem();
+    const evidence = createWeakEvidence();
+
+    const prompt = buildSignalCardPrompt(problem, evidence);
+
+    expect(prompt).not.toContain('"marketSize"');
+    expect(prompt).not.toContain('"revenueProjection"');
+    expect(prompt).not.toContain('"architecture"');
+    expect(prompt).not.toContain('"pricing"');
+    expect(prompt).not.toContain('"risks"');
+  });
+
+  it('includes problem statement and evidence data', () => {
+    const problem = createMockScoredProblem();
+    const evidence = createWeakEvidence();
+
+    const prompt = buildSignalCardPrompt(problem, evidence);
+
+    expect(prompt).toContain(problem.problemStatement);
+    expect(prompt).toContain('1 source(s)');
+    expect(prompt).toContain('5 total engagement');
+  });
+
+  it('includes reduced schema fields', () => {
+    const problem = createMockScoredProblem();
+    const evidence = createWeakEvidence();
+
+    const prompt = buildSignalCardPrompt(problem, evidence);
+
+    expect(prompt).toContain('"name"');
+    expect(prompt).toContain('"tagline"');
+    expect(prompt).toContain('"problemStatement"');
+    expect(prompt).toContain('"targetAudience"');
+    expect(prompt).toContain('"proposedSolution"');
+    expect(prompt).toContain('"keyFeatures"');
+    expect(prompt).toContain("'Possible:'");
+  });
+});
+
+describe('buildBatchBriefPrompt with evidence', () => {
+  it('includes per-problem evidence context for strong evidence', () => {
+    const problem = createMockScoredProblem();
+    const gaps = createMockGapAnalysis();
+    const stack = createMockStackRecommendation();
+    const evidence = createStrongEvidence();
+
+    const prompt = buildBatchBriefPrompt([{
+      id: problem.id,
+      problem,
+      gaps,
+      stackRecommendation: stack,
+      effortLevel: 'week',
+      evidenceMetadata: evidence,
+    }]);
+
+    expect(prompt).toContain('Evidence: strong');
+    expect(prompt).toContain('12 sources across 3 platforms');
+  });
+
+  it('includes per-problem evidence context for moderate evidence', () => {
+    const problem = createMockScoredProblem();
+    const gaps = createMockGapAnalysis();
+    const stack = createMockStackRecommendation();
+    const evidence = createModerateEvidence();
+
+    const prompt = buildBatchBriefPrompt([{
+      id: problem.id,
+      problem,
+      gaps,
+      stackRecommendation: stack,
+      effortLevel: 'week',
+      evidenceMetadata: evidence,
+    }]);
+
+    expect(prompt).toContain('Evidence: moderate');
+    expect(prompt).toContain("'ASSUMPTION:' prefix");
+  });
+
+  it('marks weak evidence problems as SIGNAL CARD in batch', () => {
+    const problem = createMockScoredProblem();
+    const gaps = createMockGapAnalysis();
+    const stack = createMockStackRecommendation();
+    const evidence = createWeakEvidence();
+
+    const prompt = buildBatchBriefPrompt([{
+      id: problem.id,
+      problem,
+      gaps,
+      stackRecommendation: stack,
+      effortLevel: 'week',
+      evidenceMetadata: evidence,
+    }]);
+
+    expect(prompt).toContain('SIGNAL CARD');
+    expect(prompt).toContain('reduced output');
+  });
+
+  it('includes signal card schema when batch has weak evidence problems', () => {
+    const weakProblem = createMockScoredProblem({ id: 'weak-1' });
+    const strongProblem = createMockScoredProblem({ id: 'strong-1' });
+    const gaps = createMockGapAnalysis();
+    const stack = createMockStackRecommendation();
+
+    const prompt = buildBatchBriefPrompt([
+      {
+        id: 'weak-1',
+        problem: weakProblem,
+        gaps,
+        stackRecommendation: stack,
+        effortLevel: 'week',
+        evidenceMetadata: createWeakEvidence(),
+      },
+      {
+        id: 'strong-1',
+        problem: strongProblem,
+        gaps,
+        stackRecommendation: stack,
+        effortLevel: 'week',
+        evidenceMetadata: createStrongEvidence(),
+      },
+    ]);
+
+    expect(prompt).toContain('SIGNAL CARD');
+    expect(prompt).toContain('Evidence: strong');
+    expect(prompt).toContain("'Possible:'");
   });
 });

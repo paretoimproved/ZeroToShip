@@ -83,6 +83,13 @@ export const IdeaBriefSchema = z.object({
   sources: z.array(IdeaSourceSchema).optional(),
   generatedAt: z.string(),
   category: z.string().optional(),
+
+  // Evidence-first fields (optional for backward compat with older briefs)
+  evidenceStrength: z.enum(['strong', 'moderate', 'weak']).optional(),
+  briefType: z.enum(['full', 'signal_card']).optional(),
+  sourceCount: z.number().optional(),
+  totalEngagement: z.number().optional(),
+  platformCount: z.number().optional(),
 });
 export type IdeaBrief = z.infer<typeof IdeaBriefSchema>;
 

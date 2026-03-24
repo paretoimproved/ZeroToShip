@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import type { IdeaBrief } from "@/lib/types";
-import { ScoreBadge, EffortBadge } from "@/components/ScoreBadge";
+import { ScoreBadge, EffortBadge, EvidenceStrengthBadge } from "@/components/ScoreBadge";
 import { SectionLabel, SectionValue, MarkdownSection, PillBadge, MonoPill, PlatformIcon } from "@/components/ui";
 import { humanizeText } from "@/lib/humanize";
 
@@ -47,7 +47,9 @@ export default function IdeaBriefCard({
   const uniquePlatforms = hasSources
     ? [...new Set(brief.sources!.map((s) => s.platform))]
     : [];
-  const tabs: readonly TabId[] = hasSources ? allTabs : allTabs.filter((t) => t !== "sources");
+  const tabs: readonly TabId[] = brief.briefType === 'signal_card'
+    ? allTabs.filter((t) => (['problem', 'solution', 'sources'] as TabId[]).includes(t))
+    : (hasSources ? allTabs : allTabs.filter((t) => t !== "sources"));
 
   const [activeTab, setActiveTab] = useState<TabId>(defaultTab);
   const tabButtonRefs = useRef<Map<TabId, HTMLButtonElement>>(new Map());
@@ -104,6 +106,7 @@ export default function IdeaBriefCard({
           <div className="flex flex-wrap items-center gap-2 sm:flex-shrink-0 sm:max-w-[55%] min-w-0">
             <ScoreBadge score={brief.priorityScore} size="sm" />
             <EffortBadge effort={brief.effortEstimate} size="sm" />
+            <EvidenceStrengthBadge evidenceStrength={brief.evidenceStrength} size="sm" />
             {hasSources && (
               <button
                 type="button"
@@ -159,6 +162,13 @@ export default function IdeaBriefCard({
         ))}
       </div>
 
+      {/* Signal card banner */}
+      {brief.briefType === 'signal_card' && (
+        <div className="mx-6 mt-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 px-4 py-2 rounded-lg text-sm">
+          Early Signal — limited evidence, needs validation before building
+        </div>
+      )}
+
       {/* Tab panel */}
       <div
         role="tabpanel"
@@ -189,9 +199,31 @@ export default function IdeaBriefCard({
   );
 }
 
+function EvidenceSummary({ brief }: { brief: IdeaBrief }) {
+  if (!brief.sourceCount && !brief.platformCount) return null;
+
+  const parts: string[] = [];
+  if (brief.sourceCount !== undefined) {
+    parts.push(`${brief.sourceCount} source${brief.sourceCount === 1 ? '' : 's'}`);
+  }
+  if (brief.platformCount !== undefined) {
+    parts.push(`${brief.platformCount} platform${brief.platformCount === 1 ? '' : 's'}`);
+  }
+  if (brief.totalEngagement !== undefined) {
+    parts.push(`${brief.totalEngagement.toLocaleString()} total engagement`);
+  }
+
+  return (
+    <div className="mb-4 text-xs text-gray-500 dark:text-gray-400">
+      Evidence: {parts.join(' · ')}
+    </div>
+  );
+}
+
 function ProblemPanel({ brief }: { brief: IdeaBrief }) {
   return (
     <dl>
+      <EvidenceSummary brief={brief} />
       <SectionLabel>The Problem</SectionLabel>
       <MarkdownSection>{brief.problemStatement}</MarkdownSection>
 

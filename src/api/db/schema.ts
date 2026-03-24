@@ -18,8 +18,28 @@ import {
   index,
   uniqueIndex,
   date,
+  customType,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+
+/**
+ * pgvector column type for Drizzle ORM.
+ * Stores OpenAI embeddings as float arrays, serialized to/from pgvector format.
+ */
+const vector = customType<{ data: number[]; driverParam: string }>({
+  dataType() {
+    return 'vector(1536)';
+  },
+  toDriver(value: number[]): string {
+    return `[${value.join(',')}]`;
+  },
+  fromDriver(value: unknown): number[] {
+    // pgvector returns "[0.1,0.2,...]" format
+    const str = String(value);
+    const inner = str.replace(/^\[/, '').replace(/\]$/, '');
+    return inner.split(',').map(Number);
+  },
+});
 
 /**
  * User tiers for subscription management
@@ -154,6 +174,14 @@ export const ideas = pgTable(
       postedAt: string;
     }>>().default([]),
 
+    // Evidence strength metadata (Phase 1 — evidence-first briefs)
+    evidenceStrength: varchar('evidence_strength', { length: 20 }),
+    briefType: varchar('brief_type', { length: 20 }).default('full'),
+    sourceCount: integer('source_count'),
+    totalEngagement: integer('total_engagement'),
+    platformCount: integer('platform_count'),
+    embedding: vector('embedding'),
+
     generatedAt: timestamp('generated_at').notNull().defaultNow(),
     publishedAt: timestamp('published_at'),
     isPublished: boolean('is_published').notNull().default(false),
@@ -163,6 +191,7 @@ export const ideas = pgTable(
     publishedAtIdx: index('ideas_published_at_idx').on(table.publishedAt),
     categoryIdx: index('ideas_category_idx').on(table.category),
     effortIdx: index('ideas_effort_idx').on(table.effortEstimate),
+    evidenceStrengthIdx: index('ideas_evidence_strength_idx').on(table.evidenceStrength),
   })
 );
 

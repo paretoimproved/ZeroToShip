@@ -6,13 +6,15 @@
  */
 
 import * as crypto from 'crypto';
-import type { ScoredProblem } from '../analysis/scorer';
+import type { ScoredProblem, EvidenceMetadata } from '../analysis/scorer';
 import type { GapAnalysis } from '../analysis/gap-analyzer';
 import { config as envConfig } from '../config/env';
 import logger from '../lib/logger';
 import {
   BRIEF_SYSTEM_PROMPT,
+  SIGNAL_CARD_SYSTEM_PROMPT,
   buildBriefPrompt,
+  buildSignalCardPrompt,
   buildBatchBriefPrompt,
   parseJsonResponse,
   scoreToEffortLevel,
@@ -78,6 +80,7 @@ export interface GraphAttemptTrace {
  */
 export interface IdeaBrief {
   id: string;
+  briefType?: 'full' | 'signal_card';
   name: string;
   tagline: string;
   priorityScore: number;
@@ -150,11 +153,20 @@ interface GPTBriefResponse {
   risks: string[];
 }
 
-/**
- * Configuration for brief generation
- */
+interface SignalCardResponse {
+  name: string;
+  tagline: string;
+  problemStatement: string;
+  targetAudience: string;
+  proposedSolution: string;
+  keyFeatures: string[];
+}
+
 /** Max tokens for a single brief generation API call */
 const SINGLE_BRIEF_MAX_TOKENS = 8000;
+
+/** Max tokens for a signal card (reduced output) */
+export const SIGNAL_CARD_MAX_TOKENS = 2000;
 
 /** Estimated tokens per brief in batch generation */
 const TOKENS_PER_BRIEF_ESTIMATE = 3500;
@@ -292,6 +304,31 @@ async function callClaude(
   }
 }
 
+async function callClaudeSignalCard(
+  prompt: string,
+  apiKey: string,
+  model: string,
+  temperature: number
+): Promise<SignalCardResponse | null> {
+  try {
+    const result = await callAnthropicApi({
+      apiKey,
+      model,
+      system: SIGNAL_CARD_SYSTEM_PROMPT,
+      prompt,
+      maxTokens: SIGNAL_CARD_MAX_TOKENS,
+      temperature,
+      timeoutMs: envConfig.BRIEF_GENERATION_TIMEOUT_MS,
+      module: 'brief-generator',
+    });
+
+    return parseJsonResponse<SignalCardResponse>(result.text);
+  } catch (error) {
+    logger.warn({ err: error }, 'Anthropic signal card API call failed');
+    return null;
+  }
+}
+
 /**
  * Raw response from batch brief generation
  */
@@ -417,6 +454,7 @@ function createFallbackBrief(
  */
 export function validateBriefQuality(brief: IdeaBrief): { valid: boolean; reasons: string[] } {
   const reasons: string[] = [];
+  const isSignalCard = brief.briefType === 'signal_card';
 
   // Placeholder content detection
   const placeholderPatterns = [
@@ -433,18 +471,27 @@ export function validateBriefQuality(brief: IdeaBrief): { valid: boolean; reason
     /manual analysis required/i,
   ];
 
-  const fieldsToCheck: Array<[string, string]> = [
-    ['name', brief.name],
-    ['tagline', brief.tagline],
-    ['problemStatement', brief.problemStatement],
-    ['targetAudience', brief.targetAudience],
-    ['marketSize', brief.marketSize],
-    ['existingSolutions', brief.existingSolutions],
-    ['gaps', brief.gaps],
-    ['proposedSolution', brief.proposedSolution],
-    ['mvpScope', brief.mvpScope],
-    ['revenueEstimate', brief.revenueEstimate],
-  ];
+  // Signal cards skip checks on fields they don't populate
+  const fieldsToCheck: Array<[string, string]> = isSignalCard
+    ? [
+      ['name', brief.name],
+      ['tagline', brief.tagline],
+      ['problemStatement', brief.problemStatement],
+      ['targetAudience', brief.targetAudience],
+      ['proposedSolution', brief.proposedSolution],
+    ]
+    : [
+      ['name', brief.name],
+      ['tagline', brief.tagline],
+      ['problemStatement', brief.problemStatement],
+      ['targetAudience', brief.targetAudience],
+      ['marketSize', brief.marketSize],
+      ['existingSolutions', brief.existingSolutions],
+      ['gaps', brief.gaps],
+      ['proposedSolution', brief.proposedSolution],
+      ['mvpScope', brief.mvpScope],
+      ['revenueEstimate', brief.revenueEstimate],
+    ];
 
   for (const [field, value] of fieldsToCheck) {
     for (const pattern of placeholderPatterns) {
@@ -462,14 +509,17 @@ export function validateBriefQuality(brief: IdeaBrief): { valid: boolean; reason
   if (brief.targetAudience.length < 20) reasons.push('targetAudience too short (< 20 chars)');
   if (brief.proposedSolution.length < 30) reasons.push('proposedSolution too short (< 30 chars)');
 
-  // Array minimums
-  if (brief.keyFeatures.length < 3) reasons.push(`keyFeatures has ${brief.keyFeatures.length} items (need >= 3)`);
+  // Array minimums — signal cards have relaxed requirements
+  const minFeatures = isSignalCard ? 2 : 3;
+  if (brief.keyFeatures.length < minFeatures) reasons.push(`keyFeatures has ${brief.keyFeatures.length} items (need >= ${minFeatures})`);
   if (brief.risks.length < 2) reasons.push(`risks has ${brief.risks.length} items (need >= 2)`);
-  if (brief.goToMarket.channels.length < 2) reasons.push(`channels has ${brief.goToMarket.channels.length} items (need >= 2)`);
 
-  // Nested object checks
-  if (brief.technicalSpec.stack.length < 2) reasons.push(`tech stack has ${brief.technicalSpec.stack.length} items (need >= 2)`);
-  if (brief.businessModel.pricing.length < 10) reasons.push('pricing too short (< 10 chars)');
+  if (!isSignalCard) {
+    if (brief.goToMarket.channels.length < 2) reasons.push(`channels has ${brief.goToMarket.channels.length} items (need >= 2)`);
+    // Nested object checks
+    if (brief.technicalSpec.stack.length < 2) reasons.push(`tech stack has ${brief.technicalSpec.stack.length} items (need >= 2)`);
+    if (brief.businessModel.pricing.length < 10) reasons.push('pricing too short (< 10 chars)');
+  }
 
   return { valid: reasons.length === 0, reasons };
 }
@@ -530,6 +580,58 @@ function transformToBrief(
   };
 }
 
+function transformToSignalCard(
+  response: SignalCardResponse,
+  problem: ScoredProblem,
+  effortLevel: EffortLevel
+): IdeaBrief {
+  return {
+    id: generateBriefId(),
+    briefType: 'signal_card',
+    name: response.name || 'Untitled Signal',
+    tagline: response.tagline || problem.problemStatement.slice(0, 50),
+    priorityScore: problem.scores.priority,
+    effortEstimate: effortLevel,
+    revenueEstimate: 'Insufficient data',
+
+    problemStatement: response.problemStatement || problem.problemStatement,
+    targetAudience: response.targetAudience || 'To be determined',
+    marketSize: 'Insufficient data for market sizing',
+
+    existingSolutions: 'Not analyzed — early signal',
+    gaps: 'Not analyzed — early signal',
+
+    proposedSolution: response.proposedSolution || 'Idea to explore',
+    keyFeatures: response.keyFeatures || [],
+    mvpScope: 'Not scoped — early signal',
+
+    technicalSpec: {
+      stack: [],
+      architecture: 'Not specified — early signal',
+      estimatedEffort: effortLevel,
+    },
+
+    businessModel: {
+      pricing: 'Not analyzed — early signal',
+      revenueProjection: 'Insufficient data',
+      monetizationPath: 'Not analyzed — early signal',
+    },
+
+    goToMarket: {
+      launchStrategy: 'Not analyzed — early signal',
+      channels: problem.sources,
+      firstCustomers: 'Not analyzed — early signal',
+    },
+
+    risks: ['Insufficient data to assess risks — early signal only'],
+    sources: extractSources(problem),
+    generatedAt: new Date(),
+    generationMeta: {
+      isFallback: false,
+    },
+  };
+}
+
 /**
  * Generate a business brief for a single problem
  */
@@ -556,8 +658,24 @@ export async function generateBrief(
     return createFallbackBrief(problem, gaps, effortLevel, 'missing_api_key');
   }
 
-  // Build prompt
-  const prompt = buildBriefPrompt(problem, gaps, stackRec, effortLevel);
+  const evidenceMeta = problem.evidenceMetadata;
+
+  // Route weak evidence to signal card generation
+  if (evidenceMeta?.tier === 'weak') {
+    logger.info({ model, tier: opts.userTier, evidenceTier: 'weak' }, 'Generating signal card');
+    const scPrompt = buildSignalCardPrompt(problem, evidenceMeta);
+    const scResponse = await callClaudeSignalCard(scPrompt, apiKey, model, opts.temperature);
+
+    if (!scResponse) {
+      logger.warn({ problemId: problem.id }, 'Signal card generation failed, using fallback');
+      return createFallbackBrief(problem, gaps, effortLevel, 'single_call_failed');
+    }
+
+    return transformToSignalCard(scResponse, problem, effortLevel);
+  }
+
+  // Build prompt with evidence context
+  const prompt = buildBriefPrompt(problem, gaps, stackRec, effortLevel, evidenceMeta);
 
   // Call Claude with tier-appropriate model
   logger.info({ model, tier: opts.userTier }, 'Generating brief');
@@ -637,14 +755,38 @@ export async function generateAllBriefs(
     return results;
   }
 
-  // Process in batches
-  for (let i = 0; i < problemsWithGaps.length; i += BRIEF_BATCH_SIZE) {
-    const batch = problemsWithGaps.slice(i, i + BRIEF_BATCH_SIZE);
+  // Separate weak-evidence problems for individual signal card generation
+  const weakProblems = problemsWithGaps.filter(p => p.problem.evidenceMetadata?.tier === 'weak');
+  const nonWeakProblems = problemsWithGaps.filter(p => p.problem.evidenceMetadata?.tier !== 'weak');
+
+  // Generate signal cards individually for weak-evidence problems
+  for (const { problem, gaps, effortLevel } of weakProblems) {
+    const evidenceMeta = problem.evidenceMetadata;
+    if (evidenceMeta) {
+      const scPrompt = buildSignalCardPrompt(problem, evidenceMeta);
+      const scResponse = await callClaudeSignalCard(scPrompt, apiKey, model, opts.temperature);
+
+      if (scResponse) {
+        results.push(transformToSignalCard(scResponse, problem, effortLevel));
+      } else {
+        logger.warn({ problemId: problem.id }, 'Signal card generation failed, using fallback');
+        results.push(createFallbackBrief(problem, gaps, effortLevel, 'single_call_failed'));
+      }
+    } else {
+      results.push(createFallbackBrief(problem, gaps, effortLevel, 'single_call_failed'));
+    }
+
+    await sleep(opts.delayBetweenCalls);
+  }
+
+  // Process non-weak problems in batches
+  for (let i = 0; i < nonWeakProblems.length; i += BRIEF_BATCH_SIZE) {
+    const batch = nonWeakProblems.slice(i, i + BRIEF_BATCH_SIZE);
 
     if (batch.length === 1) {
       // Single brief — use full-context prompt
       const { problem, gaps, effortLevel, stackRec } = batch[0];
-      const prompt = buildBriefPrompt(problem, gaps, stackRec, effortLevel);
+      const prompt = buildBriefPrompt(problem, gaps, stackRec, effortLevel, problem.evidenceMetadata);
       const response = await callClaude(prompt, apiKey, model, opts.temperature);
 
       if (response) {
@@ -654,13 +796,14 @@ export async function generateAllBriefs(
         results.push(createFallbackBrief(problem, gaps, effortLevel, 'single_call_failed'));
       }
     } else {
-      // Batch path (kept for future use but currently batch size is 1)
+      // Batch path — pass evidence metadata per problem
       const batchData = batch.map(({ problem, gaps, effortLevel, stackRec }) => ({
         id: problem.id,
         problem,
         gaps,
         stackRecommendation: stackRec,
         effortLevel,
+        evidenceMetadata: problem.evidenceMetadata,
       }));
 
       const prompt = buildBatchBriefPrompt(batchData);
@@ -693,11 +836,11 @@ export async function generateAllBriefs(
       }
     }
 
-    const completed = Math.min(i + BRIEF_BATCH_SIZE, problemsWithGaps.length);
-    logger.info({ completed, total: problemsWithGaps.length }, 'Brief generation progress');
+    const completed = Math.min(i + BRIEF_BATCH_SIZE, nonWeakProblems.length);
+    logger.info({ completed, total: nonWeakProblems.length }, 'Brief generation progress');
 
     // Rate limiting between batches
-    if (i + BRIEF_BATCH_SIZE < problemsWithGaps.length) {
+    if (i + BRIEF_BATCH_SIZE < nonWeakProblems.length) {
       await sleep(opts.delayBetweenCalls);
     }
   }

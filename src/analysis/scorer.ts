@@ -82,11 +82,28 @@ export interface ScoreReasoning {
 }
 
 /**
+ * Evidence strength tier for a problem cluster
+ */
+export type EvidenceTier = 'strong' | 'moderate' | 'weak';
+
+/**
+ * Evidence metadata computed from raw signal data.
+ * Used to calibrate brief generation confidence and frontend display.
+ */
+export interface EvidenceMetadata {
+  tier: EvidenceTier;
+  sourceCount: number;
+  totalEngagement: number;
+  platformCount: number;
+}
+
+/**
  * A scored problem cluster with priority ranking
  */
 export interface ScoredProblem extends ProblemCluster {
   scores: ProblemScores;
   reasoning: ScoreReasoning;
+  evidenceMetadata?: EvidenceMetadata;
 }
 
 /**
@@ -121,6 +138,37 @@ export function calculateEngagementScore(totalScore: number, frequency: number):
   const avgEngagement = totalScore / frequency;
   const score = Math.log10(avgEngagement + 1) * 3 + 1;
   return Math.max(1, Math.min(10, score));
+}
+
+/**
+ * Compute evidence strength metadata from a scored problem's raw signal data.
+ *
+ * Tiers (tightened per eng review — strong requires multi-platform):
+ *   Strong:   platformCount >= 2 AND (totalEngagement >= 100 OR frequency >= 3)
+ *   Moderate: frequency >= 2 OR totalEngagement >= 50 OR platformCount >= 2
+ *   Weak:     everything else (single source, low engagement)
+ *
+ * Input data comes from ProblemCluster fields already available on ScoredProblem:
+ *   - frequency: number of raw posts in the cluster
+ *   - totalScore: sum of all post scores (upvotes) in the cluster
+ *   - sources: array of platform names ('reddit' | 'hn' | 'twitter' | 'github')
+ */
+export function computeEvidenceStrength(problem: ScoredProblem): EvidenceMetadata {
+  const sourceCount = problem.frequency;
+  const totalEngagement = problem.totalScore;
+  const platformCount = new Set(problem.sources).size;
+
+  let tier: EvidenceTier;
+
+  if (platformCount >= 2 && (totalEngagement >= 100 || problem.frequency >= 3)) {
+    tier = 'strong';
+  } else if (problem.frequency >= 2 || totalEngagement >= 50 || platformCount >= 2) {
+    tier = 'moderate';
+  } else {
+    tier = 'weak';
+  }
+
+  return { tier, sourceCount, totalEngagement, platformCount };
 }
 
 /**
