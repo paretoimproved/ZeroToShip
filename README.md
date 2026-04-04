@@ -1,5 +1,13 @@
 # ZeroToShip
 
+
+## Screenshots
+
+![Dashboard](docs/screenshots/preview_tabs.png)
+![Solution Analysis](docs/screenshots/preview_solution.png)
+![Source Tracking](docs/screenshots/preview_sources.png)
+
+
 Automated SaaS that scrapes the web for technical pain points and generates prioritized business briefs for aspiring founders. Pipeline runs daily, delivers ideas by email, and serves a tier-gated web dashboard.
 
 **Live**: [zerotoship.dev](https://zerotoship.dev)
