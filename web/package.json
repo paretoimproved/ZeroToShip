@@ -1,0 +1,49 @@
+{
+  "name": "zerotoship-web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test:e2e": "playwright test --config=e2e/playwright.config.ts",
+    "test:e2e:ui": "playwright test --config=e2e/playwright.config.ts --ui",
+    "test:e2e:headed": "playwright test --config=e2e/playwright.config.ts --headed",
+    "test:e2e:personas": "JOURNEY_HEADED=true JOURNEY_PAUSE_MS=1500 playwright test --config=e2e/playwright.config.ts --headed tests/journeys/",
+    "test:e2e:personas:slow": "JOURNEY_HEADED=true JOURNEY_PAUSE_MS=3000 playwright test --config=e2e/playwright.config.ts --headed --workers=1 tests/journeys/",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@react-oauth/google": "^0.13.4",
+    "@supabase/supabase-js": "^2.95.3",
+    "@tailwindcss/typography": "^0.5.19",
+    "mermaid": "^11.12.2",
+    "next": "^15.1.0",
+    "next-themes": "^0.4.6",
+    "posthog-js": "^1.345.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.11.0",
+    "@playwright/test": "^1.58.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^5.1.4",
+    "eslint": "^9.16.0",
+    "eslint-config-next": "^15.1.0",
+    "jsdom": "^27.0.1",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.16",
+    "typescript": "^5.7.2",
+    "vitest": "^1.6.1"
+  }
+}

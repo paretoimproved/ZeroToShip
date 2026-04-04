@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "[roadmap-loop] Running staged roadmap consistency checks..."
+node scripts/check-roadmap-loop.js --staged

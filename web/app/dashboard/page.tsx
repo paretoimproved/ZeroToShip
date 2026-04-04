@@ -1,0 +1,316 @@
+"use client";
+
+import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
+import IdeaBriefCard from "@/components/IdeaBriefCard";
+import BookmarkButton from "@/components/BookmarkButton";
+import ProtectedLayout from "@/components/ProtectedLayout";
+import { useAuth } from "@/components/AuthProvider";
+import { api } from "@/lib/api";
+import { normalizeIdeas } from "@/lib/normalize";
+import type { IdeaBrief } from "@/lib/types";
+
+// Mock data for fallback when API is unavailable
+const mockIdeas: IdeaBrief[] = [
+  {
+    id: "mock-1",
+    name: "DevOps Dashboard",
+    tagline: "Unified monitoring for indie developers",
+    priorityScore: 87,
+    effortEstimate: "weekend",
+    revenueEstimate: "$5K-15K per month",
+    problemStatement:
+      "Solo developers and small teams struggle to monitor multiple services across different cloud providers without expensive enterprise tools.",
+    targetAudience: "Indie hackers and small dev teams",
+    marketSize: "$2B developer tools market",
+    existingSolutions: "Datadog, New Relic, Grafana",
+    gaps: "Too expensive for solo devs, complex setup, overkill features",
+    proposedSolution: "Simple, affordable monitoring dashboard",
+    keyFeatures: ["Multi-cloud support", "One-click setup", "Affordable pricing"],
+    mvpScope: "Basic metrics, alerts, 3 integrations",
+    technicalSpec: {
+      stack: ["Next.js", "PostgreSQL", "Redis"],
+      architecture: "Serverless with edge functions",
+      estimatedEffort: "2 weekends",
+    },
+    businessModel: {
+      pricing: "$9/mo hobby, $29/mo pro",
+      revenueProjection: "$10K per month in 6 months",
+      monetizationPath: "Freemium to paid",
+    },
+    goToMarket: {
+      launchStrategy: "Product Hunt + Indie Hackers",
+      channels: ["Reddit", "Dev.to", "Indie Hackers"],
+      firstCustomers: "Indie hackers on Reddit and Hacker News",
+    },
+    risks: ["Competition from free tools", "Pricing pressure"],
+    generatedAt: new Date().toISOString(),
+  },
+];
+
+export default function HomePage() {
+  const [ideas, setIdeas] = useState<IdeaBrief[]>([]);
+  const [source, setSource] = useState<"api" | "mock" | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [savedIdeaIds, setSavedIdeaIds] = useState<Set<string>>(new Set());
+  const { isAuthenticated } = useAuth();
+
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingDismissing, setOnboardingDismissing] = useState(false);
+  const onboardingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const dismissed = localStorage.getItem("z2s_onboarding_dismissed");
+    if (!dismissed) {
+      setShowOnboarding(true);
+    }
+    return () => {
+      if (onboardingTimerRef.current) clearTimeout(onboardingTimerRef.current);
+    };
+  }, []);
+
+  const dismissOnboarding = useCallback(() => {
+    setOnboardingDismissing(true);
+    localStorage.setItem("z2s_onboarding_dismissed", "true");
+    onboardingTimerRef.current = setTimeout(() => {
+      setShowOnboarding(false);
+      setOnboardingDismissing(false);
+    }, 300);
+  }, []);
+
+  useEffect(() => {
+    async function fetchIdeas() {
+      try {
+        const data = await api.getTodayIdeas();
+        const ideas = normalizeIdeas(data);
+
+        setIdeas(ideas);
+        setSource("api");
+      } catch (error) {
+        console.log("API unavailable, using mock data:", error);
+        setIdeas(mockIdeas);
+        setSource("mock");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchIdeas();
+  }, []);
+
+  // Fetch saved idea IDs for authenticated user
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setSavedIdeaIds(new Set());
+      return;
+    }
+    let cancelled = false;
+    async function fetchSaved() {
+      try {
+        const saved = await api.getSavedIdeas();
+        if (cancelled) return;
+        const normalized = normalizeIdeas(saved);
+        setSavedIdeaIds(new Set(normalized.map((idea) => idea.id)));
+      } catch {
+        // Silently fail — bookmark state is non-critical
+      }
+    }
+    fetchSaved();
+    return () => { cancelled = true; };
+  }, [isAuthenticated]);
+
+  const handleToggleSave = useCallback((ideaId: string, saved: boolean) => {
+    setSavedIdeaIds((prev) => {
+      const next = new Set(prev);
+      if (saved) {
+        next.add(ideaId);
+      } else {
+        next.delete(ideaId);
+      }
+      return next;
+    });
+  }, []);
+
+  return (
+    <ProtectedLayout>
+    <main id="main-content" className="mx-auto max-w-5xl px-4 sm:px-6 py-8">
+      {showOnboarding && (
+        <div
+          className={`mb-8 relative rounded-2xl border border-primary-200 dark:border-primary-800 bg-gradient-to-r from-primary-50 via-white to-white dark:from-primary-950/40 dark:via-gray-900 dark:to-gray-900 shadow-lg overflow-hidden transition-all duration-300 ${
+            onboardingDismissing ? "opacity-0 translate-y-[-8px]" : "opacity-100 translate-y-0"
+          }`}
+        >
+          <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-primary-500 to-primary-600" />
+          <div className="p-6 sm:p-8 pl-5 sm:pl-7">
+            <button
+              onClick={dismissOnboarding}
+              className="absolute top-4 right-4 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Dismiss welcome banner"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white sm:text-2xl">
+              Welcome to ZeroToShip
+            </h2>
+            <p className="mt-2 text-gray-600 dark:text-gray-400 max-w-2xl leading-relaxed">
+              Every day we scan 300+ posts across Reddit, Hacker News, and GitHub to find real
+              problems worth solving. Here are today&apos;s top ideas.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Link
+                href="/archive"
+                className="inline-flex items-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+              >
+                Browse the Archive
+              </Link>
+              <Link
+                href="/settings"
+                className="inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+              >
+                Set Email Preferences
+              </Link>
+              <a
+                href="#main-content"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const ideasSection = document.getElementById("ideas-list");
+                  if (ideasSection?.firstElementChild) {
+                    ideasSection.firstElementChild.scrollIntoView({ behavior: "smooth", block: "center" });
+                  }
+                }}
+                className="inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+              >
+                Explore an Idea
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <header className="mb-8">
+        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-4xl mb-2">
+          Today&apos;s Top Ideas
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          {new Date().toLocaleDateString("en-US", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })}
+          {source === "mock" && (
+            <span className="ml-2 inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/30 px-3 py-1 text-xs font-medium text-yellow-800 dark:text-yellow-300">
+              Demo data
+            </span>
+          )}
+          {source === "api" && (
+            <span className="ml-2 inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/30 px-3 py-1 text-xs font-medium text-green-800 dark:text-green-300">
+              Live data
+            </span>
+          )}
+        </p>
+      </header>
+
+      {loading ? (
+        <div className="space-y-6">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden animate-pulse"
+            >
+              {/* Header skeleton */}
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-2" />
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="h-6 w-12 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                    <div className="h-6 w-16 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                    <div className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                  </div>
+                </div>
+              </div>
+              {/* Tab bar skeleton */}
+              <div className="flex border-b border-gray-200 dark:border-gray-700 px-4 gap-4">
+                {[1, 2, 3, 4].map((j) => (
+                  <div key={j} className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded my-3" />
+                ))}
+              </div>
+              {/* Panel skeleton */}
+              <div className="p-6 space-y-4">
+                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-24" />
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6" />
+                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-24 mt-6" />
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <>
+          <div id="ideas-list" className="space-y-6">
+            {ideas.map((idea, index) => (
+              <IdeaBriefCard
+                key={idea.id}
+                brief={idea}
+                rank={index + 1}
+                index={index}
+                gated={!isAuthenticated}
+                bookmarkSlot={
+                  isAuthenticated ? (
+                    <BookmarkButton
+                      ideaId={idea.id}
+                      initialSaved={savedIdeaIds.has(idea.id)}
+                      onToggle={(saved) => handleToggleSave(idea.id, saved)}
+                      size="sm"
+                    />
+                  ) : undefined
+                }
+              />
+            ))}
+          </div>
+
+          {ideas.length === 0 && (
+            <div className="text-center py-16">
+              <svg
+                className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.63 8.37m5.96 6a14.926 14.926 0 01-5.84 2.58m0 0a14.926 14.926 0 01-5.96-6 14.98 14.98 0 006.16-12.12m5.64 18.12a6 6 0 01-5.84-7.38"
+                />
+              </svg>
+              <h3 className="mt-4 text-lg font-semibold text-gray-900 dark:text-white">
+                No ideas yet
+              </h3>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Check back tomorrow or browse the archive for past ideas.
+              </p>
+              <div className="mt-6">
+                <Link
+                  href="/archive"
+                  className="rounded-lg bg-primary-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+                >
+                  Browse Archive
+                </Link>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </main>
+    </ProtectedLayout>
+  );
+}

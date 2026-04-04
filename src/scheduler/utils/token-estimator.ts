@@ -1,0 +1,45 @@
+/**
+ * Token Estimation Utilities for ZeroToShip
+ *
+ * Provides rough token count estimates for cost calculation.
+ * Uses ~4 chars per token approximation for English text.
+ */
+
+/** Average characters per token for English text (GPT/Claude tokenizers) */
+const CHARS_PER_TOKEN = 4;
+
+/**
+ * Estimate tokens from text
+ * Rough approximation: ~CHARS_PER_TOKEN characters per token for English
+ */
+export function estimateTokens(text: string): number {
+  if (!text) return 0;
+  return Math.ceil(text.length / CHARS_PER_TOKEN);
+}
+
+/**
+ * Estimate tokens from a structured prompt
+ */
+export function estimatePromptTokens(prompt: {
+  system?: string;
+  messages: Array<{ content: string }>;
+}): number {
+  let total = 0;
+  if (prompt.system) total += estimateTokens(prompt.system);
+  for (const msg of prompt.messages) {
+    total += estimateTokens(msg.content);
+  }
+  return total;
+}
+
+/**
+ * Estimate tokens for a JSON object (serialized)
+ */
+export function estimateJsonTokens(obj: unknown): number {
+  try {
+    const json = JSON.stringify(obj);
+    return estimateTokens(json);
+  } catch {
+    return 0;
+  }
+}

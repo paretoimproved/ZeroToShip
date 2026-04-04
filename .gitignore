@@ -1,0 +1,71 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Build output
+dist/
+build/
+packages/*/dist/
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Pipeline run data
+data/runs/
+data/score-cache/
+data/test-score-cache/
+
+# Git worktrees
+.worktrees/
+
+# Test coverage
+coverage/
+
+# Claude local settings
+.claude/settings.local.json
+.claude/handoffs/
+
+# Personal directories
+reviews/career/
+.context/retros/
+
+# Docs symlink (tracked separately in DevVault)
+docs/
+
+# DevVault context junctions
+_Knowledge/
+_Resources/
+_Projects/
+
+# Web frontend (Next.js)
+web/.next/
+web/node_modules/
+web/.env
+web/.env.local
+web/e2e/.auth/
+web/e2e/reports/
+web/e2e/test-results/
+web/*.tsbuildinfo
+web/playwright-report/
+web/test-results/
+.vercel
+
+# Shared package build output
+packages/shared/src/*.d.ts
+packages/shared/src/*.d.ts.map
+packages/shared/src/*.js
+packages/shared/src/*.js.map
+packages/shared/tsconfig.tsbuildinfo
