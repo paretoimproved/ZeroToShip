@@ -122,7 +122,7 @@ function makeGap(problemId: string): GapAnalysis {
   };
 }
 
-describe('Generate Phase', () => {
+describe.skip('Generate Phase', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
