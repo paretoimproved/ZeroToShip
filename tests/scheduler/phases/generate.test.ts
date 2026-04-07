@@ -18,6 +18,7 @@ vi.mock('../../../src/generation/brief-generator', () => ({
 // Mock config
 vi.mock('../../../src/config/models', () => ({
   getPipelineBriefModel: vi.fn().mockReturnValue('claude-sonnet-4-5-20250929'),
+  getBatchModel: vi.fn().mockReturnValue('claude-haiku-4-5-20251001'),
 }));
 
 // Mock similarity (used for deduplication)
