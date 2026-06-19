@@ -14,6 +14,12 @@ vi.mock("@/lib/auth", () => ({
   loginWithOAuth: vi.fn(),
 }));
 
+// Mock analytics so we can assert which auth event fires on OAuth return
+vi.mock("@/lib/analytics", () => ({
+  trackSignupCompleted: vi.fn(),
+  trackLoginCompleted: vi.fn(),
+}));
+
 // Import the mocked functions for test control
 import {
   login as authLogin,
@@ -24,6 +30,7 @@ import {
   handleOAuthCallback,
   loginWithOAuth,
 } from "@/lib/auth";
+import { trackSignupCompleted, trackLoginCompleted } from "@/lib/analytics";
 
 const mockUser: User = {
   id: "user-1",
@@ -154,6 +161,52 @@ describe("AuthProvider", () => {
     expect(result.current.isAuthenticated).toBe(true);
     expect(result.current.user?.id).toBe("user-1");
     expect(result.current.user?.email).toBe("test@example.com");
+  });
+
+  it("fires signup_completed (not login) when the OAuth callback is a new account", async () => {
+    vi.mocked(handleOAuthCallback).mockResolvedValue({
+      token: "oauth-token",
+      provider: "github",
+      isNewUser: true,
+      user: {
+        id: "new-user",
+        email: "new@example.com",
+        name: "New User",
+        tier: "free" as const,
+        preferences: { emailFrequency: "daily" as const },
+        createdAt: "2026-06-19T00:00:00Z",
+      },
+    });
+    vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => mockUser } as Response);
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(trackSignupCompleted).toHaveBeenCalledWith("github");
+    expect(trackLoginCompleted).not.toHaveBeenCalled();
+  });
+
+  it("fires login_completed (not signup) when the OAuth callback is a returning user", async () => {
+    vi.mocked(handleOAuthCallback).mockResolvedValue({
+      token: "oauth-token",
+      provider: "github",
+      isNewUser: false,
+      user: {
+        id: "returning-user",
+        email: "back@example.com",
+        name: "Returning User",
+        tier: "free" as const,
+        preferences: { emailFrequency: "daily" as const },
+        createdAt: "2026-01-01T00:00:00Z",
+      },
+    });
+    vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => mockUser } as Response);
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(trackLoginCompleted).toHaveBeenCalledWith("github");
+    expect(trackSignupCompleted).not.toHaveBeenCalled();
   });
 });
 

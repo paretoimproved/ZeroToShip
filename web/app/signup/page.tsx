@@ -36,7 +36,8 @@ function SignupForm() {
 
   const handleOAuth = async (provider: "google" | "github") => {
     setError(null);
-    trackSignupCompleted(provider);
+    // signup_completed is fired in AuthProvider when the OAuth callback resolves,
+    // not here (this fires before the redirect and the event was being lost).
     if (redirectTo && redirectTo !== "/dashboard") {
       sessionStorage.setItem("z2s_next", redirectTo);
     }
@@ -46,8 +47,8 @@ function SignupForm() {
   const handleGoogleSuccess = async (credential: string) => {
     setError(null);
     try {
-      trackSignupCompleted("google");
       await loginWithGoogleCode(credential);
+      trackSignupCompleted("google");
       toast.success("Account created", "You're signed in.");
       sessionStorage.removeItem("z2s_next");
       router.push(redirectTo);
@@ -61,7 +62,10 @@ function SignupForm() {
     setLoading(true);
 
     try {
-      await signup(data.email, data.password, data.name ?? "");
+      // Name is optional in the UI; derive a friendly default from the email
+      // local-part so the required server field is satisfied without friction.
+      const name = data.name?.trim() || data.email.split("@")[0] || "there";
+      await signup(data.email, data.password, name);
       trackSignupCompleted("email");
       toast.success("Account created", "Welcome to ZeroToShip.");
       sessionStorage.removeItem("z2s_next");

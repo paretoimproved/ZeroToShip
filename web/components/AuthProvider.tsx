@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { login as authLogin, signup as authSignup, logout as authLogout, initAuth, getToken, handleOAuthCallback, loginWithOAuth, loginWithGoogleCode as authLoginWithGoogleCode } from "@/lib/auth";
 import type { OAuthProvider } from "@/lib/auth";
+import { trackSignupCompleted, trackLoginCompleted } from "@/lib/analytics";
 import type { User } from "@/lib/types";
 
 interface AuthContextType {
@@ -48,6 +49,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Then fetch the full profile (tier, isAdmin) in the background.
           setUser(oauthResult.user);
           setIsLoading(false);
+          // Fire the auth event here (not before the provider redirect, where it
+          // was lost on navigation). isNewUser distinguishes signup from login.
+          if (oauthResult.provider) {
+            if (oauthResult.isNewUser) {
+              trackSignupCompleted(oauthResult.provider);
+            } else {
+              trackLoginCompleted(oauthResult.provider);
+            }
+          }
           fetchUserProfile(oauthResult.token).catch(() => {});
           return;
         }

@@ -160,6 +160,10 @@ export interface OAuthCallbackResult {
     preferences: { emailFrequency: "daily" };
     createdAt: string;
   };
+  /** Which provider completed the sign-in, when known (used for analytics). */
+  provider?: OAuthProvider;
+  /** True when this callback created a new account vs. returning sign-in. */
+  isNewUser?: boolean;
 }
 
 /**
@@ -193,7 +197,7 @@ export async function handleOAuthCallback(): Promise<OAuthCallbackResult | null>
     if (params.has("scope")) {
       const result = await loginWithGoogleCode(code, "code");
       window.history.replaceState(null, "", window.location.pathname);
-      return result;
+      return { ...result, provider: "google" };
     }
 
     // Supabase PKCE flow: exchange the authorization code for a session
@@ -216,8 +220,25 @@ export async function handleOAuthCallback(): Promise<OAuthCallbackResult | null>
   // Extract minimal user from Supabase session for instant redirect.
   // The full profile (tier, isAdmin) is fetched in the background by AuthProvider.
   const meta = session.user.user_metadata || {};
+
+  // Distinguish a brand-new account from a returning sign-in so analytics can
+  // fire signup vs. login correctly. A first-time OAuth user has created_at and
+  // last_sign_in_at set to (effectively) the same moment.
+  const provider = (session.user.app_metadata?.provider as OAuthProvider) || undefined;
+  const createdMs = Date.parse(session.user.created_at || "");
+  const lastSignInMs = Date.parse(
+    session.user.last_sign_in_at || session.user.created_at || ""
+  );
+  const isNewUser =
+    !session.user.last_sign_in_at ||
+    (Number.isFinite(createdMs) &&
+      Number.isFinite(lastSignInMs) &&
+      Math.abs(lastSignInMs - createdMs) < 5000);
+
   return {
     token: accessToken,
+    provider,
+    isNewUser,
     user: {
       id: session.user.id,
       email: session.user.email || "",

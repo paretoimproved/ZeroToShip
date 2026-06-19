@@ -84,7 +84,8 @@ function LoginPageContent() {
 
   const handleOAuth = async (provider: "google" | "github") => {
     setError(null);
-    trackLoginCompleted(provider);
+    // login_completed is fired in AuthProvider when the OAuth callback resolves,
+    // not here (this fires before the redirect and the event was being lost).
     // Persist where the user intended to go across the redirect-based flow.
     if (redirectTo && redirectTo !== "/dashboard") {
       sessionStorage.setItem("z2s_next", redirectTo);
@@ -95,8 +96,8 @@ function LoginPageContent() {
   const handleGoogleSuccess = async (code: string) => {
     setError(null);
     try {
-      trackLoginCompleted("google");
       await loginWithGoogleCode(code);
+      trackLoginCompleted("google");
       toast.success("Signed in", "Welcome back.");
       sessionStorage.removeItem("z2s_next");
       router.push(redirectTo);

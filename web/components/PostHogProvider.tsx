@@ -44,11 +44,26 @@ function PostHogIdentifier() {
     if (isAuthenticated && user) {
       // Only identify if the user changed (avoid redundant calls)
       if (previousUserId.current !== user.id) {
-        posthog.identify(user.id, {
-          email: user.email,
-          tier: user.tier,
-          created_at: user.createdAt,
-        });
+        // Promote first-touch acquisition attribution to person properties with
+        // $set_once so a user's originating channel (e.g. chatgpt.com) survives
+        // identify and is queryable in funnels. PostHog records the $initial_*
+        // values automatically; we copy them to stable, named person props.
+        const getInitial = (key: string): string | undefined =>
+          (posthog.get_property?.(key) as string | undefined) ?? undefined;
+        posthog.identify(
+          user.id,
+          {
+            email: user.email,
+            tier: user.tier,
+            created_at: user.createdAt,
+          },
+          {
+            initial_referring_domain: getInitial("$initial_referring_domain"),
+            initial_utm_source: getInitial("$initial_utm_source"),
+            initial_utm_medium: getInitial("$initial_utm_medium"),
+            initial_utm_campaign: getInitial("$initial_utm_campaign"),
+          }
+        );
         previousUserId.current = user.id;
       }
     } else if (previousUserId.current !== null) {
